@@ -1,0 +1,330 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ====================== USER & PROFILE ======================
+model User {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  email     String   @unique @db.VarChar(191)
+  password  String   @db.VarChar(255)
+  role      Role     @default(USER)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  profile      Profile?
+  activityLogs ActivityLog[]
+  carts        Cart?
+  wishlists    Wishlist[]
+  orders       Order[]
+  chatRooms    ChatRoom[]    @relation("UserChatRooms")
+  staffRooms   ChatRoom[]    @relation("StaffChatRooms")
+  reviews      Review[]
+  sentMessages Message[]     @relation("SenderMessages")
+
+  @@map("users")
+}
+
+model Profile {
+  id          String  @id @default(uuid()) @db.VarChar(36)
+  userId      String  @unique @map("user_id") @db.VarChar(36)
+  fullName    String? @map("full_name") @db.VarChar(255)
+  phone       String  @db.VarChar(20) @unique
+  address     String? @db.Text
+  avatarUrl   String? @map("avatar_url") @db.VarChar(255)
+  preferences Json?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+// ====================== PRODUCT ======================
+model Category {
+  id          String  @id @default(uuid()) @db.VarChar(36)
+  name        String  @db.VarChar(100)
+  slug        String  @unique @db.VarChar(100)
+  description String? @db.Text
+
+  products Product[]
+
+  @@index([slug])
+  @@map("categories")
+}
+
+model Brand {
+  id      String  @id @default(uuid()) @db.VarChar(36)
+  name    String  @db.VarChar(100)
+  logoUrl String? @map("logo_url") @db.VarChar(255)
+
+  products Product[]
+
+  @@map("brands")
+}
+
+model Product {
+  id           String   @id @default(uuid()) @db.VarChar(36)
+  categoryId   String?  @map("category_id") @db.VarChar(36)
+  brandId      String?  @map("brand_id") @db.VarChar(36)
+  name         String   @db.VarChar(255)
+  slug         String   @unique @db.VarChar(255)
+  price        Decimal  @db.Decimal(15, 2)
+  stock        Int      @default(0)
+  soldCount    Int      @default(0) @map("sold_count")
+  viewsCount   Int      @default(0) @map("views_count")
+  metadata     Json?    // Chứa thông số kỹ thuật cho AI đọc
+  description  String?  @db.Text
+  thumbnailUrl String?  @map("thumbnail_url") @db.VarChar(255)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  category    Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  brand       Brand?         @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  assets      ProductAsset[]
+  cartItems   CartItem[]
+  wishlist    Wishlist[]
+  orderItems  OrderItem[]
+  reviews     Review[]
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([price])
+  @@index([createdAt])
+  @@map("products")
+}
+
+model ProductAsset {
+  id        String    @id @default(uuid()) @db.VarChar(36)
+  productId String    @map("product_id") @db.VarChar(36)
+  type      AssetType
+  url       String    @db.VarChar(255)
+  arScale   Float?    @default(1) @map("ar_scale")
+  positionX Float?    @default(0) @map("position_x")
+  positionY Float?    @default(0) @map("position_y")
+  positionZ Float?    @default(0) @map("position_z")
+  rotation  Json?     // {x: 0, y: 0, z: 0}
+  isPrimary Boolean   @default(false) @map("is_primary")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_assets")
+}
+
+// ====================== CART & WISHLIST ======================
+model Cart {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  userId    String   @unique @map("user_id") @db.VarChar(36)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String @id @default(uuid()) @db.VarChar(36)
+  cartId    String @map("cart_id") @db.VarChar(36)
+  productId String @map("product_id") @db.VarChar(36)
+  quantity  Int    @default(1)
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([cartId])
+  @@map("cart_items")
+}
+
+model Wishlist {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  userId    String   @map("user_id") @db.VarChar(36)
+  productId String   @map("product_id") @db.VarChar(36)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@map("wishlist")
+}
+
+// ====================== ORDER ======================
+model Order {
+  id              String        @id @default(uuid()) @db.VarChar(36)
+  userId          String        @map("user_id") @db.VarChar(36)
+  totalAmount     Decimal       @map("total_amount") @db.Decimal(15, 2)
+  status          OrderStatus   @default(PENDING)
+  paymentMethod   PaymentMethod @default(COD) @map("payment_method")
+  receiverName    String        @map("receiver_name") @db.VarChar(255)
+  receiverPhone   String        @map("receiver_phone") @db.VarChar(20)
+  shippingAddress String        @map("shipping_address") @db.Text
+  note            String?       @db.Text
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  user        User            @relation(fields: [userId], references: [id])
+  items       OrderItem[]
+  tracking    OrderTracking[]
+  transaction Transaction?
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id              String  @id @default(uuid()) @db.VarChar(36)
+  orderId         String  @map("order_id") @db.VarChar(36)
+  productId       String  @map("product_id") @db.VarChar(36)
+  quantity        Int
+  priceAtPurchase Decimal @map("price_at_purchase") @db.Decimal(15, 2)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model OrderTracking {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  orderId     String   @map("order_id") @db.VarChar(36)
+  statusLabel String?  @map("status_label") @db.VarChar(100)
+  description String?  @db.Text
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_tracking")
+}
+
+model Transaction {
+  id              String            @id @default(uuid()) @db.VarChar(36)
+  orderId         String            @unique @map("order_id") @db.VarChar(36)
+  provider        String?           @db.VarChar(50)
+  transactionCode String?           @map("transaction_code") @db.VarChar(100)
+  amount          Decimal           @db.Decimal(15, 2)
+  status          TransactionStatus @default(PENDING)
+  paymentDate     DateTime?         @map("payment_date")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+
+// ====================== CHAT & AI ======================
+model ChatRoom {
+  id        String     @id @default(uuid()) @db.VarChar(36)
+  userId    String     @map("user_id") @db.VarChar(36)
+  staffId   String?    @map("staff_id") @db.VarChar(36)
+  status    RoomStatus @default(OPEN)
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  user      User       @relation("UserChatRooms", fields: [userId], references: [id])
+  staff     User?      @relation("StaffChatRooms", fields: [staffId], references: [id])
+  messages  Message[]
+  aiContext AiContext?
+
+  @@map("chat_rooms")
+}
+
+model Message {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  roomId    String   @map("room_id") @db.VarChar(36)
+  senderId  String?  @map("sender_id") @db.VarChar(36)
+  content   String   @db.Text
+  isAi      Boolean  @default(false) @map("is_ai")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  room   ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender User?    @relation("SenderMessages", fields: [senderId], references: [id])
+
+  @@index([roomId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+model AiContext {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  roomId      String   @unique @map("room_id") @db.VarChar(36)
+  summary     String?  @db.Text
+  tokensUsed  Int      @default(0) @map("tokens_used")
+  lastUpdated DateTime @default(now()) @updatedAt @map("last_updated")
+
+  room ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@map("ai_context")
+}
+
+// ====================== REVIEW & ACTIVITY ======================
+model Review {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  userId    String   @map("user_id") @db.VarChar(36)
+  productId String   @map("product_id") @db.VarChar(36)
+  rating    Int      @default(5)
+  comment   String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([userId, productId])
+  @@map("reviews")
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  userId    String?  @map("user_id") @db.VarChar(36)
+  action    String   @db.VarChar(255)
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@map("activity_logs")
+}
+
+// ====================== ENUMS ======================
+enum Role {
+  ADMIN
+  STAFF
+  USER
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  COD
+  ONLINE
+}
+
+enum TransactionStatus {
+  SUCCESS
+  FAILED
+  PENDING
+}
+
+enum RoomStatus {
+  OPEN
+  CLOSED
+}
+
+enum AssetType {
+  IMAGE
+  GLB
+  USDZ
+}
