@@ -1,6 +1,7 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Role } from '@prisma/client';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 export interface ICreateUser {
   email: string;
@@ -86,6 +87,55 @@ export class UsersService {
     return await this.prisma.user.update({
       where: { id: userId },
       data: { password: hashedPass },
+    });
+  }
+
+  async updateProfile(userId: string, data: UpdateProfileDto) {
+    if (data.email || data.phone) {
+      const existingUser = await this.prisma.user.findFirst({
+        where: {
+          OR: [
+            { email: data.email },
+            { profile: { phone: data.phone } }
+          ],
+          NOT: { id: userId }
+        }
+      });
+
+      if (existingUser) {
+        const isEmailDup = existingUser.email === data.email;
+        throw new ConflictException(
+          isEmailDup ? 'Email đã được sử dụng' : 'Số điện thoại đã được sử dụng'
+        );
+      }
+    }
+
+    const { email, ...profileData } = data;
+
+    return await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(email && { email }),
+        profile: {
+          update: {
+            ...profileData
+          }
+        }
+      },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        profile: {
+          select: {
+            fullName: true,
+            phone: true,
+            address: true,
+            avatarUrl: true,
+            preferences: true
+          }
+        }
+      }
     });
   }
 }
