@@ -49,6 +49,7 @@ model Category {
   name        String  @db.VarChar(100)
   slug        String  @unique @db.VarChar(100)
   description String? @db.Text
+  iconUrl     String?   @map("icon_url") @db.VarChar(255)
 
   products Product[]
 
