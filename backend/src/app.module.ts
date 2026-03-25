@@ -10,6 +10,7 @@ import { UsersModule } from './users/users.module';
 import { RedisModule } from './redis/redis.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { CategoriesModule } from './categories/categories.module';
+import { BrandsModule } from './brands/brands.module';
 
 @Module({
   imports: [
@@ -31,7 +32,8 @@ import { CategoriesModule } from './categories/categories.module';
     UsersModule,
     RedisModule,
     CloudinaryModule,
-    CategoriesModule
+    CategoriesModule,
+    BrandsModule
   ],
   controllers: [AppController],
   providers: [

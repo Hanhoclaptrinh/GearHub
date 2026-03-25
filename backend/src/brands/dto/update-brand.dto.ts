@@ -1,9 +1,9 @@
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
-export class UpdateCategoryDto {
+export class UpdateBrandDto {
     @IsString()
     @IsOptional()
-    @MaxLength(100, { message: 'Tên danh mục tối đa 100 ký tự' })
+    @MaxLength(100, { message: 'Tên thương hiệu tối đa 100 ký tự' })
     name?: string;
 
     @IsString()
