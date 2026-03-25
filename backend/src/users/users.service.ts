@@ -64,6 +64,50 @@ export class UsersService {
     return newUser;
   }
 
+  async getAllUsers(query: { page?: number; limit?: number; search?: string; role?: Role }) {
+    const { page = 1, limit = 10, search, role } = query;
+    const skip = (page - 1) * limit;
+
+    const where: any = {}; // auto filter
+
+    if (role) {
+      where.role = role;
+    }
+
+    if (search) {
+      where.OR = [
+        { email: { contains: search } },
+        { profile: { fullName: { contains: search } } },
+        { profile: { phone: { contains: search } } },
+      ];
+    }
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take: Number(limit),
+        include: {
+          profile: true,
+          _count: {
+            select: { orders: true } // xem user da mua bao nhieu don
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return {
+      data: users,
+      meta: {
+        total,
+        page: Number(page),
+        lastPage: Math.ceil(total / limit),
+      },
+    };
+  }
+
   async findByEmailOrPhone(identifier: string) {
     return await this.prisma.user.findFirst({
       where: {
