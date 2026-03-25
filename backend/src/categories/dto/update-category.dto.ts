@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class UpdateCategoryDto {
     @IsString()
@@ -9,4 +9,8 @@ export class UpdateCategoryDto {
     @IsString()
     @IsOptional()
     description?: string;
+
+    @IsUUID('4', { message: 'ID danh mục cha không hợp lệ' })
+    @IsOptional()
+    parentId?: string;
 }

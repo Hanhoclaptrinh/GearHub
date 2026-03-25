@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -18,6 +18,11 @@ export class CategoriesService {
         const existingSlug = await this.prisma.category.findUnique({ where: { slug } });
         if (existingSlug) throw new ConflictException('Danh mục này đã tồn tại');
 
+        if (data.parentId) {
+            const parent = await this.prisma.category.findUnique({ where: { id: data.parentId } });
+            if (!parent) throw new NotFoundException('Danh mục cha không tồn tại');
+        }
+
         let iconUrl = null;
         if (file) {
             const uploadResult = await this.cloudinaryService.uploadFile(file);
@@ -35,13 +40,16 @@ export class CategoriesService {
 
     async findAllCategories() {
         return this.prisma.category.findMany({
-            select: {
-                id: true,
-                name: true,
-                slug: true,
-                iconUrl: true,
-                _count: {
-                    select: { products: true }
+            where: { parentId: null },
+            include: {
+                children: {
+                    select: {
+                        id: true,
+                        name: true,
+                        slug: true,
+                        iconUrl: true,
+                        _count: { select: { products: true } }
+                    }
                 }
             },
             orderBy: { name: 'asc' }
@@ -52,8 +60,10 @@ export class CategoriesService {
         const category = await this.prisma.category.findUnique({
             where: { slug },
             include: {
+                parent: { select: { name: true, slug: true } },
+                children: true,
                 products: {
-                    take: 10, // 10 san pham moi nhat theo danh muc
+                    take: 10,
                     orderBy: { createdAt: 'desc' }
                 }
             }
@@ -67,6 +77,10 @@ export class CategoriesService {
         if (!category) throw new NotFoundException('Danh mục không tồn tại');
 
         const updateData: any = { ...data };
+
+        if (data.parentId === cateId) {
+            throw new BadRequestException('Danh mục không thể làm cha của chính nó');
+        }
 
         if (data.name) {
             const newSlug = slugify(data.name, { lower: true, strict: true });
@@ -88,9 +102,17 @@ export class CategoriesService {
         });
     }
 
-    async remove(cateId: string) {
-        const category = await this.prisma.category.findUnique({ where: { id: cateId } });
+    async removeCategory(cateId: string) {
+        const category = await this.prisma.category.findUnique({
+            where: { id: cateId },
+            include: { _count: { select: { children: true } } }
+        });
+
         if (!category) throw new NotFoundException('Danh mục không tồn tại');
+
+        if (category._count.children > 0) {
+            throw new BadRequestException(`Không thể xóa vì danh mục này đang có ${category._count.children} danh mục con.`);
+        }
 
         return this.prisma.category.delete({ where: { id: cateId } });
     }

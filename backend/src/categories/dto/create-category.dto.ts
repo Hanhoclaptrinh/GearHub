@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class CreateCategoryDto {
     @IsString()
@@ -9,4 +9,8 @@ export class CreateCategoryDto {
     @IsString()
     @IsOptional()
     description?: string;
+
+    @IsUUID('4', { message: 'ID danh mục cha không hợp lệ' })
+    @IsOptional()
+    parentId?: string;
 }

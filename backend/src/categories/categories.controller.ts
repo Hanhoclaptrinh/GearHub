@@ -13,7 +13,7 @@ export class CategoriesController {
     constructor(private categoriesService: CategoriesService) { }
 
     @Get()
-    async findAll() {
+    async findAllCategories() {
         return this.categoriesService.findAllCategories();
     }
 
@@ -48,7 +48,7 @@ export class CategoriesController {
     @Delete(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
-    async remove(@Param('id') id: string) {
-        return this.categoriesService.remove(id);
+    async removeCategory(@Param('id') id: string) {
+        return this.categoriesService.removeCategory(id);
     }
 }

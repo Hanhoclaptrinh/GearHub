@@ -51,7 +51,14 @@ model Category {
   description String? @db.Text
   iconUrl     String?   @map("icon_url") @db.VarChar(255)
 
+  parentId    String?    @map("parent_id") @db.VarChar(36)
+  parent      Category?  @relation("SubCategories", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Category[] @relation("SubCategories")
+
   products Product[]
+
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
 
   @@index([slug])
   @@map("categories")
@@ -64,6 +71,9 @@ model Brand {
   logoUrl String? @map("logo_url") @db.VarChar(255)
 
   products Product[]
+
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
 
   @@index([slug])
   @@map("brands")
