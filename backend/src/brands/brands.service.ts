@@ -43,8 +43,8 @@ export class BrandsService {
     });
   }
 
-  async updateBrand(brandId: string, data: UpdateBrandDto, file?: Express.Multer.File) {
-    const brand = await this.prisma.brand.findUnique({ where: { id: brandId } });
+  async updateBrand(id: string, data: UpdateBrandDto, file?: Express.Multer.File) {
+    const brand = await this.prisma.brand.findUnique({ where: { id } });
     if (!brand) throw new NotFoundException('Thương hiệu không tồn tại');
 
     const updateData: any = { ...data };
@@ -52,7 +52,7 @@ export class BrandsService {
     if (data.name) {
       const newSlug = slugify(data.name, { lower: true, strict: true });
       const dup = await this.prisma.brand.findFirst({
-        where: { slug: newSlug, NOT: { id: brandId } }
+        where: { slug: newSlug, NOT: { id } }
       });
       if (dup) throw new ConflictException('Tên thương hiệu đã bị trùng');
       updateData.slug = newSlug;
@@ -63,12 +63,12 @@ export class BrandsService {
       updateData.logoUrl = uploadResult.secure_url;
     }
 
-    return this.prisma.brand.update({ where: { id: brandId }, data: updateData });
+    return this.prisma.brand.update({ where: { id }, data: updateData });
   }
 
-  async removeBrand(brandId: string) {
-    const brand = await this.prisma.brand.findUnique({ where: { id: brandId } });
+  async removeBrand(id: string) {
+    const brand = await this.prisma.brand.findUnique({ where: { id } });
     if (!brand) throw new NotFoundException('Thương hiệu không tồn tại');
-    return this.prisma.brand.delete({ where: { id: brandId } });
+    return this.prisma.brand.delete({ where: { id } });
   }
 }

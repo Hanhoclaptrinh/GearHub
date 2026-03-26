@@ -120,21 +120,21 @@ export class UsersService {
     });
   }
 
-  async findByUserId(userId: string) {
+  async findByUserId(id: string) {
     return await this.prisma.user.findUnique({
-      where: { id: userId },
+      where: { id },
       include: { profile: true }
     })
   }
 
-  async updatePassword(userId: string, hashedPass: string) {
+  async updatePassword(id: string, hashedPass: string) {
     return await this.prisma.user.update({
-      where: { id: userId },
+      where: { id },
       data: { password: hashedPass },
     });
   }
 
-  async updateProfile(userId: string, data: UpdateProfileDto) {
+  async updateProfile(id: string, data: UpdateProfileDto) {
     if (data.email || data.phone) {
       const existingUser = await this.prisma.user.findFirst({
         where: {
@@ -142,7 +142,7 @@ export class UsersService {
             { email: data.email },
             { profile: { phone: data.phone } }
           ],
-          NOT: { id: userId }
+          NOT: { id }
         }
       });
 
@@ -157,7 +157,7 @@ export class UsersService {
     const { email, ...profileData } = data;
 
     return await this.prisma.user.update({
-      where: { id: userId },
+      where: { id },
       data: {
         ...(email && { email }),
         profile: {

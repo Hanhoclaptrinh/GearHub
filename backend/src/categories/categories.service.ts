@@ -72,20 +72,20 @@ export class CategoriesService {
         return category;
     }
 
-    async updateCategory(cateId: string, data: UpdateCategoryDto, file?: Express.Multer.File) {
-        const category = await this.prisma.category.findUnique({ where: { id: cateId } });
+    async updateCategory(id: string, data: UpdateCategoryDto, file?: Express.Multer.File) {
+        const category = await this.prisma.category.findUnique({ where: { id } });
         if (!category) throw new NotFoundException('Danh mục không tồn tại');
 
         const updateData: any = { ...data };
 
-        if (data.parentId === cateId) {
+        if (data.parentId === id) {
             throw new BadRequestException('Danh mục không thể làm cha của chính nó');
         }
 
         if (data.name) {
             const newSlug = slugify(data.name, { lower: true, strict: true });
             const duplicate = await this.prisma.category.findFirst({
-                where: { slug: newSlug, NOT: { id: cateId } }
+                where: { slug: newSlug, NOT: { id } }
             });
             if (duplicate) throw new ConflictException('Tên danh mục đã tồn tại');
             updateData.slug = newSlug;
@@ -97,14 +97,14 @@ export class CategoriesService {
         }
 
         return this.prisma.category.update({
-            where: { id: cateId },
+            where: { id },
             data: updateData,
         });
     }
 
-    async removeCategory(cateId: string) {
+    async removeCategory(id: string) {
         const category = await this.prisma.category.findUnique({
-            where: { id: cateId },
+            where: { id },
             include: { _count: { select: { children: true } } }
         });
 
@@ -114,6 +114,6 @@ export class CategoriesService {
             throw new BadRequestException(`Không thể xóa vì danh mục này đang có ${category._count.children} danh mục con.`);
         }
 
-        return this.prisma.category.delete({ where: { id: cateId } });
+        return this.prisma.category.delete({ where: { id } });
     }
 }
