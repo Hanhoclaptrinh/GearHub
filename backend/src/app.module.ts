@@ -11,6 +11,7 @@ import { RedisModule } from './redis/redis.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { CategoriesModule } from './categories/categories.module';
 import { BrandsModule } from './brands/brands.module';
+import { ProductsModule } from './products/products.module';
 
 @Module({
   imports: [
@@ -33,7 +34,8 @@ import { BrandsModule } from './brands/brands.module';
     RedisModule,
     CloudinaryModule,
     CategoriesModule,
-    BrandsModule
+    BrandsModule,
+    ProductsModule
   ],
   controllers: [AppController],
   providers: [
