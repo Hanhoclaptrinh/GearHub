@@ -18,14 +18,15 @@ export class BrandsService {
     const existing = await this.prisma.brand.findUnique({ where: { slug } });
     if (existing) throw new ConflictException('Thương hiệu này đã tồn tại');
 
-    let logoUrl = null;
+    let finalLogoUrl = data.logoUrl || null;
+
     if (file) {
       const uploadResult = await this.cloudinary.uploadFile(file);
-      logoUrl = uploadResult.secure_url;
+      finalLogoUrl = uploadResult.secure_url;
     }
 
     return this.prisma.brand.create({
-      data: { ...data, slug, logoUrl },
+      data: { ...data, slug, logoUrl: finalLogoUrl },
     });
   }
 

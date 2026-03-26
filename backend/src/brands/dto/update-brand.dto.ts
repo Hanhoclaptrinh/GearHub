@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
 
 export class UpdateBrandDto {
     @IsString()
@@ -6,7 +6,7 @@ export class UpdateBrandDto {
     @MaxLength(100, { message: 'Tên thương hiệu tối đa 100 ký tự' })
     name?: string;
 
-    @IsString()
+    @IsUrl({}, { message: 'Logo URL phải là một đường dẫn URL hợp lệ' })
     @IsOptional()
-    description?: string;
+    logoUrl?: string;
 }

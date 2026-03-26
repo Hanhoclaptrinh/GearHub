@@ -89,9 +89,10 @@ model Product {
   stock        Int      @default(0)
   soldCount    Int      @default(0) @map("sold_count")
   viewsCount   Int      @default(0) @map("views_count")
-  metadata     Json?    // Chứa thông số kỹ thuật cho AI đọc
+  metadata     Json?    
   description  String?  @db.Text
   thumbnailUrl String?  @map("thumbnail_url") @db.VarChar(255)
+  isFeatured   Boolean  @default(false)
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at")
 
