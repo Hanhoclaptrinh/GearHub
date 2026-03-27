@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, FileTypeValidator, Get, MaxFileSizeValidator, Param, ParseFilePipe, Patch, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -13,13 +13,13 @@ export class CategoriesController {
     constructor(private categoriesService: CategoriesService) { }
 
     @Get()
-    async findAllCategories() {
-        return this.categoriesService.findAllCategories();
+    async getAllCategories() {
+        return this.categoriesService.getAllCategories();
     }
 
     @Get('slug/:slug')
-    async getBySlug(@Param('slug') slug: string) {
-        return this.categoriesService.findBySlug(slug);
+    async getCategoryBySlug(@Param('slug') slug: string) {
+        return this.categoriesService.getCategoryBySlug(slug);
     }
 
     @Post()
@@ -28,7 +28,15 @@ export class CategoriesController {
     @UseInterceptors(FileInterceptor('file'))
     async createCategory(
         @Body() data: CreateCategoryDto,
-        @UploadedFile() file?: Express.Multer.File
+        @UploadedFile(
+            new ParseFilePipe({
+                validators: [
+                    new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 2 }),
+                    new FileTypeValidator({ fileType: '.(png|jpg|jpeg|webp|svg)' }),
+                ],
+                fileIsRequired: false,
+            }),
+        ) file?: Express.Multer.File
     ) {
         return this.categoriesService.createCategory(data, file);
     }
@@ -40,7 +48,15 @@ export class CategoriesController {
     async updateCategory(
         @Param('id') id: string,
         @Body() data: UpdateCategoryDto,
-        @UploadedFile() file?: Express.Multer.File
+        @UploadedFile(
+            new ParseFilePipe({
+                validators: [
+                    new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 2 }),
+                    new FileTypeValidator({ fileType: '.(png|jpg|jpeg|webp|svg)' }),
+                ],
+                fileIsRequired: false,
+            }),
+        ) file?: Express.Multer.File
     ) {
         return this.categoriesService.updateCategory(id, data, file);
     }

@@ -17,8 +17,8 @@ export class BrandsController {
   constructor(private brandsService: BrandsService) { }
 
   @Get()
-  async findAllBrands() {
-    return this.brandsService.findAllBrands();
+  async getAllBrands() {
+    return this.brandsService.getAllBrands();
   }
 
   @Post()

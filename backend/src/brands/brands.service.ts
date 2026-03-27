@@ -15,8 +15,8 @@ export class BrandsService {
   async createBrand(data: CreateBrandDto, file?: Express.Multer.File) {
     const slug = slugify(data.name, { lower: true, strict: true });
 
-    const existing = await this.prisma.brand.findUnique({ where: { slug } });
-    if (existing) throw new ConflictException('Thương hiệu này đã tồn tại');
+    const existingSlug = await this.prisma.brand.findUnique({ where: { slug } });
+    if (existingSlug) throw new ConflictException('Thương hiệu này đã tồn tại');
 
     let finalLogoUrl = data.logoUrl || null;
 
@@ -30,7 +30,7 @@ export class BrandsService {
     });
   }
 
-  async findAllBrands() {
+  async getAllBrands() {
     return this.prisma.brand.findMany({
       select: {
         id: true,

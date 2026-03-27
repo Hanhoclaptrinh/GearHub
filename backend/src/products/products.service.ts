@@ -13,6 +13,7 @@ export class ProductsService {
         private cloudinary: CloudinaryService
     ) { }
 
+    // ADMIN
     async createProduct(data: CreateProductDto, files: Express.Multer.File[]) {
         const baseSlug = slugify(data.name, { lower: true, strict: true });
         const slug = `${baseSlug}-${Date.now()}`;
@@ -215,6 +216,152 @@ export class ProductsService {
         return this.prisma.product.update({
             where: { id },
             data: { isActive: true },
+        });
+    }
+
+    // CLIENT
+    async getAllProducts(
+        query: {
+            page?: number;
+            limit?: number;
+            search?: string;
+            categoryId?: string;
+            brandId?: string;
+            minPrice?: number;
+            maxPrice?: number;
+        }
+    ) {
+        const {
+            page = 1,
+            limit = 10,
+            search,
+            categoryId,
+            brandId,
+            minPrice,
+            maxPrice
+        } = query;
+
+        const skip = (page - 1) * limit;
+
+        // de quy qua category
+        let categoryIds: string[] | undefined = undefined;
+        if (categoryId) {
+            // tim cate hien tai va tat ca cac con cua no
+            const currentCategory = await this.prisma.category.findUnique({
+                where: { id: categoryId },
+                include: { children: { select: { id: true } } }
+            });
+
+            // gom id chinh no va id cua cac con vao chung
+            if (currentCategory) {
+                categoryIds = [currentCategory.id, ...currentCategory.children.map(c => c.id)];
+            } else {
+                categoryIds = [categoryId];
+            }
+        }
+
+        // query db
+        const [items, total] = await Promise.all([
+            this.prisma.product.findMany({
+                where: {
+                    isActive: true,
+                    categoryId: categoryIds ? { in: categoryIds } : undefined,
+                    brandId: brandId || undefined,
+                    price: (minPrice || maxPrice) ? {
+                        gte: minPrice ? Number(minPrice) : undefined,
+                        lte: maxPrice ? Number(maxPrice) : undefined,
+                    } : undefined,
+                    OR: search ? [
+                        { name: { contains: search } },
+                        { description: { contains: search } },
+                    ] : undefined,
+                },
+                include: {
+                    brand: { select: { name: true, logoUrl: true } },
+                    category: { select: { name: true } },
+                },
+                orderBy: { createdAt: 'desc' },
+                skip: skip,
+                take: Number(limit),
+            }),
+            this.prisma.product.count({
+                where: {
+                    isActive: true,
+                    categoryId: categoryIds ? { in: categoryIds } : undefined,
+                    brandId: brandId || undefined,
+                    price: (minPrice || maxPrice) ? {
+                        gte: minPrice ? Number(minPrice) : undefined,
+                        lte: maxPrice ? Number(maxPrice) : undefined,
+                    } : undefined,
+                },
+            }),
+        ]);
+
+        return {
+            data: items,
+            meta: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                lastPage: Math.ceil(total / Number(limit)),
+            },
+        };
+    }
+
+
+    async getFeaturedProducts() {
+        const limit = 8;
+        return await this.prisma.product.findMany({
+            where: {
+                isActive: true,
+                isFeatured: true
+            },
+            take: Number(limit),
+            include: {
+                brand: { select: { name: true, logoUrl: true } },
+            },
+            orderBy: {
+                createdAt: 'desc' // dua prod moi set featured len truoc
+            }
+        });
+    }
+
+    async getProductBySlug(slug: string) {
+        const product = await this.prisma.product.findFirst({
+            where: { slug, isActive: true },
+            include: {
+                assets: true,
+                brand: true,
+                category: true,
+            },
+        });
+
+        if (!product) throw new NotFoundException('Sản phẩm không tồn tại');
+
+        await this.prisma.product.update({
+            where: { id: product.id },
+            data: { viewsCount: { increment: 1 } }
+        });
+
+        return product;
+    }
+
+    async getRelatedProducts(id: string) {
+        const currentProduct = await this.prisma.product.findUnique({
+            where: { id },
+            select: { categoryId: true }
+        });
+
+        if (!currentProduct) throw new NotFoundException('Sản phẩm không tồn tại');
+
+        return await this.prisma.product.findMany({
+            where: {
+                categoryId: currentProduct.categoryId,
+                id: { not: id }, // loai tru chinh no
+                isActive: true
+            },
+            take: 4,
+            include: { brand: true }
         });
     }
 }

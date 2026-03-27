@@ -1,4 +1,4 @@
-import { Controller, Patch, UseGuards, Request, Get, Query, UseInterceptors, Body, UploadedFile } from '@nestjs/common';
+import { Controller, Patch, UseGuards, Request, Get, Query, UseInterceptors, Body, UploadedFile, FileTypeValidator, MaxFileSizeValidator, ParseFilePipe } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -28,7 +28,15 @@ export class UsersController {
   async updateProfile(
     @Request() req,
     @Body() data: UpdateProfileDto,
-    @UploadedFile() file?: Express.Multer.File
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 2 }),
+          new FileTypeValidator({ fileType: '.(png|jpg|jpeg|webp|svg)' }),
+        ],
+        fileIsRequired: false,
+      }),
+    ) file?: Express.Multer.File
   ) {
     const userId = req.user.userId;
 

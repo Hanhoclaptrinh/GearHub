@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Param, Patch, Post, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -11,6 +11,42 @@ import { UpdateProductDto } from './dto/update-product.dto';
 @Controller('products')
 export class ProductsController {
     constructor(private productsService: ProductsService) { }
+
+    @Get()
+    async getAllProducts(
+        @Query('page') page?: number,
+        @Query('limit') limit?: number,
+        @Query('search') search?: string,
+        @Query('categoryId') categoryId?: string,
+        @Query('brandId') brandId?: string,
+        @Query('minPrice') minPrice?: number,
+        @Query('maxPrice') maxPrice?: number,
+    ) {
+        return this.productsService.getAllProducts({
+            page,
+            limit,
+            search,
+            categoryId,
+            brandId,
+            minPrice,
+            maxPrice,
+        });
+    }
+
+    @Get('featured')
+    async getFeaturedProducts() {
+        return this.productsService.getFeaturedProducts();
+    }
+
+    @Get(':slug')
+    async getProductBySlug(@Param('slug') slug: string) {
+        return this.productsService.getProductBySlug(slug);
+    }
+
+    @Get(':id/related')
+    async getRelatedProducts(@Param('id') id: string,) {
+        return this.productsService.getRelatedProducts(id);
+    }
 
     @Post()
     @UseGuards(JwtAuthGuard, RolesGuard)

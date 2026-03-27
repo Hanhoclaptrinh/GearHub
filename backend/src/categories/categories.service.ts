@@ -38,7 +38,7 @@ export class CategoriesService {
         });
     }
 
-    async findAllCategories() {
+    async getAllCategories() {
         return this.prisma.category.findMany({
             where: { parentId: null },
             include: {
@@ -56,7 +56,7 @@ export class CategoriesService {
         });
     }
 
-    async findBySlug(slug: string) {
+    async getCategoryBySlug(slug: string) {
         const category = await this.prisma.category.findUnique({
             where: { slug },
             include: {
@@ -68,6 +68,7 @@ export class CategoriesService {
                 }
             }
         });
+
         if (!category) throw new NotFoundException('Không tìm thấy danh mục');
         return category;
     }
@@ -82,6 +83,7 @@ export class CategoriesService {
             throw new BadRequestException('Danh mục không thể làm cha của chính nó');
         }
 
+        // neu cap nhat name - kiem tra slug
         if (data.name) {
             const newSlug = slugify(data.name, { lower: true, strict: true });
             const duplicate = await this.prisma.category.findFirst({
@@ -111,7 +113,7 @@ export class CategoriesService {
         if (!category) throw new NotFoundException('Danh mục không tồn tại');
 
         if (category._count.children > 0) {
-            throw new BadRequestException(`Không thể xóa vì danh mục này đang có ${category._count.children} danh mục con.`);
+            throw new BadRequestException(`Không thể xóa vì danh mục này đang có ${category._count.children} danh mục con`);
         }
 
         return this.prisma.category.delete({ where: { id } });

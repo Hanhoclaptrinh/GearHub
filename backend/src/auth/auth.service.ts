@@ -30,7 +30,7 @@ export class AuthService {
 
   private async generateRefreshToken(userId: string, deviceId: string = 'default') {
     const refreshToken = uuidv4();
-    const key = `refresh_token:${userId}:${deviceId}`
+    const key = `refresh_token:${userId}:${deviceId}`;
     const REFRESH_TTL = 7 * 24 * 60 * 60;
 
     await this.redisService.set(key, refreshToken, 'EX', REFRESH_TTL);

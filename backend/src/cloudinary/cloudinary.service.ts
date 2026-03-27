@@ -16,7 +16,7 @@ export class CloudinaryService {
                     if (error) return reject(error);
 
                     if (!result) {
-                        return reject(new BadRequestException('Cloudinary upload result is undefined'));
+                        return reject(new BadRequestException('Lỗi tải file lên Cloudinary'));
                     }
 
                     resolve(result);
@@ -32,7 +32,7 @@ export class CloudinaryService {
         try {
             return await cloudinary.uploader.destroy(publicId);
         } catch (error) {
-            throw new BadRequestException(`Cloudinary Delete Error: ${error.message}`);
+            throw new BadRequestException(`Lỗi khi xóa file khỏi cloud: ${error.message}`);
         }
     }
 }
