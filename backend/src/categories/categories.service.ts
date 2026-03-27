@@ -56,6 +56,27 @@ export class CategoriesService {
         });
     }
 
+    async getCategoryTree() {
+        return this.prisma.category.findMany({
+            where: { parentId: null }, // chi lay parent
+            include: {
+                children: {
+                    include: {
+                        _count: {
+                            select: { products: true } // dem moi subcate co bao nhieu prod
+                        },
+                    },
+                },
+                _count: {
+                    select: { products: true } // dem tong prod nhom cha
+                },
+            },
+            orderBy: {
+                name: 'asc' // theo bang chu cai
+            }
+        })
+    }
+
     async getCategoryBySlug(slug: string) {
         const category = await this.prisma.category.findUnique({
             where: { slug },

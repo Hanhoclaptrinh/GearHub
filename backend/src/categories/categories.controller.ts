@@ -17,6 +17,11 @@ export class CategoriesController {
         return this.categoriesService.getAllCategories();
     }
 
+    @Get('tree')
+    async getCategoryTree() {
+        return this.categoriesService.getCategoryTree();
+    }
+
     @Get('slug/:slug')
     async getCategoryBySlug(@Param('slug') slug: string) {
         return this.categoriesService.getCategoryBySlug(slug);
