@@ -7,29 +7,26 @@ import { ClearSelectedDto } from './dto/clear-selected.dto';
 import { SyncCartDto } from './dto/sync-cart.dto';
 
 @Controller('cart')
+@UseGuards(JwtAuthGuard)
 export class CartController {
     constructor(private cartService: CartService) { }
 
     @Post()
-    @UseGuards(JwtAuthGuard)
     async addToCart(@Request() req, @Body() data: AddToCartDto) {
         return this.cartService.addToCart(req.user.userId, data);
     }
 
     @Get()
-    @UseGuards(JwtAuthGuard)
     async getCart(@Request() req) {
         return this.cartService.getCart(req.user.userId);
     }
 
     @Get('count')
-    @UseGuards(JwtAuthGuard)
     async getCartCount(@Request() req) {
         return this.cartService.getCartCount(req.user.userId);
     }
 
     @Patch('item/:id')
-    @UseGuards(JwtAuthGuard)
     async updateQuantity(
         @Request() req,
         @Param('id') id: string,
@@ -39,7 +36,6 @@ export class CartController {
     }
 
     @Delete('item/:id')
-    @UseGuards(JwtAuthGuard)
     async removeItem(
         @Request() req,
         @Param('id') id: string
@@ -62,7 +58,6 @@ export class CartController {
     }
 
     @Post('sync')
-    @UseGuards(JwtAuthGuard)
     async sync(@Request() req, @Body() data: SyncCartDto) {
         return this.cartService.syncCart(req.user.userId, data);
     }
