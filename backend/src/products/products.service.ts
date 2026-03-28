@@ -5,6 +5,8 @@ import { CreateProductDto } from './dto/create-product.dto';
 import slugify from 'slugify';
 import { AssetType } from '@prisma/client';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { CreateVariantDto } from './dto/create-variant.dto';
+import { UpdateVariantDto } from './dto/update-variant.dto';
 
 @Injectable()
 export class ProductsService {
@@ -228,34 +230,90 @@ export class ProductsService {
     }
 
     async removeAsset(assetId: string) {
-        const asset = await this.prisma.productAsset.findUnique({ where: { id: assetId } });
+        const asset = await this.prisma.productAsset.findUnique({
+            where: { id: assetId }
+        });
         if (!asset) throw new NotFoundException('Không tìm thấy asset');
 
-        return this.prisma.productAsset.delete({ where: { id: assetId } });
+        const productId = asset.productId;
+
+        return await this.prisma.$transaction(async (tx) => {
+            // xoa asset
+            await tx.productAsset.delete({ where: { id: assetId } });
+
+            // neu anh primary bi xoa - tim anh khac thay the
+            if (asset.isPrimary) {
+                const nextAsset = await tx.productAsset.findFirst({
+                    where: { productId, type: AssetType.IMAGE },
+                    orderBy: { createdAt: 'asc' }
+                });
+
+                if (nextAsset) {
+                    await tx.productAsset.update({
+                        where: { id: nextAsset.id },
+                        data: { isPrimary: true }
+                    });
+                    await tx.product.update({
+                        where: { id: productId },
+                        data: { thumbnailUrl: nextAsset.url }
+                    });
+                } else {
+                    // set null neu khong con anh
+                    await tx.product.update({
+                        where: { id: productId },
+                        data: { thumbnailUrl: null }
+                    });
+                }
+            }
+            return { message: 'Xóa asset thành công' };
+        });
     }
 
-    async inActiveProduct(id: string) {
+    async setPrimaryAsset(productId: string, assetId: string) {
+        const asset = await this.prisma.productAsset.findFirst({
+            where: { id: assetId, productId }
+        });
+        if (!asset) throw new NotFoundException('Asset không tồn tại hoặc không thuộc sản phẩm này');
+
+        return await this.prisma.$transaction(async (tx) => {
+            // tat tat ca primary hien tai cua prod
+            await tx.productAsset.updateMany({
+                where: { productId },
+                data: { isPrimary: false }
+            })
+
+            // bat primary duoc chon
+            const updatedAsset = await tx.productAsset.update({
+                where: { id: assetId },
+                data: { isPrimary: true }
+            });
+
+            // dong bo lam thumbail
+            await tx.product.update({
+                where: { id: productId },
+                data: { thumbnailUrl: updatedAsset.url }
+            });
+
+            return updatedAsset;
+        });
+    }
+
+    async toggleStatus(id: string) {
         const product = await this.prisma.product.findUnique({
             where: { id },
             select: { id: true, name: true, isActive: true }
         });
 
-        if (!product) {
-            throw new NotFoundException('Không tìm thấy sản phẩm');
-        }
+        if (!product) throw new NotFoundException('Sản phẩm không tồn tại');
 
-        if (!product.isActive) {
-            return { message: `Sản phẩm '${product.name}' đã ở trạng thái ẩn` };
-        }
-
-        await this.prisma.product.update({
+        const updatedProduct = await this.prisma.product.update({
             where: { id },
-            data: { isActive: false },
+            data: { isActive: !product.isActive }
         });
 
         return {
-            message: `Đã ẩn sản phẩm '${product.name}' thành công`,
-            productId: id
+            message: `Đã ${updatedProduct.isActive ? 'hiển thị' : 'ẩn'} sản phẩm '${product.name}'`,
+            isActive: updatedProduct.isActive
         };
     }
 
@@ -463,6 +521,100 @@ export class ProductsService {
                     where: { isPrimary: true },
                     take: 1
                 }
+            }
+        });
+    }
+
+    async addVariant(id: string, data: CreateVariantDto) {
+        const product = await this.prisma.product.findUnique({
+            where: { id }
+        });
+        if (!product) throw new NotFoundException('Sản phẩm cha không tồn tại');
+
+        const existingSku = await this.prisma.productVariant.findUnique({
+            where: { sku: data.sku }
+        })
+        if (existingSku) {
+            throw new BadRequestException(`Mã SKU '${data.sku}' đã tồn tại`);
+        }
+
+        const parsedAttributes = data.attributes ? JSON.parse(data.attributes) : {};
+
+        return await this.prisma.productVariant.create({
+            data: {
+                productId: id,
+                sku: data.sku,
+                name: data.name,
+                price: data.price,
+                stock: data.stock,
+                attributes: parsedAttributes
+            }
+        });
+    }
+
+    async updateVariant(variantId: string, data: UpdateVariantDto) {
+        const variant = await this.prisma.productVariant.findUnique({
+            where: { id: variantId }
+        });
+        if (!variant) throw new NotFoundException('Biến thể không tồn tại');
+
+        const parsedAttributes = data.attributes ? JSON.parse(data.attributes) : {};
+
+        return await this.prisma.productVariant.update({
+            where: { id: variantId },
+            data: {
+                ...data,
+                price: data.price,
+                stock: data.stock,
+                attributes: parsedAttributes
+            }
+        });
+    }
+
+    async removeVariant(variantId: string) {
+        const variant = await this.prisma.productVariant.findUnique({
+            where: { id: variantId },
+            include: { _count: { select: { orderItems: true } } }
+        });
+
+        if (!variant) throw new NotFoundException('Biến thể không tồn tại');
+
+        if (variant._count.orderItems > 0) {
+            throw new BadRequestException('Không thể xóa biến thể đã có trong đơn hàng');
+        }
+
+        return this.prisma.productVariant.delete({ where: { id: variantId } });
+    }
+
+    // giam stock khi khach hang chot don
+    async decreaseStock(variantId: string, quantity: number) {
+        const variant = await this.prisma.productVariant.findUnique({ where: { id: variantId } });
+        if (!variant) throw new NotFoundException('Biến thể không tồn tại');
+
+        if (variant.stock < quantity) {
+            throw new BadRequestException(`Sản phẩm ${variant.name} không đủ hàng trong kho`);
+        }
+
+        return this.prisma.productVariant.update({
+            where: { id: variantId },
+            data: { stock: { decrement: quantity } }
+        });
+    }
+
+    // khach hang huy don hoac thanh toan that bai
+    // tra lai stock cho don hang
+    async increaseStock(variantId: string, quantity: number) {
+        const variant = await this.prisma.productVariant.findUnique({
+            where: { id: variantId },
+            select: { id: true }
+        });
+
+        if (!variant) throw new NotFoundException('Biến thể không tồn tại');
+
+        return this.prisma.productVariant.update({
+            where: { id: variantId },
+            data: {
+                stock: { increment: quantity }
             }
         });
     }

@@ -7,6 +7,8 @@ import { Role } from '@prisma/client';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { CreateVariantDto } from './dto/create-variant.dto';
+import { UpdateVariantDto } from './dto/update-variant.dto';
 
 @Controller('products')
 export class ProductsController {
@@ -77,6 +79,16 @@ export class ProductsController {
         return this.productsService.removeAsset(assetId);
     }
 
+    @Patch(':productId/assets/:assetId/primary')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    async setPrimaryAsset(
+        @Param('productId') productId: string,
+        @Param('assetId') assetId: string,
+    ) {
+        return this.productsService.setPrimaryAsset(productId, assetId);
+    }
+
     @Patch(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
@@ -99,8 +111,8 @@ export class ProductsController {
     @Delete(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
-    async inActiveProduct(@Param('id') id: string) {
-        return this.productsService.inActiveProduct(id);
+    async toggleStatus(@Param('id') id: string) {
+        return this.productsService.toggleStatus(id);
     }
 
     @Patch(':id/restore')
@@ -108,5 +120,40 @@ export class ProductsController {
     @Roles(Role.ADMIN)
     async restore(@Param('id') id: string) {
         return this.productsService.restore(id);
+    }
+
+    @Post(':id/variant')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    async addVariant(@Param('id') id: string, @Body() data: CreateVariantDto) {
+        return this.productsService.addVariant(id, data);
+    }
+
+    @Patch('variant/:variantId')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    async updateVariant(@Param('variantId') variantId: string, @Body() data: UpdateVariantDto) {
+        return this.productsService.updateVariant(variantId, data);
+    }
+
+    @Delete('variant/:variantId')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    async removeVariant(@Param('variantId') variantId: string) {
+        return this.productsService.removeVariant(variantId);
+    }
+
+    @Patch('variants/:variantId/destock')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    async decreaseStock(@Param('variantId') variantId: string, @Body('quantity') quantity: number) {
+        return this.productsService.decreaseStock(variantId, quantity);
+    }
+
+    @Patch('variants/:variantId/instock')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    async increaseStock(@Param('variantId') variantId: string, @Body('quantity') quantity: number) {
+        return this.productsService.increaseStock(variantId, quantity);
     }
 }
