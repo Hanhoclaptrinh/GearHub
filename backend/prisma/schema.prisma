@@ -172,6 +172,10 @@ model CartItem {
   cart           Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
   productVariant ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
 
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([cartId, productVariantId])
   @@index([cartId])
   @@index([productVariantId])
   @@map("cart_items")
