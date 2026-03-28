@@ -201,6 +201,7 @@ model Order {
   totalAmount     Decimal       @map("total_amount") @db.Decimal(15, 2)
   status          OrderStatus   @default(PENDING)
   paymentMethod   PaymentMethod @default(COD) @map("payment_method")
+  paymentStatus   PaymentStatus @default(PENDING) @map("payment_status")
   receiverName    String        @map("receiver_name") @db.VarChar(255)
   receiverPhone   String        @map("receiver_phone") @db.VarChar(20)
   shippingAddress String        @map("shipping_address") @db.Text
@@ -341,16 +342,26 @@ enum Role {
 }
 
 enum OrderStatus {
-  PENDING
-  PROCESSING
-  SHIPPED
-  DELIVERED
-  CANCELLED
+  PENDING // Chờ xác nhận
+  CONFIRMED // Đã xác nhận đơn hàng
+  PROCESSING // Đang đóng gói
+  SHIPPING // Đang giao hàng
+  DELIVERED // Giao hàng thành công
+  CANCELLED // Đơn hàng bị hủy
+  RETURNED // Khách trả hàng
+  FAILED // Giao hàng thất bại
 }
 
 enum PaymentMethod {
   COD
   ONLINE
+}
+
+enum PaymentStatus {
+  PENDING // Chưa thanh toán
+  PAID // Đã thanh toán thành công
+  FAILED // Thanh toán lỗi
+  REFUNDED // Đã hoàn tiền cho khách
 }
 
 enum TransactionStatus {
