@@ -9,7 +9,7 @@ import { UpdateBrandDto } from './dto/update-brand.dto';
 export class BrandsService {
   constructor(
     private prisma: PrismaService,
-    private cloudinary: CloudinaryService
+    private cloudinaryService: CloudinaryService
   ) { }
 
   async createBrand(data: CreateBrandDto, file?: Express.Multer.File) {
@@ -21,7 +21,7 @@ export class BrandsService {
     let finalLogoUrl = data.logoUrl || null;
 
     if (file) {
-      const uploadResult = await this.cloudinary.uploadFile(file);
+      const uploadResult = await this.cloudinaryService.uploadFile(file);
       finalLogoUrl = uploadResult.secure_url;
     }
 
@@ -59,7 +59,7 @@ export class BrandsService {
     }
 
     if (file) {
-      const uploadResult = await this.cloudinary.uploadFile(file);
+      const uploadResult = await this.cloudinaryService.uploadFile(file);
       updateData.logoUrl = uploadResult.secure_url;
     }
 

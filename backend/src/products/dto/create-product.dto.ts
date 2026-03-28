@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, IsJSON } from 'class-validator';
 
 export class CreateProductDto {
     @IsString()
@@ -9,6 +9,10 @@ export class CreateProductDto {
     @IsOptional()
     description?: string;
 
+    @IsString()
+    @IsNotEmpty({ message: 'Mã SKU không được để trống' })
+    sku: string;
+
     @IsNumberString({}, { message: 'Giá phải là một dãy số' })
     @IsNotEmpty()
     price: string;
@@ -16,6 +20,10 @@ export class CreateProductDto {
     @IsNumberString()
     @IsOptional()
     stock?: string;
+
+    @IsOptional()
+    @IsString()
+    attributes?: string;
 
     @IsUUID('4', { message: 'CategoryId không hợp lệ' })
     @IsNotEmpty()

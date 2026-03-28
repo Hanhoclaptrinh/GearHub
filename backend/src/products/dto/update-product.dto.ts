@@ -40,4 +40,12 @@ export class UpdateProductDto {
     @IsOptional()
     @IsBooleanString()
     isActive?: string;
+
+    @IsString()
+    @IsOptional()
+    sku?: string;
+
+    @IsString()
+    @IsOptional()
+    attributes?: string;
 }
