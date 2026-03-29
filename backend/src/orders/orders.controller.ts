@@ -1,10 +1,10 @@
-import { Body, Controller, Get, Param, Patch, Post, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { Role } from '@prisma/client';
+import { OrderStatus, Role } from '@prisma/client';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 @Controller('orders')
@@ -19,8 +19,34 @@ export class OrdersController {
 
     @Get('my-orders')
     @UseGuards(JwtAuthGuard)
-    async getMyOrders(@Request() req) {
-        return this.orderService.getMyOrders(req.user.userId);
+    async getMyOrders(
+        @Request() req,
+        @Query('page') page?: number,
+        @Query('limit') limit?: number,
+        @Query('status') status?: OrderStatus,
+    ) {
+        return this.orderService.getMyOrders(req.user.userId, {
+            page: page ? Number(page) : 1,
+            limit: limit ? Number(limit) : 10,
+            status
+        });
+    }
+
+    @Get('admin/all')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    async getAllOrders(
+        @Query('page') page?: number,
+        @Query('limit') limit?: number,
+        @Query('status') status?: OrderStatus,
+        @Query('search') search?: string
+    ) {
+        return this.orderService.getAllOrders({
+            page: page ? Number(page) : 1,
+            limit: limit ? Number(limit) : 10,
+            status,
+            search
+        });
     }
 
     @Get(':id')
@@ -53,5 +79,11 @@ export class OrdersController {
             stats,
             topProducts
         }
+    }
+
+    @Post(':id/re-order')
+    @UseGuards(JwtAuthGuard)
+    async reOrder(@Request() req, @Param('id') id: string) {
+        return this.orderService.reOrder(req.user.userId, id);
     }
 }

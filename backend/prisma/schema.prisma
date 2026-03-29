@@ -239,6 +239,7 @@ model OrderTracking {
   orderId     String   @map("order_id") @db.VarChar(36)
   statusLabel String?  @map("status_label") @db.VarChar(100)
   description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)

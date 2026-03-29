@@ -3,7 +3,7 @@ import { CartService } from 'src/cart/cart.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ProductsService } from 'src/products/products.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { OrderStatus, Role } from '@prisma/client';
+import { OrderStatus, Prisma, Role } from '@prisma/client';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 @Injectable()
@@ -91,33 +91,107 @@ export class OrdersService {
         });
     }
 
-    async getMyOrders(userId: string) {
-        return this.prisma.order.findMany({
-            where: { userId },
-            select: {
-                id: true,
-                totalAmount: true,
-                status: true,
-                createdAt: true,
-                paymentMethod: true,
-                items: {
-                    take: 1,
-                    select: {
-                        productVariant: {
-                            select: {
-                                product: {
-                                    select: {
-                                        name: true,
-                                        thumbnailUrl: true
+    async getMyOrders(userId: string, query: { page?: number; limit?: number; status?: OrderStatus }) {
+        const { page = 1, limit = 10, status } = query;
+        const skip = (page - 1) * limit;
+
+        const [orders, total] = await Promise.all([
+            this.prisma.order.findMany({
+                where: {
+                    userId,
+                    ...(status && { status }) // loc theo status
+                },
+                include: {
+                    items: {
+                        include: {
+                            productVariant: {
+                                select: {
+                                    product: {
+                                        select: {
+                                            name: true,
+                                            thumbnailUrl: true
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
+                },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: Number(limit)
+            }),
+            this.prisma.order.count({ where: { userId, ...(status && { status }) } })
+        ]);
+
+        return {
+            data: orders,
+            meta: {
+                total,
+                page,
+                lastPage: Math.ceil(total / limit)
+            }
+        };
+    }
+
+    // all order admin
+    async getAllOrders(
+        query: {
+            page?: number;
+            limit?: number;
+            status?: OrderStatus;
+            search?: string
+        }
+    ) {
+        const {
+            page = 1,
+            limit = 10,
+            status,
+            search
+        } = query;
+        const skip = (page - 1) * limit;
+
+        const whereCondition: any = {
+            ...(status && { status }),
+            ...(search && {
+                OR: [
+                    { id: { contains: search, mode: 'insensitive' } },
+                    { receiverName: { contains: search, mode: 'insensitive' } },
+                    { receiverPhone: { contains: search, mode: 'insensitive' } },
+                ]
+            })
+        };
+
+        const [orders, total] = await Promise.all([
+            this.prisma.order.findMany({
+                where: whereCondition,
+                include: {
+                    user: {
+                        select: {
+                            email: true,
+                            profile: {
+                                select: { fullName: true }
+                            }
+                        }
+                    },
+                    _count: { select: { items: true } }
+                },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: Number(limit)
+            }),
+
+            this.prisma.order.count({ where: whereCondition })
+        ]);
+
+        return {
+            data: orders,
+            meta: {
+                total,
+                page,
+                lastPage: Math.ceil(total / limit),
             },
-            orderBy: { createdAt: 'desc' } // don moi nhat hien len dau
-        })
+        };
     }
 
     async getOrderDetail(userId: string, id: string) {
@@ -146,7 +220,7 @@ export class OrdersService {
                     }
                 },
                 tracking: {
-                    orderBy: { updatedAt: 'desc' }
+                    orderBy: { createdAt: 'asc' }
                 },
                 transaction: true
             }
@@ -312,5 +386,33 @@ export class OrdersService {
             totalUsers: userCount,
             lowStockAlert: lowStockVariants
         }
+    }
+
+    // mua lai
+    async reOrder(userId: string, id: string) {
+        // lay thong tin don cu
+        const oldOrder = await this.prisma.order.findFirst({
+            where: { id, userId },
+            include: { items: true }
+        });
+        if (!oldOrder) throw new NotFoundException('Không tìm thấy đơn hàng cũ');
+
+        // chuan bi du lieu cho don hang moi
+        // lay lai danh sach variantId va quantity tu don hang cu
+        const itemsForNewOrder = oldOrder.items.map(item => ({
+            variantId: item.productVariantId,
+            quantity: item.quantity
+        }));
+
+        // tai su dung thong tin ship
+        const reOrderData: CreateOrderDto = {
+            receiverName: oldOrder.receiverName,
+            receiverPhone: oldOrder.receiverPhone,
+            shippingAddress: oldOrder.shippingAddress,
+            note: `Mua lại từ đơn hàng #${oldOrder.id.slice(0, 8)}`,
+            items: itemsForNewOrder
+        };
+
+        return this.createOrder(userId, reOrderData);
     }
 }
