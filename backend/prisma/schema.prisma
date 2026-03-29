@@ -220,11 +220,14 @@ model Order {
 }
 
 model OrderItem {
-  id               String  @id @default(uuid()) @db.VarChar(36)
-  orderId          String  @map("order_id") @db.VarChar(36)
-  productVariantId String  @map("product_variant_id") @db.VarChar(36)
-  quantity         Int
-  priceAtPurchase  Decimal @map("price_at_purchase") @db.Decimal(15, 2)
+  id               String @id @default(uuid()) @db.VarChar(36)
+  orderId          String @map("order_id") @db.VarChar(36)
+  productVariantId String @map("product_variant_id") @db.VarChar(36)
+
+  productName     String  @map("product_name") @db.VarChar(255)
+  variantName     String  @map("variant_name") @db.VarChar(255)
+  quantity        Int
+  priceAtPurchase Decimal @map("price_at_purchase") @db.Decimal(15, 2)
 
   order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productVariant ProductVariant @relation(fields: [productVariantId], references: [id])

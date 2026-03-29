@@ -21,7 +21,10 @@ export class OrdersService {
         return await this.prisma.$transaction(async (tx) => {
             // lay thong tin variant truc tiep tu db
             const variants = await tx.productVariant.findMany({
-                where: { id: { in: variantIds } }
+                where: { id: { in: variantIds } },
+                include: {
+                    product: { select: { name: true } }
+                }
             });
 
             if (variants.length !== items.length) {
@@ -46,7 +49,9 @@ export class OrdersService {
                 return {
                     productVariantId: item.variantId,
                     quantity: item.quantity,
-                    priceAtPurchase: variant.price // gia tai thoi diem mua hang
+                    priceAtPurchase: variant.price, // gia tai thoi diem mua hang
+                    productName: variant.product.name,
+                    variantName: variant.name
                 };
             });
 
