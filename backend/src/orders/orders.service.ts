@@ -3,7 +3,7 @@ import { CartService } from 'src/cart/cart.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ProductsService } from 'src/products/products.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus, Role } from '@prisma/client';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 @Injectable()
@@ -178,7 +178,7 @@ export class OrdersService {
             }
 
             // cap nhat trang thai don hang
-            const updateOrder = await tx.order.update({
+            const updatedOrder = await tx.order.update({
                 where: { id: orderId },
                 data: { status }
             });
@@ -192,7 +192,7 @@ export class OrdersService {
                 }
             });
 
-            return updateOrder;
+            return updatedOrder;
         });
     }
 
@@ -205,5 +205,112 @@ export class OrdersService {
             [OrderStatus.CANCELLED]: 'Đã hủy đơn',
         };
         return labels[status] || status;
+    }
+
+    // user huy don hang
+    async cancelOrder(userId: string, id: string) {
+        return await this.prisma.$transaction(async (tx) => {
+            const order = await tx.order.findFirst({
+                where: {
+                    id, userId
+                },
+                include: { items: true }
+            });
+            if (!order) throw new NotFoundException('Đơn hàng không tồn tại');
+            if (order.status !== OrderStatus.PENDING) {
+                throw new BadRequestException('Chỉ có thể hủy đơn hàng đang chờ xác nhận');
+            }
+
+            // hoan kho
+            for (const item of order.items) {
+                await tx.productVariant.update({
+                    where: { id: item.productVariantId },
+                    data: {
+                        stock: { increment: item.quantity }
+                    }
+                });
+            }
+
+            // cap nhat lai trang thai don hang
+            const updatedOrder = await tx.order.update({
+                where: { id },
+                data: { status: OrderStatus.CANCELLED }
+            });
+
+            // tracking
+            await tx.orderTracking.create({
+                data: {
+                    orderId: id,
+                    statusLabel: 'Đã hủy đơn',
+                    description: 'Đơn hàng đã được hủy bởi người mua'
+                }
+            });
+
+            return updatedOrder;
+        });
+    }
+
+    async getTopSellingProducts(limit = 5) {
+        const topItems = await this.prisma.orderItem.groupBy({
+            by: ['productVariantId'],
+            _sum: { quantity: true },
+            orderBy: {
+                _sum: { quantity: 'desc' }
+            },
+            take: limit,
+        });
+
+        const details = await Promise.all(
+            topItems.map(async (item) => {
+                const variant = await this.prisma.productVariant.findUnique({
+                    where: { id: item.productVariantId },
+                    select: { name: true, product: { select: { name: true } } }
+                });
+
+                return {
+                    ...variant,
+                    totalSold: item._sum.quantity
+                }
+            })
+        );
+        return details;
+    }
+
+    async getAdminStats() {
+        const [revenue, orderCounts, userCount, lowStockVariants] = await Promise.all([
+            // tong doanh thu tu cac don hang da giao thanh cong
+            this.prisma.order.aggregate({
+                _sum: { totalAmount: true },
+                where: { status: OrderStatus.DELIVERED }
+            }),
+
+            // dem so luong don hang theo tung trang thai
+            this.prisma.order.groupBy({
+                by: ['status'],
+                _count: { id: true }
+            }),
+
+            // tong so khach hang da dang ky
+            this.prisma.user.count({
+                where: { role: Role.USER }
+            }),
+
+            // san pham sap het hang (stock < 10)
+            this.prisma.productVariant.count({
+                where: { stock: { lt: 10 } }
+            })
+        ]);
+
+        const formattedOrders = orderCounts.reduce((acc, curr) => {
+            acc[curr.status] = curr._count.id;
+            return acc;
+        }, {});
+
+        return {
+            totalRevenue: revenue._sum.totalAmount || 0,
+            ordersByStatus: formattedOrders,
+            totalUsers: userCount,
+            lowStockAlert: lowStockVariants
+        }
     }
 }

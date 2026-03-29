@@ -35,4 +35,23 @@ export class OrdersController {
     async updateOrderStatus(@Param('id') id: string, @Body() data: UpdateOrderStatusDto) {
         return this.orderService.updateOrderStatus(id, data);
     }
+
+    @Patch(':id/cancel')
+    @UseGuards(JwtAuthGuard)
+    async cancelOrder(@Request() req, @Param('id') id: string) {
+        return this.orderService.cancelOrder(req.user.userId, id);
+    }
+
+    @Get('admin/dashboard')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    async getDashboard() {
+        const stats = await this.orderService.getAdminStats();
+        const topProducts = await this.orderService.getTopSellingProducts();
+
+        return {
+            stats,
+            topProducts
+        }
+    }
 }
