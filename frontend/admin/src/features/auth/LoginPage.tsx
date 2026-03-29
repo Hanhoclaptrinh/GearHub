@@ -15,8 +15,9 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+import { toast } from 'sonner';
+
 export const LoginPage: React.FC = () => {
-  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -30,12 +31,12 @@ export const LoginPage: React.FC = () => {
 
   const onSubmit = async (values: LoginFormValues) => {
     setIsLoading(true);
-    setError(null);
     try {
       await authService.login(values.identifier, values.password);
+      toast.success('Chào mừng quay trở lại!');
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
+      toast.error(err.response?.data?.message || err.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
     } finally {
       setIsLoading(false);
     }
@@ -54,26 +55,19 @@ export const LoginPage: React.FC = () => {
 
         <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-primary/10 transition-colors" />
-          
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 relative z-10">
-            {error && (
-              <div className="p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-600 animate-in fade-in slide-in-from-top-2">
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                <p className="text-sm font-semibold">{error}</p>
-              </div>
-            )}
 
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 relative z-10">
             <div className="relative group/field">
-               <div className="absolute left-4 top-[42px] z-10 text-slate-400 group-focus-within/field:text-primary transition-colors">
-                  <Mail className="w-5 h-5" />
-               </div>
-               <Input
-                 label="Email / Số điện thoại"
-                 placeholder="admin@gearhub.com"
-                 className="pl-12"
-                 {...register('identifier')}
-                 error={errors.identifier?.message}
-               />
+              <div className="absolute left-4 top-[42px] z-10 text-slate-400 group-focus-within/field:text-primary transition-colors">
+                <Mail className="w-5 h-5" />
+              </div>
+              <Input
+                label="Email / Số điện thoại"
+                placeholder="admin@gearhub.com"
+                className="pl-12"
+                {...register('identifier')}
+                error={errors.identifier?.message}
+              />
             </div>
 
             <div className="relative group/field">

@@ -14,6 +14,10 @@ export class CreateCategoryDto {
     @IsOptional()
     parentId?: string;
 
+    @IsString()
+    @IsOptional()
+    iconUrl?: string;
+
     @IsOptional()
     file?: any;
 }

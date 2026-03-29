@@ -12,11 +12,13 @@ import {
   Upload,
   Loader2
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { brandService } from '../../services/brand.service';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { cn } from '../../utils/cn';
 import type { Brand } from '../../types';
 
@@ -24,6 +26,8 @@ export const BrandList: React.FC = () => {
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [brandToDelete, setBrandToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -36,23 +40,36 @@ export const BrandList: React.FC = () => {
     mutationFn: (formData: FormData) => brandService.createBrand(formData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['brands'] });
+      toast.success('Hệ sinh thái đối tác đã được mở rộng!');
       closeModal();
     },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Lỗi khi kích hoạt thương hiệu');
+    }
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, formData }: { id: string, formData: FormData }) => brandService.updateBrand(id, formData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['brands'] });
+      toast.success('Cập nhật dữ liệu đối tác thành công');
       closeModal();
     },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Có lỗi khi đồng bộ dữ liệu');
+    }
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => brandService.deleteBrand(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['brands'] });
+      toast.success('Đã gỡ bỏ thương hiệu khỏi hệ thống');
+      setIsConfirmOpen(false);
     },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Không thể gỡ bỏ thương hiệu này');
+    }
   });
 
   const filteredBrands = brands?.filter((b: Brand) =>
@@ -70,16 +87,15 @@ export const BrandList: React.FC = () => {
   };
 
   const handleDelete = (id: string, name: string) => {
-    if (window.confirm(`Bạn có chắc muốn xóa thương hiệu "${name}"?`)) {
-      deleteMutation.mutate(id);
-    }
+    setBrandToDelete({ id, name });
+    setIsConfirmOpen(true);
   };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 font-heading tracking-tight italic">Quản lý thương hiệu</h1>
+          <h1 className="text-2xl font-bold text-slate-900 font-heading tracking-tight">Quản lý thương hiệu</h1>
           <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Hệ sinh thái đối tác ({filteredBrands.length})</p>
         </div>
         <Button onClick={() => openModal()} className="md:w-auto w-full group h-12 rounded-2xl shadow-xl shadow-primary/20">
@@ -134,7 +150,7 @@ export const BrandList: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-6">
-                      <span className="font-black text-slate-900 group-hover:text-primary transition-colors italic text-lg tracking-tighter">{brand.name}</span>
+                      <span className="font-black text-slate-900 group-hover:text-primary transition-colors text-lg tracking-tighter">{brand.name}</span>
                     </td>
                     <td className="px-6 py-6">
                       <Badge variant="default" className="bg-slate-100 text-slate-400 border-none font-black h-8 px-4 rounded-full shadow-sm">
@@ -160,7 +176,7 @@ export const BrandList: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="px-6 py-32 text-center text-slate-300 font-black uppercase italic tracking-widest text-xl opacity-40">
+                  <td colSpan={4} className="px-6 py-32 text-center text-slate-300 font-black uppercase tracking-widest text-xl opacity-40">
                     Empty Brand Library
                   </td>
                 </tr>
@@ -173,11 +189,10 @@ export const BrandList: React.FC = () => {
       {isError && (
         <div className="p-8 bg-red-50 border-2 border-red-100 rounded-[40px] flex items-center gap-6 text-red-600 shadow-2xl shadow-red-100/50">
           <AlertCircle className="w-10 h-10" />
-          <p className="text-xl font-black italic uppercase">Lỗi đồng bộ dữ liệu đối tác</p>
+          <p className="text-xl font-black uppercase">Lỗi đồng bộ dữ liệu đối tác</p>
         </div>
       )}
 
-      {/* Brand Modal */}
       {isModalOpen && (
         <BrandFormModal
           brand={editingBrand}
@@ -186,6 +201,17 @@ export const BrandList: React.FC = () => {
           isSaving={createMutation.isPending || updateMutation.isPending}
         />
       )}
+
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={() => brandToDelete && deleteMutation.mutate(brandToDelete.id)}
+        title="Xác nhận gỡ bỏ"
+        message={`Bạn có chắc muốn xóa thương hiệu "${brandToDelete?.name}"? Mọi dữ liệu liên quan sẽ bị ảnh hưởng.`}
+        confirmText="Xác nhận gỡ"
+        cancelText="Để tôi xem lại"
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 };
@@ -223,7 +249,7 @@ const BrandFormModal: React.FC<ModalProps> = ({ brand, onClose, onSave, isSaving
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xl animate-in fade-in duration-300">
       <div className="bg-white w-full max-w-md rounded-[48px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-white">
         <div className="p-10 border-b border-slate-50 flex items-center justify-between">
-          <h2 className="text-2xl font-black text-slate-900 font-heading tracking-tighter uppercase italic">{brand ? 'Cập nhật đối tác' : 'Thiết lập brand'}</h2>
+          <h2 className="text-2xl font-black text-slate-900 font-heading tracking-tighter uppercase">{brand ? 'Cập nhật đối tác' : 'Thiết lập brand'}</h2>
           <button onClick={onClose} className="p-3 rounded-full hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100">
             <X className="w-7 h-7 text-slate-400" />
           </button>
@@ -239,7 +265,7 @@ const BrandFormModal: React.FC<ModalProps> = ({ brand, onClose, onSave, isSaving
               ) : (
                 <div className="flex flex-col items-center">
                   <Upload className="w-8 h-8 text-slate-300 group-hover:text-primary transition-colors" />
-                  <span className="text-[10px] font-black text-slate-400 uppercase mt-2 italic shadow-sm">Add Logo</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase mt-2 shadow-sm">Add Logo</span>
                 </div>
               )}
               <input id="logo-upload" type="file" className="hidden" accept=".svg,.png,.jpg,.jpeg,.webp,image/svg+xml,image/png,image/jpeg,image/webp" onChange={handleFileChange} />
@@ -250,7 +276,7 @@ const BrandFormModal: React.FC<ModalProps> = ({ brand, onClose, onSave, isSaving
             <Input label="Tên thương hiệu" placeholder="Ví dụ: Logitech, Samsung..." value={name} onChange={(e) => setName(e.target.value)} required
               className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner font-black text-lg"
             />
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center italic">*Slug và Metadata sẽ được khởi tạo tự động</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">*Slug và Metadata sẽ được khởi tạo tự động</p>
           </div>
 
           <div className="flex gap-4 pt-4">

@@ -31,6 +31,12 @@ export const authService = {
     return user ? JSON.parse(user) : null;
   },
 
+  async getMe() {
+    const { data } = await api.get<User>('/auth/me');
+    localStorage.setItem('admin_user', JSON.stringify(data));
+    return data;
+  },
+
   isAuthenticated(): boolean {
     return !!localStorage.getItem('admin_token');
   },

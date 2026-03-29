@@ -14,8 +14,9 @@ export class CloudinaryService {
                     format: file.mimetype === 'image/svg+xml' ? 'svg' : undefined,
                 },
                 (error, result) => {
-                    if (error) { console.error('Lỗi từ SDK Cloudinary:', error); return reject(error); }
-                    console.log('Kết quả từ SDK Cloudinary:', result);
+                    if (error) {
+                        return reject(error);
+                    }
 
                     if (!result) {
                         return reject(new BadRequestException('Lỗi tải file lên Cloudinary'));

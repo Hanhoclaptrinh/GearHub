@@ -14,6 +14,10 @@ export class UpdateCategoryDto {
     @IsOptional()
     parentId?: string;
 
+    @IsString()
+    @IsOptional()
+    iconUrl?: string;
+
     @IsOptional()
     file?: any;
 }

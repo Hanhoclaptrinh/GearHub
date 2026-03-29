@@ -9,12 +9,17 @@ import {
   AlertCircle,
   Hash,
   X,
+  ChevronDown,
+  ChevronRight,
+  Layers,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { categoryService } from '../../services/category.service';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { cn } from '../../utils/cn';
 import type { Category } from '../../types';
 
@@ -22,6 +27,9 @@ export const CategoryList: React.FC = () => {
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<{ id: string; name: string } | null>(null);
   
   const queryClient = useQueryClient();
 
@@ -34,31 +42,45 @@ export const CategoryList: React.FC = () => {
     mutationFn: (formData: FormData) => categoryService.createCategory(formData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast.success('Thiết lập danh mục mới thành công!');
       closeModal();
     },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi tạo danh mục');
+    }
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, formData }: { id: string, formData: FormData }) => categoryService.updateCategory(id, formData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast.success('Cập nhật thông tin danh mục thành công!');
       closeModal();
     },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi cập nhật');
+    }
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => categoryService.deleteCategory(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast.success('Đã gỡ bỏ danh mục khỏi hệ thống');
+      setIsConfirmOpen(false);
     },
     onError: (error: any) => {
-        alert(error.response?.data?.message || 'Không thể xoá danh mục này. Vui lòng kiểm tra các danh mục con hoặc sản phẩm liên quan.');
+      toast.error(error.response?.data?.message || 'Không thể xoá danh mục này. Vui lòng kiểm tra các danh mục con hoặc sản phẩm liên quan.');
     }
   });
 
   const filteredCategories = categories?.filter((c: Category) => 
     c.name.toLowerCase().includes(search.toLowerCase())
   ) || [];
+
+  const toggleExpand = (id: string) => {
+    setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const openModal = (category?: Category) => {
     if (category) setEditingCategory(category);
@@ -71,9 +93,8 @@ export const CategoryList: React.FC = () => {
   };
 
   const handleDelete = (id: string, name: string) => {
-    if (window.confirm(`Bạn có chắc muốn xóa danh mục "${name}"? Thao tác này không thể hoàn tác.`)) {
-      deleteMutation.mutate(id);
-    }
+    setCategoryToDelete({ id, name });
+    setIsConfirmOpen(true);
   };
 
   return (
@@ -81,7 +102,7 @@ export const CategoryList: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 font-heading leading-tight">Quản lý danh mục</h1>
-          <p className="text-sm font-bold text-slate-400 uppercase tracking-widest italic">Cấu trúc phân loại hệ thống ({filteredCategories.length})</p>
+          <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Cấu trúc phân loại hệ thống ({filteredCategories.length})</p>
         </div>
         <Button onClick={() => openModal()} className="md:w-auto w-full group h-12 rounded-2xl shadow-lg shadow-primary/20">
           <Plus className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform" />
@@ -133,51 +154,104 @@ export const CategoryList: React.FC = () => {
                 ))
               ) : filteredCategories.length > 0 ? (
                 filteredCategories.map((category: Category) => (
-                  <tr key={category.id} className="hover:bg-slate-50/50 transition-all group">
-                    <td className="px-10 py-6 pl-12">
-                       <div className="w-14 h-14 bg-white rounded-2xl border border-slate-200 flex items-center justify-center p-2 group-hover:scale-110 transition-transform shadow-sm group-hover:shadow-md overflow-hidden">
-                          {category.iconUrl ? (
-                             <img src={category.iconUrl} alt={category.name} className="w-full h-full object-contain" />
-                          ) : (
-                             <span className="text-2xl drop-shadow-sm">{category.icon || <Hash size={24} className="text-slate-200" />}</span>
-                          )}
-                       </div>
-                    </td>
-                    <td className="px-6 py-6">
-                       <div className="flex flex-col">
-                          <span className="font-black text-slate-900 group-hover:text-primary transition-colors text-lg italic tracking-tighter">{category.name}</span>
-                          <span className="text-[10px] font-black text-slate-300 uppercase mt-0.5">Hash ID: {category.id.slice(-8).toUpperCase()}</span>
-                       </div>
-                    </td>
-                    <td className="px-6 py-6">
-                       <Badge variant="default" className="bg-slate-50 text-slate-400 border border-slate-100 font-black h-8 px-4 rounded-full flex items-center w-fit shadow-sm">
-                          {category.slug}
-                       </Badge>
-                    </td>
-                    <td className="px-6 py-6">
-                       <div className="flex items-center justify-center gap-3">
-                          <Button 
-                            variant="ghost" 
-                            className="p-3 h-12 w-12 text-blue-500 hover:bg-blue-50 rounded-2xl border-none transition-all" 
-                            onClick={() => openModal(category)}
-                          >
-                            <Edit className="w-5 h-5" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            className="p-3 h-12 w-12 text-red-500 hover:bg-red-50 rounded-2xl border-none transition-all"
-                            onClick={() => handleDelete(category.id, category.name)}
-                            isLoading={deleteMutation.isPending && deleteMutation.variables === category.id}
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </Button>
-                       </div>
-                    </td>
-                  </tr>
+                  <React.Fragment key={category.id}>
+                    <tr className="hover:bg-slate-50/50 transition-all group">
+                      <td className="px-10 py-6 pl-12">
+                         <div className="flex items-center gap-4">
+                            {category.children && category.children.length > 0 && (
+                              <button 
+                                onClick={() => toggleExpand(category.id)}
+                                className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
+                              >
+                                {expanded[category.id] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                              </button>
+                            )}
+                            <div className="w-14 h-14 bg-white rounded-2xl border border-slate-200 flex items-center justify-center p-2 group-hover:scale-110 transition-transform shadow-sm group-hover:shadow-md overflow-hidden">
+                                {category.iconUrl ? (
+                                  <img src={category.iconUrl} alt={category.name} className="w-full h-full object-contain" />
+                                ) : (
+                                  <span className="text-2xl drop-shadow-sm">{category.icon || <Hash size={24} className="text-slate-200" />}</span>
+                                )}
+                            </div>
+                         </div>
+                      </td>
+                      <td className="px-6 py-6">
+                         <div className="flex flex-col">
+                            <span className="font-black text-slate-900 group-hover:text-primary transition-colors text-lg tracking-tighter flex items-center gap-2">
+                               {category.name}
+                               {category.children && category.children.length > 0 && (
+                                  <Badge className="bg-primary/10 text-primary border-none pointer-events-none">{category.children.length}</Badge>
+                               )}
+                            </span>
+                            <span className="text-[10px] font-black text-slate-300 uppercase mt-0.5">Hash ID: {category.id.slice(-8).toUpperCase()}</span>
+                         </div>
+                      </td>
+                      <td className="px-6 py-6">
+                         <Badge variant="default" className="bg-slate-50 text-slate-400 border border-slate-100 font-black h-8 px-4 rounded-full flex items-center w-fit shadow-sm">
+                            {category.slug}
+                         </Badge>
+                      </td>
+                      <td className="px-6 py-6">
+                         <div className="flex items-center justify-center gap-3">
+                            <Button 
+                              variant="ghost" 
+                              className="p-3 h-12 w-12 text-blue-500 hover:bg-blue-50 rounded-2xl border-none transition-all" 
+                              onClick={() => openModal(category)}
+                            >
+                              <Edit className="w-5 h-5" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              className="p-3 h-12 w-12 text-red-500 hover:bg-red-50 rounded-2xl border-none transition-all"
+                              onClick={() => handleDelete(category.id, category.name)}
+                              isLoading={deleteMutation.isPending && deleteMutation.variables === category.id}
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </Button>
+                         </div>
+                      </td>
+                    </tr>
+                    
+                    {expanded[category.id] && category.children?.map((sub: any) => (
+                      <tr key={sub.id} className="bg-slate-50/30 hover:bg-slate-100/30 transition-all group/sub">
+                        <td className="px-10 py-4 pl-24">
+                           <div className="w-10 h-10 bg-white rounded-xl border border-slate-100 flex items-center justify-center p-1.5 shadow-sm overflow-hidden opacity-80 group-hover/sub:opacity-100 transition-opacity">
+                              {sub.iconUrl ? (
+                                <img src={sub.iconUrl} alt={sub.name} className="w-full h-full object-contain" />
+                              ) : (
+                                <span className="text-lg opacity-60 font-black">Sub</span>
+                              )}
+                           </div>
+                        </td>
+                        <td className="px-6 py-4">
+                           <div className="flex flex-col">
+                              <span className="font-bold text-slate-600 text-sm group-hover/sub:text-primary transition-colors flex items-center gap-2">
+                                 <Layers size={12} className="text-slate-300" />
+                                 {sub.name}
+                              </span>
+                              <span className="text-[9px] font-medium text-slate-400 uppercase">Sub ID: {sub.id.slice(-6).toUpperCase()}</span>
+                           </div>
+                        </td>
+                        <td className="px-6 py-4">
+                           <span className="text-xs font-medium text-slate-400 font-mono">/{sub.slug}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                           <div className="flex items-center justify-center gap-2">
+                              <button className="p-2 text-slate-400 hover:text-blue-500 transition-colors" onClick={() => openModal(sub as Category)}>
+                                <Edit size={16} />
+                              </button>
+                              <button className="p-2 text-slate-400 hover:text-red-500 transition-colors" onClick={() => handleDelete(sub.id, sub.name)}>
+                                <Trash2 size={16} />
+                              </button>
+                           </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="px-10 py-32 text-center opacity-30 grayscale font-black uppercase italic tracking-widest text-slate-300">
+                  <td colSpan={4} className="px-10 py-32 text-center opacity-30 grayscale font-black uppercase tracking-widest text-slate-300">
                     Empty Category Library
                   </td>
                 </tr>
@@ -191,7 +265,7 @@ export const CategoryList: React.FC = () => {
         <div className="p-8 bg-red-50 border-2 border-red-100 rounded-[40px] flex items-center gap-6 text-red-600 shadow-2xl shadow-red-100/50">
           <AlertCircle className="w-10 h-10" />
           <div>
-              <p className="text-xl font-black text-red-700 uppercase italic">Tài nguyên không sẵn sàng</p>
+              <p className="text-xl font-black text-red-700 uppercase">Tài nguyên không sẵn sàng</p>
               <p className="text-sm font-bold opacity-70">Có lỗi khi kết nối với máy chủ dữ liệu.</p>
           </div>
         </div>
@@ -205,6 +279,17 @@ export const CategoryList: React.FC = () => {
           isSaving={createMutation.isPending || updateMutation.isPending}
         />
       )}
+
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={() => categoryToDelete && deleteMutation.mutate(categoryToDelete.id)}
+        title="Xác nhận gỡ bỏ"
+        message={`Bạn có chắc muốn xóa danh mục "${categoryToDelete?.name}"? Thao tác này sẽ gỡ bỏ hoàn toàn dữ liệu và không thể hoàn tác.`}
+        confirmText="Đồng ý xóa"
+        cancelText="Để tôi xem lại"
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 };
@@ -221,8 +306,14 @@ const CategoryFormModal: React.FC<FormProps> = ({ category, onClose, onSave, isS
   const [slug, setSlug] = useState(category?.slug || '');
   const [icon, setIcon] = useState(category?.icon || '');
   const [description, setDescription] = useState(category?.description || '');
+  const [parentId, setParentId] = useState(category?.parentId || '');
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(category?.iconUrl || null);
+
+  const { data: parentCategories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: categoryService.getAllCategories,
+  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
@@ -237,8 +328,7 @@ const CategoryFormModal: React.FC<FormProps> = ({ category, onClose, onSave, isS
     const fd = new FormData();
     fd.append('name', name);
     if (description) fd.append('description', description);
-    // parentId can be added here if needed, but current UI doesn't have it
-    // Icon text is removed to avoid 400 Bad Request
+    if (parentId) fd.append('parentId', parentId);
     if (file) fd.append('file', file);
     onSave(fd);
   };
@@ -259,17 +349,32 @@ const CategoryFormModal: React.FC<FormProps> = ({ category, onClose, onSave, isS
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xl animate-in fade-in duration-300">
       <div className="bg-white w-full max-w-lg rounded-[48px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-white">
         <div className="p-10 border-b border-slate-50 flex items-center justify-between">
-            <h2 className="text-2xl font-black text-slate-900 font-heading italic tracking-tighter uppercase">{category ? 'Cập nhật phân loại' : 'Thiết lập danh mục mới'}</h2>
+            <h2 className="text-2xl font-black text-slate-900 font-heading tracking-tighter uppercase">{category ? 'Cập nhật phân loại' : 'Thiết lập danh mục mới'}</h2>
             <button onClick={onClose} className="p-3 rounded-full hover:bg-slate-50 transition-all">
                <X className="w-7 h-7 text-slate-300" />
             </button>
         </div>
         <form onSubmit={handleSubmit} className="p-10 space-y-8">
-           <div className="flex justify-center">
-              <div 
-                className="relative w-24 h-24 rounded-3xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center cursor-pointer hover:border-primary transition-all overflow-hidden group shadow-inner"
-                onClick={() => document.getElementById('icon-upload')?.click()}
-              >
+            <div className="space-y-6">
+               <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Danh mục cấp cha (Tùy chọn)</label>
+                 <select 
+                   className="w-full h-14 px-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 transition-all font-bold text-slate-700 shadow-inner appearance-none cursor-pointer"
+                   value={parentId}
+                   onChange={(e) => setParentId(e.target.value)}
+                 >
+                   <option value="">-- Là danh mục gốc --</option>
+                   {parentCategories?.filter(c => c.id !== category?.id).map(c => (
+                     <option key={c.id} value={c.id}>{c.name}</option>
+                   ))}
+                 </select>
+               </div>
+
+               <div className="flex justify-center">
+                  <div 
+                    className="relative w-24 h-24 rounded-3xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center cursor-pointer hover:border-primary transition-all overflow-hidden group shadow-inner"
+                    onClick={() => document.getElementById('icon-upload')?.click()}
+                  >
                   {preview ? (
                      <img src={preview} alt="Icon" className="w-full h-full object-contain" />
                   ) : (
@@ -279,58 +384,59 @@ const CategoryFormModal: React.FC<FormProps> = ({ category, onClose, onSave, isS
                      </div>
                   )}
                   <input id="icon-upload" type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
-              </div>
-           </div>
+                  </div>
+               </div>
 
-           <div className="space-y-6">
-              <div className="grid grid-cols-4 gap-4">
-                 <div className="col-span-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Icon Text</label>
-                    <input 
-                      className="w-full h-14 text-center text-2xl bg-slate-50 border-none rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 transition-all shadow-inner font-black" 
-                      placeholder="💻"
-                      value={icon}
-                      maxLength={2}
-                      onChange={(e) => setIcon(e.target.value)}
+               <div className="space-y-6">
+                  <div className="grid grid-cols-4 gap-4">
+                     <div className="col-span-1">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Icon Text</label>
+                        <input 
+                          className="w-full h-14 text-center text-2xl bg-slate-50 border-none rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 transition-all shadow-inner font-black" 
+                          placeholder="💻"
+                          value={icon}
+                          maxLength={2}
+                          onChange={(e) => setIcon(e.target.value)}
+                        />
+                     </div>
+                     <div className="col-span-3">
+                        <Input label="Tên danh mục" placeholder="Laptop, Keyboard..." value={name} onChange={(e) => setName(e.target.value)} required 
+                          className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner font-black" 
+                        />
+                     </div>
+                  </div>
+                  
+                  <div className="relative group">
+                     <Input label="Slug" placeholder="laptop-gaming" value={slug} onChange={(e) => setSlug(e.target.value)} required 
+                       className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner font-bold"
+                     />
+                     <button 
+                       type="button" 
+                       onClick={generateSlug} 
+                       className="absolute right-4 top-[42px] text-[10px] font-black text-primary hover:text-primary-600 transition-colors uppercase tracking-widest"
+                     >
+                        Auto Generate
+                     </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mô tả (Tùy chọn)</label>
+                    <textarea 
+                      className="w-full h-24 p-4 border-none bg-slate-50 rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 transition-all font-body text-sm font-bold shadow-inner resize-none" 
+                      placeholder="Nhập ghi chú hoặc mô tả..."
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
                     />
-                 </div>
-                 <div className="col-span-3">
-                    <Input label="Tên danh mục" placeholder="Laptop, Keyboard..." value={name} onChange={(e) => setName(e.target.value)} required 
-                      className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner font-black" 
-                    />
-                 </div>
-              </div>
-              
-              <div className="relative group">
-                 <Input label="Slug" placeholder="laptop-gaming" value={slug} onChange={(e) => setSlug(e.target.value)} required 
-                   className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner font-bold"
-                 />
-                 <button 
-                   type="button" 
-                   onClick={generateSlug} 
-                   className="absolute right-4 top-[42px] text-[10px] font-black text-primary hover:text-primary-600 transition-colors uppercase tracking-widest"
-                 >
-                    Auto Generate
-                 </button>
-              </div>
+                  </div>
+               </div>
+            </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mô tả (Tùy chọn)</label>
-                <textarea 
-                  className="w-full h-24 p-4 border-none bg-slate-50 rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 transition-all font-body text-sm font-bold shadow-inner resize-none" 
-                  placeholder="Nhập ghi chú hoặc mô tả..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
-           </div>
-
-           <div className="flex gap-4 pt-4">
-              <Button type="button" variant="outline" className="flex-1 h-14 rounded-2xl font-black uppercase text-xs" onClick={onClose}>Huỷ bỏ</Button>
-              <Button type="submit" className="flex-1 h-14 rounded-2xl font-black uppercase text-xs shadow-xl shadow-primary/20" isLoading={isSaving}>
-                 {category ? 'Lưu thay đổi' : 'Tạo phân loại'}
-              </Button>
-           </div>
+            <div className="flex gap-4 pt-4">
+               <Button type="button" variant="outline" className="flex-1 h-14 rounded-2xl font-black uppercase text-xs" onClick={onClose}>Huỷ bỏ</Button>
+               <Button type="submit" className="flex-1 h-14 rounded-2xl font-black uppercase text-xs shadow-xl shadow-primary/20" isLoading={isSaving}>
+                  {category ? 'Lưu thay đổi' : 'Tạo phân loại'}
+               </Button>
+            </div>
         </form>
       </div>
     </div>

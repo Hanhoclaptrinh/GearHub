@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard,
   Package,
@@ -10,7 +11,8 @@ import {
   LogOut,
   Menu,
   ChevronRight,
-  User as UserIcon
+  User as UserIcon,
+  Globe
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { authService } from '../services/auth.service';
@@ -26,8 +28,16 @@ const navigation = [
 
 export const DashboardLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [currentLang, setCurrentLang] = useState('VN');
+  const [showLangDropdown, setShowLangDropdown] = useState(false);
   const location = useLocation();
-  const user = authService.getCurrentUser();
+
+  const { data: user } = useQuery({
+    queryKey: ['me'],
+    queryFn: () => authService.getMe(),
+    initialData: authService.getCurrentUser() || undefined,
+    staleTime: Infinity,
+  });
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
@@ -106,17 +116,48 @@ export const DashboardLayout: React.FC = () => {
             </h2>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
+            {/* Language Switcher */}
+            <div className="relative">
+              <button
+                onClick={() => setShowLangDropdown(!showLangDropdown)}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 hover:border-primary transition-all text-sm font-black text-slate-700"
+              >
+                <Globe className="w-4 h-4 text-slate-400" />
+                <span>{currentLang}</span>
+              </button>
+
+              {showLangDropdown && (
+                <div className="absolute top-full right-0 mt-2 w-24 bg-white border border-slate-100 rounded-2xl shadow-xl p-2 z-[100] animate-in fade-in zoom-in-95 duration-200">
+                  {['VN', 'EN', 'CN'].map((lang) => (
+                    <button
+                      key={lang}
+                      onClick={() => {
+                        setCurrentLang(lang);
+                        setShowLangDropdown(false);
+                      }}
+                      className={cn(
+                        "w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all",
+                        currentLang === lang ? "bg-primary text-white" : "text-slate-500 hover:bg-slate-50"
+                      )}
+                    >
+                      {lang === 'VN' ? 'Vietnam' : lang === 'EN' ? 'English' : 'Chinese'}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-bold text-slate-900">{user?.fullName || 'Administrator'}</p>
+              <p className="text-sm font-bold text-slate-900">{user?.fullName || (user as any)?.profile?.fullName || 'Administrator'}</p>
               <p className="text-xs font-medium text-slate-500">{user?.email}</p>
             </div>
             <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center p-0.5 border-2 border-slate-200">
-               {user?.avatarUrl ? (
-                 <img src={user.avatarUrl} alt="avatar" className="w-full h-full rounded-full object-cover" />
-               ) : (
-                 <UserIcon className="w-6 h-6 text-slate-400" />
-               )}
+              {user?.avatarUrl || (user as any)?.profile?.avatarUrl ? (
+                <img src={user?.avatarUrl || (user as any)?.profile?.avatarUrl} alt="avatar" className="w-full h-full rounded-full object-cover" />
+              ) : (
+                <UserIcon className="w-6 h-6 text-slate-400" />
+              )}
             </div>
           </div>
         </header>

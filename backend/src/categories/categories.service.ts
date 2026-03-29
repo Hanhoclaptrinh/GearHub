@@ -98,6 +98,7 @@ export class CategoriesService {
         const category = await this.prisma.category.findUnique({ where: { id } });
         if (!category) throw new NotFoundException('Danh mục không tồn tại');
 
+        const { iconUrl, ...restData } = data;
         const updateData: any = { ...data };
 
         if (data.parentId === id) {
@@ -115,6 +116,11 @@ export class CategoriesService {
         }
 
         if (file) {
+            if (category.iconUrl) {
+                const publicId = category.iconUrl.split('/').pop()?.split('.')[0];
+                if (publicId) await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);
+            }
+
             const uploadResult = await this.cloudinaryService.uploadFile(file);
             updateData.iconUrl = uploadResult.secure_url;
         }
@@ -135,6 +141,11 @@ export class CategoriesService {
 
         if (category._count.children > 0) {
             throw new BadRequestException(`Không thể xóa vì danh mục này đang có ${category._count.children} danh mục con`);
+        }
+
+        if (category.iconUrl) {
+            const publicId = category.iconUrl.split('/').pop()?.split('.')[0];
+            if (publicId) await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);
         }
 
         return this.prisma.category.delete({ where: { id } });

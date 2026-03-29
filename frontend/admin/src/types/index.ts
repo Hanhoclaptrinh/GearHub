@@ -11,7 +11,11 @@ export interface User {
   role: Role;
   fullName?: string;
   avatarUrl?: string;
-  phone?: string;
+  profile?: {
+    fullName?: string;
+    avatarUrl?: string;
+    phone?: string;
+  };
   isActive: boolean;
   createdAt: string;
 }

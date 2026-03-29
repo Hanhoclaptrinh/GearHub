@@ -90,7 +90,13 @@ export class AuthService {
     return {
       message: 'Đăng nhập thành công',
       data: {
-        user: { id: user.id, email: user.email, role: user.role },
+        user: { 
+          id: user.id, 
+          email: user.email, 
+          role: user.role,
+          fullName: user.profile?.fullName,
+          avatarUrl: user.profile?.avatarUrl
+        },
         tokens: { accessToken: at, refreshToken: rt }
       }
     };

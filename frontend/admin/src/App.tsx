@@ -28,9 +28,26 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
+import { Toaster } from 'sonner';
+
 const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
+      <Toaster 
+        position="top-right" 
+        richColors 
+        closeButton 
+        theme="light"
+        expand={true}
+        toastOptions={{
+          style: {
+            borderRadius: '24px',
+            padding: '16px 24px',
+            border: 'none',
+            boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'
+          },
+        }}
+      />
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
