@@ -40,4 +40,10 @@ export class CreateProductDto {
     @IsString()
     @IsOptional()
     thumbnailUrl?: string;
+
+    @IsOptional()
+    files?: any;
+
+    @IsOptional()
+    primaryIndex?: string;
 }

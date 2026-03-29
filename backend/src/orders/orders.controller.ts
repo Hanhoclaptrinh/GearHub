@@ -32,7 +32,7 @@ export class OrdersController {
         });
     }
 
-    @Get('admin/all')
+    @Get('admin')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
     async getAllOrders(

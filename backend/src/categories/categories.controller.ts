@@ -37,7 +37,6 @@ export class CategoriesController {
             new ParseFilePipe({
                 validators: [
                     new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 2 }),
-                    new FileTypeValidator({ fileType: '.(png|jpg|jpeg|webp|svg)' }),
                 ],
                 fileIsRequired: false,
             }),
@@ -57,7 +56,6 @@ export class CategoriesController {
             new ParseFilePipe({
                 validators: [
                     new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 2 }),
-                    new FileTypeValidator({ fileType: '.(png|jpg|jpeg|webp|svg)' }),
                 ],
                 fileIsRequired: false,
             }),

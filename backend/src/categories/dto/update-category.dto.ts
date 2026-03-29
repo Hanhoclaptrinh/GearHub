@@ -13,4 +13,7 @@ export class UpdateCategoryDto {
     @IsUUID('4', { message: 'ID danh mục cha không hợp lệ' })
     @IsOptional()
     parentId?: string;
+
+    @IsOptional()
+    file?: any;
 }

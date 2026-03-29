@@ -9,4 +9,7 @@ export class UpdateBrandDto {
     @IsUrl({}, { message: 'Logo URL phải là một đường dẫn URL hợp lệ' })
     @IsOptional()
     logoUrl?: string;
+
+    @IsOptional()
+    file?: any;
 }

@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import slugify from 'slugify';
@@ -18,15 +18,22 @@ export class BrandsService {
     const existingSlug = await this.prisma.brand.findUnique({ where: { slug } });
     if (existingSlug) throw new ConflictException('Thương hiệu này đã tồn tại');
 
-    let finalLogoUrl = data.logoUrl || null;
+    let finalLogoUrl: string | null = null;
 
     if (file) {
-      const uploadResult = await this.cloudinaryService.uploadFile(file);
-      finalLogoUrl = uploadResult.secure_url;
+      try {
+        const uploadResult = await this.cloudinaryService.uploadFile(file);
+
+        if (uploadResult && uploadResult.secure_url) {
+          finalLogoUrl = uploadResult.secure_url;
+        }
+      } catch (error) {
+        throw new BadRequestException('Không thể tải logo lên Cloud');
+      }
     }
 
     return this.prisma.brand.create({
-      data: { ...data, slug, logoUrl: finalLogoUrl },
+      data: { name: data.name, slug: slug, logoUrl: finalLogoUrl },
     });
   }
 
@@ -47,7 +54,8 @@ export class BrandsService {
     const brand = await this.prisma.brand.findUnique({ where: { id } });
     if (!brand) throw new NotFoundException('Thương hiệu không tồn tại');
 
-    const updateData: any = { ...data };
+    const { logoUrl, ...restData } = data;
+    const updateData: any = { ...restData };
 
     if (data.name) {
       const newSlug = slugify(data.name, { lower: true, strict: true });
@@ -59,8 +67,19 @@ export class BrandsService {
     }
 
     if (file) {
-      const uploadResult = await this.cloudinaryService.uploadFile(file);
-      updateData.logoUrl = uploadResult.secure_url;
+      try {
+        // xoa anh cu
+        if (brand.logoUrl) {
+          const publicId = brand.logoUrl.split('/').pop()?.split('.')[0];
+          if (publicId) await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);
+        }
+
+        // upload anh moi
+        const uploadResult = await this.cloudinaryService.uploadFile(file);
+        updateData.logoUrl = uploadResult.secure_url;
+      } catch (error) {
+        throw new BadRequestException('Không thể tải logo mới lên Cloud');
+      }
     }
 
     return this.prisma.brand.update({ where: { id }, data: updateData });
@@ -69,6 +88,12 @@ export class BrandsService {
   async removeBrand(id: string) {
     const brand = await this.prisma.brand.findUnique({ where: { id } });
     if (!brand) throw new NotFoundException('Thương hiệu không tồn tại');
+
+    if (brand.logoUrl) {
+      const publicId = brand.logoUrl.split('/').pop()?.split('.')[0];
+      if (publicId) await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);
+    }
+
     return this.prisma.brand.delete({ where: { id } });
   }
 }

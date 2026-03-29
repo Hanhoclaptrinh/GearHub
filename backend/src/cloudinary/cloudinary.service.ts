@@ -11,9 +11,11 @@ export class CloudinaryService {
                 {
                     folder: 'gearhub/media',
                     resource_type: 'auto',
+                    format: file.mimetype === 'image/svg+xml' ? 'svg' : undefined,
                 },
                 (error, result) => {
-                    if (error) return reject(error);
+                    if (error) { console.error('Lỗi từ SDK Cloudinary:', error); return reject(error); }
+                    console.log('Kết quả từ SDK Cloudinary:', result);
 
                     if (!result) {
                         return reject(new BadRequestException('Lỗi tải file lên Cloudinary'));

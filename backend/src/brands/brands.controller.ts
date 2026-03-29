@@ -31,7 +31,6 @@ export class BrandsController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 2 }), // logo 2mb limit
-          new FileTypeValidator({ fileType: '.(png|jpg|jpeg|webp|svg)' }),
         ],
         fileIsRequired: false,
       }),

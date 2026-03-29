@@ -1,0 +1,121 @@
+export const Role = {
+  USER: 'USER',
+  ADMIN: 'ADMIN',
+} as const;
+
+export type Role = (typeof Role)[keyof typeof Role];
+
+export interface User {
+  id: string;
+  email: string;
+  role: Role;
+  fullName?: string;
+  avatarUrl?: string;
+  phone?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface Tokens {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface AuthResponse {
+  message: string;
+  data: {
+    user: User;
+    tokens: Tokens;
+  };
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  icon?: string;
+  iconUrl?: string;
+  parentId?: string;
+  children?: Category[];
+}
+
+export interface Brand {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  logoUrl?: string;
+}
+
+export interface ProductAsset {
+  id: string;
+  url: string;
+  isPrimary: boolean;
+}
+
+export interface ProductVariant {
+  id: string;
+  sku: string;
+  price: number;
+  stock: number;
+  attributes: Record<string, any>;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  categoryId: string;
+  brandId: string;
+  category?: Category;
+  brand?: Brand;
+  isActive: boolean;
+  assets: ProductAsset[];
+  variants: ProductVariant[];
+  createdAt: string;
+}
+
+export const OrderStatus = {
+  PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  SHIPPING: 'SHIPPING',
+  DELIVERED: 'DELIVERED',
+  CANCELLED: 'CANCELLED',
+  REFUNDED: 'REFUNDED',
+} as const;
+
+export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
+
+export interface OrderItem {
+  id: string;
+  productVariantId: string;
+  quantity: number;
+  price: number;
+  productName: string;
+  sku: string;
+}
+
+export interface Order {
+  id: string;
+  orderNumber: string;
+  status: OrderStatus;
+  totalAmount: number;
+  shippingAddress: string;
+  phone: string;
+  notes?: string;
+  userId: string;
+  user?: User;
+  items: OrderItem[];
+  createdAt: string;
+}
+
+export interface DashboardStats {
+  totalOrders: number;
+  totalRevenue: number;
+  totalProducts: number;
+  totalUsers: number;
+  recentOrders: Order[];
+  revenueByMonth: { month: string; amount: number }[];
+}
