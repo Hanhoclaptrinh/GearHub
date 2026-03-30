@@ -33,15 +33,15 @@ import { Toaster } from 'sonner';
 const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <Toaster 
-        position="top-right" 
-        richColors 
-        closeButton 
+      <Toaster
+        position="top-right"
+        richColors
+        closeButton
         theme="light"
         expand={true}
         toastOptions={{
           style: {
-            borderRadius: '24px',
+            borderRadius: '12px',
             padding: '16px 24px',
             border: 'none',
             boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'
@@ -51,7 +51,7 @@ const App: React.FC = () => {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          
+
           <Route
             path="/"
             element={

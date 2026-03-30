@@ -15,6 +15,7 @@ export const authService = {
     }
 
     localStorage.setItem('admin_token', data.data.tokens.accessToken);
+    localStorage.setItem('admin_refresh_token', data.data.tokens.refreshToken);
     localStorage.setItem('admin_user', JSON.stringify(data.data.user));
 
     return data.data;
@@ -22,8 +23,38 @@ export const authService = {
 
   logout() {
     localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_refresh_token');
     localStorage.removeItem('admin_user');
     window.location.href = '/login';
+  },
+
+  async refreshToken() {
+    const refreshToken = localStorage.getItem('admin_refresh_token');
+    const user = this.getCurrentUser();
+
+    if (!refreshToken || !user) {
+      this.logout();
+      return null;
+    }
+
+    try {
+      // su dung axios khong qua interceptor
+      // tranh bi loop khi refresh token bi loi 401
+      const { data } = await api.post('/auth/refresh', {
+        refreshToken,
+        userId: user.id,
+        deviceId: 'admin-cms'
+      });
+
+      const { access_token, refresh_token } = data;
+      localStorage.setItem('admin_token', access_token);
+      localStorage.setItem('admin_refresh_token', refresh_token);
+
+      return access_token;
+    } catch (error) {
+      this.logout();
+      return null;
+    }
   },
 
   getCurrentUser(): User | null {
