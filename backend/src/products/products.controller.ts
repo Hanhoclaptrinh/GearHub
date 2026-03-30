@@ -24,6 +24,8 @@ export class ProductsController {
         @Query('minPrice') minPrice?: string,
         @Query('maxPrice') maxPrice?: string,
         @Query('isAdmin') isAdmin?: string,
+        @Query('inventoryStatus') inventoryStatus?: 'all' | 'in_stock' | 'low_stock' | 'out_of_stock',
+        @Query('assetType') assetType?: 'all' | 'has_3d' | 'only_2d',
     ) {
         return this.productsService.getAllProducts({
             page: page ? Number(page) : undefined,
@@ -33,7 +35,9 @@ export class ProductsController {
             brandId,
             minPrice: minPrice ? Number(minPrice) : undefined,
             maxPrice: maxPrice ? Number(maxPrice) : undefined,
-            isAdmin: isAdmin === 'true'
+            isAdmin: isAdmin === 'true',
+            inventoryStatus,
+            assetType,
         });
     }
 

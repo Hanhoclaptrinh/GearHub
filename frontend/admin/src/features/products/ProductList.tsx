@@ -13,14 +13,20 @@ import {
   XCircle,
   AlertCircle,
   TrendingUp,
-  Clock,
   ChevronRight,
   ChevronLeft,
   Box,
   EyeOff,
-  MoreVertical
+  MoreVertical,
+  LayoutGrid,
+  Zap,
+  ShieldCheck,
+  PackageCheck,
+  AlertTriangle
 } from 'lucide-react';
 import { productService } from '../../services/product.service';
+import { brandService } from '../../services/brand.service';
+import { categoryService } from '../../services/category.service';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -33,20 +39,41 @@ import type { Product } from '../../types';
 import { ThreeDViewerModal } from '../../components/products/ThreeDViewerModal';
 
 export const ProductList: React.FC = () => {
+  const [selected3DModel, setSelected3DModel] = useState<{ glb: string, usdz?: string, name: string } | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [inventoryStatus, setInventoryStatus] = useState<'all' | 'in_stock' | 'low_stock' | 'out_of_stock'>('all');
+  const [assetType, setAssetType] = useState<'all' | 'has_3d' | 'only_2d'>('all');
+  const [minPrice, setMinPrice] = useState<string>('');
+  const [maxPrice, setMaxPrice] = useState<string>('');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [categoryId, setCategoryId] = useState<string>('all');
+  const [brandId, setBrandId] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [productIdToDelete, setProductIdToDelete] = useState<string | null>(null);
-  const [selected3DModel, setSelected3DModel] = useState<{ glb: string, usdz?: string, name: string } | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['products', search, page, 'admin'], // add 'admin' key
-    queryFn: () => productService.getProducts({ search, page, limit: 10, isAdmin: 'true' }),
+    queryKey: ['products', search, page, 'admin', inventoryStatus, assetType, minPrice, maxPrice, categoryId, brandId],
+    queryFn: () => productService.getProducts({ 
+      search, 
+      page, 
+      limit: 10, 
+      isAdmin: 'true',
+      inventoryStatus: inventoryStatus !== 'all' ? inventoryStatus : undefined,
+      assetType: assetType !== 'all' ? assetType : undefined,
+      minPrice: minPrice ? Number(minPrice) : undefined,
+      maxPrice: maxPrice ? Number(maxPrice) : undefined,
+      categoryId: categoryId !== 'all' ? categoryId : undefined,
+      brandId: brandId !== 'all' ? brandId : undefined
+    }),
   });
+
+  const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: categoryService.getAllCategories });
+  const { data: brands = [] } = useQuery({ queryKey: ['brands'], queryFn: brandService.getAllBrands });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => productService.hardDelete(id),
@@ -117,8 +144,12 @@ export const ProductList: React.FC = () => {
           <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">Tổng {meta.total} sản phẩm hiện có</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" className="h-14 px-6 rounded-2xl border-2 border-slate-100 bg-white hover:border-primary transition-all shadow-lg shadow-slate-100/50">
-            <Filter className="w-5 h-5 mr-2" /> Bộ lọc
+          <Button 
+            variant="outline" 
+            className="h-14 px-6 rounded-2xl border-2 border-slate-100 bg-white hover:border-primary transition-all shadow-lg shadow-slate-100/50"
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+          >
+            <Filter className={cn("w-5 h-5 mr-2", isFilterOpen && "text-primary")} /> Bộ lọc {isFilterOpen && "đang mở"}
           </Button>
           <Button onClick={() => navigate('/products/create')} className="h-14 px-8 rounded-2xl shadow-primary/20 shadow-2xl group">
             <Plus className="w-6 h-6 mr-2 group-hover:rotate-90 transition-transform" />
@@ -129,39 +160,184 @@ export const ProductList: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
-          { label: 'Doanh thu 24h', value: '42.5M', icon: TrendingUp, trend: '+12%', color: 'blue' },
-          { label: 'Đơn mới', value: '128', icon: Clock, trend: '+5%', color: 'indigo' },
-          { label: 'Out of stock', value: '03', icon: Package, trend: '-2', color: 'red' },
-          { label: 'Active', value: '1,204', icon: CheckCircle2, trend: 'Stable', color: 'green' }
+          { label: 'Tổng Sản Phẩm', value: meta.total, icon: LayoutGrid, trend: 'Tất cả', color: 'slate' },
+          { label: 'Kho (Hết/Sắp hết)', value: '03 / 12', icon: AlertTriangle, trend: 'Cần chú ý', color: 'red' },
+          { label: ' Sẵn sàng 3D/AR', value: '85%', icon: Zap, trend: 'Mô hình 3D', color: 'indigo' },
+          { label: 'Đang hiển thị', value: '1.204', icon: PackageCheck, trend: 'Active', color: 'green' }
         ].map((stat, i) => (
-          <Card key={i} className="border-none shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden group hover:scale-[1.02] transition-transform">
+          <Card key={i} className="border-none shadow-xl shadow-slate-200/40 rounded-[32px] overflow-hidden group hover:scale-[1.02] transition-all bg-white hover:shadow-2xl hover:shadow-slate-200/60">
             <CardContent className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div className={cn("p-3 rounded-2xl", i === 3 ? "bg-green-50 text-green-500" : i === 2 ? "bg-red-50 text-red-500" : "bg-primary/5 text-primary")}>
-                  <stat.icon className="w-6 h-6" />
-                </div>
-                <span className={cn("text-[10px] font-black px-2 py-1 rounded-full", stat.trend.includes('+') ? "bg-green-50 text-green-500" : "bg-slate-50 text-slate-400")}>
-                  {stat.trend}
-                </span>
+              <div className="flex justify-between items-start mb-6">
+                 <div className={cn(
+                   "w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:rotate-12 duration-300 shadow-sm",
+                   stat.color === 'slate' ? "bg-slate-50 text-slate-400" :
+                   stat.color === 'red' ? "bg-red-50 text-red-500" :
+                   stat.color === 'indigo' ? "bg-indigo-50 text-indigo-500" :
+                   "bg-green-50 text-green-500"
+                 )}>
+                   <stat.icon size={24} />
+                 </div>
+                 <span className={cn(
+                   "text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-tighter shadow-sm",
+                   stat.color === 'slate' ? "bg-slate-50 text-slate-400" :
+                   stat.color === 'red' ? "bg-red-50 text-red-500" :
+                   stat.color === 'indigo' ? "bg-indigo-50 text-indigo-500" :
+                   "bg-green-50 text-green-500"
+                 )}>
+                    {stat.trend}
+                 </span>
               </div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
-              <h3 className="text-2xl font-black text-slate-900 mt-1">{stat.value}</h3>
+              <div className="space-y-1">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                <div className="flex items-baseline gap-2">
+                   <h3 className="text-3xl font-black text-slate-900 tracking-tight">{stat.value}</h3>
+                   <span className="text-[10px] font-bold text-slate-300">items</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <Card className="border-none shadow-2xl shadow-slate-200/50 rounded-[40px] p-2 bg-white/50 backdrop-blur-xl border border-white/20">
-        <CardContent className="p-4">
-          <div className="relative group">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-primary transition-colors" />
-            <Input
-              placeholder="Tìm sản phẩm theo tên, SKU hoặc ID..."
-              className="pl-16 py-5 h-16 bg-slate-50 border-none rounded-[28px] text-lg font-bold placeholder:text-slate-300 focus:ring-4 focus:ring-primary/5 transition-all outline-none w-full"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+      <Card className="border-none shadow-2xl shadow-slate-200/50 rounded-[40px] p-2 bg-white backdrop-blur-xl border border-white/20 overflow-visible">
+        <CardContent className="p-4 space-y-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative group flex-1">
+              <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-primary transition-colors" />
+              <Input
+                placeholder="Tìm sản phẩm theo tên, SKU hoặc ID..."
+                className="pl-16 py-5 h-16 bg-slate-50 border-none rounded-[28px] text-lg font-bold placeholder:text-slate-300 focus:ring-4 focus:ring-primary/5 transition-all outline-none w-full"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <Button 
+               variant="ghost" 
+               className={cn(
+                 "h-16 px-8 rounded-[28px] text-sm font-black uppercase tracking-widest flex items-center gap-3 transition-all",
+                 isFilterOpen ? "bg-slate-900 text-white" : "bg-slate-100/50 text-slate-500 hover:bg-slate-100"
+               )}
+               onClick={() => setIsFilterOpen(!isFilterOpen)}
+            >
+               <Filter className="w-5 h-5" /> {isFilterOpen ? 'Đóng bộ lọc' : 'Lọc nâng cao'}
+            </Button>
           </div>
+
+          {isFilterOpen && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 bg-slate-50 rounded-[32px] animate-in fade-in zoom-in-95 duration-300 border border-slate-100">
+               <div className="space-y-3">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Trạng thái kho</label>
+                 <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: 'all', label: 'Tất cả' },
+                      { id: 'in_stock', label: 'Còn hàng' },
+                      { id: 'low_stock', label: 'Sắp hết' },
+                      { id: 'out_of_stock', label: 'Đã hết' }
+                    ].map((st) => (
+                      <button
+                        key={st.id}
+                        onClick={() => setInventoryStatus(st.id as any)}
+                        className={cn(
+                          "h-10 px-3 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm",
+                          inventoryStatus === st.id ? "bg-primary text-white shadow-primary/20" : "bg-white text-slate-400 hover:border-primary/20 border border-transparent"
+                        )}
+                      >
+                         {st.label}
+                      </button>
+                    ))}
+                 </div>
+               </div>
+
+               <div className="space-y-3">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Loại Assets</label>
+                 <div className="grid grid-cols-1 gap-2">
+                    {[
+                      { id: 'all', label: 'Tất cả Assets' },
+                      { id: 'has_3d', label: 'Có mô hình 3D/AR' },
+                      { id: 'only_2d', label: 'Chỉ có ảnh 2D' }
+                    ].map((st) => (
+                      <button
+                        key={st.id}
+                        onClick={() => setAssetType(st.id as any)}
+                        className={cn(
+                          "h-10 px-4 rounded-xl text-[10px] font-black uppercase text-left transition-all shadow-sm flex items-center justify-between",
+                          assetType === st.id ? "bg-indigo-500 text-white shadow-indigo-500/20" : "bg-white text-slate-400 hover:border-indigo-500/20 border border-transparent"
+                        )}
+                      >
+                         {st.label}
+                         {assetType === st.id && <ShieldCheck size={14} />}
+                      </button>
+                    ))}
+                 </div>
+               </div>
+
+               <div className="space-y-3">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Doanh mục & Thương hiệu</label>
+                 <div className="grid grid-cols-1 gap-2">
+                    <select 
+                      className="w-full h-10 px-4 bg-white border border-slate-100 rounded-xl outline-none focus:border-primary transition-all text-[10px] font-black uppercase appearance-none cursor-pointer"
+                      value={categoryId}
+                      onChange={(e) => setCategoryId(e.target.value)}
+                    >
+                       <option value="all">Tất cả Danh mục</option>
+                       {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                    <select 
+                      className="w-full h-10 px-4 bg-white border border-slate-100 rounded-xl outline-none focus:border-primary transition-all text-[10px] font-black uppercase appearance-none cursor-pointer"
+                      value={brandId}
+                      onChange={(e) => setBrandId(e.target.value)}
+                    >
+                       <option value="all">Tất cả Thương hiệu</option>
+                       {brands.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    </select>
+                 </div>
+               </div>
+
+               <div className="space-y-3 md:col-span-1">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Lọc giá (Min - Max)</label>
+                 <div className="flex flex-col gap-2">
+                    <div className="relative">
+                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-300">MIN</span>
+                       <input 
+                         type="number" 
+                         className="w-full h-10 pl-10 pr-3 bg-white border border-slate-100 rounded-xl outline-none focus:border-primary text-[10px] font-bold"
+                         value={minPrice}
+                         onChange={(e) => setMinPrice(e.target.value)}
+                         placeholder="0"
+                       />
+                    </div>
+                    <div className="relative">
+                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-300">MAX</span>
+                       <input 
+                         type="number" 
+                         className="w-full h-10 pl-10 pr-3 bg-white border border-slate-100 rounded-xl outline-none focus:border-primary text-[10px] font-bold"
+                         value={maxPrice}
+                         onChange={(e) => setMaxPrice(e.target.value)}
+                         placeholder="Max"
+                       />
+                    </div>
+                 </div>
+               </div>
+
+               <div className="flex flex-col justify-end">
+                 <Button 
+                    variant="ghost" 
+                    className="h-10 bg-white border border-slate-100 text-red-500 rounded-xl text-[10px] font-black uppercase hover:bg-red-50 hover:border-red-100 w-full"
+                    onClick={() => {
+                       setInventoryStatus('all');
+                       setAssetType('all');
+                       setMinPrice('');
+                       setMaxPrice('');
+                       setCategoryId('all');
+                       setBrandId('all');
+                       setSearch('');
+                    }}
+                 >
+                    Xóa tất cả bộ lọc
+                 </Button>
+               </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

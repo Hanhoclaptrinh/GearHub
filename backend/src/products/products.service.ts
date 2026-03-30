@@ -455,6 +455,8 @@ export class ProductsService {
             minPrice?: number;
             maxPrice?: number;
             isAdmin?: boolean;
+            inventoryStatus?: 'all' | 'in_stock' | 'low_stock' | 'out_of_stock';
+            assetType?: 'all' | 'has_3d' | 'only_2d';
         }
     ) {
         const {
@@ -465,7 +467,9 @@ export class ProductsService {
             brandId,
             minPrice,
             maxPrice,
-            isAdmin = false
+            isAdmin = false,
+            inventoryStatus = 'all',
+            assetType = 'all'
         } = query;
 
         const skip = (page - 1) * limit;
@@ -473,13 +477,10 @@ export class ProductsService {
         // de quy qua category
         let categoryIds: string[] | undefined = undefined;
         if (categoryId) {
-            // tim cate hien tai va tat ca cac con cua no
             const currentCategory = await this.prisma.category.findUnique({
                 where: { id: categoryId },
                 include: { children: { select: { id: true } } }
             });
-
-            // gom id chinh no va id cua cac con vao chung
             categoryIds = currentCategory ? [currentCategory.id, ...currentCategory.children.map(c => c.id)] : [categoryId];
         }
 
@@ -489,19 +490,55 @@ export class ProductsService {
             categoryId: categoryIds ? { in: categoryIds } : undefined,
             brandId: brandId || undefined,
             OR: search ? [
-                { name: { contains: search } },
-                { description: { contains: search } },
+                { name: { contains: search, mode: 'insensitive' } },
+                { description: { contains: search, mode: 'insensitive' } },
             ] : undefined,
-            // loc gia thong qua variant
-            variants: (minPrice || maxPrice) ? {
+        };
+
+        // loc gia qua variant
+        if (minPrice || maxPrice) {
+            whereCondition.variants = {
                 some: {
                     price: {
                         gte: minPrice ? Number(minPrice) : undefined,
                         lte: maxPrice ? Number(maxPrice) : undefined,
                     }
                 }
-            } : undefined,
-        };
+            };
+        }
+
+        // loc theo ton kho
+        if (inventoryStatus && inventoryStatus !== 'all') {
+            if (inventoryStatus === 'out_of_stock') {
+                whereCondition.variants = {
+                    ...whereCondition.variants,
+                    every: { stock: 0 }
+                };
+            } else if (inventoryStatus === 'low_stock') {
+                whereCondition.variants = {
+                    ...whereCondition.variants,
+                    some: { stock: { gt: 0, lte: 10 } }
+                };
+            } else if (inventoryStatus === 'in_stock') {
+                whereCondition.variants = {
+                    ...whereCondition.variants,
+                    some: { stock: { gt: 10 } }
+                };
+            }
+        }
+
+        // loc theo loai asset
+        if (assetType && assetType !== 'all') {
+            if (assetType === 'has_3d') {
+                whereCondition.assets = {
+                    some: { type: { in: ['GLB', 'USDZ'] } }
+                };
+            } else if (assetType === 'only_2d') {
+                whereCondition.assets = {
+                    every: { type: 'IMAGE' }
+                };
+            }
+        }
 
         // query db
         const [items, total] = await Promise.all([
