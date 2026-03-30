@@ -134,13 +134,17 @@ export class CategoriesService {
     async removeCategory(id: string) {
         const category = await this.prisma.category.findUnique({
             where: { id },
-            include: { _count: { select: { children: true } } }
+            include: { _count: { select: { children: true, products: true } } }
         });
 
         if (!category) throw new NotFoundException('Danh mục không tồn tại');
 
         if (category._count.children > 0) {
             throw new BadRequestException(`Không thể xóa vì danh mục này đang có ${category._count.children} danh mục con`);
+        }
+
+        if (category._count.products > 0) {
+            throw new BadRequestException(`Không thể xóa vì danh mục này đang có ${category._count.products} sản phẩm`);
         }
 
         if (category.iconUrl) {

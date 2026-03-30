@@ -11,8 +11,6 @@ import {
   RefreshCcw,
   ExternalLink,
   AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
   Loader2
 } from 'lucide-react';
 import { orderService } from '../../services/order.service';
@@ -39,7 +37,7 @@ export const OrderList: React.FC = () => {
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: OrderStatus }) =>
-      orderService.updateStatus(id, status),
+      orderService.updateStatus(id, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       setSuccessMessage('Cập nhật trạng thái thành công');

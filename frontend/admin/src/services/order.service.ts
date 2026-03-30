@@ -12,8 +12,8 @@ export const orderService = {
     return data;
   },
 
-  async updateStatus(id: string, status: OrderStatus) {
-    const { data } = await api.patch<Order>(`/orders/${id}`, { status });
+  async updateStatus(id: string, payload: { status: OrderStatus; description?: string }) {
+    const { data } = await api.patch<Order>(`/orders/${id}`, payload);
     return data;
   },
 
@@ -24,16 +24,6 @@ export const orderService = {
 
   async getTopSellingProducts() {
     const { data } = await api.get('/orders/top-products');
-    return data;
-  },
-
-  async cancelOrder(id: string) {
-    const { data } = await api.patch<Order>(`/orders/${id}/cancel`);
-    return data;
-  },
-
-  async reOrder(id: string) {
-    const { data } = await api.post<Order>(`/orders/${id}/re-order`);
     return data;
   },
 };

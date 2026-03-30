@@ -257,6 +257,22 @@ export class OrdersService {
                         data: { stock: { increment: item.quantity } }
                     });
                 }
+            } else if (!isNewRefundStatus && isCurrentRefundStatus) {
+                // hoan lai kho neu don hang chuyen tu trang thai huy/tra ve trang thai dang xu ly
+                for (const item of order.items) {
+                    const variant = await tx.productVariant.findUnique({
+                        where: { id: item.productVariantId },
+                        select: { stock: true, name: true }
+                    });
+                    if (!variant) throw new NotFoundException(`Sản phẩm variant ${item.productVariantId} không tồn tại`);
+                    if (variant.stock < item.quantity) {
+                        throw new BadRequestException(`Sản phẩm ${variant.name} không đủ tồn kho để khôi phục đơn hàng (Hiện còn: ${variant.stock})`);
+                    }
+                    await tx.productVariant.update({
+                        where: { id: item.productVariantId },
+                        data: { stock: { decrement: item.quantity } }
+                    });
+                }
             }
 
             // cap nhat trang thai don hang

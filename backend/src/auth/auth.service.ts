@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from 'src/users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { RedisService } from 'src/redis/redis.service';
@@ -9,6 +9,7 @@ import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { MailService } from 'src/mail/mail.service';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UserStatus } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -19,11 +20,10 @@ export class AuthService {
     private mailService: MailService
   ) { }
 
-  private async signAccessToken(userId: string, email: string, fullName: string, role: string) {
+  private async signAccessToken(userId: string, email: string, role: string) {
     return this.jwtService.sign({
       sub: userId,
       email: email,
-      fullName: fullName,
       role: role
     }, { expiresIn: '20m' });
   }
@@ -53,7 +53,6 @@ export class AuthService {
       this.signAccessToken(
         newUser.id,
         newUser.email,
-        newUser.profile?.fullName || "User",
         newUser.role
       ),
       this.generateRefreshToken(newUser.id, data.deviceId)
@@ -77,22 +76,26 @@ export class AuthService {
       throw new UnauthorizedException('Thông tin đăng nhập không chính xác');
     }
 
+    if (user.status === UserStatus.BANNED) {
+      throw new ForbiddenException('Tài khoản đã bị khóa! Vui lòng liên hệ quản trị viên để biết thêm chi tiết.');
+    }
+
     const isMatch = await bcrypt.compare(data.password, user.password);
     if (!isMatch) {
       throw new UnauthorizedException('Thông tin đăng nhập không chính xác');
     }
 
     const [at, rt] = await Promise.all([
-      this.signAccessToken(user.id, user.email, user.profile?.fullName || 'User', user.role),
+      this.signAccessToken(user.id, user.email, user.role),
       this.generateRefreshToken(user.id, data.deviceId)
     ]);
 
     return {
       message: 'Đăng nhập thành công',
       data: {
-        user: { 
-          id: user.id, 
-          email: user.email, 
+        user: {
+          id: user.id,
+          email: user.email,
           role: user.role,
           fullName: user.profile?.fullName,
           avatarUrl: user.profile?.avatarUrl
@@ -130,7 +133,6 @@ export class AuthService {
       this.signAccessToken(
         user.id,
         user.email,
-        user.profile?.fullName || 'User',
         user.role
       ),
       this.generateRefreshToken(user.id, data.deviceId || 'current-session')
@@ -167,7 +169,6 @@ export class AuthService {
       this.signAccessToken(
         user.id,
         user.email,
-        user.profile?.fullName || 'User',
         user.role
       ),
       this.generateRefreshToken(user.id, deviceId)
@@ -199,6 +200,8 @@ export class AuthService {
     if (!savedOtp || savedOtp !== data.otp) {
       throw new BadRequestException('Mã OTP không chính xác hoặc đã hết hạn');
     }
+
+    await this.redisService.del(key); // xoa otp de khong bi re-use
 
     const salt = 10;
     const hashedPassword = await bcrypt.hash(data.newPassword, salt);

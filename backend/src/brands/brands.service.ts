@@ -86,8 +86,15 @@ export class BrandsService {
   }
 
   async removeBrand(id: string) {
-    const brand = await this.prisma.brand.findUnique({ where: { id } });
+    const brand = await this.prisma.brand.findUnique({
+      where: { id },
+      include: { _count: { select: { products: true } } }
+    });
     if (!brand) throw new NotFoundException('Thương hiệu không tồn tại');
+
+    if (brand._count.products > 0) {
+      throw new BadRequestException(`Không thể xóa thương hiệu này vì đang có ${brand._count.products} sản phẩm`);
+    }
 
     if (brand.logoUrl) {
       const publicId = brand.logoUrl.split('/').pop()?.split('.')[0];
