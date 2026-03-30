@@ -1,3 +1,9 @@
-DO AN TOT NGHIEP
+# 水利大学
+## 毕业设计
 
-XAY DUNG HE THONG E-COMMERCE KINH DOANH THIET BI CONG NGHE TICH HOP AR (VIRTUAL TRY-ON) VA TRO LY AO AI (CHAT BOT)
+### 毕业课题：面向科技设备的电子商务系统
+
+**完成人：黎永欣**
+**专业：信息技术**
+**指导教师：___ 博士**
+**研究时间：2026年3月至2026年6月（共3个月）**
