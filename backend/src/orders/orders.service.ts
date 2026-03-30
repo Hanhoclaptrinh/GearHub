@@ -245,9 +245,12 @@ export class OrdersService {
             });
             if (!order) throw new NotFoundException('Không tìm thấy đơn hàng');
 
-            // hoan kho
-            // khi trang thai moi la cancelled va trang thai hien tai khong phai cancelled
-            if (status === OrderStatus.CANCELLED && order.status !== OrderStatus.CANCELLED) {
+            // hoan kho neu don hang bi huy hoac khach tra hang hoac giao hang that bai
+            const refundStatuses: OrderStatus[] = [OrderStatus.CANCELLED, OrderStatus.RETURNED, OrderStatus.FAILED];
+            const isNewRefundStatus = refundStatuses.includes(status as OrderStatus);
+            const isCurrentRefundStatus = refundStatuses.includes(order.status as OrderStatus);
+
+            if (isNewRefundStatus && !isCurrentRefundStatus) {
                 for (const item of order.items) {
                     await tx.productVariant.update({
                         where: { id: item.productVariantId },
@@ -278,10 +281,13 @@ export class OrdersService {
     private mapStatusToLabel(status: OrderStatus): string {
         const labels = {
             [OrderStatus.PENDING]: 'Chờ xác nhận',
-            [OrderStatus.PROCESSING]: 'Đang xử lý',
+            [OrderStatus.CONFIRMED]: 'Đã xác nhận',
+            [OrderStatus.PROCESSING]: 'Đang đóng gói',
             [OrderStatus.SHIPPING]: 'Đang giao hàng',
             [OrderStatus.DELIVERED]: 'Giao hàng thành công',
             [OrderStatus.CANCELLED]: 'Đã hủy đơn',
+            [OrderStatus.RETURNED]: 'Khách trả hàng',
+            [OrderStatus.FAILED]: 'Giao hàng thất bại',
         };
         return labels[status] || status;
     }

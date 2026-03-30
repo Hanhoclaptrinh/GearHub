@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useMemo } from 'react';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import {
   Users,
   Search,
@@ -10,29 +10,110 @@ import {
   User as UserIcon,
   Mail,
   Calendar,
-  MoreVertical,
-  ShieldAlert,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  AlertCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { userService } from '../../services/user.service';
+import { authService } from '../../services/auth.service';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { UserEditModal } from '../../components/ui/UserEditModal';
 
 export const UserList: React.FC = () => {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const queryClient = useQueryClient();
+
+  const currentUser = useMemo(() => authService.getCurrentUser(), []);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['users', search, page],
     queryFn: () => userService.getAllUsers({ search, page, limit: 10 }),
   });
 
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ userId, status }: any) => userService.updateUserStatus(userId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setIsEditModalOpen(false);
+      setSelectedUser(null);
+    },
+  });
+
+  const updateRoleMutation = useMutation({
+    mutationFn: ({ userId, role }: any) => userService.updateUserRole(userId, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setIsEditModalOpen(false);
+      setSelectedUser(null);
+    },
+  });
+
   const users = data?.data || [];
   const meta = data?.meta || { total: 0, lastPage: 1 };
+
+  const handleEditClick = (user: any) => {
+    setSelectedUser(user);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveUserChanges = async (formData: any) => {
+    try {
+      // cap nhat trang thai tai khoan
+      if (formData.status !== selectedUser.status) {
+        await updateStatusMutation.mutateAsync({
+          userId: selectedUser.id,
+          status: formData.status,
+        });
+      }
+
+      // cap nhat quyen
+      if (formData.role !== selectedUser.role) {
+        await updateRoleMutation.mutateAsync({
+          userId: selectedUser.id,
+          role: formData.role,
+        });
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+    }
+  };
+
+  const getStatusBadgeInfo = (status: string) => {
+    const statusMap: any = {
+      ACTIVE: {
+        label: 'Đang hoạt động',
+        variant: 'success',
+        icon: CheckCircle2,
+      },
+      INACTIVE: {
+        label: 'Không hoạt động',
+        variant: 'warning',
+        icon: AlertCircle,
+      },
+      BANNED: {
+        label: 'Bị khoá',
+        variant: 'danger',
+        icon: XCircle,
+      },
+    };
+    return statusMap[status] || statusMap.ACTIVE;
+  };
+
+  const getRoleBadgeInfo = (role: string) => {
+    const roleMap: any = {
+      ADMIN: { label: 'Quản trị viên', variant: 'info', icon: Shield },
+      STAFF: { label: 'Nhân viên', variant: 'default', icon: UserIcon },
+      USER: { label: 'Người dùng', variant: 'default', icon: UserIcon },
+    };
+    return roleMap[role] || roleMap.USER;
+  };
 
   return (
     <div className="space-y-6">
@@ -62,7 +143,7 @@ export const UserList: React.FC = () => {
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] font-black text-slate-400 uppercase">Hoạt động (Trang này)</span>
-              <span className="text-2xl font-black text-slate-900">{users.filter((u: any) => u.isActive).length}</span>
+              <span className="text-2xl font-black text-slate-900">{users.filter((u: any) => u.status === 'ACTIVE').length}</span>
             </div>
           </div>
         </Card>
@@ -80,11 +161,11 @@ export const UserList: React.FC = () => {
         <Card className="border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <ShieldAlert className="w-6 h-6" />
+              <AlertTriangle className="w-6 h-6" />
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] font-black text-slate-400 uppercase">Đã khoá (Trang này)</span>
-              <span className="text-2xl font-black text-slate-900">{users.filter((u: any) => !u.isActive).length}</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase">Bị khoá (Trang này)</span>
+              <span className="text-2xl font-black text-slate-900">{users.filter((u: any) => u.status === 'BANNED').length}</span>
             </div>
           </div>
         </Card>
@@ -115,7 +196,7 @@ export const UserList: React.FC = () => {
 
       <div className="bg-white rounded-[32px] shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-500">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[1000px]">
+          <table className="w-full text-left border-collapse min-w-[1200px]">
             <thead className="bg-slate-50/50 border-b border-slate-100">
               <tr>
                 <th className="px-8 py-5 text-xs font-black text-slate-500 uppercase tracking-widest pl-10">Người dùng</th>
@@ -134,69 +215,76 @@ export const UserList: React.FC = () => {
                   </tr>
                 ))
               ) : users.length > 0 ? (
-                users.map((user: any) => (
-                  <tr key={user.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-8 py-5 pl-10">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 overflow-hidden flex-shrink-0 flex items-center justify-center p-0.5 group-hover:scale-105 transition-transform shadow-sm">
-                          {user.profile?.avatarUrl ? (
-                            <img src={user.profile.avatarUrl} alt={user.profile.fullName} className="w-full h-full object-cover rounded-xl" />
-                          ) : (
-                            <UserIcon className="w-6 h-6 text-slate-300" />
-                          )}
+                users.map((user: any) => {
+                  const statusInfo = getStatusBadgeInfo(user.status);
+                  const roleInfo = getRoleBadgeInfo(user.role);
+                  const StatusIcon = statusInfo.icon;
+                  const RoleIcon = roleInfo.icon;
+
+                  return (
+                    <tr key={user.id} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="px-8 py-5 pl-10">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 overflow-hidden flex-shrink-0 flex items-center justify-center p-0.5 group-hover:scale-105 transition-transform shadow-sm">
+                            {user.profile?.avatarUrl ? (
+                              <img src={user.profile.avatarUrl} alt={user.profile?.fullName} className="w-full h-full object-cover rounded-xl" />
+                            ) : (
+                              <UserIcon className="w-6 h-6 text-slate-300" />
+                            )}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-black text-slate-800 group-hover:text-primary transition-colors">{user.profile?.fullName || 'Người dùng mới'}</span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID: {user.id.slice(-8).toUpperCase()}</span>
+                          </div>
                         </div>
-                        <div className="flex flex-col">
-                          <span className="font-black text-slate-800 group-hover:text-primary transition-colors">{user.profile?.fullName || 'Nguời dùng mới'}</span>
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID: {user.id.slice(-8).toUpperCase()}</span>
+                      </td>
+                      <td className="px-8 py-5">
+                        <div className="flex items-center gap-2 text-slate-600">
+                          <Mail className="w-4 h-4 text-slate-300" />
+                          <span className="text-sm font-black">{user.email}</span>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <Mail className="w-4 h-4 text-slate-300" />
-                        <span className="text-sm font-black">{user.email}</span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-5">
-                      {user.role === 'ADMIN' ? (
-                        <Badge variant="info" className="gap-1.5 h-8 px-3 rounded-full">
-                          <Shield className="w-3.5 h-3.5" /> Quản trị viên
+                      </td>
+                      <td className="px-8 py-5">
+                        <Badge
+                          variant={roleInfo.variant as any}
+                          className={`gap-1.5 h-8 px-3 rounded-full ${roleInfo.variant === 'info' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}
+                        >
+                          <RoleIcon className="w-3.5 h-3.5" /> {roleInfo.label}
                         </Badge>
-                      ) : (
-                        <Badge variant="default" className="bg-slate-100 text-slate-500 border-none h-8 px-3 rounded-full">
-                          Người dùng
+                      </td>
+                      <td className="px-8 py-5">
+                        <Badge
+                          variant={statusInfo.variant as any}
+                          className={`gap-1.5 h-8 px-3 rounded-full ${statusInfo.variant === 'success'
+                            ? 'bg-green-100 text-green-700'
+                            : statusInfo.variant === 'danger'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-amber-100 text-amber-700'
+                            }`}
+                        >
+                          <StatusIcon className="w-3.5 h-3.5" /> {statusInfo.label}
                         </Badge>
-                      )}
-                    </td>
-                    <td className="px-8 py-5">
-                      {user.isActive ? (
-                        <Badge variant="success" className="gap-1.5 h-8 px-3 rounded-full animate-in fade-in scale-95 duration-200">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Đang hoạt động
-                        </Badge>
-                      ) : (
-                        <Badge variant="danger" className="gap-1.5 h-8 px-3 rounded-full animate-in fade-in scale-95 duration-200">
-                          <XCircle className="w-3.5 h-3.5" /> Bị khoá
-                        </Badge>
-                      )}
-                    </td>
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-3.5 h-3.5 text-slate-300" />
-                        <span className="text-xs font-bold text-slate-600">{new Date(user.createdAt).toLocaleDateString('vi-VN')}</span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-5">
-                      <div className="flex items-center justify-center gap-2">
-                        <Button variant="ghost" className="p-2 h-10 w-10 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-full border-none transition-all">
-                          <EditIcon className="w-5 h-5" />
-                        </Button>
-                        <Button variant="ghost" className="p-2 h-10 w-10 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full border-none transition-all">
-                          <MoreVertical className="w-5 h-5" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="px-8 py-5">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-3.5 h-3.5 text-slate-300" />
+                          <span className="text-xs font-bold text-slate-600">{new Date(user.createdAt).toLocaleDateString('vi-VN')}</span>
+                        </div>
+                      </td>
+                      <td className="px-8 py-5">
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            variant="ghost"
+                            className="p-2 h-10 w-10 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-full border-none transition-all"
+                            onClick={() => handleEditClick(user)}
+                          >
+                            <EditIcon className="w-5 h-5" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={6} className="px-8 py-20 text-center">
@@ -242,13 +330,25 @@ export const UserList: React.FC = () => {
 
       {isError && (
         <div className="p-8 bg-red-50 border-2 border-red-100 rounded-[40px] flex items-center gap-6 text-red-600 shadow-2xl shadow-red-100/50 animate-in slide-in-from-bottom-5">
-          <ShieldAlert className="w-10 h-10 flex-shrink-0" />
+          <AlertTriangle className="w-10 h-10 flex-shrink-0" />
           <div>
             <p className="text-xl font-black text-red-700">Lỗi nạp dữ liệu khách hàng</p>
             <p className="text-base font-bold opacity-80">Máy chủ hiện không phản hồi. Vui lòng thử tải lại trang.</p>
           </div>
         </div>
       )}
+
+      <UserEditModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedUser(null);
+        }}
+        onSave={handleSaveUserChanges}
+        user={selectedUser}
+        currentUser={currentUser}
+        isLoading={updateStatusMutation.isPending || updateRoleMutation.isPending}
+      />
     </div>
   );
 };

@@ -83,11 +83,13 @@ export interface Product {
 
 export const OrderStatus = {
   PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
   PROCESSING: 'PROCESSING',
   SHIPPING: 'SHIPPING',
   DELIVERED: 'DELIVERED',
   CANCELLED: 'CANCELLED',
-  REFUNDED: 'REFUNDED',
+  RETURNED: 'RETURNED',
+  FAILED: 'FAILED',
 } as const;
 
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
@@ -113,6 +115,10 @@ export interface Order {
   user?: User;
   items: OrderItem[];
   createdAt: string;
+  receiverName?: string;
+  receiverPhone?: string;
+  paymentMethod?: 'COD' | 'ONLINE';
+  paymentStatus?: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
 }
 
 export interface DashboardStats {

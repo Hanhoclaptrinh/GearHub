@@ -32,6 +32,26 @@ export class OrdersController {
         });
     }
 
+    @Get('admin/dashboard')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    async getDashboard() {
+        const stats = await this.orderService.getAdminStats();
+        const topProducts = await this.orderService.getTopSellingProducts();
+
+        return {
+            stats,
+            topProducts
+        }
+    }
+
+    @Get('top-products')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    async getTopProducts(@Query('limit') limit?: number) {
+        return this.orderService.getTopSellingProducts(limit ? Number(limit) : 5);
+    }
+
     @Get('admin')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
@@ -66,19 +86,6 @@ export class OrdersController {
     @UseGuards(JwtAuthGuard)
     async cancelOrder(@Request() req, @Param('id') id: string) {
         return this.orderService.cancelOrder(req.user.userId, id);
-    }
-
-    @Get('admin/dashboard')
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
-    async getDashboard() {
-        const stats = await this.orderService.getAdminStats();
-        const topProducts = await this.orderService.getTopSellingProducts();
-
-        return {
-            stats,
-            topProducts
-        }
     }
 
     @Post(':id/re-order')

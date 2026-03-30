@@ -1,7 +1,9 @@
-import { Controller, Patch, UseGuards, Request, Get, Query, UseInterceptors, Body, UploadedFile, FileTypeValidator, MaxFileSizeValidator, ParseFilePipe } from '@nestjs/common';
+import { Controller, Patch, UseGuards, Request, Get, Query, UseInterceptors, Body, UploadedFile, FileTypeValidator, MaxFileSizeValidator, ParseFilePipe, Param, NotFoundException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateUserStatusDto } from './dto/update-user-status.dto';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
@@ -47,5 +49,27 @@ export class UsersController {
     }
 
     return this.userService.updateProfile(userId, data);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Patch(':id/status')
+  async updateUserStatus(
+    @Param('id') id: string,
+    @Body() data: UpdateUserStatusDto,
+    @Request() req
+  ) {
+    return this.userService.updateUserStatus(id, data, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Patch(':id/role')
+  async updateUserRole(
+    @Param('id') id: string,
+    @Body() data: UpdateUserRoleDto,
+    @Request() req
+  ) {
+    return this.userService.updateUserRole(id, data, req.user.userId);
   }
 }

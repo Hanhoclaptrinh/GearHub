@@ -1,7 +1,9 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Role } from '@prisma/client';
+import { Role, UserStatus } from '@prisma/client';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateUserStatusDto } from './dto/update-user-status.dto';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 
 export interface ICreateUser {
   email: string;
@@ -182,4 +184,56 @@ export class UsersService {
       }
     });
   }
+
+  async updateUserStatus(id: string, data: UpdateUserStatusDto, adminId: string) {
+    // chan admin tu khoa chinh minh
+    if (id === adminId && data.status === UserStatus.BANNED) {
+      throw new BadRequestException('Bạn không thể tự khóa tài khoản của chính mình');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id }
+    });
+
+    if (!user) throw new NotFoundException(`Không tìm thấy người dùng với ID: ${id}`);
+
+    return await this.prisma.user.update({
+      where: { id },
+      data: {
+        status: data.status
+      },
+      include: {
+        profile: true,
+        _count: {
+          select: { orders: true }
+        }
+      }
+    });
+  }
+
+  async updateUserRole(id: string, data: UpdateUserRoleDto, adminId: string) {
+    if (id === adminId && data.role !== Role.ADMIN) {
+      throw new BadRequestException('Bạn không thể tự hạ quyền Admin của chính mình');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id }
+    });
+
+    if (!user) throw new NotFoundException(`Không tìm thấy người dùng với ID: ${id}`);
+
+    return await this.prisma.user.update({
+      where: { id },
+      data: {
+        role: data.role
+      },
+      include: {
+        profile: true,
+        _count: {
+          select: { orders: true }
+        }
+      }
+    });
+  }
 }
+
