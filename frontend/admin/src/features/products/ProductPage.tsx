@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import type { SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -45,6 +45,84 @@ const productSchema = z.object({
 });
 
 type FormValues = z.infer<typeof productSchema>;
+
+const AttributeManager: React.FC<{ 
+  value: Record<string, any>; 
+  onChange: (val: Record<string, any>) => void 
+}> = ({ value, onChange }) => {
+  const attributeList = Object.entries(value || {}).map(([key, val]) => ({ key, val }));
+  const [items, setItems] = useState(attributeList.length > 0 ? attributeList : [{ key: '', val: '' }]);
+
+  const updateItems = (newItems: typeof items) => {
+    setItems(newItems);
+    const result: Record<string, any> = {};
+    newItems.forEach(item => {
+      if (item.key.trim()) {
+        result[item.key.trim()] = item.val;
+      }
+    });
+    onChange(result);
+  };
+
+  return (
+    <div className="mt-6 pt-6 border-t border-slate-100 space-y-4">
+      <div className="flex items-center justify-between">
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+          <Layers className="w-3 h-3" /> Thuộc tính chi tiết (Màu, Dung lượng...)
+        </label>
+        <Button 
+          type="button" 
+          variant="ghost" 
+          size="sm" 
+          className="h-8 text-[10px] px-3 rounded-xl border border-slate-200 hover:bg-slate-100"
+          onClick={() => updateItems([...items, { key: '', val: '' }])}
+        >
+          <Plus className="w-3 h-3 mr-1.5" /> Thêm key
+        </Button>
+      </div>
+      
+      <div className="grid grid-cols-1 gap-3">
+        {items.map((item, idx) => (
+          <div key={idx} className="flex gap-3 items-center group/attr animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className="flex-1 relative">
+               <input 
+                 className="w-full h-10 px-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-bold text-slate-700 text-xs"
+                 placeholder="Tên (VD: Màu sắc)"
+                 value={item.key}
+                 onChange={(e) => {
+                   const next = [...items];
+                   next[idx].key = e.target.value;
+                   updateItems(next);
+                 }}
+               />
+            </div>
+            <div className="flex-1 relative">
+               <input 
+                 className="w-full h-10 px-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-bold text-slate-700 text-xs"
+                 placeholder="Giá trị (VD: Bạc)"
+                 value={item.val}
+                 onChange={(e) => {
+                   const next = [...items];
+                   next[idx].val = e.target.value;
+                   updateItems(next);
+                 }}
+               />
+            </div>
+            {items.length > 1 && (
+              <button 
+                type="button" 
+                className="p-2.5 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover/attr:opacity-100"
+                onClick={() => updateItems(items.filter((_, i) => i !== idx))}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export const ProductPage: React.FC = () => {
   const { slug } = useParams();
@@ -293,6 +371,17 @@ export const ProductPage: React.FC = () => {
                         )}
                       </div>
                     </div>
+                    
+                    <Controller
+                      name={`variants.${idx}.attributes` as any}
+                      control={control}
+                      render={({ field }) => (
+                        <AttributeManager 
+                          value={field.value || {}} 
+                          onChange={field.onChange} 
+                        />
+                      )}
+                    />
                   </div>
                 ))}
              </CardContent>

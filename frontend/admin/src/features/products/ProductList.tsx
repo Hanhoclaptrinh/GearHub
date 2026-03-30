@@ -8,8 +8,7 @@ import {
   Filter,
   Edit,
   Trash2,
-  MoreVertical,
-  Image as ImageIcon,
+  ImageIcon,
   CheckCircle2,
   XCircle,
   AlertCircle,
@@ -18,8 +17,8 @@ import {
   ChevronRight,
   ChevronLeft,
   Box,
-  Eye,
-  EyeOff
+  EyeOff,
+  MoreVertical
 } from 'lucide-react';
 import { productService } from '../../services/product.service';
 import { toast } from 'sonner';
@@ -39,6 +38,7 @@ export const ProductList: React.FC = () => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [productIdToDelete, setProductIdToDelete] = useState<string | null>(null);
   const [selected3DModel, setSelected3DModel] = useState<{ glb: string, usdz?: string, name: string } | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -193,52 +193,75 @@ export const ProductList: React.FC = () => {
                   const primaryAsset = product.assets?.find(a => a.isPrimary) || product.assets?.find(a => a.type === 'IMAGE');
 
                   return (
-                    <tr key={product.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-6 py-4 pl-10">
-                        <div className="flex items-center gap-5">
-                          <div className={cn(
-                            "relative w-16 h-16 rounded-2xl border flex items-center justify-center overflow-hidden flex-shrink-0 group-hover:scale-105 transition-all duration-300 shadow-sm",
-                            has3D ? "bg-indigo-50 border-indigo-100" : "bg-white border-slate-200"
-                          )}>
-                            {primaryAsset?.url ? (
-                              <img src={primaryAsset.url} alt={product.name} className="w-full h-full object-cover" />
-                            ) : has3D ? (
-                              <Box className="w-8 h-8 text-indigo-400" />
-                            ) : (
-                              <ImageIcon className="w-6 h-6 text-slate-300" />
-                            )}
+                    <React.Fragment key={product.id}>
+                      <tr className={cn(
+                        "hover:bg-slate-50/50 transition-colors group relative cursor-pointer",
+                        expandedId === product.id && "bg-slate-50/80"
+                      )} onClick={() => setExpandedId(expandedId === product.id ? null : product.id)}>
+                        <td className="px-6 py-4 pl-10">
+                          <div className="flex items-center gap-5">
+                            <div className="flex items-center justify-center p-1 -ml-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                               <ChevronRight className={cn("w-5 h-5 text-slate-300 transition-transform", expandedId === product.id && "rotate-90 text-primary")} />
+                            </div>
+                            <div className={cn(
+                              "relative w-16 h-16 rounded-2xl border flex items-center justify-center overflow-hidden flex-shrink-0 group-hover:scale-105 transition-all duration-300 shadow-sm",
+                              has3D ? "bg-indigo-50 border-indigo-100" : "bg-white border-slate-200"
+                            )}>
+                              {primaryAsset?.url ? (
+                                <img src={primaryAsset.url} alt={product.name} className="w-full h-full object-cover" />
+                              ) : has3D ? (
+                                <Box className="w-8 h-8 text-indigo-400" />
+                              ) : (
+                                <ImageIcon className="w-6 h-6 text-slate-300" />
+                              )}
 
-                            <div className="absolute top-1 left-1 flex flex-col gap-0.5">
-                              {has2D && <span className="bg-blue-500/90 text-[7px] text-white px-1 leading-tight rounded-sm font-black">2D</span>}
-                              {has3D && <span className="bg-indigo-500/90 text-[7px] text-white px-1 leading-tight rounded-sm font-black">3D</span>}
-                              {hasAR && <span className="bg-cta/90 text-[7px] text-white px-1 leading-tight rounded-sm font-black">AR</span>}
+                              <div className="absolute top-1 left-1 flex flex-col gap-0.5">
+                                {has2D && <span className="bg-blue-500/90 text-[7px] text-white px-1 leading-tight rounded-sm font-black">2D</span>}
+                                {has3D && <span className="bg-indigo-500/90 text-[7px] text-white px-1 leading-tight rounded-sm font-black">3D</span>}
+                                {hasAR && <span className="bg-cta/90 text-[7px] text-white px-1 leading-tight rounded-sm font-black">AR</span>}
+                              </div>
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-extrabold text-slate-800 line-clamp-1 group-hover:text-primary transition-colors text-base flex items-center gap-2">
+                                {product.name}
+                                {has3D && (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); open3DViewer(product); }}
+                                    className="p-1 px-2 bg-indigo-50 text-indigo-600 rounded-full text-[9px] font-black uppercase hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-1 active:scale-95"
+                                  >
+                                    <Box size={10} /> Xem 3D
+                                  </button>
+                                )}
+                              </span>
+                              <span className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-tighter bg-slate-100 w-fit px-1.5 rounded flex items-center gap-1.5">
+                                SKU: {product.variants?.[0]?.sku || 'N/A'}
+                                {product.variants && product.variants.length > 1 && (
+                                  <span className="text-primary border-l border-slate-200 pl-1.5 ml-1.5 flex items-center gap-1">
+                                    +{product.variants.length - 1} phân loại <MoreVertical size={8} className="text-slate-300" /> Click để xem
+                                  </span>
+                                )}
+                              </span>
                             </div>
                           </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="font-extrabold text-slate-800 line-clamp-1 group-hover:text-primary transition-colors text-base flex items-center gap-2">
-                              {product.name}
-                              {has3D && (
-                                <button
-                                  onClick={() => open3DViewer(product)}
-                                  className="p-1 px-2 bg-indigo-50 text-indigo-600 rounded-full text-[9px] font-black uppercase hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-1 active:scale-95"
-                                >
-                                  <Box size={10} /> Xem 3D
-                                </button>
-                              )}
-                            </span>
-                            <span className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-tighter bg-slate-100 w-fit px-1.5 rounded">SKU: {product.variants?.[0]?.sku || 'N/A'}</span>
-                          </div>
-                        </div>
-                      </td>
+                        </td>
                       <td className="px-6 py-4">
                         <Badge variant="default" className="bg-slate-100 text-slate-600 border-none font-bold py-1.5 px-3">
                           {product.category?.name || 'Chưa phân loại'}
                         </Badge>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="font-black text-slate-900 tracking-tight text-base">
-                          {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.variants?.[0]?.price || 0)}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className="font-black text-slate-900 tracking-tight text-base">
+                            {product.variants && product.variants.length > 1 ? (
+                              <>
+                                <span className="text-[10px] text-slate-400 block -mb-1 uppercase">Từ</span>
+                                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Math.min(...product.variants.map(v => v.price)))}
+                              </>
+                            ) : (
+                              new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.variants?.[0]?.price || 0)
+                            )}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
@@ -263,7 +286,7 @@ export const ProductList: React.FC = () => {
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
                           {!product.isActive ? (
                             <Button
                               variant="ghost"
@@ -272,7 +295,7 @@ export const ProductList: React.FC = () => {
                               isLoading={restoreMutation.isPending && restoreMutation.variables === product.id}
                               title="Kích hoạt lại"
                             >
-                              <CheckCircle2 className="w-5 h-5" />
+                               <CheckCircle2 className="w-5 h-5" />
                             </Button>
                           ) : (
                             <>
@@ -307,8 +330,70 @@ export const ProductList: React.FC = () => {
                         </div>
                       </td>
                     </tr>
-                  );
-                })
+
+                    {/* Expansion Row */}
+                    {expandedId === product.id && (
+                       <tr className="bg-slate-50/50 border-t border-slate-100">
+                         <td colSpan={6} className="px-10 py-6">
+                           <div className="bg-white rounded-[32px] border border-slate-200/60 shadow-xl shadow-slate-200/20 p-8 space-y-6 animate-in slide-in-from-top-4 duration-300">
+                             <div className="flex items-center justify-between">
+                               <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center">
+                                     <TrendingUp className="w-5 h-5 text-primary" />
+                                  </div>
+                                  <div>
+                                     <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest">Chi tiết các phân loại SKU</h4>
+                                     <p className="text-[10px] font-bold text-slate-400 uppercase">Thông tin giá & tồn kho từng phiên bản</p>
+                                  </div>
+                               </div>
+                               <div className="px-5 py-2 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase shadow-lg shadow-slate-900/10">
+                                  {product.variants?.length} Phiên bản
+                               </div>
+                             </div>
+
+                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                                {product.variants?.map((variant) => (
+                                  <div key={variant.id} className="p-6 rounded-[28px] border border-slate-100 bg-slate-50/30 hover:border-primary/30 hover:bg-white transition-all group/v shadow-inner hover:shadow-2xl hover:shadow-primary/5">
+                                    <div className="flex items-start justify-between mb-4">
+                                       <span className="text-[10px] font-black py-1 px-3 bg-white border border-slate-100 rounded-xl text-slate-400 group-hover/v:border-primary/30 group-hover/v:text-primary transition-colors shadow-sm">
+                                          {variant.sku}
+                                       </span>
+                                       <div className="flex flex-col items-end">
+                                          <span className="font-black text-slate-900 text-lg tracking-tight group-hover/v:text-primary transition-colors leading-none">
+                                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(variant.price)}
+                                          </span>
+                                          <div className="flex items-center gap-1 mt-1.5">
+                                             <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", variant.stock < 10 ? "bg-red-500 animate-pulse" : "bg-green-500")} />
+                                             <span className={cn(
+                                               "text-[10px] font-black uppercase tracking-tight",
+                                               variant.stock < 10 ? "text-red-500" : "text-slate-500"
+                                             )}>
+                                               {variant.stock} trong kho
+                                             </span>
+                                          </div>
+                                       </div>
+                                    </div>
+                                    
+                                    {variant.attributes && Object.entries(variant.attributes).length > 0 && (
+                                      <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100/60 font-body">
+                                        {Object.entries(variant.attributes).map(([key, val]) => (
+                                          <div key={key} className="flex items-center bg-white border border-slate-100 rounded-xl px-3 py-1.5 shadow-sm group-hover/v:border-primary/10 transition-colors">
+                                            <span className="text-[9px] font-black text-slate-400 uppercase mr-2">{key}:</span>
+                                            <span className="text-[10px] font-extrabold text-slate-700">{val}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                             </div>
+                           </div>
+                         </td>
+                       </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })
               ) : (
                 <tr>
                   <td colSpan={6} className="px-10 py-32 text-center">
