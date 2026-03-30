@@ -16,22 +16,24 @@ export class ProductsController {
 
     @Get()
     async getAllProducts(
-        @Query('page') page?: number,
-        @Query('limit') limit?: number,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
         @Query('search') search?: string,
         @Query('categoryId') categoryId?: string,
         @Query('brandId') brandId?: string,
-        @Query('minPrice') minPrice?: number,
-        @Query('maxPrice') maxPrice?: number,
+        @Query('minPrice') minPrice?: string,
+        @Query('maxPrice') maxPrice?: string,
+        @Query('isAdmin') isAdmin?: string,
     ) {
         return this.productsService.getAllProducts({
-            page,
-            limit,
+            page: page ? Number(page) : undefined,
+            limit: limit ? Number(limit) : undefined,
             search,
             categoryId,
             brandId,
-            minPrice,
-            maxPrice,
+            minPrice: minPrice ? Number(minPrice) : undefined,
+            maxPrice: maxPrice ? Number(maxPrice) : undefined,
+            isAdmin: isAdmin === 'true'
         });
     }
 
@@ -46,7 +48,7 @@ export class ProductsController {
     }
 
     @Get(':id/related')
-    async getRelatedProducts(@Param('id') id: string,) {
+    async getRelatedProducts(@Param('id') id: string) {
         return this.productsService.getRelatedProducts(id);
     }
 
@@ -101,11 +103,7 @@ export class ProductsController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
     async removeProduct(@Param('id') id: string) {
-        await this.productsService.removeProduct(id);
-        return {
-            statusCode: 200,
-            message: 'Xóa sản phẩm thành công',
-        };
+        return this.productsService.removeProduct(id);
     }
 
     @Delete(':id')

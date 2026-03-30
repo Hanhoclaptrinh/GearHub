@@ -29,6 +29,7 @@ import { cn } from '../../utils/cn';
 import type { Product, Category, Brand } from '../../types';
 
 const variantSchema = z.object({
+  id: z.string().optional(),
   sku: z.string().min(1, 'SKU là bắt buộc'),
   price: z.preprocess((v) => Number(v), z.number().min(0, 'Giá không hợp lệ')),
   stock: z.preprocess((v) => Number(v), z.number().min(0, 'Tồn kho không hợp lệ')),
@@ -95,6 +96,7 @@ export const ProductPage: React.FC = () => {
         categoryId: editProduct.categoryId,
         brandId: editProduct.brandId,
         variants: editProduct.variants.map((v: any) => ({
+          id: v.id,
           sku: v.sku,
           price: v.price,
           stock: v.stock,
@@ -137,8 +139,22 @@ export const ProductPage: React.FC = () => {
     else if (primaryIndex > index) setPrimaryIndex(primaryIndex - 1);
   };
 
+  const is2DImage = (fileName: string) => {
+    const ext = fileName.toLowerCase().split('.').pop();
+    return ['jpg', 'jpeg', 'png', 'webp'].includes(ext || '');
+  };
+
   const onSubmit: SubmitHandler<FormValues> = (values) => {
     setError(null);
+    
+    const has2DImage = files.some(f => is2DImage(f.name)) || 
+                       (isEdit && editProduct?.assets?.some((a: any) => a.type === 'IMAGE'));
+
+    if (!has2DImage) {
+      setError('Sản phẩm bắt buộc phải có ít nhất một ảnh 2D (JPG, PNG, WEBP).');
+      return;
+    }
+
     const formData = new FormData();
     formData.append('name', values.name);
     formData.append('description', values.description);

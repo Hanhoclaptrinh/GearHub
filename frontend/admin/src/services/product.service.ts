@@ -36,6 +36,11 @@ export const productService = {
     return data;
   },
 
+  async restore(id: string) {
+    const { data } = await api.patch(`/products/${id}/restore`);
+    return data;
+  },
+
   async getCategories() {
     const { data } = await api.get<Category[]>('/categories');
     return data;

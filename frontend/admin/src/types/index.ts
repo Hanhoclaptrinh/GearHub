@@ -52,10 +52,13 @@ export interface Brand {
   logoUrl?: string;
 }
 
+export type AssetType = 'IMAGE' | 'GLB' | 'USDZ';
+
 export interface ProductAsset {
   id: string;
   url: string;
   isPrimary: boolean;
+  type: AssetType;
 }
 
 export interface ProductVariant {

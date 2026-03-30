@@ -10,12 +10,12 @@ export class CreateProductDto {
     description?: string;
 
     @IsString()
-    @IsNotEmpty({ message: 'Mã SKU không được để trống' })
-    sku: string;
+    @IsOptional()
+    sku?: string;
 
     @IsNumberString({}, { message: 'Giá phải là một dãy số' })
-    @IsNotEmpty()
-    price: string;
+    @IsOptional()
+    price?: string;
 
     @IsNumberString()
     @IsOptional()
@@ -42,7 +42,8 @@ export class CreateProductDto {
     thumbnailUrl?: string;
 
     @IsOptional()
-    files?: any;
+    @IsString()
+    variants?: string;
 
     @IsOptional()
     primaryIndex?: string;

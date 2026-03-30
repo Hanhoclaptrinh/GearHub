@@ -26,10 +26,32 @@ export class ProductsService {
 
         const slug = slugify(data.name, { lower: true, strict: true });
 
-        // parse dinh dang truoc khi gui 
+        // parse metadata/attributes
         const parsedMetadata = data.metadata ? JSON.parse(data.metadata) : {};
-        const parsedAttributes = data.attributes ? JSON.parse(data.attributes) : {};
 
+        // upload cloudinary
+        const uploadedAssets: { url: string; type: AssetType; isPrimary: boolean }[] = [];
+        const primaryIndex = parseInt(data.primaryIndex || '0');
+
+        if (files && files.length > 0) {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const upload = await this.cloudinaryService.uploadFile(file);
+                const fileName = file.originalname.toLowerCase();
+
+                let type: AssetType = AssetType.IMAGE;
+                if (fileName.endsWith('.glb')) type = AssetType.GLB;
+                else if (fileName.endsWith('.usdz')) type = AssetType.USDZ;
+
+                uploadedAssets.push({
+                    url: upload.secure_url,
+                    type,
+                    isPrimary: i === primaryIndex && type === AssetType.IMAGE
+                });
+            }
+        }
+
+        // mo transaction cho database operations
         return await this.prisma.$transaction(async (tx) => {
             // parent prod
             const product = await tx.product.create({
@@ -44,46 +66,64 @@ export class ProductsService {
                 }
             });
 
-            // tao variant
-            await tx.productVariant.create({
-                data: {
-                    productId: product.id,
-                    sku: `${slug}-default`,
-                    name: `${data.name} - Standard`,
-                    price: parseFloat(data.price),
-                    stock: parseInt(data.stock || '0'),
-                    attributes: parsedAttributes
-                }
-            });
-
-            // xu ly upload file
-            let finalThumbnailUrl = product.thumbnailUrl;
-
-            if (files && files.length > 0) {
-                const assetPromises = files.map(async (file) => {
-                    const upload = await this.cloudinaryService.uploadFile(file);
-                    const fileName = file.originalname.toLowerCase();
-
-                    let type: AssetType = AssetType.IMAGE;
-                    if (fileName.endsWith('.glb')) type = AssetType.GLB;
-                    else if (fileName.endsWith('.usdz')) type = AssetType.USDZ;
-
-                    return tx.productAsset.create({
+            // handle variants
+            if (data.variants) {
+                const variantList = JSON.parse(data.variants);
+                for (const v of variantList) {
+                    await tx.productVariant.create({
                         data: {
                             productId: product.id,
-                            url: upload.secure_url,
-                            type: type,
-                            isPrimary: false,
-                        },
+                            sku: v.sku,
+                            name: `${data.name} - ${v.sku}`,
+                            price: parseFloat(v.price),
+                            stock: parseInt(v.stock || '0'),
+                            attributes: v.attributes || {}
+                        }
                     });
+                }
+            } else {
+                // fallback
+                await tx.productVariant.create({
+                    data: {
+                        productId: product.id,
+                        sku: data.sku || `${slug}-default`,
+                        name: `${data.name} - Standard`,
+                        price: parseFloat(data.price || '0'),
+                        stock: parseInt(data.stock || '0'),
+                        attributes: data.attributes ? JSON.parse(data.attributes) : {}
+                    }
                 });
+            }
 
-                const assets = await Promise.all(assetPromises);
+            // handle assets
+            let finalThumbnailUrl = product.thumbnailUrl;
 
+            if (uploadedAssets.length > 0) {
+                const assets = await Promise.all(
+                    uploadedAssets.map((asset) =>
+                        tx.productAsset.create({
+                            data: {
+                                productId: product.id,
+                                url: asset.url,
+                                type: asset.type,
+                                isPrimary: asset.isPrimary,
+                            },
+                        })
+                    )
+                );
+
+                // auto-select thumbnail neu khong set
                 if (!finalThumbnailUrl) {
-                    const firstImageAsset = assets.find((a) => a.type === AssetType.IMAGE);
-                    if (firstImageAsset) {
+                    const primaryAsset = assets.find(a => a.isPrimary);
+                    const firstImageAsset = assets.find(a => a.type === AssetType.IMAGE);
+
+                    if (primaryAsset) {
+                        finalThumbnailUrl = primaryAsset.url;
+                    } else if (firstImageAsset) {
                         finalThumbnailUrl = firstImageAsset.url;
+                    }
+
+                    if (finalThumbnailUrl) {
                         await tx.product.update({
                             where: { id: product.id },
                             data: { thumbnailUrl: finalThumbnailUrl },
@@ -95,12 +135,14 @@ export class ProductsService {
             return tx.product.findUnique({
                 where: { id: product.id },
                 include: {
-                    variants: true, // tra prod info kem variant
+                    variants: true,
                     assets: true,
                     category: true,
                     brand: true
                 },
             });
+        }, {
+            timeout: 20000 // 20s
         });
     }
 
@@ -128,9 +170,8 @@ export class ProductsService {
         }
 
         return await this.prisma.$transaction(async (tx) => {
-            // chuan bi data cho parent prod
+            // chuan bi data cho san pham cha
             const updateData: any = {};
-            if (data.name) updateData.name = data.name;
             if (data.name) {
                 updateData.name = data.name;
                 updateData.slug = slugify(data.name, { lower: true, strict: true });
@@ -151,17 +192,57 @@ export class ProductsService {
                 }
             }
 
-            // cap nhat thong tin prod cha
+            // cap nhat san pham cha
             const updatedProduct = await tx.product.update({
                 where: { id },
                 data: updateData
             });
 
-            // cap nhat lai variant
-            if (data.price || data.stock || data.sku || data.attributes) {
-                const variantId = product.variants[0]?.id;
+            // cap nhat thong tin bien the
+            if (data.variants) {
+                const variants = JSON.parse(data.variants);
+                const existingVariants = await tx.productVariant.findMany({
+                    where: { productId: id }
+                });
 
-                if (variantId) {
+                for (const vData of variants) {
+                    const price = parseFloat(vData.price?.toString() || '0');
+                    const stock = parseInt(vData.stock?.toString() || '0');
+                    const sku = vData.sku;
+
+                    const existing = existingVariants.find(ev => (vData.id && ev.id === vData.id) || ev.sku === sku);
+
+                    if (existing) {
+                        await tx.productVariant.update({
+                            where: { id: existing.id },
+                            data: {
+                                sku: sku,
+                                name: `${updatedProduct.name} - ${sku}`,
+                                price: price,
+                                stock: stock,
+                                attributes: vData.attributes || {}
+                            }
+                        });
+                    } else {
+                        await tx.productVariant.create({
+                            data: {
+                                productId: updatedProduct.id,
+                                sku: sku,
+                                name: `${updatedProduct.name} - ${sku}`,
+                                price: price,
+                                stock: stock,
+                                attributes: vData.attributes || {}
+                            }
+                        });
+                    }
+                }
+            } else if (data.price || data.stock || data.sku || data.attributes) {
+                // fallback neu chi truyen le 1 variant (lay variant dau tien)
+                const firstVariant = await tx.productVariant.findFirst({
+                    where: { productId: id }
+                });
+
+                if (firstVariant) {
                     const variantUpdate: any = {};
                     if (data.price) variantUpdate.price = parseFloat(data.price);
                     if (data.stock) variantUpdate.stock = parseInt(data.stock);
@@ -175,7 +256,7 @@ export class ProductsService {
                     }
 
                     await tx.productVariant.update({
-                        where: { id: variantId },
+                        where: { id: firstVariant.id },
                         data: variantUpdate,
                     });
                 }
@@ -234,6 +315,11 @@ export class ProductsService {
             where: { id: assetId }
         });
         if (!asset) throw new NotFoundException('Không tìm thấy asset');
+
+        const publicId = asset.url.split('/').pop()?.split('.')[0];
+        if (publicId) {
+            await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);
+        }
 
         const productId = asset.productId;
 
@@ -368,6 +454,7 @@ export class ProductsService {
             brandId?: string;
             minPrice?: number;
             maxPrice?: number;
+            isAdmin?: boolean;
         }
     ) {
         const {
@@ -377,7 +464,8 @@ export class ProductsService {
             categoryId,
             brandId,
             minPrice,
-            maxPrice
+            maxPrice,
+            isAdmin = false
         } = query;
 
         const skip = (page - 1) * limit;
@@ -397,7 +485,7 @@ export class ProductsService {
 
         // dieu kien loc
         const whereCondition: any = {
-            isActive: true,
+            isActive: isAdmin ? undefined : true,
             categoryId: categoryIds ? { in: categoryIds } : undefined,
             brandId: brandId || undefined,
             OR: search ? [
@@ -423,13 +511,9 @@ export class ProductsService {
                     brand: { select: { name: true, logoUrl: true } },
                     category: { select: { name: true } },
                     variants: {
-                        orderBy: { price: "asc" }, // gia tang dan
-                        take: 1
+                        orderBy: { price: "asc" },
                     },
-                    assets: {
-                        where: { isPrimary: true },
-                        take: 1
-                    }
+                    assets: true
                 },
                 orderBy: { createdAt: 'desc' },
                 skip: skip,

@@ -48,4 +48,12 @@ export class UpdateProductDto {
     @IsString()
     @IsOptional()
     attributes?: string;
+
+    @IsString()
+    @IsOptional()
+    variants?: string;
+
+    @IsString()
+    @IsOptional()
+    primaryIndex?: string;
 }
