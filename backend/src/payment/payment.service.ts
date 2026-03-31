@@ -13,6 +13,8 @@ export class PaymentService {
     ) { }
 
     async createPaymentUrl(orderId: string, ipAddr: string) {
+        const description = `Gearhub thanh toan don hang #${orderId.slice(0, 8)}`;
+
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
         });
@@ -22,7 +24,8 @@ export class PaymentService {
         const paymentUrl = await this.vnpayGateway.createPayment({
             orderId: order.id,
             amount: Number(order.totalAmount),
-            ipAddr
+            ipAddr,
+            orderInfo: description
         });
 
         // tao bang ghi giao dich o trang thai pending
@@ -31,6 +34,7 @@ export class PaymentService {
                 orderId: order.id,
             },
             update: {
+                description: description,
                 amount: order.totalAmount,
                 status: TransactionStatus.PENDING,
                 provider: 'VNPAY',
@@ -39,6 +43,7 @@ export class PaymentService {
             },
             create: {
                 orderId: order.id,
+                description: description,
                 amount: order.totalAmount,
                 paymentMethod: PaymentMethod.PAYMENT_GATEWAY,
                 status: TransactionStatus.PENDING,
@@ -106,6 +111,7 @@ export class PaymentService {
                                 status: TransactionStatus.SUCCESS,
                                 providerTransactionId: transactionNo,
                                 transactionCode: transactionNo,
+                                description: query['vnp_OrderInfo'],
                                 paymentDate: new Date(),
                             },
                         });
@@ -215,10 +221,13 @@ export class PaymentService {
                 take: Number(limit),
                 include: {
                     order: {
-                        select: {
-                            id: true,
-                            totalAmount: true,
-                            status: true
+                        include: {
+                            user: {
+                                select: {
+                                    email: true
+                                }
+                            },
+                            items: true
                         }
                     }
                 },

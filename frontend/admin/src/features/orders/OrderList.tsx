@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import {
   ShoppingBag,
   Search,
@@ -28,7 +29,19 @@ export const OrderList: React.FC = () => {
   const [page, setPage] = useState(1);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
+
+  const orderIdFromUrl = searchParams.get('orderId');
+
+  useEffect(() => {
+    if (orderIdFromUrl) {
+      setSearch(orderIdFromUrl);
+      setStatus('');
+      setPage(1);
+    }
+  }, [orderIdFromUrl]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['orders', search, status, page],
@@ -53,6 +66,12 @@ export const OrderList: React.FC = () => {
   const { data: statsData } = useQuery({
     queryKey: ['orders', 'stats'],
     queryFn: orderService.getAdminStats,
+  });
+
+  const { data: orderDetail, isLoading: isLoadingDetail } = useQuery({
+    queryKey: ['order-detail', selectedOrderId],
+    queryFn: () => selectedOrderId ? orderService.getOrderById(selectedOrderId) : null,
+    enabled: !!selectedOrderId
   });
 
   const statusStats = statsData?.stats?.ordersByStatus || {};
@@ -236,7 +255,11 @@ export const OrderList: React.FC = () => {
                           ))}
                         </select>
                         {updateStatusMutation.isPending && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
-                        <Button variant="ghost" className="p-2 h-10 w-10 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-full border-none">
+                        <Button 
+                          variant="ghost" 
+                          className="p-2 h-10 w-10 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-full border-none"
+                          onClick={() => setSelectedOrderId(order.id)}
+                        >
                           <ExternalLink className="w-5 h-5" />
                         </Button>
                       </div>
@@ -292,6 +315,109 @@ export const OrderList: React.FC = () => {
         <div className="p-4 bg-green-50 border border-green-200 rounded-2xl flex items-center gap-3 text-green-700 shadow-md animate-in slide-in-from-top-3">
           <CheckCircle className="w-5 h-5 flex-shrink-0" />
           <span className="font-bold text-sm">{successMessage}</span>
+        </div>
+      )}
+      {/* Order Detail Modal */}
+      {selectedOrderId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                  <ShoppingBag size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Chi tiết đơn hàng</h3>
+                  {orderDetail && <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1">#{orderDetail.orderNumber || orderDetail.id.toUpperCase()}</p>}
+                </div>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setSelectedOrderId(null)}
+                className="rounded-full hover:bg-slate-200"
+              >
+                <XCircle className="w-6 h-6 text-slate-400" />
+              </Button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-8 space-y-8">
+              {isLoadingDetail ? (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 size={40} className="text-primary animate-spin" />
+                </div>
+              ) : orderDetail ? (
+                <>
+                  <div className="grid grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Người nhận</h4>
+                      <div className="space-y-2">
+                        <p className="font-extrabold text-slate-900 text-lg">{orderDetail.receiverName}</p>
+                        <p className="font-bold text-slate-500">{orderDetail.receiverPhone}</p>
+                        <p className="text-sm font-medium text-slate-600 leading-relaxed">{orderDetail.shippingAddress}</p>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Thông tin đơn</h4>
+                      <div className="grid grid-cols-1 gap-3">
+                        <div className="flex justify-between">
+                          <span className="text-sm font-bold text-slate-400">Trạng thái:</span>
+                          {getStatusBadge(orderDetail.status)}
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm font-bold text-slate-400">Thanh toán:</span>
+                          <span className="text-sm font-black text-slate-900 uppercase">{orderDetail.paymentMethod}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm font-bold text-slate-400">Mã đơn:</span>
+                          <span className="text-sm font-mono font-bold text-slate-900">#{orderDetail.id}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Danh sách sản phẩm</h4>
+                    <div className="space-y-3">
+                      {orderDetail.items?.map((item: any) => (
+                        <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100 group hover:bg-white hover:border-primary/20 transition-all">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center p-1 overflow-hidden">
+                              {item.productVariant?.product?.images?.[0]?.url ? (
+                                <img src={item.productVariant.product.images[0].url} alt={item.productName} className="w-full h-full object-cover rounded-lg" />
+                              ) : (
+                                <ShoppingBag className="text-slate-300 w-6 h-6" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-sm font-black text-slate-900 group-hover:text-primary transition-colors">{item.productName}</p>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase">{item.variantName}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-black text-slate-900">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.priceAtPurchase)}</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase">x{item.quantity}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : null}
+            </div>
+
+            <div className="p-8 bg-slate-50/50 border-t border-slate-100">
+               <div className="flex items-center justify-between mb-6">
+                  <p className="text-sm font-black text-slate-400 uppercase tracking-tight">Tổng thanh toán</p>
+                  <p className="text-3xl font-black text-primary">
+                    {orderDetail ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(orderDetail.totalAmount) : '...'}
+                  </p>
+               </div>
+               <div className="flex gap-3">
+                 <Button className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest" onClick={() => setSelectedOrderId(null)}>Đóng chi tiết</Button>
+               </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -160,9 +160,9 @@ export class OrdersService {
             ...(status && { status }),
             ...(search && {
                 OR: [
-                    { id: { contains: search, mode: 'insensitive' } },
-                    { receiverName: { contains: search, mode: 'insensitive' } },
-                    { receiverPhone: { contains: search, mode: 'insensitive' } },
+                    { id: { contains: search } },
+                    { receiverName: { contains: search } },
+                    { receiverPhone: { contains: search } },
                 ]
             })
         };

@@ -261,6 +261,7 @@ model Transaction {
   status          TransactionStatus @default(PENDING)
   paymentMethod   PaymentMethod     @map("payment_method")
   paymentDate     DateTime?         @map("payment_date")
+  description     String?   @db.VarChar(255)
   rawResponse     String?           @db.Text @map("raw_response") // raw response de tra soat giao dich
   createdAt       DateTime          @default(now()) @map("created_at")
   updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at")

@@ -9,7 +9,7 @@ import { ConfigService } from '@nestjs/config';
 export class VnPayGateway implements PaymentGateway {
     constructor(private configService: ConfigService) { }
 
-    async createPayment(data: { orderId: string; amount: number; ipAddr: string }): Promise<string> {
+    async createPayment(data: { orderId: string; amount: number; ipAddr: string, orderInfo: string }): Promise<string> {
         const vnpTmnCode = this.configService.get<string>('VNP_TMN_CODE')!;
         const vnpHashSecret = this.configService.get<string>('VNP_HASH_SECRET')!;
         const vnpUrl = this.configService.get<string>('VNP_URL')!;
@@ -24,7 +24,7 @@ export class VnPayGateway implements PaymentGateway {
             vnp_CurrCode: 'VND',
             vnp_IpAddr: data.ipAddr,
             vnp_Locale: 'vn',
-            vnp_OrderInfo: `Thanh toan don hang ${data.orderId}`,
+            vnp_OrderInfo: data.orderInfo,
             vnp_OrderType: 'other',
             vnp_ReturnUrl: vnpReturnUrl,
             vnp_TmnCode: vnpTmnCode,
