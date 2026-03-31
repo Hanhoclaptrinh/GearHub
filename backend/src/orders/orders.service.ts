@@ -415,7 +415,6 @@ export class OrdersService {
         }
     }
 
-    // mua lai
     async reOrder(userId: string, id: string) {
         // lay thong tin don cu
         const oldOrder = await this.prisma.order.findFirst({

@@ -10,6 +10,7 @@ import { OrderList } from './features/orders/OrderList';
 import { UserList } from './features/users/UserList';
 import { CategoryList } from './features/categories/CategoryList';
 import { BrandList } from './features/brands/BrandList';
+import { TransactionList } from './features/transactions/TransactionList';
 import { authService } from './services/auth.service';
 
 const queryClient = new QueryClient({
@@ -68,6 +69,7 @@ const App: React.FC = () => {
             <Route path="users" element={<UserList />} />
             <Route path="categories" element={<CategoryList />} />
             <Route path="brands" element={<BrandList />} />
+            <Route path="transactions" element={<TransactionList />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -105,6 +105,7 @@ export class PaymentService {
                             data: {
                                 status: TransactionStatus.SUCCESS,
                                 providerTransactionId: transactionNo,
+                                transactionCode: transactionNo,
                                 paymentDate: new Date(),
                             },
                         });
@@ -193,5 +194,47 @@ export class PaymentService {
             // this.logger.error(`Error processing VNPay return: ${error.message}`, error.stack);
             return { success: false, message: error.message || 'Lỗi xử lý thanh toán' };
         }
+    }
+
+    async getAllTransactions(query: { page?: number; limit?: number; search?: string }) {
+        const { page = 1, limit = 10, search } = query;
+        const skip = (page - 1) * limit;
+
+        const where: any = {};
+        if (search) {
+            where.OR = [
+                { transactionCode: { contains: search } },
+                { orderId: { contains: search } },
+            ];
+        }
+
+        const [items, total] = await Promise.all([
+            this.prisma.transaction.findMany({
+                where,
+                skip,
+                take: Number(limit),
+                include: {
+                    order: {
+                        select: {
+                            id: true,
+                            totalAmount: true,
+                            status: true
+                        }
+                    }
+                },
+                orderBy: { createdAt: 'desc' }
+            }),
+            this.prisma.transaction.count({ where })
+        ]);
+
+        return {
+            data: items,
+            meta: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                lastPage: Math.ceil(total / Number(limit))
+            }
+        };
     }
 }

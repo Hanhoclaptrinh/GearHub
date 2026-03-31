@@ -12,7 +12,8 @@ import {
   Menu,
   ChevronRight,
   User as UserIcon,
-  Globe
+  Globe,
+  CreditCard
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { authService } from '../services/auth.service';
@@ -24,6 +25,7 @@ const navigation = [
   { name: 'Người dùng', icon: Users, path: '/users' },
   { name: 'Danh mục', icon: Tag, path: '/categories' },
   { name: 'Thương hiệu', icon: Briefcase, path: '/brands' },
+  { name: 'Giao dịch', icon: CreditCard, path: '/transactions' },
 ];
 
 export const DashboardLayout: React.FC = () => {

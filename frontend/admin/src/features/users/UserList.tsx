@@ -22,9 +22,12 @@ import { Input } from '../../components/ui/Input';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { UserEditModal } from '../../components/ui/UserEditModal';
+import { cn } from '../../utils/cn';
 
 export const UserList: React.FC = () => {
   const [search, setSearch] = useState('');
+  const [status, setStatus] = useState<string>('all');
+  const [role, setRole] = useState<string>('all');
   const [page, setPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -32,9 +35,20 @@ export const UserList: React.FC = () => {
 
   const currentUser = useMemo(() => authService.getCurrentUser(), []);
 
+  const { data: userStats } = useQuery({
+    queryKey: ['users', 'stats'],
+    queryFn: userService.getUserStats,
+  });
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['users', search, page],
-    queryFn: () => userService.getAllUsers({ search, page, limit: 10 }),
+    queryKey: ['users', search, page, status, role],
+    queryFn: () => userService.getAllUsers({ 
+      search, 
+      page, 
+      limit: 10,
+      status: status !== 'all' ? status : undefined,
+      role: role !== 'all' ? role : undefined
+    }),
   });
 
   const updateStatusMutation = useMutation({
@@ -124,48 +138,72 @@ export const UserList: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card 
+          className={cn(
+            "border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group cursor-pointer transition-all hover:scale-105",
+            status === 'all' && role === 'all' ? "ring-2 ring-primary bg-primary/5" : ""
+          )}
+          onClick={() => { setStatus('all'); setRole('all'); setPage(1); }}
+        >
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-primary/5 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
               <Users className="w-6 h-6" />
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] font-black text-slate-400 uppercase">Tổng User</span>
-              <span className="text-2xl font-black text-slate-900">{meta.total}</span>
+              <span className="text-2xl font-black text-slate-900">{userStats?.total || 0}</span>
             </div>
           </div>
         </Card>
-        <Card className="border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group">
+        <Card 
+          className={cn(
+            "border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group cursor-pointer transition-all hover:scale-105",
+            status === 'ACTIVE' ? "ring-2 ring-green-500 bg-green-50/50" : ""
+          )}
+          onClick={() => { setStatus('ACTIVE'); setRole('all'); setPage(1); }}
+        >
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-green-50 text-green-500 flex items-center justify-center group-hover:scale-110 transition-transform">
               <CheckCircle2 className="w-6 h-6" />
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] font-black text-slate-400 uppercase">Hoạt động (Trang này)</span>
-              <span className="text-2xl font-black text-slate-900">{users.filter((u: any) => u.status === 'ACTIVE').length}</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase">Hoạt động</span>
+              <span className="text-2xl font-black text-slate-900">{userStats?.active || 0}</span>
             </div>
           </div>
         </Card>
-        <Card className="border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group">
+        <Card 
+          className={cn(
+            "border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group cursor-pointer transition-all hover:scale-105",
+            role === 'ADMIN' ? "ring-2 ring-blue-500 bg-blue-50/50" : ""
+          )}
+          onClick={() => { setRole('ADMIN'); setStatus('all'); setPage(1); }}
+        >
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
               <Shield className="w-6 h-6" />
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] font-black text-slate-400 uppercase">Admin (Trang này)</span>
-              <span className="text-2xl font-black text-slate-900">{users.filter((u: any) => u.role === 'ADMIN').length}</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase">Admin</span>
+              <span className="text-2xl font-black text-slate-900">{userStats?.admins || 0}</span>
             </div>
           </div>
         </Card>
-        <Card className="border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group">
+        <Card 
+          className={cn(
+            "border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group cursor-pointer transition-all hover:scale-105",
+            status === 'BANNED' ? "ring-2 ring-red-500 bg-red-50/50" : ""
+          )}
+          onClick={() => { setStatus('BANNED'); setRole('all'); setPage(1); }}
+        >
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center group-hover:scale-110 transition-transform">
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] font-black text-slate-400 uppercase">Bị khoá (Trang này)</span>
-              <span className="text-2xl font-black text-slate-900">{users.filter((u: any) => u.status === 'BANNED').length}</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase">Bị khoá</span>
+              <span className="text-2xl font-black text-slate-900">{userStats?.banned || 0}</span>
             </div>
           </div>
         </Card>

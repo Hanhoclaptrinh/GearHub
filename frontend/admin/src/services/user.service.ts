@@ -14,5 +14,9 @@ export const userService = {
   async updateUserRole(userId: string, role: string) {
     const { data } = await api.patch(`/users/${userId}/role`, { role });
     return data;
+  },
+  async getUserStats() {
+    const { data } = await api.get('/users/admin/stats');
+    return data;
   }
 };

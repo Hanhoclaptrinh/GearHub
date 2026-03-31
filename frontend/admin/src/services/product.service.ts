@@ -60,4 +60,8 @@ export const productService = {
     const { data } = await api.patch(`/products/${productId}/assets/${assetId}/primary`);
     return data;
   },
+  async getInventoryStats() {
+    const { data } = await api.get('/products/inventory/stats');
+    return data;
+  }
 };

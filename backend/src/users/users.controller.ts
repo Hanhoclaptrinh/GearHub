@@ -24,6 +24,13 @@ export class UsersController {
     return this.userService.getAllUsers(query);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('admin/stats')
+  async getUserStats() {
+    return this.userService.getUserStats();
+  }
+
   @UseGuards(JwtAuthGuard)
   @Patch('update-profile')
   @UseInterceptors(FileInterceptor('file'))

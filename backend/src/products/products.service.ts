@@ -673,6 +673,32 @@ export class ProductsService {
         });
     }
 
+    async getInventoryStats() {
+        const [totalSKUs, totalStock, lowStockCount, workingCapital] = await Promise.all([
+            this.prisma.productVariant.count(),
+            this.prisma.productVariant.aggregate({
+                _sum: { stock: true }
+            }),
+            this.prisma.productVariant.count({
+                where: { stock: { lte: 10, gt: 0 } }
+            }),
+            this.prisma.productVariant.findMany({
+                select: { price: true, stock: true }
+            })
+        ]);
+
+        const capitalValue = workingCapital.reduce((acc, curr) => {
+            return acc + (Number(curr.price) * curr.stock);
+        }, 0);
+
+        return {
+            totalSKUs,
+            totalStock: totalStock._sum.stock || 0,
+            lowStockCount,
+            workingCapital: capitalValue
+        };
+    }
+
     async updateVariant(variantId: string, data: UpdateVariantDto) {
         const variant = await this.prisma.productVariant.findUnique({
             where: { id: variantId }
@@ -739,4 +765,5 @@ export class ProductsService {
             }
         });
     }
+
 }

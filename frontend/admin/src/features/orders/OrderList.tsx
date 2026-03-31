@@ -50,6 +50,13 @@ export const OrderList: React.FC = () => {
     }
   });
 
+  const { data: statsData } = useQuery({
+    queryKey: ['orders', 'stats'],
+    queryFn: orderService.getAdminStats,
+  });
+
+  const statusStats = statsData?.stats?.ordersByStatus || {};
+
   const orders = data?.data || [];
   const meta = data?.meta || { total: 0, lastPage: 1 };
 
@@ -99,34 +106,46 @@ export const OrderList: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-3">
         {[
-          { label: 'Tất cả', value: '', icon: ShoppingBag, color: 'primary' },
-          { label: 'Chờ xác nhận', value: OrderStatus.PENDING, icon: Clock, color: 'orange' },
-          { label: 'Đang xử lý', value: OrderStatus.PROCESSING, icon: RefreshCcw, color: 'blue' },
-          { label: 'Đang giao', value: OrderStatus.SHIPPING, icon: Truck, color: 'cyan' },
-          { label: 'Hoàn tất', value: OrderStatus.DELIVERED, icon: CheckCircle, color: 'green' }
+          { label: 'Tất cả', value: '', icon: ShoppingBag, color: 'slate', count: meta.total },
+          { label: 'Chờ xác nhận', value: OrderStatus.PENDING, icon: Clock, color: 'orange', count: statusStats[OrderStatus.PENDING] || 0 },
+          { label: 'Đã xác nhận', value: OrderStatus.CONFIRMED, icon: CheckCircle, color: 'blue', count: statusStats[OrderStatus.CONFIRMED] || 0 },
+          { label: 'Đang đóng gói', value: OrderStatus.PROCESSING, icon: RefreshCcw, color: 'indigo', count: statusStats[OrderStatus.PROCESSING] || 0 },
+          { label: 'Đang giao', value: OrderStatus.SHIPPING, icon: Truck, color: 'cyan', count: statusStats[OrderStatus.SHIPPING] || 0 },
+          { label: 'Hoàn tất', value: OrderStatus.DELIVERED, icon: CheckCircle, color: 'green', count: statusStats[OrderStatus.DELIVERED] || 0 },
+          { label: 'Đã hủy', value: OrderStatus.CANCELLED, icon: XCircle, color: 'red', count: statusStats[OrderStatus.CANCELLED] || 0 },
+          { label: 'Trả hàng', value: OrderStatus.RETURNED, icon: AlertCircle, color: 'pink', count: statusStats[OrderStatus.RETURNED] || 0 },
+          { label: 'Thất bại', value: OrderStatus.FAILED, icon: XCircle, color: 'orange', count: statusStats[OrderStatus.FAILED] || 0 }
         ].map((tab) => (
           <button
             key={tab.label}
             onClick={() => { setStatus(tab.value as any); setPage(1); }}
             className={cn(
-              "flex flex-col items-center justify-center p-4 rounded-3xl border-2 transition-all group",
+              "flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all group relative overflow-hidden",
               status === tab.value
-                ? "bg-white border-primary shadow-xl shadow-primary/10 ring-4 ring-primary/5"
+                ? "bg-white border-primary shadow-lg shadow-primary/5 ring-4 ring-primary/5"
                 : "bg-slate-50/50 border-transparent hover:bg-white hover:border-slate-200"
             )}
           >
             <div className={cn(
-              "w-10 h-10 rounded-2xl flex items-center justify-center mb-2 transition-transform group-hover:scale-110",
+              "w-8 h-8 rounded-xl flex items-center justify-center mb-2 transition-transform group-hover:scale-110",
               status === tab.value ? "bg-primary text-white" : "bg-white text-slate-400 border border-slate-100"
             )}>
-              <tab.icon className="w-5 h-5" />
+              <tab.icon className="w-4 h-4" />
             </div>
             <span className={cn(
-              "text-xs font-black uppercase tracking-tighter transition-colors",
+              "text-[9px] font-black uppercase tracking-tighter transition-colors text-center leading-none",
               status === tab.value ? "text-primary" : "text-slate-500"
             )}>{tab.label}</span>
+            {tab.count > 0 && (
+              <span className={cn(
+                "absolute top-1 right-1 px-1.5 py-0.5 rounded-full text-[8px] font-black",
+                status === tab.value ? "bg-primary text-white" : "bg-slate-200 text-slate-600"
+              )}>
+                {tab.count}
+              </span>
+            )}
           </button>
         ))}
       </div>

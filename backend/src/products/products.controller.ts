@@ -158,4 +158,11 @@ export class ProductsController {
     async increaseStock(@Param('variantId') variantId: string, @Body('quantity') quantity: number) {
         return this.productsService.increaseStock(variantId, quantity);
     }
+
+    @Get('inventory/stats')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    async getInventoryStats() {
+        return this.productsService.getInventoryStats();
+    }
 }

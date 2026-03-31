@@ -66,14 +66,18 @@ export class UsersService {
     return newUser;
   }
 
-  async getAllUsers(query: { page?: number; limit?: number; search?: string; role?: Role }) {
-    const { page = 1, limit = 10, search, role } = query;
+  async getAllUsers(query: { page?: number; limit?: number; search?: string; role?: Role, status?: UserStatus }) {
+    const { page = 1, limit = 10, search, role, status } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {}; // auto filter
 
     if (role) {
       where.role = role;
+    }
+
+    if (status) {
+      where.status = status;
     }
 
     if (search) {
@@ -234,6 +238,17 @@ export class UsersService {
         }
       }
     });
+  }
+
+  async getUserStats() {
+    const [total, active, admins, banned] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { status: UserStatus.ACTIVE } }),
+      this.prisma.user.count({ where: { role: Role.ADMIN } }),
+      this.prisma.user.count({ where: { status: UserStatus.BANNED } }),
+    ]);
+
+    return { total, active, admins, banned };
   }
 }
 

@@ -19,7 +19,6 @@ import {
   EyeOff,
   MoreVertical,
   LayoutGrid,
-  Zap,
   ShieldCheck,
   PackageCheck,
   AlertTriangle
@@ -55,6 +54,11 @@ export const ProductList: React.FC = () => {
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const { data: inventoryStats } = useQuery({
+    queryKey: ['products', 'inventory-stats'],
+    queryFn: productService.getInventoryStats,
+  });
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['products', search, page, 'admin', inventoryStatus, assetType, minPrice, maxPrice, categoryId, brandId],
@@ -160,12 +164,50 @@ export const ProductList: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
-          { label: 'Tổng Sản Phẩm', value: meta.total, icon: LayoutGrid, trend: 'Tất cả', color: 'slate' },
-          { label: 'Kho (Hết/Sắp hết)', value: '03 / 12', icon: AlertTriangle, trend: 'Cần chú ý', color: 'red' },
-          { label: ' Sẵn sàng 3D/AR', value: '85%', icon: Zap, trend: 'Mô hình 3D', color: 'indigo' },
-          { label: 'Đang hiển thị', value: '1.204', icon: PackageCheck, trend: 'Active', color: 'green' }
+          { 
+            label: 'Tổng Sản Phẩm (SKU)', 
+            value: inventoryStats?.totalSKUs || 0, 
+            unit: 'SKUs',
+            icon: LayoutGrid, 
+            trend: 'Phân loại', 
+            color: 'slate',
+            onClick: () => { setInventoryStatus('all'); setPage(1); }
+          },
+          { 
+            label: 'Tổng tồn kho', 
+            value: inventoryStats?.totalStock || 0, 
+            unit: 'món',
+            icon: PackageCheck, 
+            trend: 'Hiện tại', 
+            color: 'green',
+            onClick: () => { setInventoryStatus('in_stock'); setPage(1); }
+          },
+          { 
+            label: 'Sắp hết hàng', 
+            value: inventoryStats?.lowStockCount || 0, 
+            unit: 'SKUs',
+            icon: AlertTriangle, 
+            trend: 'Cần nhập', 
+            color: 'red',
+            onClick: () => { setInventoryStatus('low_stock'); setPage(1); }
+          },
+          { 
+            label: 'Vốn lưu động', 
+            value: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(inventoryStats?.workingCapital || 0), 
+            unit: '',
+            icon: TrendingUp, 
+            trend: 'Giá trị hàng', 
+            color: 'indigo' 
+          }
         ].map((stat, i) => (
-          <Card key={i} className="border-none shadow-xl shadow-slate-200/40 rounded-[32px] overflow-hidden group hover:scale-[1.02] transition-all bg-white hover:shadow-2xl hover:shadow-slate-200/60">
+          <Card 
+            key={i} 
+            className={cn(
+              "border-none shadow-xl shadow-slate-200/40 rounded-[32px] overflow-hidden group transition-all bg-white hover:shadow-2xl hover:shadow-slate-200/60",
+              stat.onClick ? "cursor-pointer hover:scale-[1.02]" : ""
+            )}
+            onClick={stat.onClick}
+          >
             <CardContent className="p-6">
               <div className="flex justify-between items-start mb-6">
                  <div className={cn(
@@ -190,8 +232,8 @@ export const ProductList: React.FC = () => {
               <div className="space-y-1">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
                 <div className="flex items-baseline gap-2">
-                   <h3 className="text-3xl font-black text-slate-900 tracking-tight">{stat.value}</h3>
-                   <span className="text-[10px] font-bold text-slate-300">items</span>
+                   <h3 className="text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">{stat.value}</h3>
+                   {stat.unit && <span className="text-[10px] font-bold text-slate-300 uppercase">{stat.unit}</span>}
                 </div>
               </div>
             </CardContent>
