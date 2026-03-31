@@ -3,7 +3,7 @@ import { CartService } from 'src/cart/cart.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ProductsService } from 'src/products/products.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { OrderStatus, Prisma, Role } from '@prisma/client';
+import { OrderStatus, Prisma, Role, PaymentStatus } from '@prisma/client';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 @Injectable()
@@ -379,10 +379,10 @@ export class OrdersService {
 
     async getAdminStats() {
         const [revenue, orderCounts, userCount, lowStockVariants] = await Promise.all([
-            // tong doanh thu tu cac don hang da giao thanh cong
+            // tong doanh thu tu cac don hang da thanh toan (paymentStatus = PAID)
             this.prisma.order.aggregate({
                 _sum: { totalAmount: true },
-                where: { status: OrderStatus.DELIVERED }
+                where: { paymentStatus: PaymentStatus.PAID }
             }),
 
             // dem so luong don hang theo tung trang thai

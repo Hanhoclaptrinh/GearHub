@@ -490,8 +490,8 @@ export class ProductsService {
             categoryId: categoryIds ? { in: categoryIds } : undefined,
             brandId: brandId || undefined,
             OR: search ? [
-                { name: { contains: search, mode: 'insensitive' } },
-                { description: { contains: search, mode: 'insensitive' } },
+                { name: { contains: search } },
+                { description: { contains: search } },
             ] : undefined,
         };
 
