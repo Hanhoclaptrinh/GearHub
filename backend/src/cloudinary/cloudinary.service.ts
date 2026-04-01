@@ -47,11 +47,15 @@ export class CloudinaryService {
         }
 
         return new Promise((resolve, reject) => {
+            const isModel3D = file.originalname.match(/\.(glb|usdz)$/i);
+
             const upload = cloudinary.uploader.upload_stream(
                 {
                     folder: 'gearhub/media',
-                    resource_type: 'auto',
+                    resource_type: isModel3D ? 'raw' : 'auto',
                     format: file.mimetype === 'image/svg+xml' ? 'svg' : undefined,
+                    use_filename: true,
+                    unique_filename: true
                 },
                 (error, result) => {
                     if (error) {

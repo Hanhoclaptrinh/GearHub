@@ -156,7 +156,7 @@ export class PaymentService {
                         }
 
                         // tao order tracking
-                        this.logger.log(`[STEP 4] Creating order tracking`);
+                        // this.logger.log(`[STEP 4] Creating order tracking`);
                         const tracking = await tx.orderTracking.create({
                             data: {
                                 orderId: orderId,
