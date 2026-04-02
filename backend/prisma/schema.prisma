@@ -100,6 +100,8 @@ model Product {
   isFeatured   Boolean  @default(false)
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at")
+  averageRating Float @default(0) @map("average_rating")
+  reviewCount   Int   @default(0) @map("review_count")
 
   category Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   brand    Brand?           @relation(fields: [brandId], references: [id], onDelete: SetNull)

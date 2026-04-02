@@ -29,7 +29,7 @@ export class WishlistService {
         const [data, total] = await Promise.all([
             this.prisma.wishlist.findMany({
                 where: { userId },
-                skip: skip,
+                skip,
                 take: limit,
                 orderBy: { createdAt: 'desc' },
                 include: {
