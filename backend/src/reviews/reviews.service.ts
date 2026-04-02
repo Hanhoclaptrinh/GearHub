@@ -142,4 +142,69 @@ export class ReviewsService {
             data: { reply: data.reply }
         })
     }
+
+    // for ai review & rcm
+    async getReviewSummary(productId: string) {
+        // dem so luong rating trong prod
+        const counts = await this.prisma.review.groupBy({
+            by: ['rating'],
+            where: { productId },
+            _count: { id: true }
+        });
+
+        // khoi tao defaut obj
+        const summary = {
+            "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, total: 0
+        };
+
+        // cong don
+        counts.forEach(item => {
+            summary[item.rating.toString()] = item._count.id;
+            summary.total += item._count.id;
+        });
+
+        return summary;
+    }
+
+    // admin an review
+    async toggleVisibility(id: string) {
+        const review = await this.prisma.review.findUnique({ where: { id } });
+        if (!review) throw new NotFoundException('Không tìm thấy đánh giá');
+
+        const updatedReview = await this.prisma.review.update({
+            where: { id },
+            data: { isHidden: !review.isHidden }
+        });
+
+        return {
+            message: `Đã ${(updatedReview).isHidden ? 'ẩn' : 'hiển thị'} đánh giá`,
+            isHidden: updatedReview.isHidden
+        };
+    }
+
+    // xoa review
+    // tinh lai avg rating
+    async deleteReview(id: string) {
+        const review = await this.prisma.review.findUnique({ where: { id } });
+        if (!review) throw new NotFoundException('Không tìm thấy đánh giá');
+
+        return await this.prisma.$transaction(async (tx) => {
+            await tx.review.delete({ where: { id } });
+
+            // tinh lai stats sau khi xoa
+            const stats = await tx.review.aggregate({
+                where: { productId: review.productId },
+                _avg: { rating: true },
+                _count: { id: true }
+            });
+
+            await tx.product.update({
+                where: { id: review.productId },
+                data: {
+                    averageRating: stats._avg.rating || 0,
+                    reviewCount: stats._count.id || 0
+                }
+            });
+        });
+    }
 }

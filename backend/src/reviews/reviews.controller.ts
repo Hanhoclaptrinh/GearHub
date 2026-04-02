@@ -1,4 +1,4 @@
-import { Body, Controller, DefaultValuePipe, Get, Param, ParseIntPipe, ParseUUIDPipe, Patch, Post, Query, Request, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, DefaultValuePipe, Delete, Get, Param, ParseIntPipe, ParseUUIDPipe, Patch, Post, Query, Request, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { FilesInterceptor } from '@nestjs/platform-express';
@@ -32,6 +32,11 @@ export class ReviewsController {
         return this.reviewService.getProductReviews(productId, page, limit);
     }
 
+    @Get('product/:productId/summary')
+    async getReviewSummary(@Param('productId', ParseUUIDPipe) productId: string) {
+        return this.reviewService.getReviewSummary(productId);
+    }
+
     @Patch(':id/reply')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
@@ -40,5 +45,18 @@ export class ReviewsController {
         @Body() data: ReplyReviewDto,
     ) {
         return this.reviewService.replyReview(id, data);
+    }
+
+    @Patch(':id/visibility')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    async toggleVisibility(@Param('id', ParseUUIDPipe) id: string) {
+        return this.reviewService.toggleVisibility(id);
+    }
+
+    @Delete(':id')
+    @UseGuards(JwtAuthGuard)
+    async delete(@Param('id', ParseUUIDPipe) id: string) {
+        return this.reviewService.deleteReview(id);
     }
 }
