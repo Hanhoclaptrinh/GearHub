@@ -347,14 +347,14 @@ const CategoryFormModal: React.FC<FormProps> = ({ category, onClose, onSave, isS
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xl animate-in fade-in duration-300">
-      <div className="bg-white w-full max-w-lg rounded-[48px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-white">
-        <div className="p-10 border-b border-slate-50 flex items-center justify-between">
-            <h2 className="text-2xl font-black text-slate-900 font-heading tracking-tighter uppercase">{category ? 'Cập nhật phân loại' : 'Thiết lập danh mục mới'}</h2>
-            <button onClick={onClose} className="p-3 rounded-full hover:bg-slate-50 transition-all">
-               <X className="w-7 h-7 text-slate-300" />
+      <div className="bg-white w-full max-w-lg rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-white max-h-[90vh] flex flex-col">
+        <div className="p-8 border-b border-slate-50 flex items-center justify-between shrink-0">
+            <h2 className="text-xl font-black text-slate-900 font-heading tracking-tighter uppercase">{category ? 'Cập nhật phân loại' : 'Thiết lập danh mục mới'}</h2>
+            <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-50 transition-all">
+               <X className="w-6 h-6 text-slate-300" />
             </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-10 space-y-8">
+        <form onSubmit={handleSubmit} className="p-8 space-y-6 overflow-y-auto flex-1 custom-scrollbar">
             <div className="space-y-6">
                <div className="space-y-2">
                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Danh mục cấp cha (Tùy chọn)</label>
@@ -419,7 +419,7 @@ const CategoryFormModal: React.FC<FormProps> = ({ category, onClose, onSave, isS
                      </button>
                   </div>
 
-                  <div className="space-y-2">
+                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mô tả (Tùy chọn)</label>
                     <textarea 
                       className="w-full h-24 p-4 border-none bg-slate-50 rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 transition-all font-body text-sm font-bold shadow-inner resize-none" 
@@ -431,9 +431,9 @@ const CategoryFormModal: React.FC<FormProps> = ({ category, onClose, onSave, isS
                </div>
             </div>
 
-            <div className="flex gap-4 pt-4">
-               <Button type="button" variant="outline" className="flex-1 h-14 rounded-2xl font-black uppercase text-xs" onClick={onClose}>Huỷ bỏ</Button>
-               <Button type="submit" className="flex-1 h-14 rounded-2xl font-black uppercase text-xs shadow-xl shadow-primary/20" isLoading={isSaving}>
+            <div className="flex gap-4 pt-4 sticky bottom-0 bg-white border-t border-slate-50 mt-4 pb-2">
+               <Button type="button" variant="outline" className="flex-1 h-12 rounded-2xl font-black uppercase text-xs" onClick={onClose}>Huỷ bỏ</Button>
+               <Button type="submit" className="flex-1 h-12 rounded-2xl font-black uppercase text-xs shadow-xl shadow-primary/20" isLoading={isSaving}>
                   {category ? 'Lưu thay đổi' : 'Tạo phân loại'}
                </Button>
             </div>
