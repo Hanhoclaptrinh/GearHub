@@ -3,7 +3,7 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import slugify from 'slugify';
-import { AssetType } from '@prisma/client';
+import { AssetType, OrderStatus } from '@prisma/client';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { UpdateVariantDto } from './dto/update-variant.dto';
@@ -392,15 +392,26 @@ export class ProductsService {
 
         if (!product) throw new NotFoundException('Sản phẩm không tồn tại');
 
-        const updatedProduct = await this.prisma.product.update({
-            where: { id },
-            data: { isActive: !product.isActive }
-        });
+        return await this.prisma.$transaction(async (tx) => {
+            // toggle product
+            const updatedProduct = await tx.product.update({
+                where: { id },
+                data: { isActive: !product.isActive }
+            });
 
-        return {
-            message: `Đã ${updatedProduct.isActive ? 'hiển thị' : 'ẩn'} sản phẩm '${product.name}'`,
-            isActive: updatedProduct.isActive
-        };
+            // an toan bo bien the neu sp cha ngung kinh doanh
+            if (!updatedProduct.isActive) {
+                await tx.productVariant.updateMany({
+                    where: { productId: id },
+                    data: { isActive: false }
+                });
+            }
+
+            return {
+                message: `Đã ${updatedProduct.isActive ? 'hiển thị' : 'ẩn'} sản phẩm '${product.name}'`,
+                isActive: updatedProduct.isActive
+            };
+        });
     }
 
     async removeProduct(id: string) {
@@ -457,6 +468,8 @@ export class ProductsService {
             isAdmin?: boolean;
             inventoryStatus?: 'all' | 'in_stock' | 'low_stock' | 'out_of_stock';
             assetType?: 'all' | 'has_3d' | 'only_2d';
+            showInactiveOnly?: boolean;
+            showActiveOnly?: boolean;
         }
     ) {
         const {
@@ -469,7 +482,9 @@ export class ProductsService {
             maxPrice,
             isAdmin = false,
             inventoryStatus = 'all',
-            assetType = 'all'
+            assetType = 'all',
+            showInactiveOnly = false,
+            showActiveOnly = false
         } = query;
 
         const skip = (page - 1) * limit;
@@ -485,15 +500,46 @@ export class ProductsService {
         }
 
         // dieu kien loc
-        const whereCondition: any = {
-            isActive: isAdmin ? undefined : true,
+        let whereCondition: any = {
             categoryId: categoryIds ? { in: categoryIds } : undefined,
             brandId: brandId || undefined,
-            OR: search ? [
+        };
+
+        // xu ly logic isActive vs showInactiveOnly vs showActiveOnly
+        if (showInactiveOnly) {
+            // hien thi san pham inactive hoac san pham active co variants inactive
+            whereCondition.OR = [
+                { isActive: false },
+                { variants: { some: { isActive: false } } }
+            ];
+        } else if (showActiveOnly) {
+            // hien thi chi san pham active va tat ca variants deu active
+            whereCondition.isActive = true;
+            whereCondition.variants = {
+                every: { isActive: true }
+            };
+        } else {
+            // hien thi san pham active cho client
+            whereCondition.isActive = isAdmin ? undefined : true;
+        }
+
+        if (search) {
+            const searchConditions = [
                 { name: { contains: search } },
                 { description: { contains: search } },
-            ] : undefined,
-        };
+            ];
+
+            if (showInactiveOnly && whereCondition.OR) {
+                // merge search conditions vao OR da co san pham inactive
+                whereCondition.AND = [
+                    { OR: whereCondition.OR },
+                    { OR: searchConditions }
+                ];
+                delete whereCondition.OR;
+            } else {
+                whereCondition.OR = searchConditions;
+            }
+        }
 
         // loc gia qua variant
         if (minPrice || maxPrice) {
@@ -548,6 +594,7 @@ export class ProductsService {
                     brand: { select: { name: true, logoUrl: true } },
                     category: { select: { name: true } },
                     variants: {
+                        where: showInactiveOnly ? { isActive: false } : (showActiveOnly ? { isActive: true } : undefined),
                         orderBy: { price: "asc" },
                     },
                     assets: true
@@ -674,7 +721,7 @@ export class ProductsService {
     }
 
     async getInventoryStats() {
-        const [totalSKUs, totalStock, lowStockCount, workingCapital] = await Promise.all([
+        const [totalSKUs, totalStock, lowStockCount, workingCapital, activeVariants, inactiveVariants, inactiveProducts] = await Promise.all([
             this.prisma.productVariant.count(),
             this.prisma.productVariant.aggregate({
                 _sum: { stock: true }
@@ -684,6 +731,21 @@ export class ProductsService {
             }),
             this.prisma.productVariant.findMany({
                 select: { price: true, stock: true }
+            }),
+            // active variants
+            this.prisma.productVariant.findMany({
+                where: { isActive: true },
+                select: { price: true, stock: true }
+            }),
+            // inactive variants
+            this.prisma.productVariant.findMany({
+                where: { isActive: false },
+                include: { product: { select: { name: true } } }
+            }),
+            // inactive products
+            this.prisma.product.findMany({
+                where: { isActive: false },
+                select: { id: true, name: true, slug: true }
             })
         ]);
 
@@ -691,11 +753,39 @@ export class ProductsService {
             return acc + (Number(curr.price) * curr.stock);
         }, 0);
 
+        // actual (active only)
+        const actualStock = activeVariants.reduce((acc, curr) => acc + curr.stock, 0);
+        const actualCapital = activeVariants.reduce((acc, curr) => {
+            return acc + (Number(curr.price) * curr.stock);
+        }, 0);
+
         return {
+            // totalSKUs
             totalSKUs,
             totalStock: totalStock._sum.stock || 0,
             lowStockCount,
-            workingCapital: capitalValue
+            workingCapital: capitalValue,
+
+            // actual (active only)
+            activeSKUs: activeVariants.length,
+            actualStock,
+            actualCapital,
+
+            // inactive
+            inactiveSKUs: inactiveVariants.length,
+            inactiveVariants: inactiveVariants.map(v => ({
+                id: v.id,
+                sku: v.sku,
+                name: v.name,
+                productName: v.product.name,
+                price: v.price,
+                stock: v.stock
+            })),
+            inactiveProducts: inactiveProducts.map(p => ({
+                id: p.id,
+                name: p.name,
+                slug: p.slug
+            }))
         };
     }
 
@@ -718,19 +808,48 @@ export class ProductsService {
         });
     }
 
-    async removeVariant(variantId: string) {
+    async toggleVariant(variantId: string) {
         const variant = await this.prisma.productVariant.findUnique({
             where: { id: variantId },
-            include: { _count: { select: { orderItems: true } } }
+            include: {
+                orderItems: {
+                    include: {
+                        order: { select: { status: true } }
+                    }
+                }
+            }
         });
 
         if (!variant) throw new NotFoundException('Biến thể không tồn tại');
 
-        if (variant._count.orderItems > 0) {
-            throw new BadRequestException('Không thể xóa biến thể đã có trong đơn hàng');
+        // khong duoc ngung kinh doanh san pham trong dno hang chua hoan tat
+        const activeOrders = variant.orderItems.filter(oi =>
+            !['DELIVERED', 'CANCELLED', 'RETURNED', 'FAILED'].includes(oi.order.status)
+        );
+
+        if (activeOrders.length > 0) {
+            throw new BadRequestException('Không thể thay đổi trạng thái biến thể vì có đơn hàng chưa hoàn tất');
         }
 
-        return this.prisma.productVariant.delete({ where: { id: variantId } });
+        return await this.prisma.$transaction(async (tx) => {
+            // toggle isActive
+            const updatedVariant = await tx.productVariant.update({
+                where: { id: variantId },
+                data: { isActive: !variant.isActive }
+            });
+
+            // ngung kinh doanh -> xoa khoi gio hang
+            if (!updatedVariant.isActive) {
+                await tx.cartItem.deleteMany({
+                    where: { productVariantId: variantId }
+                });
+            }
+
+            return {
+                ...updatedVariant,
+                message: `Biến thể ${updatedVariant.isActive ? 'đã được kích hoạt' : 'đã được tắt'}`
+            };
+        });
     }
 
     // giam stock khi khach hang chot don

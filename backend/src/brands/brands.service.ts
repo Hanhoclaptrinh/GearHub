@@ -78,6 +78,7 @@ export class BrandsService {
         const uploadResult = await this.cloudinaryService.uploadFile(file);
         updateData.logoUrl = uploadResult.secure_url;
       } catch (error) {
+        console.log(error);
         throw new BadRequestException('Không thể tải logo mới lên Cloud');
       }
     }

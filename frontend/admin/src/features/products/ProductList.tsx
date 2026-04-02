@@ -51,6 +51,8 @@ export const ProductList: React.FC = () => {
   const [page, setPage] = useState(1);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [productIdToDelete, setProductIdToDelete] = useState<string | null>(null);
+  const [showInactiveOnly, setShowInactiveOnly] = useState(false);
+  const [showActiveOnly, setShowActiveOnly] = useState(false);
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -61,7 +63,7 @@ export const ProductList: React.FC = () => {
   });
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['products', search, page, 'admin', inventoryStatus, assetType, minPrice, maxPrice, categoryId, brandId],
+    queryKey: ['products', search, page, 'admin', inventoryStatus, assetType, minPrice, maxPrice, categoryId, brandId, showInactiveOnly, showActiveOnly],
     queryFn: () => productService.getProducts({
       search,
       page,
@@ -72,7 +74,9 @@ export const ProductList: React.FC = () => {
       minPrice: minPrice ? Number(minPrice) : undefined,
       maxPrice: maxPrice ? Number(maxPrice) : undefined,
       categoryId: categoryId !== 'all' ? categoryId : undefined,
-      brandId: brandId !== 'all' ? brandId : undefined
+      brandId: brandId !== 'all' ? brandId : undefined,
+      showInactiveOnly: showInactiveOnly ? 'true' : undefined,
+      showActiveOnly: showActiveOnly ? 'true' : undefined
     }),
   });
 
@@ -83,6 +87,7 @@ export const ProductList: React.FC = () => {
     mutationFn: (id: string) => productService.hardDelete(id),
     onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['products', 'inventory-stats'] });
       toast.success(res.message || 'Thay đổi trạng thái thành công');
       setIsConfirmOpen(false);
     },
@@ -95,6 +100,7 @@ export const ProductList: React.FC = () => {
     mutationFn: (id: string) => productService.restore(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['products', 'inventory-stats'] });
       toast.success('Đã khôi phục sản phẩm thành công');
     },
     onError: (error: any) => {
@@ -106,10 +112,23 @@ export const ProductList: React.FC = () => {
     mutationFn: (id: string) => productService.deleteProduct(id),
     onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['products', 'inventory-stats'] });
       toast.success(res.message || 'Cập nhật trạng thái thành công');
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.message || 'Không thể cập nhật trạng thái');
+    }
+  });
+
+  const toggleVariantMutation = useMutation({
+    mutationFn: (variantId: string) => productService.toggleVariant(variantId),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['products', 'inventory-stats'] });
+      toast.success(res.message || 'Cập nhật trạng thái biến thể thành công');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Không thể cập nhật trạng thái biến thể');
     }
   });
 
@@ -162,7 +181,7 @@ export const ProductList: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
         {[
           {
             label: 'Tổng Sản Phẩm (SKU)',
@@ -171,7 +190,7 @@ export const ProductList: React.FC = () => {
             icon: LayoutGrid,
             trend: 'Phân loại',
             color: 'slate',
-            onClick: () => { setInventoryStatus('all'); setPage(1); }
+            onClick: () => { setInventoryStatus('all'); setPage(1); setShowInactiveOnly(false); }
           },
           {
             label: 'Tổng tồn kho',
@@ -180,7 +199,16 @@ export const ProductList: React.FC = () => {
             icon: PackageCheck,
             trend: 'Hiện tại',
             color: 'green',
-            onClick: () => { setInventoryStatus('in_stock'); setPage(1); }
+            onClick: () => { setInventoryStatus('in_stock'); setPage(1); setShowInactiveOnly(false); }
+          },
+          {
+            label: 'Tồn kho thực tế',
+            value: inventoryStats?.actualStock || 0,
+            unit: 'món',
+            icon: PackageCheck,
+            trend: 'Đang KD',
+            color: 'blue',
+            onClick: () => { setInventoryStatus('all'); setPage(1); setShowInactiveOnly(false); setShowActiveOnly(true); }
           },
           {
             label: 'Sắp hết hàng',
@@ -189,7 +217,7 @@ export const ProductList: React.FC = () => {
             icon: AlertTriangle,
             trend: 'Cần nhập',
             color: 'red',
-            onClick: () => { setInventoryStatus('low_stock'); setPage(1); }
+            onClick: () => { setInventoryStatus('low_stock'); setPage(1); setShowInactiveOnly(false); }
           },
           {
             label: 'Giá trị tồn kho',
@@ -198,6 +226,14 @@ export const ProductList: React.FC = () => {
             icon: TrendingUp,
             trend: 'Giá trị hàng',
             color: 'indigo'
+          },
+          {
+            label: 'Giá trị thực tế',
+            value: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(inventoryStats?.actualCapital || 0),
+            unit: '',
+            icon: TrendingUp,
+            trend: 'Đang KD',
+            color: 'purple'
           }
         ].map((stat, i) => (
           <Card
@@ -215,7 +251,9 @@ export const ProductList: React.FC = () => {
                   stat.color === 'slate' ? "bg-slate-50 text-slate-400" :
                     stat.color === 'red' ? "bg-red-50 text-red-500" :
                       stat.color === 'indigo' ? "bg-indigo-50 text-indigo-500" :
-                        "bg-green-50 text-green-500"
+                        stat.color === 'blue' ? "bg-blue-50 text-blue-500" :
+                          stat.color === 'purple' ? "bg-purple-50 text-purple-500" :
+                            "bg-green-50 text-green-500"
                 )}>
                   <stat.icon size={24} />
                 </div>
@@ -224,7 +262,9 @@ export const ProductList: React.FC = () => {
                   stat.color === 'slate' ? "bg-slate-50 text-slate-400" :
                     stat.color === 'red' ? "bg-red-50 text-red-500" :
                       stat.color === 'indigo' ? "bg-indigo-50 text-indigo-500" :
-                        "bg-green-50 text-green-500"
+                        stat.color === 'blue' ? "bg-blue-50 text-blue-500" :
+                          stat.color === 'purple' ? "bg-purple-50 text-purple-500" :
+                            "bg-green-50 text-green-500"
                 )}>
                   {stat.trend}
                 </span>
@@ -240,6 +280,35 @@ export const ProductList: React.FC = () => {
           </Card>
         ))}
       </div>
+
+      {/* Mục ngưng kinh doanh */}
+      {(inventoryStats?.inactiveSKUs > 0 || inventoryStats?.inactiveProducts?.length > 0) && (
+        <div className="p-6 rounded-[32px] border-2 border-dashed border-red-200 bg-red-50/30 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center">
+                <EyeOff className="w-6 h-6 text-red-500" />
+              </div>
+              <div>
+                <h3 className="font-black text-red-900 uppercase tracking-tight">Mục hàng ngưng kinh doanh</h3>
+                <p className="text-[11px] font-bold text-red-700 uppercase tracking-wide">
+                  {inventoryStats?.inactiveSKUs} biến thể + {inventoryStats?.inactiveProducts?.length} sản phẩm inactive
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={() => {
+                setShowInactiveOnly(!showInactiveOnly);
+                setPage(1);
+              }}
+              className="rounded-xl h-12 px-8 font-black uppercase text-sm"
+              variant={showInactiveOnly ? "primary" : "outline"}
+            >
+              {showInactiveOnly ? 'Hiển thị tất cả' : 'Xem mục ngưng KD'}
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Card className="border-none shadow-2xl shadow-slate-200/50 rounded-[40px] p-2 bg-white backdrop-blur-xl border border-white/20 overflow-visible">
         <CardContent className="p-4 space-y-4">
@@ -493,7 +562,17 @@ export const ProductList: React.FC = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          {product.isActive ? (
+                          {showInactiveOnly && !product.isActive ? (
+                            // sp inactive
+                            <Badge variant="danger" className="gap-1 animate-in fade-in slide-in-from-left-1 h-8 px-3">
+                              <XCircle className="w-3.5 h-3.5" /> Ngưng sản phẩm
+                            </Badge>
+                          ) : showInactiveOnly && product.variants?.some(v => !v.isActive) ? (
+                            // sp active nhung co variant inactive
+                            <Badge className="gap-1 animate-in fade-in slide-in-from-left-1 h-8 px-3 bg-orange-50 text-orange-600 border-orange-200">
+                              <AlertTriangle className="w-3.5 h-3.5" /> Phân loại ngưng
+                            </Badge>
+                          ) : product.isActive ? (
                             <Badge variant="success" className="gap-1 animate-in fade-in slide-in-from-left-1 h-8 px-3">
                               <CheckCircle2 className="w-3.5 h-3.5" /> Đang bán
                             </Badge>
@@ -571,16 +650,28 @@ export const ProductList: React.FC = () => {
 
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                                 {product.variants?.map((variant) => (
-                                  <div key={variant.id} className="p-6 rounded-[28px] border border-slate-100 bg-slate-50/30 hover:border-primary/30 hover:bg-white transition-all group/v shadow-inner hover:shadow-2xl hover:shadow-primary/5">
+                                  <div key={variant.id} className={cn(
+                                    "p-6 rounded-[28px] border transition-all group/v shadow-inner hover:shadow-2xl",
+                                    variant.isActive
+                                      ? "border-slate-100 bg-slate-50/30 hover:border-primary/30 hover:bg-white hover:shadow-primary/5"
+                                      : "border-red-200 bg-red-50/20 hover:border-red-300 hover:bg-red-50/30 hover:shadow-red-200/30 opacity-75"
+                                  )}>
                                     <div className="flex items-start justify-between mb-4">
-                                      <span className="text-[10px] font-black py-1 px-3 bg-white border border-slate-100 rounded-xl text-slate-400 group-hover/v:border-primary/30 group-hover/v:text-primary transition-colors shadow-sm">
-                                        {variant.sku}
-                                      </span>
-                                      <div className="flex flex-col items-end">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-black py-1 px-3 bg-white border border-slate-100 rounded-xl text-slate-400 group-hover/v:border-primary/30 group-hover/v:text-primary transition-colors shadow-sm">
+                                          {variant.sku}
+                                        </span>
+                                        {!variant.isActive && (
+                                          <span className="text-[9px] font-black py-1 px-2.5 bg-red-100 border border-red-200 rounded-lg text-red-600 uppercase">
+                                            Ngưng
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex flex-col items-end gap-2">
                                         <span className="font-black text-slate-900 text-lg tracking-tight group-hover/v:text-primary transition-colors leading-none">
                                           {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(variant.price)}
                                         </span>
-                                        <div className="flex items-center gap-1 mt-1.5">
+                                        <div className="flex items-center gap-1">
                                           <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", variant.stock < 10 ? "bg-red-500 animate-pulse" : "bg-green-500")} />
                                           <span className={cn(
                                             "text-[10px] font-black uppercase tracking-tight",
@@ -602,6 +693,24 @@ export const ProductList: React.FC = () => {
                                         ))}
                                       </div>
                                     )}
+
+                                    <div className="flex gap-2 mt-4 pt-4 border-t border-slate-100/60">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className={cn(
+                                          "flex-1 h-8 text-[10px] font-black uppercase rounded-lg transition-all shadow-sm",
+                                          variant.isActive
+                                            ? "bg-amber-50 text-amber-600 hover:bg-amber-100"
+                                            : "bg-green-50 text-green-600 hover:bg-green-100"
+                                        )}
+                                        onClick={() => toggleVariantMutation.mutate(variant.id)}
+                                        isLoading={toggleVariantMutation.isPending && toggleVariantMutation.variables === variant.id}
+                                        title={variant.isActive ? "Ngưng bán" : "Kích hoạt lại"}
+                                      >
+                                        {variant.isActive ? "Ngưng bán" : "Kích hoạt"}
+                                      </Button>
+                                    </div>
                                   </div>
                                 ))}
                               </div>

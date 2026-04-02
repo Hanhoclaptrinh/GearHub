@@ -67,6 +67,7 @@ export interface ProductVariant {
   price: number;
   stock: number;
   attributes: Record<string, any>;
+  isActive: boolean;
 }
 
 export interface Product {

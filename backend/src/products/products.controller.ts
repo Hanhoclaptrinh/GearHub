@@ -26,6 +26,7 @@ export class ProductsController {
         @Query('isAdmin') isAdmin?: string,
         @Query('inventoryStatus') inventoryStatus?: 'all' | 'in_stock' | 'low_stock' | 'out_of_stock',
         @Query('assetType') assetType?: 'all' | 'has_3d' | 'only_2d',
+        @Query('showInactiveOnly') showInactiveOnly?: string,
     ) {
         return this.productsService.getAllProducts({
             page: page ? Number(page) : undefined,
@@ -38,6 +39,7 @@ export class ProductsController {
             isAdmin: isAdmin === 'true',
             inventoryStatus,
             assetType,
+            showInactiveOnly: showInactiveOnly === 'true',
         });
     }
 
@@ -138,11 +140,11 @@ export class ProductsController {
         return this.productsService.updateVariant(variantId, data);
     }
 
-    @Delete('variant/:variantId')
+    @Patch('variant/:variantId/toggle')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
-    async removeVariant(@Param('variantId') variantId: string) {
-        return this.productsService.removeVariant(variantId);
+    async toggleVariant(@Param('variantId') variantId: string) {
+        return this.productsService.toggleVariant(variantId);
     }
 
     @Patch('variants/:variantId/destock')

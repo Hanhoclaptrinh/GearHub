@@ -122,6 +122,7 @@ model ProductVariant {
   price      Decimal @db.Decimal(15, 2)
   stock      Int     @default(0)
   attributes Json?
+  isActive   Boolean @default(true) @map("is_active")
 
   product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
   cartItems  CartItem[]
@@ -252,19 +253,19 @@ model OrderTracking {
 }
 
 model Transaction {
-  id              String            @id @default(uuid()) @db.VarChar(36)
-  orderId         String            @unique @map("order_id") @db.VarChar(36)
-  provider        String?           @db.VarChar(50)
+  id                    String            @id @default(uuid()) @db.VarChar(36)
+  orderId               String            @unique @map("order_id") @db.VarChar(36)
+  provider              String?           @db.VarChar(50)
   providerTransactionId String? // ID giao dich tu cong ngan hang
-  transactionCode String?           @map("transaction_code") @db.VarChar(100)
-  amount          Decimal           @db.Decimal(15, 2)
-  status          TransactionStatus @default(PENDING)
-  paymentMethod   PaymentMethod     @map("payment_method")
-  paymentDate     DateTime?         @map("payment_date")
-  description     String?   @db.VarChar(255)
-  rawResponse     String?           @db.Text @map("raw_response") // raw response de tra soat giao dich
-  createdAt       DateTime          @default(now()) @map("created_at")
-  updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at")
+  transactionCode       String?           @map("transaction_code") @db.VarChar(100)
+  amount                Decimal           @db.Decimal(15, 2)
+  status                TransactionStatus @default(PENDING)
+  paymentMethod         PaymentMethod     @map("payment_method")
+  paymentDate           DateTime?         @map("payment_date")
+  description           String?           @db.VarChar(255)
+  rawResponse           String?           @map("raw_response") @db.Text // raw response de tra soat giao dich
+  createdAt             DateTime          @default(now()) @map("created_at")
+  updatedAt             DateTime          @default(now()) @updatedAt @map("updated_at")
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
@@ -317,18 +318,35 @@ model AiContext {
 
 // ====================== REVIEW & ACTIVITY ======================
 model Review {
-  id        String   @id @default(uuid()) @db.VarChar(36)
-  userId    String   @map("user_id") @db.VarChar(36)
-  productId String   @map("product_id") @db.VarChar(36)
-  rating    Int      @default(5)
-  comment   String?  @db.Text
+  id                 String  @id @default(uuid()) @db.VarChar(36)
+  userId             String  @map("user_id") @db.VarChar(36)
+  productId          String  @map("product_id") @db.VarChar(36)
+  orderId            String? @map("order_id") @db.VarChar(36)
+  rating             Int     @default(5)
+  comment            String? @db.Text
+  reply              String? @db.Text // admin phan hoi
+  isVerifiedPurchase Boolean @default(false) @map("is_verified_purchase") // chi cho review khi da mua don hang
+
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  assets  ReviewAsset[]
 
-  @@unique([userId, productId])
+  @@unique([userId, productId]) // moi user chi duoc review 1 san pham 1 lan
   @@map("reviews")
+}
+
+model ReviewAsset {
+  id       String @id @default(uuid()) @db.VarChar(36)
+  reviewId String @map("review_id") @db.VarChar(36)
+  url      String @db.VarChar(255)
+  type     String @default("IMAGE") // image hoac video
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@map("review_assets")
 }
 
 model ActivityLog {
