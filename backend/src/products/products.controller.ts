@@ -27,6 +27,7 @@ export class ProductsController {
         @Query('inventoryStatus') inventoryStatus?: 'all' | 'in_stock' | 'low_stock' | 'out_of_stock',
         @Query('assetType') assetType?: 'all' | 'has_3d' | 'only_2d',
         @Query('showInactiveOnly') showInactiveOnly?: string,
+        @Query('showActiveOnly') showActiveOnly?: string,
     ) {
         return this.productsService.getAllProducts({
             page: page ? Number(page) : undefined,
@@ -40,6 +41,7 @@ export class ProductsController {
             inventoryStatus,
             assetType,
             showInactiveOnly: showInactiveOnly === 'true',
+            showActiveOnly: showActiveOnly === 'true',
         });
     }
 

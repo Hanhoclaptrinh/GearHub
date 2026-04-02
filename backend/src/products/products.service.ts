@@ -513,10 +513,10 @@ export class ProductsService {
                 { variants: { some: { isActive: false } } }
             ];
         } else if (showActiveOnly) {
-            // hien thi chi san pham active va tat ca variants deu active
+            // hien thi san pham dang kinh doanh
             whereCondition.isActive = true;
             whereCondition.variants = {
-                every: { isActive: true }
+                some: { isActive: true }
             };
         } else {
             // hien thi san pham active cho client
@@ -732,9 +732,12 @@ export class ProductsService {
             this.prisma.productVariant.findMany({
                 select: { price: true, stock: true }
             }),
-            // active variants
+            // active variants (of active products)
             this.prisma.productVariant.findMany({
-                where: { isActive: true },
+                where: { 
+                    isActive: true,
+                    product: { isActive: true }
+                },
                 select: { price: true, stock: true }
             }),
             // inactive variants

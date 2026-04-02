@@ -190,7 +190,7 @@ export const ProductList: React.FC = () => {
             icon: LayoutGrid,
             trend: 'Phân loại',
             color: 'slate',
-            onClick: () => { setInventoryStatus('all'); setPage(1); setShowInactiveOnly(false); }
+            onClick: () => { setInventoryStatus('all'); setPage(1); setShowInactiveOnly(false); setShowActiveOnly(false); }
           },
           {
             label: 'Tổng tồn kho',
@@ -199,7 +199,7 @@ export const ProductList: React.FC = () => {
             icon: PackageCheck,
             trend: 'Hiện tại',
             color: 'green',
-            onClick: () => { setInventoryStatus('in_stock'); setPage(1); setShowInactiveOnly(false); }
+            onClick: () => { setInventoryStatus('in_stock'); setPage(1); setShowInactiveOnly(false); setShowActiveOnly(false); }
           },
           {
             label: 'Tồn kho thực tế',
@@ -217,7 +217,7 @@ export const ProductList: React.FC = () => {
             icon: AlertTriangle,
             trend: 'Cần nhập',
             color: 'red',
-            onClick: () => { setInventoryStatus('low_stock'); setPage(1); setShowInactiveOnly(false); }
+            onClick: () => { setInventoryStatus('low_stock'); setPage(1); setShowInactiveOnly(false); setShowActiveOnly(false); }
           },
           {
             label: 'Giá trị tồn kho',
@@ -300,6 +300,7 @@ export const ProductList: React.FC = () => {
               onClick={() => {
                 setShowInactiveOnly(!showInactiveOnly);
                 setPage(1);
+                setShowActiveOnly(false);
               }}
               className="rounded-xl h-12 px-8 font-black uppercase text-sm"
               variant={showInactiveOnly ? "primary" : "outline"}
@@ -442,6 +443,9 @@ export const ProductList: React.FC = () => {
                     setCategoryId('all');
                     setBrandId('all');
                     setSearch('');
+                    setShowActiveOnly(false);
+                    setShowInactiveOnly(false);
+                    setPage(1);
                   }}
                 >
                   Xóa tất cả bộ lọc
