@@ -239,7 +239,7 @@ export const ProductList: React.FC = () => {
           <Card
             key={i}
             className={cn(
-              "border-none shadow-xl shadow-slate-200/40 rounded-[32px] overflow-hidden group transition-all bg-white hover:shadow-2xl hover:shadow-slate-200/60",
+              "border-none shadow-xl shadow-slate-200/40 rounded-[24px] overflow-hidden group transition-all bg-white hover:shadow-2xl hover:shadow-slate-200/60",
               stat.onClick ? "cursor-pointer hover:scale-[1.02]" : ""
             )}
             onClick={stat.onClick}
@@ -272,7 +272,7 @@ export const ProductList: React.FC = () => {
               <div className="space-y-1">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
                 <div className="flex items-baseline gap-2">
-                  <h3 className="text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">{stat.value}</h3>
+                  <h3 className="text-2xl lg:text-xl font-black text-slate-900 tracking-tight">{stat.value}</h3>
                   {stat.unit && <span className="text-[10px] font-bold text-slate-300 uppercase">{stat.unit}</span>}
                 </div>
               </div>

@@ -50,6 +50,10 @@ export interface Brand {
   slug: string;
   description?: string;
   logoUrl?: string;
+  isActive: boolean;
+  _count?: {
+    products: number;
+  };
 }
 
 export type AssetType = 'IMAGE' | 'GLB' | 'USDZ';

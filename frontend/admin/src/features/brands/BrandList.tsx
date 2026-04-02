@@ -10,7 +10,12 @@ import {
   Image as ImageIcon,
   X,
   Upload,
-  Loader2
+  Loader2,
+  CheckCircle2,
+  EyeOff,
+  ShieldCheck,
+  LayoutGrid,
+  Package
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { brandService } from '../../services/brand.service';
@@ -62,13 +67,24 @@ export const BrandList: React.FC = () => {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => brandService.deleteBrand(id),
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ['brands'] });
-      toast.success('Đã gỡ bỏ thương hiệu khỏi hệ thống');
+      toast.success(res.message || 'Thay đổi trạng thái thương hiệu thành công');
       setIsConfirmOpen(false);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Không thể gỡ bỏ thương hiệu này');
+      toast.error(error.response?.data?.message || 'Không thể thực hiện thao tác này');
+    }
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: (id: string) => brandService.toggleBrand(id),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ['brands'] });
+      toast.success(res.message || 'Cập nhật trạng thái thành công');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Lỗi khi chuyển đổi trạng thái');
     }
   });
 
@@ -93,14 +109,55 @@ export const BrandList: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {[
+          { label: 'Tổng thương hiệu', value: brands?.length || 0, icon: LayoutGrid, color: 'slate', trend: 'Hệ sinh thái' },
+          { label: 'Đang hoạt động', value: brands?.filter((b: Brand) => b.isActive).length || 0, icon: CheckCircle2, color: 'green', trend: 'Sẵn sàng' },
+          { label: 'Tạm ngưng', value: brands?.filter((b: Brand) => !b.isActive).length || 0, icon: EyeOff, color: 'orange', trend: 'Lưu trữ' },
+          { label: 'Tổng sản phẩm', value: brands?.reduce((acc: number, curr: Brand) => acc + (curr._count?.products || 0), 0) || 0, icon: Package, color: 'blue', trend: 'Sản lượng' }
+        ].map((stat, i) => (
+          <Card key={i} className="border-none shadow-xl shadow-slate-200/40 rounded-[28px] overflow-hidden group transition-all bg-white hover:shadow-2xl hover:shadow-slate-200/60">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <div className={cn(
+                  "w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:rotate-12 duration-300",
+                  stat.color === 'slate' ? "bg-slate-50 text-slate-400" :
+                    stat.color === 'green' ? "bg-green-50 text-green-500" :
+                      stat.color === 'blue' ? "bg-blue-50 text-blue-500" :
+                        "bg-orange-50 text-orange-500"
+                )}>
+                  <stat.icon size={24} />
+                </div>
+                <span className={cn(
+                  "text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-tighter shadow-sm",
+                  stat.color === 'slate' ? "bg-slate-50 text-slate-400" :
+                    stat.color === 'green' ? "bg-green-50 text-green-500" :
+                      stat.color === 'blue' ? "bg-blue-50 text-blue-500" :
+                        "bg-orange-50 text-orange-500"
+                )}>
+                  {stat.trend}
+                </span>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                <div className="flex items-baseline gap-2">
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">{stat.value}</h3>
+                  <span className="text-[10px] font-bold text-slate-300 uppercase">{stat.color === 'blue' ? 'Món' : 'Brands'}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 font-heading tracking-tight">Quản lý thương hiệu</h1>
-          <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Hệ sinh thái đối tác ({filteredBrands.length})</p>
+          <h1 className="text-3xl font-black text-slate-900 font-heading leading-tight tracking-tight">Đối tác thương hiệu</h1>
+          <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Hiển thị {filteredBrands.length} thương hiệu theo bộ lọc</p>
         </div>
-        <Button onClick={() => openModal()} className="md:w-auto w-full group h-12 rounded-2xl shadow-xl shadow-primary/20">
-          <Plus className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform" />
-          Kích hoạt brand mới
+        <Button onClick={() => openModal()} className="md:w-auto w-full group h-14 px-8 rounded-2xl shadow-xl shadow-primary/20">
+          <Plus className="w-6 h-6 mr-2 group-hover:rotate-90 transition-transform" />
+          Kích hoạt Brand mới
         </Button>
       </div>
 
@@ -130,7 +187,8 @@ export const BrandList: React.FC = () => {
               <tr>
                 <th className="px-10 py-6 text-xs font-black text-slate-500 uppercase tracking-widest pl-12">Logo</th>
                 <th className="px-6 py-6 text-xs font-black text-slate-500 uppercase tracking-widest">Thương hiệu</th>
-                <th className="px-6 py-6 text-xs font-black text-slate-500 uppercase tracking-widest">Đường dẫn</th>
+                <th className="px-6 py-6 text-xs font-black text-slate-500 uppercase tracking-widest text-center">Sản lượng</th>
+                <th className="px-6 py-6 text-xs font-black text-slate-500 uppercase tracking-widest text-center">Trạng thái</th>
                 <th className="px-6 py-6 text-xs font-black text-slate-500 uppercase tracking-widest text-center">Thao tác</th>
               </tr>
             </thead>
@@ -152,13 +210,39 @@ export const BrandList: React.FC = () => {
                     <td className="px-6 py-6">
                       <span className="font-black text-slate-900 group-hover:text-primary transition-colors text-lg tracking-tighter">{brand.name}</span>
                     </td>
-                    <td className="px-6 py-6">
-                      <Badge variant="default" className="bg-slate-100 text-slate-400 border-none font-black h-8 px-4 rounded-full shadow-sm">
-                        /{brand.slug}
-                      </Badge>
+                    <td className="px-6 py-6 text-center">
+                      <div className="flex flex-col items-center">
+                        <span className="text-xl font-black text-slate-900 tracking-tighter">{brand._count?.products || 0}</span>
+                        <span className="text-[10px] font-bold text-slate-300 uppercase">Sản phẩm</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-6 text-center">
+                      <div className="flex justify-center">
+                        {brand.isActive ? (
+                          <Badge variant="success" className="gap-1.5 h-8 px-4 rounded-full font-black uppercase text-[10px] tracking-widest shadow-sm">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Hoạt động
+                          </Badge>
+                        ) : (
+                          <Badge variant="danger" className="gap-1.5 h-8 px-4 rounded-full font-black uppercase text-[10px] tracking-widest shadow-sm">
+                            <EyeOff className="w-3.5 h-3.5" /> Tạm ngưng
+                          </Badge>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-6 text-center">
                       <div className="flex items-center justify-center gap-2">
+                        <Button
+                          variant="ghost"
+                          className={cn(
+                            "p-3 h-12 w-12 rounded-2xl border-none transition-all shadow-sm",
+                            brand.isActive ? "text-orange-500 hover:bg-orange-50" : "text-green-500 hover:bg-green-50"
+                          )}
+                          onClick={() => toggleMutation.mutate(brand.id)}
+                          isLoading={toggleMutation.isPending && toggleMutation.variables === brand.id}
+                          title={brand.isActive ? "Ngưng hoạt động" : "Kích hoạt lại"}
+                        >
+                          {brand.isActive ? <EyeOff className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
+                        </Button>
                         <Button variant="ghost" className="p-3 h-12 w-12 text-primary hover:bg-primary/5 rounded-2xl border-none transition-all shadow-sm" onClick={() => openModal(brand)}>
                           <Edit className="w-5 h-5" />
                         </Button>
@@ -176,7 +260,7 @@ export const BrandList: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="px-6 py-32 text-center text-slate-300 font-black uppercase tracking-widest text-xl opacity-40">
+                  <td colSpan={5} className="px-6 py-32 text-center text-slate-300 font-black uppercase tracking-widest text-xl opacity-40">
                     Empty Brand Library
                   </td>
                 </tr>
@@ -206,9 +290,9 @@ export const BrandList: React.FC = () => {
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={() => brandToDelete && deleteMutation.mutate(brandToDelete.id)}
-        title="Xác nhận gỡ bỏ"
-        message={`Bạn có chắc muốn xóa thương hiệu "${brandToDelete?.name}"? Mọi dữ liệu liên quan sẽ bị ảnh hưởng.`}
-        confirmText="Xác nhận gỡ"
+        title="Xác nhận xử lý"
+        message={`Bạn có chắn chắn muốn thực hiện thao tác với thương hiệu "${brandToDelete?.name}"? Hệ thống sẽ ưu tiên ngưng kinh doanh nếu đang còn sản phẩm liên kết.`}
+        confirmText="Xác nhận"
         cancelText="Để tôi xem lại"
         isLoading={deleteMutation.isPending}
       />

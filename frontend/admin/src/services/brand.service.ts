@@ -20,5 +20,10 @@ export const brandService = {
   async deleteBrand(id: string) {
     const { data } = await api.delete(`/brands/${id}`);
     return data;
+  },
+
+  async toggleBrand(id: string) {
+    const { data } = await api.patch(`/brands/${id}/toggle`);
+    return data;
   }
 };

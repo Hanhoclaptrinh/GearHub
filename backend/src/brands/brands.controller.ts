@@ -58,6 +58,13 @@ export class BrandsController {
     return this.brandsService.updateBrand(id, data, file);
   }
 
+  @Patch(':id/toggle')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  async toggleStatus(@Param('id') id: string) {
+    return this.brandsService.toggleStatus(id);
+  }
+
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)

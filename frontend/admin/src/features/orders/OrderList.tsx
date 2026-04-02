@@ -125,7 +125,7 @@ export const OrderList: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         {[
           { label: 'Tất cả', value: '', icon: ShoppingBag, color: 'slate', count: meta.total },
           { label: 'Chờ xác nhận', value: OrderStatus.PENDING, icon: Clock, color: 'orange', count: statusStats[OrderStatus.PENDING] || 0 },
@@ -255,8 +255,8 @@ export const OrderList: React.FC = () => {
                           ))}
                         </select>
                         {updateStatusMutation.isPending && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           className="p-2 h-10 w-10 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-full border-none"
                           onClick={() => setSelectedOrderId(order.id)}
                         >
@@ -331,16 +331,16 @@ export const OrderList: React.FC = () => {
                   {orderDetail && <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1">#{orderDetail.orderNumber || orderDetail.id.toUpperCase()}</p>}
                 </div>
               </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setSelectedOrderId(null)}
                 className="rounded-full hover:bg-slate-200"
               >
                 <XCircle className="w-6 h-6 text-slate-400" />
               </Button>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-8 space-y-8">
               {isLoadingDetail ? (
                 <div className="flex items-center justify-center py-20">
@@ -407,15 +407,15 @@ export const OrderList: React.FC = () => {
             </div>
 
             <div className="p-8 bg-slate-50/50 border-t border-slate-100">
-               <div className="flex items-center justify-between mb-6">
-                  <p className="text-sm font-black text-slate-400 uppercase tracking-tight">Tổng thanh toán</p>
-                  <p className="text-3xl font-black text-primary">
-                    {orderDetail ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(orderDetail.totalAmount) : '...'}
-                  </p>
-               </div>
-               <div className="flex gap-3">
-                 <Button className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest" onClick={() => setSelectedOrderId(null)}>Đóng chi tiết</Button>
-               </div>
+              <div className="flex items-center justify-between mb-6">
+                <p className="text-sm font-black text-slate-400 uppercase tracking-tight">Tổng thanh toán</p>
+                <p className="text-3xl font-black text-primary">
+                  {orderDetail ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(orderDetail.totalAmount) : '...'}
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest" onClick={() => setSelectedOrderId(null)}>Đóng chi tiết</Button>
+              </div>
             </div>
           </div>
         </div>

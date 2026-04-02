@@ -44,6 +44,7 @@ export class BrandsService {
         name: true,
         slug: true,
         logoUrl: true,
+        isActive: true,
         _count: { select: { products: true } }
       },
       orderBy: { name: 'asc' }
@@ -86,6 +87,21 @@ export class BrandsService {
     return this.prisma.brand.update({ where: { id }, data: updateData });
   }
 
+  async toggleStatus(id: string) {
+    const brand = await this.prisma.brand.findUnique({ where: { id } });
+    if (!brand) throw new NotFoundException('Thương hiệu không tồn tại');
+
+    const updated = await this.prisma.brand.update({
+      where: { id },
+      data: { isActive: !brand.isActive }
+    });
+
+    return {
+      message: `Đã ${updated.isActive ? 'kích hoạt' : 'tạm ngưng'} thương hiệu '${brand.name}'`,
+      isActive: updated.isActive
+    };
+  }
+
   async removeBrand(id: string) {
     const brand = await this.prisma.brand.findUnique({
       where: { id },
@@ -93,15 +109,22 @@ export class BrandsService {
     });
     if (!brand) throw new NotFoundException('Thương hiệu không tồn tại');
 
+    // soft delete neu co san pham
     if (brand._count.products > 0) {
-      throw new BadRequestException(`Không thể xóa thương hiệu này vì đang có ${brand._count.products} sản phẩm`);
+      await this.prisma.brand.update({
+        where: { id },
+        data: { isActive: false }
+      });
+      return { message: `Đã ngưng kinh doanh thương hiệu '${brand.name}' do đang có ${brand._count.products} sản phẩm` };
     }
 
+    // hard delete neu khong co san pham
     if (brand.logoUrl) {
       const publicId = brand.logoUrl.split('/').pop()?.split('.')[0];
       if (publicId) await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);
     }
 
-    return this.prisma.brand.delete({ where: { id } });
+    await this.prisma.brand.delete({ where: { id } });
+    return { message: 'Đã xóa vĩnh viễn thương hiệu thành công' };
   }
 }
