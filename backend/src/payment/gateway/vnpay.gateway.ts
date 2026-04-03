@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { PaymentGateway } from '../types/payment-gateway.interface';
 import * as crypto from 'crypto';
 import moment from 'moment';
-import qs from 'qs';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()

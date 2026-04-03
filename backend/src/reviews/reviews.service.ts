@@ -95,12 +95,15 @@ export class ReviewsService {
     }
 
     // get danh sach review cua 1 prod
-    async getProductReviews(productId: string, page: number = 1, limit: number = 10) {
+    async getProductReviews(productId: string, page: number = 1, limit: number = 10, isAdmin: boolean = false) {
         const skip = (page - 1) * limit;
 
         const [reviews, total] = await Promise.all([
             this.prisma.review.findMany({
-                where: { productId },
+                where: {
+                    productId,
+                    ...(isAdmin ? {} : { isHidden: false }) // chi hien thi review khong bi an boi admin
+                },
                 include: {
                     user: {
                         select: {
@@ -119,7 +122,12 @@ export class ReviewsService {
                 skip,
                 take: limit
             }),
-            this.prisma.review.count({ where: { productId } })
+            this.prisma.review.count({
+                where: {
+                    productId,
+                    ...(isAdmin ? {} : { isHidden: false })
+                }
+            })
         ]);
 
         return {
