@@ -1,10 +1,10 @@
 import { Controller, Patch, UseGuards, Request, Get, Query, UseInterceptors, Body, UploadedFile, FileTypeValidator, MaxFileSizeValidator, ParseFilePipe, Param, NotFoundException } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';

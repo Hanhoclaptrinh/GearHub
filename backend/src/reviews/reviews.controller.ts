@@ -1,9 +1,9 @@
 import { Body, Controller, DefaultValuePipe, Delete, Get, Param, ParseIntPipe, ParseUUIDPipe, Patch, Post, Query, Request, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { CreateReviewDto } from './dto/create-review.dto';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { ReplyReviewDto } from './dto/reply-review.dto';

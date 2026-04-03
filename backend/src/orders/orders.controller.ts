@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { OrdersService } from './orders.service';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { OrderStatus, Role } from '@prisma/client';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
