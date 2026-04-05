@@ -8,13 +8,19 @@ import { ConfigService } from '@nestjs/config';
 export class VnPayGateway implements PaymentGateway {
     constructor(private configService: ConfigService) { }
 
-    async createPayment(data: { orderId: string; amount: number; ipAddr: string, orderInfo: string }): Promise<string> {
+    async createPayment(data: { orderId: string; amount: number; ipAddr: string, orderInfo: string, platform?: string }): Promise<string> {
         const vnpTmnCode = this.configService.get<string>('VNP_TMN_CODE')!;
         const vnpHashSecret = this.configService.get<string>('VNP_HASH_SECRET')!;
         const vnpUrl = this.configService.get<string>('VNP_URL')!;
-        const vnpReturnUrl = this.configService.get<string>('VNP_RETURN_URL')!;
+        let vnpReturnUrl = this.configService.get<string>('VNP_RETURN_URL')!;
 
         const createDate = moment().format('YYYYMMDDHHmmss');
+
+        if (data.platform) {
+            vnpReturnUrl += vnpReturnUrl.includes('?')
+                ? `&platform=${data.platform}`
+                : `?platform=${data.platform}`;
+        }
 
         const vnp_Params: any = {
             vnp_Amount: Math.floor(data.amount * 100),

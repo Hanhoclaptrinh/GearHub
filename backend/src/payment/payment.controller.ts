@@ -4,16 +4,23 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { Role } from '@prisma/client';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('payment')
 export class PaymentController {
     private readonly logger = new Logger(PaymentController.name);
 
-    constructor(private paymentService: PaymentService) { }
+    constructor(
+        private paymentService: PaymentService,
+        private configService: ConfigService
+    ) { }
 
     @Post('create-url/:orderId')
     @UseGuards(JwtAuthGuard)
-    async createPaymentUrl(@Param('orderId') orderId: string, @Request() req) {
+    async createPaymentUrl(
+        @Param('orderId') orderId: string,
+        @Query('platform') platform: string = 'web',
+        @Request() req) {
         // lay ip cua khach hang
         // neu chay qua proxy (Nginx/Cloudflare) thi dung 'x-forwarded-for'
         // neu khong thi dung remoteAddress
@@ -22,11 +29,16 @@ export class PaymentController {
             req.socket.remoteAddress ||
             '127.0.0.1';
 
-        return this.paymentService.createPaymentUrl(orderId, ipAddr);
+        return this.paymentService.createPaymentUrl(orderId, ipAddr, platform);
     }
 
     @Get('vnpay_return')
     async vnpayReturn(@Query() query: any, @Response() res) {
+        const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+        const mobileScheme = this.configService.get<string>('MOBILE_SCHEME');
+        const isMobile = query['platform'] === 'mobile';
+        const baseRedirect = isMobile ? mobileScheme : frontendUrl;
+
         try {
             // this.logger.log(`VNPay return callback received with params: ${JSON.stringify(query)}`);
 
@@ -38,15 +50,15 @@ export class PaymentController {
 
             if (result.success) {
                 // this.logger.log(`Payment successful for order: ${result.orderId}`);
-                return res.redirect(`http://localhost:5173/payment-success?orderId=${result.orderId}`);
+                return res.redirect(`${baseRedirect}?status=success&orderId=${result.orderId}`);
             } else {
-                const message = result.message || 'Unknown error';
+                // const message = result.message || 'Unknown error';
                 // this.logger.warn(`Payment failed: ${message}`);
-                return res.redirect(`http://localhost:5173/payment-failed?message=${encodeURIComponent(message)}`);
+                return res.redirect(`${baseRedirect}?status=failed&message=${encodeURIComponent(result.message)}`);
             }
         } catch (error) {
             // this.logger.error(`Error in vnpayReturn: ${error.message}`, error.stack);
-            return res.redirect(`http://localhost:5173/payment-failed?error=${encodeURIComponent(error.message)}`);
+            return res.redirect(`${baseRedirect}?status=error&message=${encodeURIComponent(error.message)}`);
         }
     }
 

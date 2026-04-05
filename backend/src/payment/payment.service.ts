@@ -12,7 +12,7 @@ export class PaymentService {
         private vnpayGateway: VnPayGateway
     ) { }
 
-    async createPaymentUrl(orderId: string, ipAddr: string) {
+    async createPaymentUrl(orderId: string, ipAddr: string, platform: string = 'web') {
         const description = `Gearhub thanh toan don hang #${orderId.slice(0, 8)}`;
 
         const order = await this.prisma.order.findUnique({
