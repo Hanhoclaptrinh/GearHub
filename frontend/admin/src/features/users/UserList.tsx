@@ -42,9 +42,9 @@ export const UserList: React.FC = () => {
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['users', search, page, status, role],
-    queryFn: () => userService.getAllUsers({ 
-      search, 
-      page, 
+    queryFn: () => userService.getAllUsers({
+      search,
+      page,
       limit: 10,
       status: status !== 'all' ? status : undefined,
       role: role !== 'all' ? role : undefined
@@ -138,8 +138,8 @@ export const UserList: React.FC = () => {
         </div>
       </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card 
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card
           className={cn(
             "border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group cursor-pointer transition-all hover:scale-105",
             status === 'all' && role === 'all' ? "ring-2 ring-primary bg-primary/5" : ""
@@ -156,7 +156,7 @@ export const UserList: React.FC = () => {
             </div>
           </div>
         </Card>
-        <Card 
+        <Card
           className={cn(
             "border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group cursor-pointer transition-all hover:scale-105",
             status === 'ACTIVE' ? "ring-2 ring-green-500 bg-green-50/50" : ""
@@ -173,7 +173,7 @@ export const UserList: React.FC = () => {
             </div>
           </div>
         </Card>
-        <Card 
+        <Card
           className={cn(
             "border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group cursor-pointer transition-all hover:scale-105",
             role === 'ADMIN' ? "ring-2 ring-blue-500 bg-blue-50/50" : ""
@@ -190,7 +190,7 @@ export const UserList: React.FC = () => {
             </div>
           </div>
         </Card>
-        <Card 
+        <Card
           className={cn(
             "border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group cursor-pointer transition-all hover:scale-105",
             status === 'BANNED' ? "ring-2 ring-red-500 bg-red-50/50" : ""

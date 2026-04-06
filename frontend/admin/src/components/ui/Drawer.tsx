@@ -10,12 +10,12 @@ interface DrawerProps {
   width?: string;
 }
 
-export const Drawer: React.FC<DrawerProps> = ({ 
-  isOpen, 
-  onClose, 
-  title, 
-  children, 
-  width = 'max-w-xl' 
+export const Drawer: React.FC<DrawerProps> = ({
+  isOpen,
+  onClose,
+  title,
+  children,
+  width = 'max-w-xl'
 }) => {
   const [mounted, setMounted] = useState(false);
 
@@ -35,18 +35,16 @@ export const Drawer: React.FC<DrawerProps> = ({
   return (
     <div className="fixed inset-0 z-[100] flex justify-end">
       {/* Backdrop */}
-      <div 
-        className={`fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] transition-opacity duration-300 ${
-          isOpen ? 'opacity-100' : 'opacity-0'
-        }`}
+      <div
+        className={`fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'
+          }`}
         onClick={onClose}
       />
-      
+
       {/* Drawer Panel */}
-      <div 
-        className={`relative w-full ${width} bg-white h-full shadow-2xl flex flex-col transition-transform duration-300 ease-out transform ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+      <div
+        className={`relative w-full ${width} bg-white h-full shadow-2xl flex flex-col transition-transform duration-300 ease-out transform ${isOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
       >
         {/* Header */}
         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
@@ -54,9 +52,9 @@ export const Drawer: React.FC<DrawerProps> = ({
             <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-none">{title}</h3>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Dữ liệu chi tiết từ hệ thống</p>
           </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onClose}
             className="rounded-2xl w-10 h-10 p-0 hover:bg-slate-100 text-slate-400 hover:text-slate-900 transition-all border border-slate-100"
           >
@@ -72,7 +70,8 @@ export const Drawer: React.FC<DrawerProps> = ({
         </div>
       </div>
 
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .custom-scrollbar::-webkit-scrollbar {
           width: 5px;
         }
