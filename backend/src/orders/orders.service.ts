@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { CartService } from 'src/cart/cart.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ProductsService } from 'src/products/products.service';
+import { ActivityLogService } from 'src/activity-log/activity-log.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderStatus, Prisma, Role, PaymentStatus } from '@prisma/client';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -11,7 +12,8 @@ export class OrdersService {
     constructor(
         private prisma: PrismaService,
         private productService: ProductsService,
-        private cartService: CartService
+        private cartService: CartService,
+        private activityLogService: ActivityLogService
     ) { }
 
     async createOrder(userId: string, data: CreateOrderDto) {
@@ -378,7 +380,7 @@ export class OrdersService {
     }
 
     async getAdminStats() {
-        const [revenue, orderCounts, userCount, lowStockVariants] = await Promise.all([
+        const [revenue, orderCounts, userCount, lowStockVariants, latestLogs] = await Promise.all([
             // tong doanh thu tu cac don hang da thanh toan (paymentStatus = PAID)
             this.prisma.order.aggregate({
                 _sum: { totalAmount: true },
@@ -399,7 +401,10 @@ export class OrdersService {
             // san pham sap het hang (stock < 10)
             this.prisma.productVariant.count({
                 where: { stock: { lt: 10 } }
-            })
+            }),
+
+            // lay 7 log gan nhat
+            this.activityLogService.findAll({ page: 1, limit: 7 })
         ]);
 
         const formattedOrders = orderCounts.reduce((acc, curr) => {
@@ -407,12 +412,69 @@ export class OrdersService {
             return acc;
         }, {});
 
+        // fetch revenue & orders trend data (last 7 days)
+        const trends = await this.getTrends(7);
+
         return {
             totalRevenue: revenue._sum.totalAmount || 0,
             ordersByStatus: formattedOrders,
             totalUsers: userCount,
-            lowStockAlert: lowStockVariants
+            lowStockAlert: lowStockVariants,
+            revenueTrends: trends.revenue,
+            orderTrends: trends.orders,
+            latestLogs: latestLogs.data
         }
+    }
+
+    private async getTrends(days: number) {
+        const now = new Date();
+        const startDate = new Date();
+        startDate.setDate(now.getDate() - (days - 1));
+        startDate.setHours(0, 0, 0, 0);
+
+        /// query 1 lan lay toan bo order trong khoang thoi gian
+        const allOrders = await this.prisma.order.findMany({
+            where: { createdAt: { gte: startDate } },
+            select: {
+                createdAt: true,
+                totalAmount: true,
+                paymentStatus: true
+            }
+        });
+
+        // stat chua du lieu cac ngay
+        const statsMap = new Map<string, { orders: number; revenue: number }>();
+
+        for (let i = 0; i < days; i++) {
+            const d = new Date(startDate);
+            d.setDate(d.getDate() + i);
+            const dateStr = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+            statsMap.set(dateStr, { orders: 0, revenue: 0 });
+        }
+
+        // do du lieu vao map
+        allOrders.forEach(order => {
+            const dateStr = order.createdAt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+            if (statsMap.has(dateStr)) {
+                const current = statsMap.get(dateStr)!;
+                current.orders += 1;
+                if (order.paymentStatus === PaymentStatus.PAID) {
+                    current.revenue += Number(order.totalAmount || 0);
+                }
+                statsMap.set(dateStr, current);
+            }
+        });
+
+        const result = Array.from(statsMap.entries()).map(([date, data]) => ({
+            date,
+            orders: data.orders,
+            revenue: data.revenue
+        }));
+
+        return {
+            orders: result.map(d => ({ date: d.date, count: d.orders })),
+            revenue: result.map(d => ({ date: d.date, value: d.revenue }))
+        };
     }
 
     async reOrder(userId: string, id: string) {
