@@ -7,6 +7,8 @@ import { Role } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { LogActivity } from 'src/common/decorators/log-activity.decorator';
+import { ActivityAction } from 'src/common/constants/activity-log.constants';
 
 @Controller('categories')
 export class CategoriesController {
@@ -31,6 +33,7 @@ export class CategoriesController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
     @UseInterceptors(FileInterceptor('file'))
+    @LogActivity(ActivityAction.CATEGORY_CREATED)
     async createCategory(
         @Body() data: CreateCategoryDto,
         @UploadedFile(
@@ -49,6 +52,7 @@ export class CategoriesController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
     @UseInterceptors(FileInterceptor('file'))
+    @LogActivity(ActivityAction.CATEGORY_UPDATED)
     async updateCategory(
         @Param('id') id: string,
         @Body() data: UpdateCategoryDto,
@@ -67,6 +71,7 @@ export class CategoriesController {
     @Delete(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
+    @LogActivity(ActivityAction.CATEGORY_DELETED)
     async removeCategory(@Param('id') id: string) {
         return this.categoriesService.removeCategory(id);
     }

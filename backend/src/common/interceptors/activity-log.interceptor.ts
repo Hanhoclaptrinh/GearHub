@@ -1,44 +1,53 @@
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { ActivityLogService } from "src/activity-log/activity-log.service";
+import { ActivityActionType } from "src/common/constants/activity-log.constants";
+import { LOG_ACTIVITY_KEY } from '../decorators/log-activity.decorator';
 
 @Injectable()
 export class ActivityLogInterceptor implements NestInterceptor {
-    constructor(private activityLogService: ActivityLogService) { }
+    constructor(
+        private activityLogService: ActivityLogService,
+        private reflector: Reflector
+    ) { }
 
     intercept(context: ExecutionContext, next: CallHandler<any>): Observable<any> | Promise<Observable<any>> {
-        const req = context.switchToHttp().getRequest();
-        const { method, url, user, body } = req;
+        const action = this.reflector.getAllAndOverride<ActivityActionType>(LOG_ACTIVITY_KEY, [
+            context.getHandler(),
+            context.getClass(),
+        ]);
 
-        // log cac hanh dong lam thay doi du lieu
-        const logMethods = ['POST', 'PATCH', 'DELETE'];
-        if (!logMethods.includes(method)) {
+        // neu khong co decorator thi bo qua khong log
+        // tiep can theo huong explicit
+        if (!action) {
             return next.handle();
         }
 
+        const req = context.switchToHttp().getRequest();
+        const { method, url, user, body } = req;
+
         return next.handle().pipe(
             tap(async () => {
-                // userid
-                const userId = user?.userId || user?.id || null;
+                try {
+                    const userId = user?.userId || user?.id || null;
 
-                // tao ten hanh dong
-                const resource = url.split('/')[2]?.toUpperCase() || 'SYSTEM';
-                const actionMap = { POST: 'CREATE', PATCH: 'UPDATE', DELETE: 'DELETE' };
-                const action = `${actionMap[method]}_${resource}`;
+                    // loai bo field nhay cam
+                    const safeBody = { ...body };
+                    const sensitiveFields = ['password', 'confirmPassword', 'oldPassword', 'newPassword', 'token'];
+                    sensitiveFields.forEach(field => delete safeBody[field]);
 
-                // loai bo cac field khong can xuat hien tren log
-                const safeBody = { ...body };
-                const sensitiveFields = ['password', 'confirmPassword', 'oldPassword', 'newPassword'];
-                sensitiveFields.forEach(field => delete safeBody[field]);
-
-                // ghi vao db
-                await this.activityLogService.createLog(userId, action, {
-                    url,
-                    method,
-                    payload: safeBody,
-                    ip: req.ip
-                });
+                    // ghi log
+                    await this.activityLogService.createLog(userId, action, {
+                        url,
+                        method,
+                        payload: safeBody,
+                        ip: req.ip || req.headers['x-forwarded-for']
+                    });
+                } catch (error) {
+                    console.error('ActivityLogInterceptor Error:', error.message);
+                }
             })
         );
     }

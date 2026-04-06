@@ -5,23 +5,28 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { LogActivity } from 'src/common/decorators/log-activity.decorator';
+import { ActivityAction } from 'src/common/constants/activity-log.constants';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
 
   @Post('register')
+  @LogActivity(ActivityAction.USER_REGISTER)
   async register(@Body() data: RegisterDto) {
     return this.authService.register(data);
   }
 
   @Post('login')
+  @LogActivity(ActivityAction.USER_LOGIN)
   async login(@Body() data: LoginDto) {
     return this.authService.login(data);
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch('change-password')
+  @LogActivity(ActivityAction.USER_CHANGE_PASSWORD)
   async changePassword(@Request() req, @Body() data: ChangePasswordDto) {
     return this.authService.changePassword(req.user.userId, data);
   }
@@ -36,17 +41,20 @@ export class AuthController {
   }
 
   @Post('forgot-password')
+  @LogActivity(ActivityAction.USER_FORGOT_PASSWORD)
   async forgotPassword(@Body('email') email: string) {
     return this.authService.forgotPassword(email);
   }
 
   @Post('reset-password')
+  @LogActivity(ActivityAction.USER_RESET_PASSWORD)
   async resetPassword(@Body() data: ResetPasswordDto) {
     return this.authService.resetPassword(data);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')
+  @LogActivity(ActivityAction.USER_LOGOUT)
   async logout(@Request() req) {
     return this.authService.logout(req.user.userId);
   }

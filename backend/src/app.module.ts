@@ -20,6 +20,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { ChatModule } from './chat/chat.module';
 import { ActivityLogModule } from './activity-log/activity-log.module';
 import { ActivityLogInterceptor } from './common/interceptors/activity-log.interceptor';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -50,7 +51,8 @@ import { ActivityLogInterceptor } from './common/interceptors/activity-log.inter
     WishlistModule,
     ReviewsModule,
     ChatModule,
-    ActivityLogModule
+    ActivityLogModule,
+    ScheduleModule.forRoot()
   ],
   controllers: [AppController],
   providers: [

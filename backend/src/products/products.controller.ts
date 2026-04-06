@@ -9,6 +9,8 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { UpdateVariantDto } from './dto/update-variant.dto';
+import { LogActivity } from 'src/common/decorators/log-activity.decorator';
+import { ActivityAction } from 'src/common/constants/activity-log.constants';
 
 @Controller('products')
 export class ProductsController {
@@ -64,6 +66,7 @@ export class ProductsController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
     @UseInterceptors(FilesInterceptor('files', 10))
+    @LogActivity(ActivityAction.PRODUCT_CREATED)
     async createProduct(@Body() data: CreateProductDto, @UploadedFiles() files: Express.Multer.File[]) {
         return this.productsService.createProduct(data, files);
     }
@@ -72,6 +75,7 @@ export class ProductsController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
     @UseInterceptors(FilesInterceptor('files', 10))
+    @LogActivity(ActivityAction.ASSET_UPLOADED)
     async addAssets(
         @Param('id') id: string,
         @UploadedFiles() files: Express.Multer.File[]
@@ -85,6 +89,7 @@ export class ProductsController {
     @Delete('assets/:assetId')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
+    @LogActivity(ActivityAction.ASSET_DELETED)
     async removeAsset(@Param('assetId') assetId: string) {
         return this.productsService.removeAsset(assetId);
     }
@@ -92,6 +97,7 @@ export class ProductsController {
     @Patch(':productId/assets/:assetId/primary')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
+    @LogActivity(ActivityAction.ASSET_SET_PRIMARY)
     async setPrimaryAsset(
         @Param('productId') productId: string,
         @Param('assetId') assetId: string,
@@ -103,6 +109,7 @@ export class ProductsController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
     @UseInterceptors(FilesInterceptor('files', 10))
+    @LogActivity(ActivityAction.PRODUCT_UPDATED)
     async updateProduct(@Param('id') id: string, @Body() data: UpdateProductDto, @UploadedFiles() files: Express.Multer.File[]) {
         return this.productsService.updateProduct(id, data, files);
     }
@@ -110,6 +117,7 @@ export class ProductsController {
     @Delete(':id/hard-delete')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
+    @LogActivity(ActivityAction.PRODUCT_DELETED)
     async removeProduct(@Param('id') id: string) {
         return this.productsService.removeProduct(id);
     }
@@ -117,6 +125,7 @@ export class ProductsController {
     @Delete(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
+    @LogActivity(ActivityAction.PRODUCT_TOGGLED)
     async toggleStatus(@Param('id') id: string) {
         return this.productsService.toggleStatus(id);
     }
@@ -124,6 +133,7 @@ export class ProductsController {
     @Patch(':id/restore')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
+    @LogActivity(ActivityAction.PRODUCT_RESTORED)
     async restore(@Param('id') id: string) {
         return this.productsService.restore(id);
     }
