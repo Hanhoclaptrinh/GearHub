@@ -102,7 +102,7 @@ export class ActivityLogService {
         };
     }
 
-    @Cron(CronExpression.EVERY_5_SECONDS)
+    @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
     async handleLogCleanup() {
         const retentionDays = Number(this.configService.get<number>('ACTIVITY_LOG_RETENTION_DAYS', 90));
 

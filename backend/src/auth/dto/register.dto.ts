@@ -22,4 +22,9 @@ export class RegisterDto {
     @IsNotEmpty({ message: 'DeviceId là bắt buộc để quản lý phiên' })
     @IsString()
     deviceId: string;
-}   
+
+    @IsOptional()
+    @IsString()
+    @Length(6, 6, { message: 'Mã OTP phải có 6 ký tự' })
+    otp?: string;
+}

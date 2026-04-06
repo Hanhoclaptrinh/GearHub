@@ -20,6 +20,32 @@ export class AuthService {
     private mailService: MailService
   ) { }
 
+  async sendRegisterOtp(email: string) {
+    const existingUser = await this.userService.findByEmailOrPhone(email);
+    if (existingUser) {
+      throw new BadRequestException('Email hoặc số điện thoại đã được đăng ký trên hệ thống');
+    }
+
+    const rateKey = `rate_limit:register_otp:${email}`;
+    const otpKey = `otp:register:${email}`;
+
+    // gioi han gui otp toi da 3 lan/phut
+    const currentCount = await this.redisService.incr(rateKey);
+    if (currentCount === 1) {
+      await this.redisService.expire(rateKey, 60);
+    }
+    if (currentCount > 3) {
+      throw new BadRequestException('Bạn đã yêu cầu mã OTP trước đó, vui lòng thử lại sau 1 phút');
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    await this.redisService.set(otpKey, otp, 'EX', 300);
+
+    await this.mailService.sendRegisterOtp(email, otp);
+
+    return { message: 'Mã OTP đăng ký đã được gửi về email của bạn' };
+  }
+
   private async signAccessToken(userId: string, email: string, role: string) {
     return this.jwtService.sign({
       sub: userId,
@@ -39,6 +65,33 @@ export class AuthService {
   }
 
   async register(data: RegisterDto) {
+    // kiem tra ton tai
+    const userByEmail = await this.userService.findByEmailOrPhone(data.email);
+    if (userByEmail) {
+      throw new BadRequestException('Email đã tồn tại trong hệ thống');
+    }
+
+    const userByPhone = await this.userService.findByEmailOrPhone(data.phone);
+    if (userByPhone) {
+      throw new BadRequestException('Số điện thoại đã tồn tại trong hệ thống');
+    }
+
+    // neu chua co otp -> gui otp
+    if (!data.otp) {
+      return this.sendRegisterOtp(data.email);
+    }
+
+    // neu da co otp -> xac thuc va dang ky
+    const otpKey = `otp:register:${data.email}`;
+    const savedOtp = await this.redisService.get(otpKey);
+
+    if (!savedOtp || savedOtp !== data.otp) {
+      throw new BadRequestException('Mã OTP không chính xác hoặc đã hết hạn');
+    }
+
+    // xoa otp sau khi xac thuc thanh cong
+    await this.redisService.del(otpKey);
+
     const salt = 10;
     const hashedPassword = await bcrypt.hash(data.password, salt);
 
@@ -184,12 +237,18 @@ export class AuthService {
     const user = await this.userService.findByEmailOrPhone(email);
     if (!user) throw new NotFoundException('Email không tồn tại trên hệ thống');
 
+    const key = `otp:forgot_password:${email}`;
+
+    const isSent = await this.redisService.get(key);
+    if (isSent) {
+      throw new BadRequestException('Mã OTP đã được gửi, vui lòng thử lại sau 1-2 phút');
+    }
+
     const otp = Math.floor(100000 + Math.random() * 900000).toString(); // otp 6 chu so
 
-    const key = `otp:forgot_password:${email}`;
-    await this.redisService.set(key, otp, 'EX', 300); // luu otp vao redis 300s
+    await this.redisService.set(key, otp, 'EX', 300); // luu otp vao redis 5 phut
+    await this.mailService.sendForgotPasswordOtp(email, otp);
 
-    await this.mailService.sendOtp(email, otp);
     return { message: 'Mã OTP đã được gửi về email của bạn' };
   }
 
