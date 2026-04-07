@@ -20,31 +20,31 @@ export class AuthService {
     private mailService: MailService
   ) { }
 
-  async sendRegisterOtp(email: string) {
-    const existingUser = await this.userService.findByEmailOrPhone(email);
-    if (existingUser) {
-      throw new BadRequestException('Email hoặc số điện thoại đã được đăng ký trên hệ thống');
-    }
+  // async sendRegisterOtp(email: string) {
+  //   const existingUser = await this.userService.findByEmailOrPhone(email);
+  //   if (existingUser) {
+  //     throw new BadRequestException('Email hoặc số điện thoại đã được đăng ký trên hệ thống');
+  //   }
 
-    const rateKey = `rate_limit:register_otp:${email}`;
-    const otpKey = `otp:register:${email}`;
+  //   const rateKey = `rate_limit:register_otp:${email}`;
+  //   const otpKey = `otp:register:${email}`;
 
-    // gioi han gui otp toi da 3 lan/phut
-    const currentCount = await this.redisService.incr(rateKey);
-    if (currentCount === 1) {
-      await this.redisService.expire(rateKey, 60);
-    }
-    if (currentCount > 3) {
-      throw new BadRequestException('Bạn đã yêu cầu mã OTP trước đó, vui lòng thử lại sau 1 phút');
-    }
+  //   // gioi han gui otp toi da 3 lan/phut
+  //   const currentCount = await this.redisService.incr(rateKey);
+  //   if (currentCount === 1) {
+  //     await this.redisService.expire(rateKey, 60);
+  //   }
+  //   if (currentCount > 3) {
+  //     throw new BadRequestException('Bạn đã yêu cầu mã OTP trước đó, vui lòng thử lại sau 1 phút');
+  //   }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    await this.redisService.set(otpKey, otp, 'EX', 300);
+  //   const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  //   await this.redisService.set(otpKey, otp, 'EX', 300);
 
-    await this.mailService.sendRegisterOtp(email, otp);
+  //   await this.mailService.sendRegisterOtp(email, otp);
 
-    return { message: 'Mã OTP đăng ký đã được gửi về email của bạn' };
-  }
+  //   return { message: 'Mã OTP đăng ký đã được gửi về email của bạn' };
+  // }
 
   private async signAccessToken(userId: string, email: string, role: string) {
     return this.jwtService.sign({
@@ -64,8 +64,7 @@ export class AuthService {
     return refreshToken;
   }
 
-  async register(data: RegisterDto) {
-    // kiem tra ton tai
+  async requestRegister(data: RegisterDto) {
     const userByEmail = await this.userService.findByEmailOrPhone(data.email);
     if (userByEmail) {
       throw new BadRequestException('Email đã tồn tại trong hệ thống');
@@ -76,52 +75,106 @@ export class AuthService {
       throw new BadRequestException('Số điện thoại đã tồn tại trong hệ thống');
     }
 
-    // neu chua co otp -> gui otp
-    if (!data.otp) {
-      return this.sendRegisterOtp(data.email);
-    }
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // neu da co otp -> xac thuc va dang ky
-    const otpKey = `otp:register:${data.email}`;
-    const savedOtp = await this.redisService.get(otpKey);
+    // luu thong tin dang ky trong redis trong 10 phut
+    const pendingData = { ...data, password: hashedPassword, otp };
+    await this.redisService.set(
+      `pending_user:${data.email}`,
+      JSON.stringify(pendingData),
+      'EX', 600
+    );
 
-    if (!savedOtp || savedOtp !== data.otp) {
-      throw new BadRequestException('Mã OTP không chính xác hoặc đã hết hạn');
-    }
+    await this.mailService.sendRegisterOtp(data.email, otp);
 
-    // xoa otp sau khi xac thuc thanh cong
-    await this.redisService.del(otpKey);
+    return { message: 'Mã OTP đăng ký đã được gửi về email của bạn' };
+  }
 
-    const salt = 10;
-    const hashedPassword = await bcrypt.hash(data.password, salt);
+  async verifyRegister(email: string, otp: string) {
+    const key = `pending_user:${email}`;
+    const rawData = await this.redisService.get(key);
+    if (!rawData) throw new BadRequestException('Yêu cầu hết hạn, vui lòng đăng ký lại');
+
+    const userData = JSON.parse(rawData);
+
+    if (userData.otp !== otp) throw new BadRequestException('Mã OTP không đúng');
 
     const newUser = await this.userService.createNewUser({
-      email: data.email,
-      password: hashedPassword,
-      fullName: data.fullName,
-      phone: data.phone
+      email: userData.email,
+      password: userData.password,
+      fullName: userData.fullName,
+      phone: userData.phone
     });
 
+    await this.redisService.del(key);
+
     const [at, rt] = await Promise.all([
-      this.signAccessToken(
-        newUser.id,
-        newUser.email,
-        newUser.role
-      ),
-      this.generateRefreshToken(newUser.id, data.deviceId)
+      this.signAccessToken(newUser.id, newUser.email, newUser.role),
+      this.generateRefreshToken(newUser.id, userData.deviceId)
     ]);
 
-    return {
-      message: 'Đăng ký tài khoản thành công',
-      data: {
-        user: newUser,
-        tokens: {
-          at,
-          rt,
-        },
-      },
-    };
+    return { message: 'Đăng ký thành công', data: { user: newUser, tokens: { at, rt } } };
   }
+
+  // async register(data: RegisterDto) {
+  //   // kiem tra ton tai
+  //   const userByEmail = await this.userService.findByEmailOrPhone(data.email);
+  //   if (userByEmail) {
+  //     throw new BadRequestException('Email đã tồn tại trong hệ thống');
+  //   }
+
+  //   const userByPhone = await this.userService.findByEmailOrPhone(data.phone);
+  //   if (userByPhone) {
+  //     throw new BadRequestException('Số điện thoại đã tồn tại trong hệ thống');
+  //   }
+
+  //   // neu chua co otp -> gui otp
+  //   if (!data.otp) {
+  //     return this.sendRegisterOtp(data.email);
+  //   }
+
+  //   // neu da co otp -> xac thuc va dang ky
+  //   const otpKey = `otp:register:${data.email}`;
+  //   const savedOtp = await this.redisService.get(otpKey);
+
+  //   if (!savedOtp || savedOtp !== data.otp) {
+  //     throw new BadRequestException('Mã OTP không chính xác hoặc đã hết hạn');
+  //   }
+
+  //   // xoa otp sau khi xac thuc thanh cong
+  //   await this.redisService.del(otpKey);
+
+  //   const salt = 10;
+  //   const hashedPassword = await bcrypt.hash(data.password, salt);
+
+  //   const newUser = await this.userService.createNewUser({
+  //     email: data.email,
+  //     password: hashedPassword,
+  //     fullName: data.fullName,
+  //     phone: data.phone
+  //   });
+
+  //   const [at, rt] = await Promise.all([
+  //     this.signAccessToken(
+  //       newUser.id,
+  //       newUser.email,
+  //       newUser.role
+  //     ),
+  //     this.generateRefreshToken(newUser.id, data.deviceId)
+  //   ]);
+
+  //   return {
+  //     message: 'Đăng ký tài khoản thành công',
+  //     data: {
+  //       user: newUser,
+  //       tokens: {
+  //         at,
+  //         rt,
+  //       },
+  //     },
+  //   };
+  // }
 
   async login(data: LoginDto) {
     const user = await this.userService.findByEmailOrPhone(data.identifier);

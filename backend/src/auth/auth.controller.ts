@@ -12,16 +12,27 @@ import { ActivityAction } from 'src/common/constants/activity-log.constants';
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
 
-  @Post('register')
-  @LogActivity(ActivityAction.USER_REGISTER)
-  async register(@Body() data: RegisterDto) {
-    return this.authService.register(data);
+  @Post('register/request')
+  async registerRequest(@Body() data: RegisterDto) {
+    return this.authService.requestRegister(data);
   }
 
-  @Post('register/send-otp')
-  async sendRegisterOtp(@Body('email') email: string) {
-    return this.authService.sendRegisterOtp(email);
+  @Post('register/verify')
+  @LogActivity(ActivityAction.USER_REGISTER)
+  async registerVerify(@Body() data: { email: string, otp: string, deviceId: string }) {
+    return this.authService.verifyRegister(data.email, data.otp);
   }
+
+  // @Post('register')
+  // @LogActivity(ActivityAction.USER_REGISTER)
+  // async register(@Body() data: RegisterDto) {
+  //   return this.authService.register(data);
+  // }
+
+  // @Post('register/send-otp')
+  // async sendRegisterOtp(@Body('email') email: string) {
+  //   return this.authService.sendRegisterOtp(email);
+  // }
 
   @Post('login')
   @LogActivity(ActivityAction.USER_LOGIN)
