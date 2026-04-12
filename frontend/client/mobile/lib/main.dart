@@ -14,7 +14,9 @@ class GearHubApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'GearHub',
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.theme(context, isDark: false),
+      darkTheme: AppTheme.theme(context, isDark: true),
+      themeMode: ThemeMode.system,
       home: const SplashPage(),
     );
   }

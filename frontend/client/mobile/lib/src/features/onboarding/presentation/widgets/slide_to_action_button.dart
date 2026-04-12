@@ -72,10 +72,29 @@ class _SlideToActionButtonState extends State<SlideToActionButton>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     const double trackHeight = 64.0;
     const double hPadding = 6.0;
     const double vPadding = 4.0;
     final double activeHeight = trackHeight - (vPadding * 2);
+
+    final Color trackColor = isDark
+        ? Colors.white.withOpacity(0.1)
+        : theme.colorScheme.onSurface.withOpacity(0.05);
+
+    final Color trackBorder = isDark
+        ? Colors.white.withOpacity(0.2)
+        : theme.colorScheme.onSurface.withOpacity(0.1);
+
+    final Color textColor = theme.colorScheme.onSurface;
+
+    final Color handleColor = isDark ? Colors.white : theme.colorScheme.primary;
+
+    final Color iconInsideColor = isDark
+        ? const Color(0xFF101A32)
+        : Colors.white;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -90,9 +109,9 @@ class _SlideToActionButtonState extends State<SlideToActionButton>
             vertical: vPadding,
           ),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: trackColor,
             borderRadius: BorderRadius.circular(trackHeight / 2),
-            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+            border: Border.all(color: trackBorder, width: 1),
           ),
           child: Stack(
             clipBehavior: Clip.none,
@@ -108,17 +127,17 @@ class _SlideToActionButtonState extends State<SlideToActionButton>
                     children: [
                       Text(
                         widget.text,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: textColor,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.5,
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Icon(
+                      Icon(
                         Icons.double_arrow_rounded,
-                        color: Colors.white54,
+                        color: textColor.withValues(alpha: 0.3),
                         size: 20,
                       ),
                     ],
@@ -142,13 +161,17 @@ class _SlideToActionButtonState extends State<SlideToActionButton>
                       width: activeHeight,
                       height: activeHeight,
                       decoration: BoxDecoration(
-                        color: _isFinished ? Colors.greenAccent : Colors.white,
+                        color: _isFinished ? Colors.greenAccent : handleColor,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
                             color: _isFinished
-                                ? Colors.green.withOpacity(0.4)
-                                : Colors.black26,
+                                ? Colors.green.withValues(alpha: 0.4)
+                                : (isDark
+                                      ? Colors.black45
+                                      : theme.colorScheme.primary.withValues(
+                                          alpha: 0.3,
+                                        )),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -158,7 +181,9 @@ class _SlideToActionButtonState extends State<SlideToActionButton>
                         _isFinished
                             ? Icons.check_rounded
                             : Icons.keyboard_arrow_right_rounded,
-                        color: const Color(0xFF101A32),
+                        color: _isFinished
+                            ? const Color(0xFF101A32)
+                            : iconInsideColor,
                         size: activeHeight * 0.55,
                       ),
                     ),

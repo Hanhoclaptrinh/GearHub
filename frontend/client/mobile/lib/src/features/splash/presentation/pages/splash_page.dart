@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:mobile/src/core/theme/app_theme.dart';
 import 'package:mobile/src/features/onboarding/presentation/pages/onboarding_page.dart';
 
 class SplashPage extends StatefulWidget {
@@ -78,44 +77,43 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppTheme.darkBg,
-      body: SafeArea(
-        child: Center(
-          child: AnimatedBuilder(
-            animation: Listenable.merge([_zoomController, _pulseController]),
-            builder: (context, child) {
-              return Hero(
-                tag: 'app_logo',
-                child: Transform.scale(
-                  scale: _scaleAnimation.value * _pulseAnimation.value,
-                  child: SvgPicture.asset(
-                    'assets/logo/logo.svg',
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: Center(
+        child: AnimatedBuilder(
+          animation: Listenable.merge([_zoomController, _pulseController]),
+          builder: (context, child) {
+            return Hero(
+              tag: 'app_logo',
+              child: Transform.scale(
+                scale: _scaleAnimation.value * _pulseAnimation.value,
+                child: SvgPicture.asset(
+                  'assets/logo/logo.svg',
+                  width: 150,
+                  height: 150,
+                  placeholderBuilder: (context) => Container(
                     width: 150,
                     height: 150,
-                    placeholderBuilder: (context) => Container(
-                      width: 150,
-                      height: 150,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF3B82F6),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'GH',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 40,
-                            fontWeight: FontWeight.bold,
-                          ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3B82F6),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'GH',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 40,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );

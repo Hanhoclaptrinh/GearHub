@@ -12,32 +12,47 @@ class OnboardingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(count, (index) {
-        final bool isActive = index == currentIndex;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: isActive ? 12 : 8,
-          height: isActive ? 12 : 8,
+    final theme = Theme.of(context);
+    final size = MediaQuery.of(context).size;
+
+    // progress bar width
+    final double totalWidth = size.width * 0.5;
+    const double height = 6.0;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // progress bar
+        Container(
+          width: totalWidth,
+          height: height,
           decoration: BoxDecoration(
-            color: isActive
-                ? Colors.white
-                : Colors.white.withValues(alpha: 0.3),
-            shape: BoxShape.circle,
-            boxShadow: isActive
-                ? [
-                    BoxShadow(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      blurRadius: 4,
-                      spreadRadius: 1,
-                    ),
-                  ]
-                : null,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(height / 2),
           ),
-        );
-      }),
+          child: Stack(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                width: (totalWidth / count) * (currentIndex + 1),
+                height: height,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  borderRadius: BorderRadius.circular(height / 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

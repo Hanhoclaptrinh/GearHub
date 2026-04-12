@@ -9,15 +9,26 @@ class OnboardingGlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final Color glassColor = isDark ? Colors.white : Colors.black;
+    final Color borderColor = isDark
+        ? Colors.white.withOpacity(0.2)
+        : Colors.black.withOpacity(0.1);
+    final Color shadowColor = isDark
+        ? Colors.black.withOpacity(0.3)
+        : Colors.black.withOpacity(0.1);
+
     return Container(
       width: double.infinity,
       height: height ?? 350,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
+        border: Border.all(color: borderColor, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: shadowColor,
             blurRadius: 20,
             spreadRadius: -5,
             offset: const Offset(0, 10),
@@ -28,7 +39,7 @@ class OnboardingGlassCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(32),
         child: Stack(
           children: [
-            // glass effect bg
+            // glass
             BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
               child: Container(
@@ -37,8 +48,8 @@ class OnboardingGlassCard extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Colors.white.withOpacity(0.15),
-                      Colors.white.withOpacity(0.05),
+                      glassColor.withOpacity(isDark ? 0.15 : 0.05),
+                      glassColor.withOpacity(isDark ? 0.05 : 0.01),
                     ],
                   ),
                 ),
@@ -53,10 +64,10 @@ class OnboardingGlassCard extends StatelessWidget {
                     end: Alignment.bottomRight,
                     stops: const [0, 0.4, 0.5, 1],
                     colors: [
-                      Colors.white.withOpacity(0.1),
+                      glassColor.withOpacity(isDark ? 0.1 : 0.05),
                       Colors.transparent,
                       Colors.transparent,
-                      Colors.white.withOpacity(0.05),
+                      glassColor.withOpacity(isDark ? 0.05 : 0.02),
                     ],
                   ),
                 ),
@@ -74,18 +85,14 @@ class OnboardingGlassCard extends StatelessWidget {
                     if (loadingProgress == null) return child;
                     return Center(
                       child: CircularProgressIndicator(
-                        color: Colors.white.withOpacity(0.5),
+                        color: theme.colorScheme.primary.withOpacity(0.5),
                         strokeWidth: 2,
-                        value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
-                            : null,
                       ),
                     );
                   },
-                  errorBuilder: (context, error, stackTrace) => const Icon(
+                  errorBuilder: (context, error, stackTrace) => Icon(
                     Icons.error_outline,
-                    color: Colors.white24,
+                    color: isDark ? Colors.white24 : Colors.black26,
                     size: 48,
                   ),
                 ),

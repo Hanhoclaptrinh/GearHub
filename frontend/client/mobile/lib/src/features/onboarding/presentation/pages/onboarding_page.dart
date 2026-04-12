@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:mobile/src/core/theme/app_theme.dart';
 import 'package:mobile/src/features/home/presentation/pages/home_page.dart';
 import 'package:mobile/src/features/onboarding/domain/models/onboarding_item.dart';
 import 'package:mobile/src/features/onboarding/presentation/widgets/onboarding_glass_card.dart';
@@ -78,9 +77,11 @@ class _OnboardingPageState extends State<OnboardingPage>
     final size = MediaQuery.of(context).size;
     final padding = MediaQuery.of(context).padding;
     final bool isLastPage = _currentIndex == OnboardingData.items.length - 1;
+    final theme = Theme.of(context);
+    final textColor = theme.colorScheme.onSurface;
 
     return Scaffold(
-      backgroundColor: AppTheme.darkBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
           // main
@@ -106,7 +107,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                       item.title,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white,
+                        color: textColor,
                         fontSize: size.width * 0.08,
                         fontWeight: FontWeight.bold,
                       ),
@@ -120,7 +121,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                         item.description,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.6),
+                          color: textColor.withOpacity(0.6),
                           fontSize: size.width * 0.04,
                           height: 1.5,
                         ),
@@ -180,15 +181,23 @@ class _OnboardingPageState extends State<OnboardingPage>
                     ignoring: isLastPage,
                     child: TextButton(
                       onPressed: _skip,
-                      child: Text(
-                        'Skip',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: size.width * 0.04,
-                          decoration: TextDecoration.underline,
-                          decorationColor: Colors.white70,
-                          decorationThickness: 2,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Skip',
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: size.width * 0.04,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: size.width * 0.05,
+                            color: textColor,
+                          ),
+                        ],
                       ),
                     ),
                   ),

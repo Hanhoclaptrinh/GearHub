@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // light theme
@@ -15,66 +16,44 @@ class AppTheme {
   static const Color darkCard = Color(0xFF1E293B);
   static const Color darkGlass = Color(0x33FFFFFF);
 
-  static ThemeData get lightTheme {
+  static ThemeData theme(BuildContext context, {bool isDark = false}) {
+    final baseTheme = isDark ? ThemeData.dark() : ThemeData.light();
+
+    final textTheme = GoogleFonts.beVietnamProTextTheme(baseTheme.textTheme);
+
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.light,
-      scaffoldBackgroundColor: background,
-      colorScheme: const ColorScheme.light(
-        primary: accent,
-        secondary: accent,
-        surface: surface,
-        onSurface: primaryText,
-      ),
-      textTheme: const TextTheme(
-        headlineLarge: TextStyle(
-          color: primaryText,
+      brightness: isDark ? Brightness.dark : Brightness.light,
+      scaffoldBackgroundColor: isDark ? darkBg : background,
+      colorScheme: isDark
+          ? const ColorScheme.dark(
+              primary: darkAccent,
+              surface: darkSurface,
+              onSurface: Colors.white,
+            )
+          : const ColorScheme.light(
+              primary: accent,
+              surface: surface,
+              onSurface: primaryText,
+            ),
+      textTheme: textTheme.copyWith(
+        headlineLarge: textTheme.headlineLarge?.copyWith(
           fontWeight: FontWeight.bold,
+          color: isDark ? Colors.white : primaryText,
         ),
-        headlineMedium: TextStyle(
-          color: primaryText,
-          fontWeight: FontWeight.bold,
-        ),
-        bodyLarge: TextStyle(color: primaryText),
-        bodyMedium: TextStyle(color: secondaryText),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: accent,
+          backgroundColor: isDark ? darkAccent : accent,
           foregroundColor: Colors.white,
-          elevation: 2,
-          textStyle: const TextStyle(fontWeight: FontWeight.bold),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
+          textStyle: textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
-      ),
-    );
-  }
-
-  static ThemeData get darkTheme {
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: darkBg,
-      colorScheme: const ColorScheme.dark(
-        primary: darkAccent,
-        secondary: accent,
-        surface: darkSurface,
-        onSurface: Colors.white,
-      ),
-      textTheme: const TextTheme(
-        headlineLarge: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-        headlineMedium: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-        bodyLarge: TextStyle(color: Colors.white),
-        bodyMedium: TextStyle(color: Colors.white70),
       ),
     );
   }
