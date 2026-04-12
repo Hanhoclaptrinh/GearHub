@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:mobile/src/core/theme/app_theme.dart';
 import 'package:mobile/src/features/onboarding/presentation/pages/onboarding_page.dart';
 
 class SplashPage extends StatefulWidget {
@@ -50,7 +51,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     // pulse
     _pulseController.repeat(reverse: true);
 
-    await Future.delayed(const Duration(milliseconds: 1500));
+    await Future.delayed(const Duration(milliseconds: 1000));
 
     // transition to onboarding
     if (mounted) {
@@ -62,7 +63,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },
-          transitionDuration: const Duration(milliseconds: 800),
+          transitionDuration: const Duration(milliseconds: 1000),
         ),
       );
     }
@@ -78,16 +79,16 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: AppTheme.darkBg,
       body: SafeArea(
         child: Center(
           child: AnimatedBuilder(
             animation: Listenable.merge([_zoomController, _pulseController]),
             builder: (context, child) {
-              return Transform.scale(
-                scale: _scaleAnimation.value * _pulseAnimation.value,
-                child: Hero(
-                  tag: 'app_logo',
+              return Hero(
+                tag: 'app_logo',
+                child: Transform.scale(
+                  scale: _scaleAnimation.value * _pulseAnimation.value,
                   child: SvgPicture.asset(
                     'assets/logo/logo.svg',
                     width: 150,
@@ -106,7 +107,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                             color: Colors.white,
                             fontSize: 40,
                             fontWeight: FontWeight.bold,
-                            fontFamily: 'Orbitron',
                           ),
                         ),
                       ),
