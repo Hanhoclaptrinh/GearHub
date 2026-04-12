@@ -163,7 +163,7 @@ class _SlideToActionButtonState extends State<SlideToActionButton>
                         boxShadow: [
                           BoxShadow(
                             color: _isFinished
-                                ? Colors.green.withValues(alpha: 0.4)
+                                ? Colors.green.withValues(alpha: 0.7)
                                 : (isDark
                                       ? Colors.black45
                                       : theme.colorScheme.primary.withValues(

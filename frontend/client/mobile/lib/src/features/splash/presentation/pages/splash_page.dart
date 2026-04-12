@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mobile/src/features/onboarding/presentation/pages/onboarding_page.dart';
 
@@ -41,6 +42,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     );
 
     _runSplashSequence();
+    FlutterNativeSplash.remove();
   }
 
   Future<void> _runSplashSequence() async {

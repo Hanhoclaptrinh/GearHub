@@ -60,6 +60,22 @@ dev_dependencies:
   # --- security ---
   flutter_dotenv: ^6.0.0
 
+  # --- splash ---
+  flutter_native_splash: ^2.4.0
+
+flutter_native_splash:
+  # default
+  color: "#F8FAFC"
+
+  # dark mode
+  color_dark: "#101A32"
+
+  android_12:
+    color: "#F8FAFC"
+    color_dark: "#101A32"
+
+  fullscreen: true
+
 flutter:
   uses-material-design: true
 
