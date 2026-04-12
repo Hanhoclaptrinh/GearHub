@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/src/features/onboarding/presentation/widgets/three_animated_arrow.dart';
 
 class SlideToActionButton extends StatefulWidget {
   final VoidCallback onAction;
@@ -134,12 +135,8 @@ class _SlideToActionButtonState extends State<SlideToActionButton>
                           letterSpacing: 0.5,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Icon(
-                        Icons.double_arrow_rounded,
-                        color: textColor.withValues(alpha: 0.3),
-                        size: 20,
-                      ),
+                      const SizedBox(width: 8),
+                      ThreeAnimatedArrows(color: textColor),
                     ],
                   ),
                 ),
@@ -180,11 +177,11 @@ class _SlideToActionButtonState extends State<SlideToActionButton>
                       child: Icon(
                         _isFinished
                             ? Icons.check_rounded
-                            : Icons.keyboard_arrow_right_rounded,
+                            : Icons.arrow_forward_ios_rounded,
                         color: _isFinished
                             ? const Color(0xFF101A32)
                             : iconInsideColor,
-                        size: activeHeight * 0.55,
+                        size: activeHeight * 0.45,
                       ),
                     ),
                   ),
