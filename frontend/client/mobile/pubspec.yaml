@@ -40,6 +40,7 @@ dependencies:
   logger: ^2.0.2
   flutter_svg: ^2.2.4
   google_fonts: ^8.0.2
+  lucide_icons_flutter: ^3.1.12
 
   # --- AR Plugin ---
   # ar_flutter_plugin: ^0.7.3

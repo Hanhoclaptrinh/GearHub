@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:mobile/src/features/home/presentation/pages/home_page.dart';
+import 'package:mobile/src/features/home/presentation/pages/main_screen.dart';
 import 'package:mobile/src/features/onboarding/domain/models/onboarding_item.dart';
 import 'package:mobile/src/features/onboarding/presentation/widgets/slide_to_action_button.dart';
 
@@ -46,8 +46,7 @@ class _OnboardingPageState extends State<OnboardingPage>
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 300),
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const HomePage(),
+        pageBuilder: (context, animation, secondaryAnimation) => MainScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(
             opacity: animation,
@@ -247,10 +246,10 @@ class _OnboardingPageState extends State<OnboardingPage>
                                   ),
                                 ),
                                 const SizedBox(width: 4),
-                                Icon(
+                                const Icon(
                                   Icons.arrow_forward_ios_rounded,
                                   size: 16,
-                                  color: const Color(0xFF0F172A),
+                                  color: Color(0xFF0F172A),
                                 ),
                               ],
                             ),
