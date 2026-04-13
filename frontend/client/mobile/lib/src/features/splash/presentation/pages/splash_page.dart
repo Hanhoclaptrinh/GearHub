@@ -86,29 +86,26 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
         child: AnimatedBuilder(
           animation: Listenable.merge([_zoomController, _pulseController]),
           builder: (context, child) {
-            return Hero(
-              tag: 'app_logo',
-              child: Transform.scale(
-                scale: _scaleAnimation.value * _pulseAnimation.value,
-                child: SvgPicture.asset(
-                  'assets/logo/logo.svg',
+            return Transform.scale(
+              scale: _scaleAnimation.value * _pulseAnimation.value,
+              child: SvgPicture.asset(
+                'assets/logo/logo.svg',
+                width: 150,
+                height: 150,
+                placeholderBuilder: (context) => Container(
                   width: 150,
                   height: 150,
-                  placeholderBuilder: (context) => Container(
-                    width: 150,
-                    height: 150,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF3B82F6),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'GH',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3B82F6),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'GH',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 40,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),

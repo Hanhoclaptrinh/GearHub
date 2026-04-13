@@ -1,9 +1,7 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mobile/src/features/home/presentation/pages/home_page.dart';
 import 'package:mobile/src/features/onboarding/domain/models/onboarding_item.dart';
-import 'package:mobile/src/features/onboarding/presentation/widgets/onboarding_glass_card.dart';
-import 'package:mobile/src/features/onboarding/presentation/widgets/onboarding_indicator.dart';
 import 'package:mobile/src/features/onboarding/presentation/widgets/slide_to_action_button.dart';
 
 class OnboardingPage extends StatefulWidget {
@@ -78,7 +76,6 @@ class _OnboardingPageState extends State<OnboardingPage>
     final padding = MediaQuery.of(context).padding;
     final bool isLastPage = _currentIndex == OnboardingData.items.length - 1;
     final theme = Theme.of(context);
-    final textColor = theme.colorScheme.onSurface;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -92,50 +89,90 @@ class _OnboardingPageState extends State<OnboardingPage>
             physics: const BouncingScrollPhysics(),
             itemBuilder: (context, index) {
               final item = OnboardingData.items[index];
-              return Container(
-                padding: EdgeInsets.symmetric(horizontal: size.width * 0.06),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(height: size.height * 0.1),
-                    OnboardingGlassCard(
-                      imageUrl: item.imageUrl,
-                      height: size.height * 0.45,
-                    ),
-                    SizedBox(height: size.height * 0.05),
-                    Text(
-                      item.title,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: textColor,
-                        fontSize: size.width * 0.08,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: size.height * 0.02),
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: size.width * 0.05,
-                      ),
-                      child: Text(
-                        item.description,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: textColor.withOpacity(0.6),
-                          fontSize: size.width * 0.04,
-                          height: 1.5,
+              return Stack(
+                children: [
+                  // background image
+                  Positioned.fill(
+                    child: Image.asset(item.imageUrl, fit: BoxFit.cover),
+                  ),
+                  // semi-transparent gradient for readability
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.4),
+                          ],
                         ),
                       ),
                     ),
-                    SizedBox(height: size.height * 0.15),
-                  ],
-                ),
+                  ),
+                  // content with blur
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        left: size.width * 0.05,
+                        right: size.width * 0.05,
+                        bottom: size.height * 0.12,
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(32),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                          child: Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: size.width * 0.06,
+                              vertical: size.height * 0.035,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(32),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  item.title,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: size.width * 0.08,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                                SizedBox(height: size.height * 0.015),
+                                Text(
+                                  item.description,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontSize: size.width * 0.04,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               );
             },
           ),
 
           // top bar
-          // logo and skip button
           Positioned(
             top: padding.top + size.height * 0.02,
             left: size.width * 0.06,
@@ -143,77 +180,87 @@ class _OnboardingPageState extends State<OnboardingPage>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Hero(
-                  tag: 'app_logo',
-                  flightShuttleBuilder:
-                      (
-                        flightContext,
-                        animation,
-                        flightDirection,
-                        fromHeroContext,
-                        toHeroContext,
-                      ) {
-                        return AnimatedBuilder(
-                          animation: animation,
-                          builder: (context, child) {
-                            final logoSize = Tween<double>(
-                              begin: 150,
-                              end: 48,
-                            ).evaluate(animation);
-                            return SvgPicture.asset(
-                              'assets/logo/logo.svg',
-                              width: logoSize,
-                              height: logoSize,
-                            );
-                          },
-                        );
-                      },
-                  child: SvgPicture.asset(
-                    'assets/logo/logo.svg',
-                    width: 48,
-                    height: 48,
+                // page indicator
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.45),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Text(
+                        '${_currentIndex + 1}/${OnboardingData.items.length}',
+                        style: TextStyle(
+                          color: const Color(0xFF0F172A),
+                          fontSize: size.width * 0.035,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
                 AnimatedOpacity(
                   opacity: isLastPage ? 0.0 : 1.0,
-                  duration: const Duration(milliseconds: 100),
+                  duration: const Duration(milliseconds: 200),
                   child: IgnorePointer(
                     ignoring: isLastPage,
-                    child: TextButton(
-                      onPressed: _skip,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Skip',
-                            style: TextStyle(
-                              color: textColor,
-                              fontSize: size.width * 0.04,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.45),
+                              width: 1.2,
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            size: size.width * 0.05,
-                            color: textColor,
+                          child: TextButton(
+                            onPressed: _skip,
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Skip',
+                                  style: TextStyle(
+                                    color: const Color(0xFF0F172A),
+                                    fontSize: size.width * 0.04,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  size: 16,
+                                  color: const Color(0xFF0F172A),
+                                ),
+                              ],
+                            ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ],
-            ),
-          ),
-
-          // bottom indicators
-          Positioned(
-            bottom: padding.bottom + size.height * 0.15,
-            left: 0,
-            right: 0,
-            child: OnboardingIndicator(
-              count: OnboardingData.items.length,
-              currentIndex: _currentIndex,
             ),
           ),
 

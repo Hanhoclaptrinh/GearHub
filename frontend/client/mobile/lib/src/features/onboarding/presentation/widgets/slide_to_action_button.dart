@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:mobile/src/features/onboarding/presentation/widgets/three_animated_arrow.dart';
 
@@ -81,16 +82,6 @@ class _SlideToActionButtonState extends State<SlideToActionButton>
     const double vPadding = 4.0;
     final double activeHeight = trackHeight - (vPadding * 2);
 
-    final Color trackColor = isDark
-        ? Colors.white.withOpacity(0.1)
-        : theme.colorScheme.onSurface.withOpacity(0.05);
-
-    final Color trackBorder = isDark
-        ? Colors.white.withOpacity(0.2)
-        : theme.colorScheme.onSurface.withOpacity(0.1);
-
-    final Color textColor = theme.colorScheme.onSurface;
-
     final Color handleColor = isDark ? Colors.white : theme.colorScheme.primary;
 
     final Color iconInsideColor = isDark
@@ -102,92 +93,102 @@ class _SlideToActionButtonState extends State<SlideToActionButton>
         final double maxDrag =
             constraints.maxWidth - activeHeight - (hPadding * 2);
 
-        return Container(
-          width: double.infinity,
-          height: trackHeight,
-          padding: const EdgeInsets.symmetric(
-            horizontal: hPadding,
-            vertical: vPadding,
-          ),
-          decoration: BoxDecoration(
-            color: trackColor,
-            borderRadius: BorderRadius.circular(trackHeight / 2),
-            border: Border.all(color: trackBorder, width: 1),
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Center(
-                child: Opacity(
-                  opacity: (1 - (_dragPosition / maxDrag) * 1.5).clamp(
-                    0.0,
-                    1.0,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        widget.text,
-                        style: TextStyle(
-                          color: textColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ThreeAnimatedArrows(color: textColor),
-                    ],
-                  ),
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(trackHeight / 2),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              width: double.infinity,
+              height: trackHeight,
+              padding: const EdgeInsets.symmetric(
+                horizontal: hPadding,
+                vertical: vPadding,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(trackHeight / 2),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  width: 1.5,
                 ),
               ),
-
-              // draggable button
-              Positioned(
-                left: _dragPosition,
-                top: 0,
-                bottom: 0,
-                child: Center(
-                  child: GestureDetector(
-                    onHorizontalDragUpdate: (details) =>
-                        _handleDragUpdate(details, maxDrag),
-                    onHorizontalDragEnd: (details) =>
-                        _handleDragEnd(details, maxDrag),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: activeHeight,
-                      height: activeHeight,
-                      decoration: BoxDecoration(
-                        color: _isFinished ? Colors.greenAccent : handleColor,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: _isFinished
-                                ? Colors.green.withValues(alpha: 0.7)
-                                : (isDark
-                                      ? Colors.black45
-                                      : theme.colorScheme.primary.withValues(
-                                          alpha: 0.3,
-                                        )),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Center(
+                    child: Opacity(
+                      opacity: (1 - (_dragPosition / maxDrag) * 1.5).clamp(
+                        0.0,
+                        1.0,
                       ),
-                      child: Icon(
-                        _isFinished
-                            ? Icons.check_rounded
-                            : Icons.arrow_forward_ios_rounded,
-                        color: _isFinished
-                            ? const Color(0xFF101A32)
-                            : iconInsideColor,
-                        size: activeHeight * 0.45,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            widget.text,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const ThreeAnimatedArrows(color: Colors.white),
+                        ],
                       ),
                     ),
                   ),
-                ),
+
+                  // draggable button
+                  Positioned(
+                    left: _dragPosition,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: GestureDetector(
+                        onHorizontalDragUpdate: (details) =>
+                            _handleDragUpdate(details, maxDrag),
+                        onHorizontalDragEnd: (details) =>
+                            _handleDragEnd(details, maxDrag),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: activeHeight,
+                          height: activeHeight,
+                          decoration: BoxDecoration(
+                            color: _isFinished
+                                ? Colors.greenAccent
+                                : handleColor,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: _isFinished
+                                    ? Colors.green.withValues(alpha: 0.7)
+                                    : (isDark
+                                          ? Colors.black45
+                                          : theme.colorScheme.primary
+                                                .withValues(alpha: 0.3)),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            _isFinished
+                                ? Icons.check_rounded
+                                : Icons.arrow_forward_ios_rounded,
+                            color: _isFinished
+                                ? const Color(0xFF101A32)
+                                : iconInsideColor,
+                            size: activeHeight * 0.45,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         );
       },

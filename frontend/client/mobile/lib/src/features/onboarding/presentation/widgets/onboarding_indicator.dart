@@ -12,7 +12,6 @@ class OnboardingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
 
     // progress bar width
@@ -27,7 +26,7 @@ class OnboardingIndicator extends StatelessWidget {
           width: totalWidth,
           height: height,
           decoration: BoxDecoration(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+            color: Colors.white.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(height / 2),
           ),
           child: Stack(
@@ -38,11 +37,11 @@ class OnboardingIndicator extends StatelessWidget {
                 width: (totalWidth / count) * (currentIndex + 1),
                 height: height,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
+                  color: Colors.white.withValues(alpha: 0.7),
                   borderRadius: BorderRadius.circular(height / 2),
                   boxShadow: [
                     BoxShadow(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
