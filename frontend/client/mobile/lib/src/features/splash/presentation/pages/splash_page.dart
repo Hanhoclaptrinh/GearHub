@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mobile/src/features/onboarding/presentation/pages/onboarding_page.dart';
 
 class SplashPage extends StatefulWidget {
@@ -80,6 +79,8 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    double screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
@@ -88,28 +89,10 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
           builder: (context, child) {
             return Transform.scale(
               scale: _scaleAnimation.value * _pulseAnimation.value,
-              child: SvgPicture.asset(
-                'assets/logo/logo.svg',
-                width: 150,
-                height: 150,
-                placeholderBuilder: (context) => Container(
-                  width: 150,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF3B82F6),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'GH',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 40,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
+              child: Image.asset(
+                'assets/logo/logo.png',
+                width: screenWidth * 0.8,
+                fit: BoxFit.contain,
               ),
             );
           },
