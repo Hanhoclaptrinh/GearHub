@@ -22,16 +22,7 @@ class HeroCard extends StatelessWidget {
       alignment: FractionalOffset.center,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(40),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.4),
-              blurRadius: 25,
-              offset: const Offset(0, 15),
-            ),
-          ],
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(40)),
         clipBehavior: Clip.antiAlias,
         child: Stack(
           children: [
@@ -82,7 +73,7 @@ class HeroCard extends StatelessWidget {
                     Text(
                       product.name.toUpperCase(),
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.white,
+                        color: const Color(0xFF1E293B),
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.2,
                       ),
@@ -178,13 +169,6 @@ class HeroCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.cyanAccent.withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Text(
         'EXPLORE',

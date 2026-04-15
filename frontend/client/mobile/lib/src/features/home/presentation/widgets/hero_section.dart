@@ -20,26 +20,25 @@ class _HeroSectionState extends State<HeroSection> {
       name: 'PS5 Controller',
       tagline: 'Precision control, immersive haptics.',
       image: 'assets/images/hero1.png',
-      gradient: const [Color(0xFF0F172A), Color(0xFF334155)],
+      gradient: const [Color(0xFFE0E7FF), Color(0xFFC7D2FE)],
     ),
     HeroProduct(
       name: 'AirPods Max',
       tagline: 'High-fidelity audio, ultimate comfort.',
       image: 'assets/images/hero2.png',
-      gradient: const [Color(0xFF1E293B), Color(0xFF475569)],
+      gradient: const [Color(0xFFE2E8F0), Color(0xFFCBD5E1)],
     ),
     HeroProduct(
-      name: 'Akko Keyboard',
-      tagline: 'Mechanical excellence, custom style.',
+      name: 'ASUS ROG Strix PC',
+      tagline: 'Ultimate performance, gaming unleashed.',
       image: 'assets/images/hero3.png',
-      gradient: const [Color(0xFF1E1B4B), Color(0xFF312E81)],
-      imageOffset: const Offset(0, -20),
+      gradient: const [Color(0xFFCCFBFE), Color(0xFF90E0EF)],
     ),
     HeroProduct(
       name: 'Apple Vision Pro',
       tagline: 'The era of spatial computing.',
       image: 'assets/images/hero4.png',
-      gradient: const [Color(0xFF1C1917), Color(0xFF44403C)],
+      gradient: const [Color(0xFFF5F3FF), Color(0xFFDDD6FE)],
     ),
   ];
 

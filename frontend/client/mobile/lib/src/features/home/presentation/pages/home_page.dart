@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../widgets/hero_section.dart';
+import '../widgets/quick_categories.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -109,7 +110,9 @@ class HomePage extends StatelessWidget {
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 const HeroSection(),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
+                const QuickCategories(),
+                const SizedBox(height: 32),
                 _buildSectionHeader(context, 'New Arrivals', showSeeAll: true),
                 const SizedBox(height: 16),
                 _buildProductPlaceholder(context),
