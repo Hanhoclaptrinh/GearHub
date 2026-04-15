@@ -1,25 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:mobile/src/features/home/domain/models/category_model.dart';
-import 'category_card.dart';
+import 'package:mobile/src/features/home/domain/models/product.dart';
+import 'product_card.dart';
 
-class QuickCategories extends StatefulWidget {
-  const QuickCategories({super.key});
+class NewArrivalsSection extends StatelessWidget {
+  const NewArrivalsSection({super.key});
 
-  @override
-  State<QuickCategories> createState() => _QuickCategoriesState();
-}
-
-class _QuickCategoriesState extends State<QuickCategories> {
-  int selectedIndex = 0;
-
-  static const List<CategoryModel> _categories = [
-    CategoryModel(title: 'Audio', icon: LucideIcons.headphones, slug: 'audio'),
-    CategoryModel(title: 'Laptop', icon: LucideIcons.laptop, slug: 'laptop'),
-    CategoryModel(title: 'Gaming', icon: LucideIcons.gamepad2, slug: 'gaming'),
-    CategoryModel(title: 'Gear', icon: LucideIcons.usb, slug: 'accessories'),
-    CategoryModel(title: 'Watch', icon: LucideIcons.watch, slug: 'smartwatch'),
+  static const List<Product> _demoProducts = [
+    Product(
+      id: '1',
+      name: 'Apple Airpods Max',
+      tagline: 'Spatial Audio.',
+      price: 549,
+      image: 'assets/images/hero2.png',
+      tag: 'NEW',
+    ),
+    Product(
+      id: '2',
+      name: 'ROG Strix Helios II',
+      tagline: 'Premium Gaming Case',
+      price: 3000,
+      image: 'assets/images/hero3.png',
+      tag: 'HOT',
+    ),
+    Product(
+      id: '3',
+      name: 'Apple Vision Pro',
+      tagline: 'Spatial Computing',
+      price: 3499,
+      image: 'assets/images/hero4.png',
+      tag: 'LIMIT',
+    ),
   ];
 
   @override
@@ -28,27 +38,21 @@ class _QuickCategoriesState extends State<QuickCategories> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(context),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
         SizedBox(
-          height: 100,
+          height: 280,
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             clipBehavior: Clip.none,
-            itemCount: _categories.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemCount: _demoProducts.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 16),
             itemBuilder: (context, index) {
-              return CategoryCard(
-                category: _categories[index],
-                isSelected: selectedIndex == index,
+              return ProductCard(
+                product: _demoProducts[index],
                 onTap: () {
-                  // tranh render thua
-                  if (selectedIndex != index) {
-                    setState(() => selectedIndex = index);
-                    HapticFeedback.selectionClick();
-                  }
-                  print('${_categories[index].title} tapped');
+                  print('Product tapped: ${_demoProducts[index].name}');
                 },
               );
             },
@@ -65,7 +69,7 @@ class _QuickCategoriesState extends State<QuickCategories> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Collections',
+            'New Arrivals',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               fontSize: 24,
               fontWeight: FontWeight.w900,
