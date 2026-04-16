@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/features/home/presentation/widgets/trending_section.dart';
 import '../widgets/hero_section.dart';
 import '../widgets/quick_categories.dart';
 import '../widgets/new_arrivals_section.dart';
@@ -116,11 +117,7 @@ class HomePage extends StatelessWidget {
                 const SizedBox(height: 32),
                 const NewArrivalsSection(),
                 const SizedBox(height: 32),
-                _buildSectionHeader(context, 'Trending Now', showSeeAll: true),
-                const SizedBox(height: 16),
-                _buildProductPlaceholder(context),
-                const SizedBox(height: 24),
-                _buildProductPlaceholder(context),
+                const TrendingSection(),
               ]),
             ),
           ),
@@ -144,86 +141,6 @@ class HomePage extends StatelessWidget {
           size: 22 + (progress * 2),
           color: Theme.of(context).colorScheme.onSurface,
         ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(
-    BuildContext context,
-    String title, {
-    bool showSeeAll = false,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
-          ),
-        ),
-        if (showSeeAll)
-          TextButton(onPressed: () {}, child: const Text('See all')),
-      ],
-    );
-  }
-
-  Widget _buildProductPlaceholder(BuildContext context) {
-    return Container(
-      height: 120,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Theme.of(
-            context,
-          ).colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            width: 88,
-            height: 88,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(Icons.settings_input_component, size: 32),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  height: 16,
-                  width: 140,
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  height: 12,
-                  width: 80,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest
-                        .withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

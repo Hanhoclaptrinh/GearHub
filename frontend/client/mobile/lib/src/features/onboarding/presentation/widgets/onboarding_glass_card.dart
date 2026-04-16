@@ -14,11 +14,11 @@ class OnboardingGlassCard extends StatelessWidget {
 
     final Color glassColor = isDark ? Colors.white : Colors.black;
     final Color borderColor = isDark
-        ? Colors.white.withOpacity(0.2)
-        : Colors.black.withOpacity(0.1);
+        ? Colors.white.withValues(alpha: 0.2)
+        : Colors.black.withValues(alpha: 0.1);
     final Color shadowColor = isDark
-        ? Colors.black.withOpacity(0.3)
-        : Colors.black.withOpacity(0.1);
+        ? Colors.black.withValues(alpha: 0.3)
+        : Colors.black.withValues(alpha: 0.1);
 
     return Container(
       width: double.infinity,
@@ -41,15 +41,15 @@ class OnboardingGlassCard extends StatelessWidget {
           children: [
             // glass
             BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      glassColor.withOpacity(isDark ? 0.15 : 0.05),
-                      glassColor.withOpacity(isDark ? 0.05 : 0.01),
+                      glassColor.withValues(alpha: isDark ? 0.15 : 0.05),
+                      glassColor.withValues(alpha: isDark ? 0.05 : 0.01),
                     ],
                   ),
                 ),
@@ -64,10 +64,10 @@ class OnboardingGlassCard extends StatelessWidget {
                     end: Alignment.bottomRight,
                     stops: const [0, 0.4, 0.5, 1],
                     colors: [
-                      glassColor.withOpacity(isDark ? 0.1 : 0.05),
+                      glassColor.withValues(alpha: isDark ? 0.1 : 0.05),
                       Colors.transparent,
                       Colors.transparent,
-                      glassColor.withOpacity(isDark ? 0.05 : 0.02),
+                      glassColor.withValues(alpha: isDark ? 0.05 : 0.02),
                     ],
                   ),
                 ),
@@ -85,7 +85,7 @@ class OnboardingGlassCard extends StatelessWidget {
                     if (loadingProgress == null) return child;
                     return Center(
                       child: CircularProgressIndicator(
-                        color: theme.colorScheme.primary.withOpacity(0.5),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.5),
                         strokeWidth: 2,
                       ),
                     );

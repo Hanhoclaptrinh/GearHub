@@ -96,7 +96,7 @@ class _SlideToActionButtonState extends State<SlideToActionButton>
         return ClipRRect(
           borderRadius: BorderRadius.circular(trackHeight / 2),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Container(
               width: double.infinity,
               height: trackHeight,

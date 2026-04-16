@@ -116,12 +116,12 @@ class _OnboardingPageState extends State<OnboardingPage>
                       padding: EdgeInsets.only(
                         left: size.width * 0.05,
                         right: size.width * 0.05,
-                        bottom: size.height * 0.12,
+                        bottom: size.height * 0.15,
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(32),
                         child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                           child: Container(
                             width: double.infinity,
                             padding: EdgeInsets.symmetric(
@@ -183,7 +183,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
@@ -216,7 +216,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(20),
                       child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                         child: Container(
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
