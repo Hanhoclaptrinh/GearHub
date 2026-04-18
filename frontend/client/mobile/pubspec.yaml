@@ -41,9 +41,10 @@ dependencies:
   flutter_svg: ^2.2.4
   google_fonts: ^8.0.2
   lucide_icons_flutter: ^3.1.12
-
   # --- AR Plugin ---
-  # ar_flutter_plugin: ^0.7.3
+  ar_flutter_plugin_2: ^0.0.3
+  vector_math: ^2.1.4
+  model_viewer_plus: ^1.6.0
 
 dev_dependencies:
   flutter_test:

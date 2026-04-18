@@ -49,5 +49,7 @@
 		<true/>
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>
+		<key>NSCameraUsageDescription</key>
+		<string>This application requires camera access for placing products in your room via Augmented Reality.</string>
 	</dict>
 </plist>

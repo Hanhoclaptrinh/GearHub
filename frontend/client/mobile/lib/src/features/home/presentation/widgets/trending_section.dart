@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/src/features/home/domain/models/product.dart';
+import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 
 class TrendingSection extends StatefulWidget {
   const TrendingSection({super.key});
@@ -203,67 +204,79 @@ class TrendingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      height: height,
-      decoration: BoxDecoration(
-        color: isGlass
-            ? colorScheme.primaryContainer.withValues(alpha: 0.15)
-            : colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: isGlass
-              ? colorScheme.primary.withValues(alpha: 0.1)
-              : colorScheme.outlineVariant.withValues(alpha: 0.5),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return GestureDetector(
+      // chuyen huong sang prod detail khi click
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ProductDetailPage(product: product),
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: isGlass
-                  ? Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            colorScheme.primaryContainer.withValues(alpha: 0.1),
-                            colorScheme.surface,
-                          ],
-                        ),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
+        );
+      },
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: isGlass
+              ? colorScheme.primaryContainer.withValues(alpha: 0.15)
+              : colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: isGlass
+                ? colorScheme.primary.withValues(alpha: 0.1)
+                : colorScheme.outlineVariant.withValues(alpha: 0.5),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: isGlass
+                    ? Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              colorScheme.primaryContainer.withValues(
+                                alpha: 0.1,
+                              ),
+                              colorScheme.surface,
+                            ],
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
 
-            if (isWide)
-              _buildWideContent(context, colorScheme)
-            else
-              _buildStandardContent(context, colorScheme),
+              if (isWide)
+                _buildWideContent(context, colorScheme)
+              else
+                _buildStandardContent(context, colorScheme),
 
-            if (isGlass)
-              Positioned(
-                top: -50,
-                right: -50,
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.1),
+              if (isGlass)
+                Positioned(
+                  top: -50,
+                  right: -50,
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
