@@ -63,93 +63,78 @@ class _TrendingSectionState extends State<TrendingSection> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeader(context),
-        const SizedBox(height: 16),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              const spacing = 16.0;
-              final gridItems = _trendingProducts.take(4).toList();
-              final wideProduct = _trendingProducts.length > 4
-                  ? _trendingProducts[4]
-                  : null;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 110),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(context),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                const spacing = 16.0;
+                final gridItems = _trendingProducts.take(4).toList();
+                final wideProduct = _trendingProducts.length > 4
+                    ? _trendingProducts[4]
+                    : null;
 
-              final leftItems = <Widget>[];
-              final rightItems = <Widget>[];
+                final leftItems = <Widget>[];
+                final rightItems = <Widget>[];
 
-              // thuc hien logic chia cot
-              for (int i = 0; i < gridItems.length; i++) {
-                final product = gridItems[i];
-                final isLeft = i % 2 == 0;
+                for (int i = 0; i < gridItems.length; i++) {
+                  final product = gridItems[i];
+                  final isLeft = i % 2 == 0;
 
-                // tao chieu cao so le cho bento grid
-                double height;
-                if (isLeft) {
-                  height = (i == 0) ? 260 : 190;
-                } else {
-                  height = (i == 1) ? 190 : 260;
-                }
+                  double height;
+                  if (isLeft) {
+                    height = (i == 0) ? 260 : 190;
+                  } else {
+                    height = (i == 1) ? 190 : 260;
+                  }
 
-                final item = Padding(
-                  padding: const EdgeInsets.only(bottom: spacing),
-                  child: _buildBentoItem(
-                    product,
-                    height: height,
-                    isGlass: i % 2 == 0,
-                  ),
-                );
-
-                if (isLeft) {
-                  leftItems.add(item);
-                } else {
-                  rightItems.add(item);
-                }
-              }
-
-              return Column(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: Column(children: leftItems)),
-                      const SizedBox(width: spacing),
-                      Expanded(child: Column(children: rightItems)),
-                    ],
-                  ),
-
-                  // hien thi san pham thu 5 - card lon chiem 2 cot
-                  if (wideProduct != null) ...[
-                    _buildBentoItem(
-                      wideProduct,
-                      height: 190,
-                      isGlass: true,
-                      isWide: true,
+                  final item = Padding(
+                    padding: const EdgeInsets.only(bottom: spacing),
+                    child: TrendingCard(
+                      product: product,
+                      height: height,
+                      isGlass: i % 2 == 0,
                     ),
-                  ],
-                ],
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
+                  );
 
-  Widget _buildBentoItem(
-    Product product, {
-    required double height,
-    required bool isGlass,
-    bool isWide = false,
-  }) {
-    return TrendingCard(
-      product: product,
-      height: height,
-      isGlass: isGlass,
-      isWide: isWide,
+                  if (isLeft) {
+                    leftItems.add(item);
+                  } else {
+                    rightItems.add(item);
+                  }
+                }
+
+                return Column(
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: Column(children: leftItems)),
+                        const SizedBox(width: spacing),
+                        Expanded(child: Column(children: rightItems)),
+                      ],
+                    ),
+                    if (wideProduct != null) ...[
+                      TrendingCard(
+                        product: wideProduct,
+                        height: 190,
+                        isGlass: true,
+                        isWide: true,
+                      ),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -205,7 +190,6 @@ class TrendingCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
-      // chuyen huong sang prod detail khi click
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
@@ -256,22 +240,26 @@ class TrendingCard extends StatelessWidget {
                       )
                     : const SizedBox.shrink(),
               ),
-
               if (isWide)
                 _buildWideContent(context, colorScheme)
               else
                 _buildStandardContent(context, colorScheme),
-
               if (isGlass)
                 Positioned(
                   top: -50,
                   right: -50,
                   child: Container(
-                    width: 100,
-                    height: 100,
+                    width: 140,
+                    height: 140,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colorScheme.primary.withValues(alpha: 0.12),
+                          blurRadius: 70,
+                          spreadRadius: 20,
+                        ),
+                      ],
                     ),
                   ),
                 ),

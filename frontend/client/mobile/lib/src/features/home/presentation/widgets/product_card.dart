@@ -84,11 +84,14 @@ class _ProductCardState extends State<ProductCard>
                           ],
                         ),
                       ),
-                      Image.asset(
-                        widget.product.image,
-                        fit: BoxFit.contain,
-                        width: 180,
-                        height: 180,
+                      Hero(
+                        tag: 'product_${widget.product.id}',
+                        child: Image.asset(
+                          widget.product.image,
+                          fit: BoxFit.contain,
+                          width: 180,
+                          height: 180,
+                        ),
                       ),
                     ],
                   ),

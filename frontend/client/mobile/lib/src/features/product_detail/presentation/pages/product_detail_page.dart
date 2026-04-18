@@ -6,6 +6,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../widgets/product_hero_section.dart';
 import '../widgets/product_info_section.dart';
 import '../widgets/sticky_bottom_bar.dart';
+import '../widgets/product_reviews_preview_section.dart';
+import '../widgets/product_recommendations_section.dart';
 import 'product_ar_view_page.dart';
 
 class ProductDetailPage extends StatefulWidget {
@@ -38,10 +40,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+      extendBody: true,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-
       bottomNavigationBar: StickyBottomBar(product: widget.product),
-
       appBar: AppBar(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         systemOverlayStyle: SystemUiOverlayStyle.dark,
@@ -139,6 +140,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               display3DRender: !_isArViewOpen,
             ),
             ProductInfoSection(product: widget.product),
+            const ProductReviewsPreviewSection(hasReviews: true),
+            const ProductRecommendationsSection(),
             SizedBox(height: 100 + MediaQuery.of(context).padding.bottom),
           ],
         ),

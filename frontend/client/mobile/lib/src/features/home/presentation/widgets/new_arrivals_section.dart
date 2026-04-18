@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/src/features/home/domain/models/product.dart';
+import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 import 'product_card.dart';
 
 class NewArrivalsSection extends StatelessWidget {
@@ -7,7 +8,7 @@ class NewArrivalsSection extends StatelessWidget {
 
   static const List<Product> _demoProducts = [
     Product(
-      id: '1',
+      id: 'n1',
       name: 'Apple Airpods Max',
       tagline: 'Spatial Audio.',
       price: 549,
@@ -15,7 +16,7 @@ class NewArrivalsSection extends StatelessWidget {
       tag: 'NEW',
     ),
     Product(
-      id: '2',
+      id: 'n2',
       name: 'ROG Strix Helios II',
       tagline: 'Premium Gaming Case',
       price: 3000,
@@ -23,7 +24,7 @@ class NewArrivalsSection extends StatelessWidget {
       tag: 'HOT',
     ),
     Product(
-      id: '3',
+      id: 'n3',
       name: 'Apple Vision Pro',
       tagline: 'Spatial Computing',
       price: 3499,
@@ -52,7 +53,13 @@ class NewArrivalsSection extends StatelessWidget {
               return ProductCard(
                 product: _demoProducts[index],
                 onTap: () {
-                  print('Product tapped: ${_demoProducts[index].name}');
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => ProductDetailPage(
+                        product: _demoProducts[index],
+                      ),
+                    ),
+                  );
                 },
               );
             },
