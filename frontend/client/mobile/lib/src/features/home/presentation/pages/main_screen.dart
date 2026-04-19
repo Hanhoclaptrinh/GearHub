@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/features/home/presentation/pages/home_page.dart';
 
@@ -13,6 +14,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
   late PageController _pageController;
+  bool _isBottomBarVisible = true;
 
   @override
   void initState() {
@@ -95,14 +97,36 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      body: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        children: _pages,
+      body: NotificationListener<UserScrollNotification>(
+        onNotification: (notification) {
+          // scroll ngang thi khong an/hien bottom bar
+          if (notification.metrics.axis != Axis.vertical) return false;
+
+          if (notification.direction == ScrollDirection.reverse) {
+            if (_isBottomBarVisible) {
+              setState(() => _isBottomBarVisible = false);
+            }
+          } else if (notification.direction == ScrollDirection.forward) {
+            if (!_isBottomBarVisible) {
+              setState(() => _isBottomBarVisible = true);
+            }
+          }
+          return true;
+        },
+        child: PageView(
+          controller: _pageController,
+          physics: const NeverScrollableScrollPhysics(),
+          children: _pages,
+        ),
       ),
-      bottomNavigationBar: CustomBottomNavBar(
-        selectedIndex: _selectedIndex,
-        onItemSelected: _onItemTapped,
+      bottomNavigationBar: AnimatedSlide(
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOutCubic,
+        offset: _isBottomBarVisible ? Offset.zero : const Offset(0, 2),
+        child: CustomBottomNavBar(
+          selectedIndex: _selectedIndex,
+          onItemSelected: _onItemTapped,
+        ),
       ),
     );
   }
@@ -121,38 +145,40 @@ class CustomBottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final padding = MediaQuery.of(context).padding;
+    final colorScheme = Theme.of(context).colorScheme;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(24, 0, 24, padding.bottom + 16),
+    return Container(
+      margin: EdgeInsets.fromLTRB(24, 0, 24, padding.bottom + 16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withValues(alpha: 0.70),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+          width: 0.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 30,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
             height: 70,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.85),
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(
-                color: Colors.black.withValues(alpha: 0.08),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildNavItem(0, LucideIcons.house, 'Home'),
-                _buildNavItem(1, LucideIcons.search, 'Explore'),
-                _buildNavItem(2, LucideIcons.shoppingCart, 'Cart'),
-                _buildNavItem(3, LucideIcons.heart, 'Wishlist'),
-                _buildNavItem(4, LucideIcons.userRound, 'Profile'),
+                _buildNavItem(context, 0, LucideIcons.house, 'Home'),
+                _buildNavItem(context, 1, LucideIcons.search, 'Explore'),
+                _buildNavItem(context, 2, LucideIcons.shoppingCart, 'Cart'),
+                _buildNavItem(context, 3, LucideIcons.heart, 'Wishlist'),
+                _buildNavItem(context, 4, LucideIcons.userRound, 'Profile'),
               ],
             ),
           ),
@@ -161,8 +187,16 @@ class CustomBottomNavBar extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
+  Widget _buildNavItem(
+    BuildContext context,
+    int index,
+    IconData icon,
+    String label,
+  ) {
     final isSelected = selectedIndex == index;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final accentColor = colorScheme.primary;
 
     return GestureDetector(
       onTap: () => onItemSelected(index),
@@ -172,12 +206,20 @@ class CustomBottomNavBar extends StatelessWidget {
         curve: Curves.easeInOutCubic,
         padding: EdgeInsets.symmetric(
           horizontal: isSelected ? 16 : 12,
-          vertical: 8,
+          vertical: 10,
         ),
         decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFF3B82F6).withValues(alpha: 0.12)
-              : Colors.transparent,
+          gradient: isSelected
+              ? LinearGradient(
+                  colors: [
+                    accentColor.withValues(alpha: 0.15),
+                    accentColor.withValues(alpha: 0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: isSelected ? null : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -187,20 +229,27 @@ class CustomBottomNavBar extends StatelessWidget {
               icon,
               size: 24,
               color: isSelected
-                  ? const Color(0xFF3B82F6)
-                  : const Color(0xFF94A3B8),
+                  ? accentColor
+                  : colorScheme.onSurface.withValues(alpha: 0.4),
             ),
-            if (isSelected) ...[
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Color(0xFF3B82F6),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-            ],
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOutCubic,
+              child: isSelected
+                  ? Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          color: accentColor,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ],
         ),
       ),

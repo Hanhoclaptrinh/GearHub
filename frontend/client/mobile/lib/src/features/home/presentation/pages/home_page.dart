@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/features/home/presentation/widgets/trending_section.dart';
@@ -11,115 +12,125 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double statusBarHeight = MediaQuery.of(context).padding.top;
-    const double expandedHeight = 80.0;
+    const double expandedHeight = 120.0;
     const double collapsedHeight = kToolbarHeight;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            stretch: true,
-            expandedHeight: expandedHeight,
-            collapsedHeight: collapsedHeight,
-            toolbarHeight: collapsedHeight,
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            elevation: 0,
-            scrolledUnderElevation: 4.0,
-            automaticallyImplyLeading: false,
-            flexibleSpace: LayoutBuilder(
-              builder: (context, constraints) {
-                final double currentExtent = constraints.maxHeight;
-                // progress: 1.0 (expanded) to 0.0 (collapsed)
-                final double progress =
-                    ((currentExtent - (collapsedHeight + statusBarHeight)) /
-                            (expandedHeight - collapsedHeight))
-                        .clamp(0.0, 1.0);
+      body: Stack(
+        children: [
+          CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverAppBar(
+                pinned: true,
+                stretch: true,
+                expandedHeight: expandedHeight,
+                collapsedHeight: collapsedHeight,
+                toolbarHeight: collapsedHeight,
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                elevation: 0,
+                scrolledUnderElevation: 0,
+                automaticallyImplyLeading: false,
+                flexibleSpace: ClipRect(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final double currentExtent = constraints.maxHeight;
+                        final double progress =
+                            ((currentExtent -
+                                        (collapsedHeight + statusBarHeight)) /
+                                    (expandedHeight - collapsedHeight))
+                                .clamp(0.0, 1.0);
 
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).scaffoldBackgroundColor.withValues(
-                      alpha: progress < 0.05 ? 1.0 : 0.0,
-                    ),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      top: statusBarHeight,
-                      left: 16,
-                      right: 16,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Transform.translate(
-                              offset: Offset(0, progress * 15),
-                              child: Transform.scale(
-                                alignment: Alignment.centerLeft,
-                                scale: 1.2 + (progress * 0.2),
-                                child: Text(
-                                  'GearHub',
-                                  style: TextStyle(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 22,
-                                    letterSpacing: -0.5,
-                                  ),
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).scaffoldBackgroundColor
+                                .withValues(
+                                  alpha: (1.0 - progress).clamp(0.0, 0.3),
                                 ),
-                              ),
+                          ),
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              top: statusBarHeight,
+                              left: 16,
+                              right: 16,
                             ),
-                            Transform.translate(
-                              offset: Offset(0, progress * 15),
-                              child: Row(
-                                children: [
-                                  _buildCircleIcon(
-                                    context,
-                                    LucideIcons.bell,
-                                    progress,
-                                    () {
-                                      print("Bell tapped");
-                                    },
-                                  ),
-                                  const SizedBox(width: 12),
-                                  _buildCircleIcon(
-                                    context,
-                                    LucideIcons.sparkles,
-                                    progress,
-                                    () {
-                                      print("Sparkles tapped");
-                                    },
-                                  ),
-                                ],
-                              ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Transform.translate(
+                                      offset: Offset(0, progress * 15),
+                                      child: Transform.scale(
+                                        alignment: Alignment.centerLeft,
+                                        scale: 1.2 + (progress * 0.2),
+                                        child: Text(
+                                          'GearHub',
+                                          style: TextStyle(
+                                            color: colorScheme.onSurface,
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 22,
+                                            letterSpacing: -1.0,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Transform.translate(
+                                      offset: Offset(0, progress * 15),
+                                      child: Row(
+                                        children: [
+                                          _buildCircleIcon(
+                                            context,
+                                            LucideIcons.bell,
+                                            progress,
+                                            () {
+                                              print("Bell tapped");
+                                            },
+                                          ),
+                                          const SizedBox(width: 8),
+                                          _buildCircleIcon(
+                                            context,
+                                            LucideIcons.sparkles,
+                                            progress,
+                                            () {
+                                              print("Sparkles tapped");
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ],
+                          ),
+                        );
+                      },
                     ),
                   ),
-                );
-              },
-            ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 100),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                const HeroSection(),
-                const SizedBox(height: 32),
-                const QuickCategories(),
-                const SizedBox(height: 32),
-                const NewArrivalsSection(),
-                const SizedBox(height: 32),
-                const TrendingSection(),
-              ]),
-            ),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 120),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    const HeroSection(),
+                    const SizedBox(height: 48),
+                    const QuickCategories(),
+                    const SizedBox(height: 48),
+                    const NewArrivalsSection(),
+                    const SizedBox(height: 48),
+                    const TrendingSection(),
+                  ]),
+                ),
+              ),
+            ],
           ),
         ],
       ),

@@ -18,8 +18,20 @@ class _QuickCategoriesState extends State<QuickCategories> {
     CategoryModel(title: 'Audio', icon: LucideIcons.headphones, slug: 'audio'),
     CategoryModel(title: 'Laptop', icon: LucideIcons.laptop, slug: 'laptop'),
     CategoryModel(title: 'Gaming', icon: LucideIcons.gamepad2, slug: 'gaming'),
-    CategoryModel(title: 'Gear', icon: LucideIcons.usb, slug: 'accessories'),
+    CategoryModel(
+      title: 'Accessories',
+      icon: LucideIcons.usb,
+      slug: 'accessories',
+    ),
     CategoryModel(title: 'Watch', icon: LucideIcons.watch, slug: 'smartwatch'),
+  ];
+
+  static const List<Color> _categoryColors = [
+    Color(0xFF3B82F6),
+    Color(0xFF06B6D4),
+    Color(0xFFF59E0B),
+    Color(0xFF10B981),
+    Color(0xFF64748B),
   ];
 
   @override
@@ -42,6 +54,7 @@ class _QuickCategoriesState extends State<QuickCategories> {
               return CategoryCard(
                 category: _categories[index],
                 isSelected: selectedIndex == index,
+                accentColor: _categoryColors[index % _categoryColors.length],
                 onTap: () {
                   // tranh render thua
                   if (selectedIndex != index) {

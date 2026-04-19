@@ -4,12 +4,14 @@ import 'package:mobile/src/features/home/domain/models/category_model.dart';
 class CategoryCard extends StatelessWidget {
   final CategoryModel category;
   final bool isSelected;
+  final Color accentColor;
   final VoidCallback onTap;
 
   const CategoryCard({
     super.key,
     required this.category,
     required this.isSelected,
+    required this.accentColor,
     required this.onTap,
   });
 
@@ -20,48 +22,46 @@ class CategoryCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 80,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        width: 85,
         decoration: BoxDecoration(
           color: isSelected
-              ? theme.colorScheme.onSurface
-              : theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(20),
+              ? accentColor.withValues(alpha: 0.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected
-                ? Colors.transparent
-                : theme.dividerColor.withValues(alpha: 0.1),
-            width: 1.2,
+            color: accentColor.withValues(alpha: 0.12),
+            width: 1.5,
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: theme.shadowColor.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ]
-              : [],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              category.icon,
-              size: 22,
-              color: isSelected
-                  ? theme.colorScheme.surface
-                  : theme.colorScheme.onSurface.withValues(alpha: 0.8),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.2)
+                    : Colors.white.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                category.icon,
+                size: 24,
+                color: isSelected ? Colors.grey.shade600 : accentColor,
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               category.title,
               style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.2,
                 color: isSelected
-                    ? theme.colorScheme.surface
-                    : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    ? Colors.grey.shade600
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
           ],
