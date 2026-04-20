@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:mobile/src/features/home/domain/models/product.dart';
+import 'package:mobile/src/shared/models/product.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../widgets/product_hero_section.dart';

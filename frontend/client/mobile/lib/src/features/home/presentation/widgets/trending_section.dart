@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/src/features/home/domain/models/product.dart';
+import 'package:mobile/src/shared/models/product.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 
 class TrendingSection extends StatefulWidget {

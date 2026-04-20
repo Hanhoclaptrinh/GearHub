@@ -3,38 +3,42 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/features/home/presentation/pages/home_page.dart';
+import 'package:mobile/src/features/cart/presentation/pages/cart_page.dart';
+import 'package:mobile/src/features/cart/data/services/cart_service.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  State<MainScreen> createState() => MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
   late PageController _pageController;
   bool _isBottomBarVisible = true;
+  bool get isBottomBarVisible => _isBottomBarVisible;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _selectedIndex);
+    CartService().addListener(_onCartChanged);
+  }
+
+  void _onCartChanged() {
+    // neu gio hang trong, luon hien bottom bar
+    if (CartService().items.isEmpty && !_isBottomBarVisible) {
+      setState(() => _isBottomBarVisible = true);
+    }
   }
 
   @override
   void dispose() {
+    CartService().removeListener(_onCartChanged);
     _pageController.dispose();
     super.dispose();
   }
-
-  final List<Widget> _pages = [
-    const HomePage(),
-    _buildPlaceholderPage('Explore'),
-    _buildPlaceholderPage('Cart'),
-    _buildPlaceholderPage('Wishlist'),
-    _buildPlaceholderPage('Profile'),
-  ];
 
   static Widget _buildPlaceholderPage(String title) {
     return Container(
@@ -81,10 +85,11 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  void _onItemTapped(int index) {
+  void onItemTapped(int index) {
     if (_selectedIndex == index) return;
     setState(() {
       _selectedIndex = index;
+      _isBottomBarVisible = true; // luon hien khi chuyen tab
     });
     _pageController.animateToPage(
       index,
@@ -95,12 +100,28 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final List<Widget> pages = [
+      const HomePage(),
+      _buildPlaceholderPage('Explore'),
+      CartPage(isNavVisible: _isBottomBarVisible),
+      _buildPlaceholderPage('Wishlist'),
+      _buildPlaceholderPage('Profile'),
+    ];
+
     return Scaffold(
       extendBody: true,
       body: NotificationListener<UserScrollNotification>(
         onNotification: (notification) {
           // scroll ngang thi khong an/hien bottom bar
           if (notification.metrics.axis != Axis.vertical) return false;
+
+          // neu dang o gio hang va gio hang trong, khong cho phep an
+          if (_selectedIndex == 2 && CartService().items.isEmpty) {
+            if (!_isBottomBarVisible) {
+              setState(() => _isBottomBarVisible = true);
+            }
+            return false;
+          }
 
           if (notification.direction == ScrollDirection.reverse) {
             if (_isBottomBarVisible) {
@@ -116,7 +137,7 @@ class _MainScreenState extends State<MainScreen> {
         child: PageView(
           controller: _pageController,
           physics: const NeverScrollableScrollPhysics(),
-          children: _pages,
+          children: pages,
         ),
       ),
       bottomNavigationBar: AnimatedSlide(
@@ -125,7 +146,7 @@ class _MainScreenState extends State<MainScreen> {
         offset: _isBottomBarVisible ? Offset.zero : const Offset(0, 2),
         child: CustomBottomNavBar(
           selectedIndex: _selectedIndex,
-          onItemSelected: _onItemTapped,
+          onItemSelected: onItemTapped,
         ),
       ),
     );
@@ -151,7 +172,7 @@ class CustomBottomNavBar extends StatelessWidget {
       margin: EdgeInsets.fromLTRB(24, 0, 24, padding.bottom + 16),
       decoration: BoxDecoration(
         color: colorScheme.surface.withValues(alpha: 0.70),
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: colorScheme.outlineVariant.withValues(alpha: 0.2),
           width: 0.5,
@@ -159,17 +180,17 @@ class CustomBottomNavBar extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 30,
+            blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(24),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
-            height: 70,
+            height: 80,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -195,7 +216,6 @@ class CustomBottomNavBar extends StatelessWidget {
   ) {
     final isSelected = selectedIndex == index;
     final colorScheme = Theme.of(context).colorScheme;
-
     final accentColor = colorScheme.primary;
 
     return GestureDetector(
@@ -225,12 +245,50 @@ class CustomBottomNavBar extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 24,
-              color: isSelected
-                  ? accentColor
-                  : colorScheme.onSurface.withValues(alpha: 0.4),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  icon,
+                  size: 24,
+                  color: isSelected
+                      ? accentColor
+                      : colorScheme.onSurface.withValues(alpha: 0.4),
+                ),
+                if (index == 2)
+                  ListenableBuilder(
+                    listenable: CartService(),
+                    builder: (context, _) {
+                      final count = CartService().uniqueItemsCount;
+                      if (count == 0) return const SizedBox.shrink();
+                      return Positioned(
+                        top: -5,
+                        right: -5,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFF4D4D),
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            // so luong san pham trong gio hang
+                            '$count',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+              ],
             ),
             AnimatedSize(
               duration: const Duration(milliseconds: 300),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'dart:async';
-import 'package:mobile/src/features/home/domain/models/product.dart';
+import 'package:mobile/src/shared/models/product.dart';
 import 'package:mobile/src/features/onboarding/presentation/widgets/three_animated_arrow.dart';
 
 class StickyBottomBar extends StatefulWidget {

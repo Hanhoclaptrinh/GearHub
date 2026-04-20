@@ -41,6 +41,8 @@ dependencies:
   flutter_svg: ^2.2.4
   google_fonts: ^8.0.2
   lucide_icons_flutter: ^3.1.12
+  lottie: ^3.3.3
+
   # --- AR Plugin ---
   ar_flutter_plugin_2: ^0.0.3
   vector_math: ^2.1.4
@@ -82,6 +84,7 @@ flutter:
     - assets/fonts/
     - assets/images/
     - assets/models/
+    - assets/animations/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

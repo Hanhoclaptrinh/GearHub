@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mobile/src/features/home/domain/models/product.dart';
+import 'package:mobile/src/shared/models/product.dart';
 
 class ProductInfoSection extends StatefulWidget {
   final Product product;

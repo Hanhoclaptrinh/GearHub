@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/src/features/home/domain/models/product.dart';
+import 'package:mobile/src/shared/models/product.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
-import 'product_card.dart';
+import 'package:mobile/src/shared/widgets/product_card.dart';
 
 class NewArrivalsSection extends StatelessWidget {
   const NewArrivalsSection({super.key});
