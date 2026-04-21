@@ -11,6 +11,7 @@ import 'package:mobile/src/features/product_detail/presentation/pages/product_de
 import 'package:lottie/lottie.dart';
 import '../widgets/cart_item_card.dart';
 import '../widgets/cart_extra_views.dart';
+import 'checkout_address_page.dart';
 
 class CartPage extends StatefulWidget {
   final bool isNavVisible;
@@ -51,13 +52,9 @@ class _CartPageState extends State<CartPage> {
     HapticFeedback.mediumImpact();
   }
 
-  void _showCheckoutBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.5),
-      builder: (context) => const _CheckoutBottomSheet(),
+  void _navigateToCheckout() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const CheckoutAddressPage()),
     );
   }
 
@@ -173,7 +170,7 @@ class _CartPageState extends State<CartPage> {
                   ),
                   // recommendations section
                   _buildRecommendationsSection(),
-                  const SliverToBoxAdapter(child: SizedBox(height: 180)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 140)),
                 ],
               ),
               // checkout bar
@@ -325,7 +322,7 @@ class _CartPageState extends State<CartPage> {
             Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: hasSelection ? _showCheckoutBottomSheet : null,
+                onTap: hasSelection ? _navigateToCheckout : null,
                 borderRadius: BorderRadius.circular(18),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
@@ -462,259 +459,6 @@ class _CartPageState extends State<CartPage> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CheckoutBottomSheet extends StatelessWidget {
-  const _CheckoutBottomSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
-      decoration: BoxDecoration(
-        color: colorScheme.surface.withValues(alpha: 0.95),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
-      ),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              children: [
-                const SizedBox(height: 12),
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colorScheme.outlineVariant,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                const Text(
-                  'Order Summary',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 32),
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Column(
-                      children: [
-                        _buildStepItem(
-                          icon: LucideIcons.mapPin,
-                          title: 'Shipping Address',
-                          subtitle: '123 Luxury Street, Ho Chi Minh City',
-                          onTap: () {},
-                        ),
-                        const SizedBox(height: 20),
-                        _buildStepItem(
-                          icon: LucideIcons.wallet,
-                          title: 'Payment Method',
-                          subtitle: 'VNPAY Wallet',
-                          onTap: () {},
-                          trailing: Image.asset(
-                            'assets/images/hero1.png',
-                            height: 20,
-                            errorBuilder: (_, __, ___) =>
-                                const Icon(LucideIcons.creditCard, size: 20),
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        const Divider(thickness: 0.5),
-                        const SizedBox(height: 16),
-                        _buildPriceRow(
-                          'Subtotal',
-                          '\$${CartService().subtotal.toStringAsFixed(0)}',
-                        ),
-                        _buildPriceRow('Shipping', '\$15.00'),
-                        _buildPriceRow(
-                          'Discount',
-                          '-\$50.00',
-                          color: Colors.green,
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(32),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 30,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Total to Pay',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                            '\$${(CartService().subtotal + 15 - 50).toStringAsFixed(0)}',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      _buildSlideToPay(context),
-                    ],
-                  ),
-                ),
-                SizedBox(height: bottomPadding + 24),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStepItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    Widget? trailing,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 24),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(color: Colors.grey, fontSize: 13),
-                  ),
-                ],
-              ),
-            ),
-            trailing ??
-                const Icon(
-                  LucideIcons.chevronRight,
-                  size: 18,
-                  color: Colors.grey,
-                ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPriceRow(String label, String value, {Color? color}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.grey)),
-          Text(
-            value,
-            style: TextStyle(fontWeight: FontWeight.bold, color: color),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSlideToPay(BuildContext context) {
-    return _SlideToPayAction(
-      onSuccess: () {
-        HapticFeedback.heavyImpact();
-        Navigator.pop(context);
-        _showSuccessDialog(context);
-      },
-    );
-  }
-
-  void _showSuccessDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Dialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(32),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  LucideIcons.circleCheckBig,
-                  color: Colors.green,
-                  size: 80,
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'PAYMENT SUCCESS',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Your premium gear is on the way!',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0F172A),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 40,
-                      vertical: 16,
-                    ),
-                  ),
-                  child: const Text(
-                    'AWESOME',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );
