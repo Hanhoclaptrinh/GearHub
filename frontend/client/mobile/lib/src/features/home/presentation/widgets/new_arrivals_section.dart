@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/src/shared/models/product.dart';
-import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
+import 'package:mobile/src/shared/widgets/section_header.dart';
 import 'package:mobile/src/shared/widgets/product_card.dart';
+import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 
 class NewArrivalsSection extends StatelessWidget {
   const NewArrivalsSection({super.key});
@@ -31,6 +32,43 @@ class NewArrivalsSection extends StatelessWidget {
       image: 'assets/images/hero4.png',
       tag: 'LIMIT',
     ),
+    Product(
+      id: 'n4',
+      name: 'PS5 DualSense Edge',
+      tagline: 'Pro Controller',
+      price: 199,
+      image: 'assets/images/hero1.png',
+      tag: 'NEW',
+    ),
+    Product(
+      id: 'n5',
+      name: 'Keychron Q1 Max',
+      tagline: 'Wireless QMK/VIA',
+      price: 219,
+      image: 'assets/images/keyboard_hero.png',
+    ),
+    Product(
+      id: 'n6',
+      name: 'Razer DeathAdder V3',
+      tagline: 'Ultra-Light Mouse',
+      price: 89,
+      image: 'assets/images/mouse_product.png',
+    ),
+    Product(
+      id: 'n7',
+      name: 'GMK Keycap Set',
+      tagline: 'Cherry Profile PBT',
+      price: 110,
+      image: 'assets/images/keycaps_product.png',
+      tag: 'HOT',
+    ),
+    Product(
+      id: 'n8',
+      name: 'ROG Strix Scope II',
+      tagline: 'Mechanical Keyboard',
+      price: 179,
+      image: 'assets/images/keyboard_hero.png',
+    ),
   ];
 
   @override
@@ -38,8 +76,14 @@ class NewArrivalsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildHeader(context),
-        const SizedBox(height: 16),
+        SectionHeader(
+          title: 'New Arrivals',
+          actionText: 'See All',
+          onActionTap: () {
+            // chuyen huong toi trang new arrivals
+          },
+        ),
+        const SizedBox(height: 20),
         SizedBox(
           height: 280,
           child: ListView.separated(
@@ -55,9 +99,8 @@ class NewArrivalsSection extends StatelessWidget {
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (context) => ProductDetailPage(
-                        product: _demoProducts[index],
-                      ),
+                      builder: (context) =>
+                          ProductDetailPage(product: _demoProducts[index]),
                     ),
                   );
                 },
@@ -66,38 +109,6 @@ class NewArrivalsSection extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'New Arrivals',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontSize: 24,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.5,
-            ),
-          ),
-          GestureDetector(
-            onTap: () {
-              print('See All tapped');
-            },
-            child: Text(
-              'See All',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

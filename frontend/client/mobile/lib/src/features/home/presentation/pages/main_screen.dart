@@ -102,7 +102,6 @@ class MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       const HomePage(),
-      _buildPlaceholderPage('Explore'),
       CartPage(isNavVisible: _isBottomBarVisible),
       _buildPlaceholderPage('Wishlist'),
       _buildPlaceholderPage('Profile'),
@@ -196,10 +195,9 @@ class CustomBottomNavBar extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildNavItem(context, 0, LucideIcons.house, 'Home'),
-                _buildNavItem(context, 1, LucideIcons.search, 'Explore'),
-                _buildNavItem(context, 2, LucideIcons.shoppingCart, 'Cart'),
-                _buildNavItem(context, 3, LucideIcons.heart, 'Wishlist'),
-                _buildNavItem(context, 4, LucideIcons.userRound, 'Profile'),
+                _buildNavItem(context, 1, LucideIcons.shoppingCart, 'Cart'),
+                _buildNavItem(context, 2, LucideIcons.heart, 'Wishlist'),
+                _buildNavItem(context, 3, LucideIcons.userRound, 'Profile'),
               ],
             ),
           ),
@@ -255,7 +253,7 @@ class CustomBottomNavBar extends StatelessWidget {
                       ? accentColor
                       : colorScheme.onSurface.withValues(alpha: 0.4),
                 ),
-                if (index == 2)
+                if (index == 1)
                   ListenableBuilder(
                     listenable: CartService(),
                     builder: (context, _) {
