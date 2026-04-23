@@ -125,7 +125,7 @@ class _CartPageState extends State<CartPage> {
                 slivers: [
                   _buildSliverAppBar(),
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate((context, index) {
                         final item = items[index];
@@ -223,55 +223,51 @@ class _CartPageState extends State<CartPage> {
   }
 
   Widget _buildSliverAppBar() {
-    final double statusBarHeight = MediaQuery.of(context).padding.top;
-    const double expandedHeight = 120;
-    const double collapsedHeight = kToolbarHeight;
-    final colorScheme = Theme.of(context).colorScheme;
-
     return SliverAppBar(
       pinned: true,
-      stretch: true,
-      expandedHeight: expandedHeight,
-      collapsedHeight: collapsedHeight,
-      toolbarHeight: collapsedHeight,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
       scrolledUnderElevation: 0,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       automaticallyImplyLeading: false,
-      flexibleSpace: LayoutBuilder(
-        builder: (context, constraints) {
-          final double currentExtent = constraints.maxHeight;
-          final double progress =
-              ((currentExtent - (collapsedHeight + statusBarHeight)) /
-                      (expandedHeight - (collapsedHeight + statusBarHeight)))
-                  .clamp(0.0, 1.0);
-
-          return Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor.withValues(
-                alpha: (1.0 - progress).clamp(0.0, 0.9),
-              ),
-            ),
-            child: Center(
-              child: Padding(
-                padding: EdgeInsets.only(top: statusBarHeight),
-                child: Transform.scale(
-                  scale: 1.0 + (progress * 0.3),
-                  child: Text(
-                    'MY CART',
-                    style: TextStyle(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 18,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
+      titleSpacing: 20,
+      title: Text(
+        'Selection',
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w900,
+          color: Theme.of(context).colorScheme.onSurface,
+          letterSpacing: -0.5,
+        ),
       ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 12.0),
+          child: TextButton(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              CartService().selectAll();
+            },
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.05),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              'Select All',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onSurface,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/features/home/presentation/pages/home_page.dart';
 import 'package:mobile/src/features/cart/presentation/pages/cart_page.dart';
 import 'package:mobile/src/features/cart/data/services/cart_service.dart';
+import 'package:mobile/src/features/profile/presentation/pages/user_profile_page.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -104,7 +105,7 @@ class MainScreenState extends State<MainScreen> {
       const HomePage(),
       CartPage(isNavVisible: _isBottomBarVisible),
       _buildPlaceholderPage('Wishlist'),
-      _buildPlaceholderPage('Profile'),
+      const UserProfilePage(),
     ];
 
     return Scaffold(

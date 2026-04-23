@@ -33,7 +33,7 @@ class HomePage extends StatelessWidget {
                 colorScheme,
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     const SearchBarWidget(),

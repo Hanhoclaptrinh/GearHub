@@ -73,6 +73,14 @@ class CartService extends ChangeNotifier {
     }
   }
 
+  void selectAll() {
+    final bool allSelected = _items.every((item) => item.isSelected);
+    for (var item in _items) {
+      item.isSelected = !allSelected;
+    }
+    notifyListeners();
+  }
+
   // tinh tong gia tri sp duoc chon
   double get subtotal => _items
       .where((item) => item.isSelected)

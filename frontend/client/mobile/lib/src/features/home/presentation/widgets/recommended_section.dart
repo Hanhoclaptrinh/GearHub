@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/src/shared/models/product.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 import 'package:mobile/src/shared/widgets/section_header.dart';
+import 'package:mobile/src/shared/widgets/trending_badge.dart';
 
 class RecommendedSection extends StatelessWidget {
   const RecommendedSection({super.key});
@@ -42,31 +42,28 @@ class RecommendedSection extends StatelessWidget {
       children: [
         const SectionHeader(title: 'Curated For You', actionText: 'See All'),
         const SizedBox(height: 20),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Column(
-            children: [
-              BentoHeroCard(product: _recommendedProducts[0]),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: BentoSquareCard(
-                      product: _recommendedProducts[1],
-                      isDark: false,
-                    ),
+        Column(
+          children: [
+            BentoHeroCard(product: _recommendedProducts[0]),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: BentoSquareCard(
+                    product: _recommendedProducts[1],
+                    isDark: false,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: BentoSquareCard(
-                      product: _recommendedProducts[2],
-                      isDark: true,
-                    ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: BentoSquareCard(
+                    product: _recommendedProducts[2],
+                    isDark: true,
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
       ],
     );
@@ -124,7 +121,7 @@ class _BentoHeroCardState extends State<BentoHeroCard> {
           clipBehavior: Clip.antiAlias,
           child: Stack(
             children: [
-              // typo
+              // typo background
               Positioned(
                 top: -20,
                 right: -10,
@@ -155,25 +152,7 @@ class _BentoHeroCardState extends State<BentoHeroCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        widget.product.tag?.toUpperCase() ?? 'MATCH',
-                        style: GoogleFonts.inter(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ),
+                    TrendingBadge(tag: widget.product.tag ?? 'MATCH'),
                     const Spacer(),
                     Text(
                       widget.product.name,
@@ -197,7 +176,7 @@ class _BentoHeroCardState extends State<BentoHeroCard> {
                     const SizedBox(height: 12),
                     Text(
                       '\$${widget.product.price.toInt()}',
-                      style: GoogleFonts.inter(
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
                         color: Colors.black,
@@ -214,7 +193,6 @@ class _BentoHeroCardState extends State<BentoHeroCard> {
   }
 }
 
-// child bento card
 class BentoSquareCard extends StatefulWidget {
   final Product product;
   final bool isDark;
@@ -279,7 +257,6 @@ class _BentoSquareCardState extends State<BentoSquareCard> {
           clipBehavior: Clip.antiAlias,
           child: Stack(
             children: [
-              // overflow img
               Positioned(
                 top: -10,
                 right: -20,
@@ -290,7 +267,6 @@ class _BentoSquareCardState extends State<BentoSquareCard> {
                   child: Image.asset(widget.product.image, fit: BoxFit.contain),
                 ),
               ),
-              // content
               Positioned(
                 bottom: 20,
                 left: 20,
@@ -300,7 +276,7 @@ class _BentoSquareCardState extends State<BentoSquareCard> {
                   children: [
                     Text(
                       widget.product.name,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                         color: textColor,
@@ -312,7 +288,7 @@ class _BentoSquareCardState extends State<BentoSquareCard> {
                     const SizedBox(height: 4),
                     Text(
                       widget.product.tagline,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 11,
                         color: subTextColor,
                         fontWeight: FontWeight.w500,
@@ -332,7 +308,7 @@ class _BentoSquareCardState extends State<BentoSquareCard> {
                       ),
                       child: Text(
                         '\$${widget.product.price.toInt()}',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w900,
                           color: widget.isDark ? Colors.black : Colors.white,
