@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'package:mobile/src/core/theme/app_theme.dart';
-import 'package:mobile/src/features/splash/presentation/pages/splash_page.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/src/core/di/injection.dart';
+import 'package:mobile/src/core/theme/app_theme.dart';
+import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
+import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
+import 'package:mobile/src/features/auth/presentation/pages/login_page.dart';
+import 'package:mobile/src/features/home/presentation/pages/main_screen.dart';
 
 void main() {
-  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  WidgetsFlutterBinding.ensureInitialized();
+
+  setupDependencies();
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -26,11 +31,25 @@ class GearHubApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'GearHub',
-      theme: AppTheme.theme(context),
-      home: const SplashPage(),
+    return BlocProvider(
+      create: (_) => getIt<AuthCubit>()..checkAuthStatus(),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'GearHub',
+        theme: AppTheme.theme(context),
+        home: BlocBuilder<AuthCubit, AuthState>(
+          buildWhen: (prev, curr) =>
+              curr is AuthAuthenticated ||
+              curr is AuthUnauthenticated ||
+              curr is AuthInitial,
+          builder: (context, state) {
+            if (state is AuthAuthenticated) {
+              return const MainScreen();
+            }
+            return const LoginPage();
+          },
+        ),
+      ),
     );
   }
 }

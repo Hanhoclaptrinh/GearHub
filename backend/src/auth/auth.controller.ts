@@ -62,6 +62,11 @@ export class AuthController {
     return this.authService.forgotPassword(email);
   }
 
+  @Post('verify-forgot-password')
+  async verifyForgotPassword(@Body() data: { email: string, otp: string }) {
+    return this.authService.verifyForgotPasswordOtp(data.email, data.otp);
+  }
+
   @Post('reset-password')
   @LogActivity(ActivityAction.USER_RESET_PASSWORD)
   async resetPassword(@Body() data: ResetPasswordDto) {
