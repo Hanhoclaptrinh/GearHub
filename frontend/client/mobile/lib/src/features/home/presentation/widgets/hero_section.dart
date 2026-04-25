@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mobile/src/core/di/injection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../state/home_cubit.dart';
 import '../state/home_state.dart';
@@ -17,7 +16,6 @@ class _HeroSectionState extends State<HeroSection> {
   late final PageController _pageController;
   // bien lang nghe su thay doi cua page
   final ValueNotifier<double> _pageOffset = ValueNotifier<double>(0.0);
-  late final HomeCubit _homeCubit;
 
   @override
   void initState() {
@@ -27,10 +25,8 @@ class _HeroSectionState extends State<HeroSection> {
       viewportFraction: 0.85, // moi card chiem 85% man hinh
       initialPage: initialPage,
     );
-    _pageOffset.value = initialPage
-        .toDouble(); // lang nghe su thay doi cua page -> dong bo voi indicator
-    _pageController.addListener(_updateOffset); // lang nghe khi swipe
-    _homeCubit = getIt<HomeCubit>()..fetchFeaturedProducts();
+    _pageOffset.value = initialPage.toDouble();
+    _pageController.addListener(_updateOffset);
   }
 
   void _updateOffset() {
@@ -46,74 +42,70 @@ class _HeroSectionState extends State<HeroSection> {
   void dispose() {
     _pageController.removeListener(_updateOffset);
     _pageController.dispose();
-    _homeCubit.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     const int kLoopRange = 10000; // fake loop range (init o 5000 -> inf swipe)
-    return BlocProvider.value(
-      value: _homeCubit,
-      child: BlocBuilder<HomeCubit, HomeState>(
-        builder: (context, state) {
-          if (state is HomeLoading || state is HomeInitial) {
-            return const SizedBox(
-              height: 500,
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
-
-          if (state is HomeError) {
-            return SizedBox(
-              height: 500,
-              child: Center(
-                child: Text('Error loading products: ${state.message}'),
-              ),
-            );
-          }
-
-          final products = (state as HomeLoaded).featuredProducts;
-          if (products.isEmpty) {
-            return const SizedBox.shrink();
-          }
-
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                height: 500,
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: kLoopRange,
-                  clipBehavior: Clip.none,
-                  onPageChanged: (_) => HapticFeedback.lightImpact(),
-                  itemBuilder: (context, index) {
-                    final int actualIndex = index % products.length;
-                    return ValueListenableBuilder<double>(
-                      valueListenable: _pageOffset,
-                      builder: (context, pageOffset, child) {
-                        // tinh khoang cach giua index hien tai va index cua page
-                        final double diff = index - pageOffset;
-                        return HeroCard(
-                          product: products[actualIndex],
-                          diff: diff,
-                          index: index,
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 30),
-              _HeroPageIndicator(
-                pageOffset: _pageOffset,
-                itemCount: products.length,
-              ),
-            ],
+    return BlocBuilder<HomeCubit, HomeState>(
+      builder: (context, state) {
+        if (state is HomeLoading || state is HomeInitial) {
+          return const SizedBox(
+            height: 500,
+            child: Center(child: CircularProgressIndicator()),
           );
-        },
-      ),
+        }
+
+        if (state is HomeError) {
+          return SizedBox(
+            height: 500,
+            child: Center(
+              child: Text('Error loading products: ${state.message}'),
+            ),
+          );
+        }
+
+        final products = (state as HomeLoaded).featuredProducts;
+        if (products.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: 500,
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: kLoopRange,
+                clipBehavior: Clip.none,
+                onPageChanged: (_) => HapticFeedback.lightImpact(),
+                itemBuilder: (context, index) {
+                  final int actualIndex = index % products.length;
+                  return ValueListenableBuilder<double>(
+                    valueListenable: _pageOffset,
+                    builder: (context, pageOffset, child) {
+                      // tinh khoang cach giua index hien tai va index cua page
+                      final double diff = index - pageOffset;
+                      return HeroCard(
+                        product: products[actualIndex],
+                        diff: diff,
+                        index: index,
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 30),
+            _HeroPageIndicator(
+              pageOffset: _pageOffset,
+              itemCount: products.length,
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -230,7 +230,7 @@ class HeroCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        'EXPLORE',
+        'Khám phá',
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
           color: Colors.black,
           fontWeight: FontWeight.w800,

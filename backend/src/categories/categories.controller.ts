@@ -19,6 +19,11 @@ export class CategoriesController {
         return this.categoriesService.getAllCategories();
     }
 
+    @Get('top')
+    async getTopCategories() {
+        return this.categoriesService.getTopCategories(4);
+    }
+
     @Get('tree')
     async getCategoryTree() {
         return this.categoriesService.getCategoryTree();

@@ -1,168 +1,193 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mobile/src/shared/widgets/section_header.dart';
+import '../state/home_cubit.dart';
+import '../state/home_state.dart';
+import '../../domain/entities/category_entity.dart';
 
 class TopCategoriesSection extends StatelessWidget {
   const TopCategoriesSection({super.key});
 
-  static const List<_TopCategory> _categories = [
-    _TopCategory(
-      title: 'KEYBOARDS',
-      subtitle: 'Mechanical & Custom',
-      image: 'assets/images/keyboard_hero.png',
-      gradient: [Color(0xFFE0E7FF), Color(0xFFC7D2FE)],
-    ),
-    _TopCategory(
-      title: 'AUDIO',
-      subtitle: 'Headphones & Speakers',
-      image: 'assets/images/hero2.png',
-      gradient: [Color(0xFFE2E8F0), Color(0xFFCBD5E1)],
-    ),
-    _TopCategory(
-      title: 'GAMING',
-      subtitle: 'PC & Console',
-      image: 'assets/images/hero3.png',
-      gradient: [Color(0xFFCCFBFE), Color(0xFF90E0EF)],
-    ),
-    _TopCategory(
-      title: 'WEARABLES',
-      subtitle: 'Watch & VR',
-      image: 'assets/images/hero4.png',
-      gradient: [Color(0xFFF5F3FF), Color(0xFFDDD6FE)],
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SectionHeader(
-          title: 'Top Categories',
-          actionText: 'See All',
-          onActionTap: () {
-            print('see all categories');
-          },
-        ),
-        const SizedBox(height: 20),
-        GridView.builder(
-          padding: EdgeInsets.zero,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 14,
-            mainAxisSpacing: 14,
-            childAspectRatio: 0.95,
-          ),
-          itemCount: _categories.length,
-          itemBuilder: (context, index) {
-            return _TopCategoryCard(category: _categories[index]);
-          },
-        ),
-      ],
+    return BlocBuilder<HomeCubit, HomeState>(
+      builder: (context, state) {
+        if (state is HomeLoaded) {
+          final categories = state.topCategories;
+          if (categories.isEmpty) return const SizedBox.shrink();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SectionHeader(
+                title: 'Danh mục nổi bật',
+                actionText: 'Tất cả',
+                onActionTap: () => print('Go to categories'),
+              ),
+              const SizedBox(height: 16),
+              // grid 2x2
+              GridView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: categories.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 1.1,
+                ),
+                itemBuilder: (context, index) {
+                  return _ModernCategoryCard(
+                    category: categories[index],
+                    index: index,
+                  );
+                },
+              ),
+            ],
+          );
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 }
 
-class _TopCategory {
-  final String title;
-  final String subtitle;
-  final String image;
-  final List<Color> gradient;
+class _ModernCategoryCard extends StatelessWidget {
+  final CategoryEntity category;
+  final int index;
 
-  const _TopCategory({
-    required this.title,
-    required this.subtitle,
-    required this.image,
-    required this.gradient,
-  });
-}
-
-class _TopCategoryCard extends StatelessWidget {
-  final _TopCategory category;
-
-  const _TopCategoryCard({required this.category});
+  const _ModernCategoryCard({required this.category, required this.index});
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final List<List<Color>> gradients = [
+      [const Color(0xFFF0F9FF), const Color(0xFFE0F2FE)],
+      [const Color(0xFFFDF2F8), const Color(0xFFFCE7F3)],
+      [const Color(0xFFF0FDF4), const Color(0xFFDCFCE7)],
+      [const Color(0xFFFFF7ED), const Color(0xFFFFEDD5)],
+    ];
+
+    final gradient = gradients[index % gradients.length];
 
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
-        print('product list page filtered by category');
+        HapticFeedback.mediumImpact();
+        print('Category: ${category.slug}');
       },
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(24),
           gradient: LinearGradient(
-            colors: category.gradient,
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
+            colors: gradient,
           ),
           boxShadow: [
             BoxShadow(
-              color: category.gradient.first.withValues(alpha: 0.3),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
+              color: gradient.last.withValues(alpha: 0.5),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
           children: [
+            // category img
             Positioned(
-              right: -10,
-              bottom: -10,
-              width: 120,
-              height: 120,
-              child: Opacity(
-                opacity: 0.6,
-                child: Image.asset(category.image, fit: BoxFit.contain),
+              right: -20,
+              bottom: -20,
+              child: Container(
+                width: 110,
+                height: 110,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.4),
+                  shape: BoxShape.circle,
+                ),
+                padding: const EdgeInsets.all(15),
+                child: Center(
+                  child: category.iconUrl != null
+                      ? (category.iconUrl!.toLowerCase().endsWith('.svg')
+                            ? SvgPicture.network(
+                                category.iconUrl!,
+                                fit: BoxFit.contain,
+                                placeholderBuilder: (_) => const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              )
+                            : CachedNetworkImage(
+                                imageUrl: category.iconUrl!,
+                                fit: BoxFit.contain,
+                                errorWidget: (_, __, ___) => const Icon(
+                                  Icons.category_outlined,
+                                  color: Colors.black26,
+                                  size: 40,
+                                ),
+                                placeholder: (_, __) => const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              ))
+                      : const Icon(
+                          Icons.category_outlined,
+                          color: Colors.black26,
+                          size: 40,
+                        ),
+                ),
               ),
             ),
+
+            // 2. Text Content
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // cate name
                   Text(
                     category.title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      color: colorScheme.onSurface,
-                      letterSpacing: 1.0,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF1E293B),
+                      letterSpacing: -0.2,
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    category.subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      'Explore',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF0F172A),
+                  // total sold
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Đã bán',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF1E293B).withValues(alpha: 0.5),
+                        ),
                       ),
-                    ),
+                      Text(
+                        '${category.totalSold}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF1E293B),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

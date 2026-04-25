@@ -154,4 +154,53 @@ export class CategoriesService {
 
         return this.prisma.category.delete({ where: { id } });
     }
+
+    async getTopCategories(limit = 4) {
+        // sum soldCount cua cac danh muc theo cateId
+        const grouped = await this.prisma.product.groupBy({
+            by: ['categoryId'],
+            where: {
+                isActive: true,
+                categoryId: { not: null }
+            },
+            _sum: { soldCount: true },
+            orderBy: {
+                _sum: { soldCount: 'desc' }
+            },
+            take: limit
+        });
+
+        if (grouped.length === 0) return [];
+
+        const categoryIds = grouped
+            .map(g => g.categoryId)
+            .filter((id): id is string => id !== null);
+
+        const categories = await this.prisma.category.findMany({
+            where: { id: { in: categoryIds } },
+            select: {
+                id: true,
+                name: true,
+                slug: true,
+                iconUrl: true,
+            },
+        });
+
+        const map = new Map(categories.map(c => [c.id, c]));
+
+        return grouped.map(g => {
+            if (!g.categoryId) return null;
+
+            const c = map.get(g.categoryId);
+            if (!c) return null;
+
+            return {
+                id: c.id,
+                name: c.name,
+                slug: c.slug,
+                iconUrl: c.iconUrl,
+                totalSold: g._sum.soldCount ?? 0,
+            };
+        }).filter(Boolean);
+    }
 }

@@ -1,13 +1,15 @@
-import 'package:flutter/material.dart';
-
 class CategoryEntity {
+  final String id;
   final String title;
-  final IconData icon;
   final String slug;
+  final String? iconUrl;
+  final int totalSold;
 
   const CategoryEntity({
+    required this.id,
     required this.title,
-    required this.icon,
     required this.slug,
+    this.iconUrl,
+    required this.totalSold,
   });
 }

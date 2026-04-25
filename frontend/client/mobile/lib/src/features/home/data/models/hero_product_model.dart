@@ -12,7 +12,7 @@ class HeroProductModel extends HeroProductEntity {
     super.imageOffset,
   });
 
-  factory HeroProductModel.fromJson(Map<String, dynamic> json, List<Color> gradient) {
+  factory HeroProductModel.fromJson(Map<String, dynamic> json, {List<Color>? gradient}) {
     final String description = json['description'] ?? '';
     final String? apiTagline = json['tagline'];
 
@@ -24,7 +24,19 @@ class HeroProductModel extends HeroProductEntity {
           : _extractFirstSentence(description),
       image: json['thumbnailUrl'] ?? '',
       description: description,
-      gradient: gradient,
+      gradient: gradient ?? [const Color(0xFFE2E8F0), const Color(0xFFCBD5E1)],
+    );
+  }
+
+  HeroProductModel copyWith({List<Color>? gradient}) {
+    return HeroProductModel(
+      id: id,
+      name: name,
+      tagline: tagline,
+      image: image,
+      description: description,
+      gradient: gradient ?? this.gradient,
+      imageOffset: imageOffset,
     );
   }
 

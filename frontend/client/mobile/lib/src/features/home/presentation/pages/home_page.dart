@@ -8,6 +8,9 @@ import '../widgets/new_arrivals_section.dart';
 import '../widgets/trending_section.dart';
 import '../widgets/recommended_section.dart';
 import '../widgets/top_brands_section.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/src/core/di/injection.dart';
+import '../state/home_cubit.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -19,43 +22,46 @@ class HomePage extends StatelessWidget {
     const double collapsedHeight = kToolbarHeight;
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              _buildSliverAppBar(
-                context,
-                statusBarHeight,
-                expandedHeight,
-                collapsedHeight,
-                colorScheme,
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    const SearchBarWidget(),
-                    const SizedBox(height: 24),
-                    const HeroSection(),
-                    const SizedBox(height: 32),
-                    const TopCategoriesSection(),
-                    const SizedBox(height: 32),
-                    const NewArrivalsSection(),
-                    const SizedBox(height: 32),
-                    const TopBrandsSection(),
-                    const SizedBox(height: 32),
-                    const TrendingSection(),
-                    const SizedBox(height: 32),
-                    const RecommendedSection(),
-                    const SizedBox(height: 32),
-                  ]),
+    return BlocProvider(
+      create: (context) => getIt<HomeCubit>()..loadHomeData(),
+      child: Scaffold(
+        body: Stack(
+          children: [
+            CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                _buildSliverAppBar(
+                  context,
+                  statusBarHeight,
+                  expandedHeight,
+                  collapsedHeight,
+                  colorScheme,
                 ),
-              ),
-            ],
-          ),
-        ],
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      const SearchBarWidget(),
+                      const SizedBox(height: 24),
+                      const HeroSection(),
+                      const SizedBox(height: 32),
+                      const TopCategoriesSection(),
+                      const SizedBox(height: 32),
+                      const NewArrivalsSection(),
+                      const SizedBox(height: 32),
+                      const TopBrandsSection(),
+                      const SizedBox(height: 32),
+                      const TrendingSection(),
+                      const SizedBox(height: 32),
+                      const RecommendedSection(),
+                      const SizedBox(height: 32),
+                    ]),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
