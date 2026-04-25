@@ -38,6 +38,7 @@ const variantSchema = z.object({
 
 const productSchema = z.object({
   name: z.string().min(3, 'Tên sản phẩm ít nhất 3 ký tự'),
+  tagline: z.string().max(100, 'Tagline tối đa 100 ký tự').optional(),
   description: z.string().min(10, 'Mô tả ít nhất 10 ký tự'),
   categoryId: z.string().min(1, 'Vui lòng chọn danh mục'),
   brandId: z.string().min(1, 'Vui lòng chọn thương hiệu'),
@@ -154,6 +155,7 @@ export const ProductPage: React.FC = () => {
     resolver: zodResolver(productSchema) as any,
     defaultValues: {
       name: '',
+      tagline: '',
       description: '',
       categoryId: '',
       brandId: '',
@@ -170,6 +172,7 @@ export const ProductPage: React.FC = () => {
     if (editProduct) {
       reset({
         name: editProduct.name,
+        tagline: editProduct.tagline || '',
         description: editProduct.description,
         categoryId: editProduct.categoryId,
         brandId: editProduct.brandId,
@@ -235,6 +238,7 @@ export const ProductPage: React.FC = () => {
 
     const formData = new FormData();
     formData.append('name', values.name);
+    if (values.tagline) formData.append('tagline', values.tagline);
     formData.append('description', values.description);
     formData.append('categoryId', values.categoryId);
     formData.append('brandId', values.brandId);
@@ -278,6 +282,14 @@ export const ProductPage: React.FC = () => {
             </CardHeader>
             <CardContent className="px-10 pb-10 space-y-6">
               <Input label="Tên sản phẩm" placeholder="Samsung Galaxy S24 Ultra..." {...register('name')} error={errors.name?.message} />
+              
+              <Input 
+                label="Tagline (Dòng giới thiệu ngắn)" 
+                placeholder="Sức mạnh đỉnh cao, thiết kế sang trọng..." 
+                {...register('tagline')} 
+                error={errors.tagline?.message} 
+                maxLength={100}
+              />
               
               <div className="space-y-1.5">
                 <label className="text-sm font-bold text-slate-700 ml-1 flex items-center gap-2">

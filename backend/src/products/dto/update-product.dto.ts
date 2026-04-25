@@ -9,6 +9,10 @@ export class UpdateProductDto {
     @IsOptional()
     description?: string;
 
+    @IsString()
+    @IsOptional()
+    tagline?: string;
+
     @IsNumberString({}, { message: 'Giá phải là một dãy số' })
     @IsOptional()
     price?: string;

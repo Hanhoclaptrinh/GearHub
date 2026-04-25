@@ -97,6 +97,7 @@ model Product {
   metadata     Json?
   description  String?  @db.Text
   thumbnailUrl String?  @map("thumbnail_url") @db.VarChar(255)
+  tagline      String?  @db.VarChar(150)
   isFeatured   Boolean  @default(false)
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at")

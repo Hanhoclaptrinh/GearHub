@@ -5,9 +5,13 @@ export class CreateProductDto {
     @IsNotEmpty({ message: 'Tên sản phẩm không được để trống' })
     name: string;
 
-    @IsString()
     @IsOptional()
     description?: string;
+
+    @IsString()
+    @IsOptional()
+    tagline?: string;
+
 
     @IsString()
     @IsOptional()

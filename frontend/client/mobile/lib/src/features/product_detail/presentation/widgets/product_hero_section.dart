@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/shared/models/product.dart';
 
@@ -158,10 +159,23 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                             tag: index == widget.selectedColorIndex
                                 ? 'product_${widget.product.id}'
                                 : 'product_${widget.product.id}_$index',
-                            child: Image.asset(
-                              widget.product.image,
-                              fit: BoxFit.contain,
-                            ),
+                            child: widget.product.image.startsWith('http')
+                                ? CachedNetworkImage(
+                                    imageUrl: widget.product.image,
+                                    fit: BoxFit.contain,
+                                    placeholder: (context, url) => const Center(
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                    errorWidget: (context, url, error) => const Icon(
+                                      Icons.broken_image_outlined,
+                                      size: 40,
+                                      color: Colors.black12,
+                                    ),
+                                  )
+                                : Image.asset(
+                                    widget.product.image,
+                                    fit: BoxFit.contain,
+                                  ),
                           ),
                         );
                       },

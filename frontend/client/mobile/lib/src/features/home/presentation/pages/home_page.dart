@@ -69,13 +69,9 @@ class HomePage extends StatelessWidget {
   ) {
     return SliverAppBar(
       pinned: true,
-      stretch: true,
-      expandedHeight: expandedHeight,
-      collapsedHeight: collapsedHeight,
-      toolbarHeight: collapsedHeight,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
       scrolledUnderElevation: 0,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       automaticallyImplyLeading: false,
       flexibleSpace: ClipRect(
         child: BackdropFilter(
@@ -117,7 +113,7 @@ class HomePage extends StatelessWidget {
                                 style: TextStyle(
                                   color: colorScheme.onSurface,
                                   fontWeight: FontWeight.w900,
-                                  fontSize: 22,
+                                  fontSize: 24,
                                   letterSpacing: -1.0,
                                 ),
                               ),

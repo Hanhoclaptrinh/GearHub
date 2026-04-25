@@ -3,7 +3,7 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import slugify from 'slugify';
-import { AssetType, OrderStatus } from '@prisma/client';
+import { AssetType, Prisma } from '@prisma/client';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { UpdateVariantDto } from './dto/update-variant.dto';
@@ -52,98 +52,111 @@ export class ProductsService {
         }
 
         // mo transaction cho database operations
-        return await this.prisma.$transaction(async (tx) => {
-            // parent prod
-            const product = await tx.product.create({
-                data: {
-                    name: data.name,
-                    slug: slug,
-                    description: data.description,
-                    categoryId: data.categoryId,
-                    brandId: data.brandId,
-                    metadata: parsedMetadata,
-                    thumbnailUrl: data.thumbnailUrl || null,
-                }
-            });
+        try {
+            return await this.prisma.$transaction(async (tx) => {
+                // parent prod
+                const product = await tx.product.create({
+                    data: {
+                        name: data.name,
+                        slug: slug,
+                        description: data.description,
+                        categoryId: data.categoryId,
+                        brandId: data.brandId,
+                        metadata: parsedMetadata,
+                        thumbnailUrl: data.thumbnailUrl || null,
+                        tagline: data.tagline || null,
+                    }
+                });
 
-            // handle variants
-            if (data.variants) {
-                const variantList = JSON.parse(data.variants);
-                for (const v of variantList) {
+                // handle variants
+                if (data.variants) {
+                    const variantList = JSON.parse(data.variants);
+                    for (const v of variantList) {
+                        await tx.productVariant.create({
+                            data: {
+                                productId: product.id,
+                                sku: v.sku,
+                                name: `${data.name} - ${v.sku}`,
+                                price: parseFloat(v.price),
+                                stock: parseInt(v.stock || '0'),
+                                attributes: v.attributes || {}
+                            }
+                        });
+                    }
+                } else {
+                    // fallback
                     await tx.productVariant.create({
                         data: {
                             productId: product.id,
-                            sku: v.sku,
-                            name: `${data.name} - ${v.sku}`,
-                            price: parseFloat(v.price),
-                            stock: parseInt(v.stock || '0'),
-                            attributes: v.attributes || {}
+                            sku: data.sku || `${slug}-default`,
+                            name: `${data.name} - Standard`,
+                            price: parseFloat(data.price || '0'),
+                            stock: parseInt(data.stock || '0'),
+                            attributes: data.attributes ? JSON.parse(data.attributes) : {}
                         }
                     });
                 }
-            } else {
-                // fallback
-                await tx.productVariant.create({
-                    data: {
-                        productId: product.id,
-                        sku: data.sku || `${slug}-default`,
-                        name: `${data.name} - Standard`,
-                        price: parseFloat(data.price || '0'),
-                        stock: parseInt(data.stock || '0'),
-                        attributes: data.attributes ? JSON.parse(data.attributes) : {}
+
+                // handle assets
+                let finalThumbnailUrl = product.thumbnailUrl;
+
+                if (uploadedAssets.length > 0) {
+                    const assets = await Promise.all(
+                        uploadedAssets.map((asset) =>
+                            tx.productAsset.create({
+                                data: {
+                                    productId: product.id,
+                                    url: asset.url,
+                                    type: asset.type,
+                                    isPrimary: asset.isPrimary,
+                                },
+                            })
+                        )
+                    );
+
+                    // auto-select thumbnail neu khong set
+                    if (!finalThumbnailUrl) {
+                        const primaryAsset = assets.find(a => a.isPrimary);
+                        const firstImageAsset = assets.find(a => a.type === AssetType.IMAGE);
+
+                        if (primaryAsset) {
+                            finalThumbnailUrl = primaryAsset.url;
+                        } else if (firstImageAsset) {
+                            finalThumbnailUrl = firstImageAsset.url;
+                        }
+
+                        if (finalThumbnailUrl) {
+                            await tx.product.update({
+                                where: { id: product.id },
+                                data: { thumbnailUrl: finalThumbnailUrl },
+                            });
+                        }
                     }
+                }
+
+                return tx.product.findUnique({
+                    where: { id: product.id },
+                    include: {
+                        variants: true,
+                        assets: true,
+                        category: true,
+                        brand: true
+                    },
                 });
-            }
-
-            // handle assets
-            let finalThumbnailUrl = product.thumbnailUrl;
-
-            if (uploadedAssets.length > 0) {
-                const assets = await Promise.all(
-                    uploadedAssets.map((asset) =>
-                        tx.productAsset.create({
-                            data: {
-                                productId: product.id,
-                                url: asset.url,
-                                type: asset.type,
-                                isPrimary: asset.isPrimary,
-                            },
-                        })
-                    )
-                );
-
-                // auto-select thumbnail neu khong set
-                if (!finalThumbnailUrl) {
-                    const primaryAsset = assets.find(a => a.isPrimary);
-                    const firstImageAsset = assets.find(a => a.type === AssetType.IMAGE);
-
-                    if (primaryAsset) {
-                        finalThumbnailUrl = primaryAsset.url;
-                    } else if (firstImageAsset) {
-                        finalThumbnailUrl = firstImageAsset.url;
-                    }
-
-                    if (finalThumbnailUrl) {
-                        await tx.product.update({
-                            where: { id: product.id },
-                            data: { thumbnailUrl: finalThumbnailUrl },
-                        });
+            }, {
+                timeout: 20000 // 20s
+            });
+        } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError) {
+                if (error.code === 'P2002') {
+                    const target = (error.meta?.target as string[]) || [];
+                    if (target.includes('product_variants_sku_key') || target.includes('sku')) {
+                        throw new BadRequestException('Mã SKU đã tồn tại, vui lòng kiểm tra lại');
                     }
                 }
             }
-
-            return tx.product.findUnique({
-                where: { id: product.id },
-                include: {
-                    variants: true,
-                    assets: true,
-                    category: true,
-                    brand: true
-                },
-            });
-        }, {
-            timeout: 20000 // 20s
-        });
+            throw error;
+        }
     }
 
     async updateProduct(id: string, data: UpdateProductDto, files?: Express.Multer.File[]) {
@@ -180,6 +193,7 @@ export class ProductsService {
             if (data.categoryId) updateData.categoryId = data.categoryId;
             if (data.brandId) updateData.brandId = data.brandId;
             if (data.thumbnailUrl) updateData.thumbnailUrl = data.thumbnailUrl;
+            if (data.tagline) updateData.tagline = data.tagline;
 
             if (data.isFeatured !== undefined) updateData.isFeatured = data.isFeatured === 'true';
             if (data.isActive !== undefined) updateData.isActive = data.isActive === 'true';
@@ -621,7 +635,7 @@ export class ProductsService {
 
 
     async getFeaturedProducts() {
-        const limit = 8;
+        const limit = 5;
         return await this.prisma.product.findMany({
             where: {
                 isActive: true,
@@ -629,13 +643,15 @@ export class ProductsService {
                 variants: { some: {} }
             },
             take: Number(limit),
-            include: {
-                brand: { select: { name: true, logoUrl: true } },
-                variants: { orderBy: { price: 'asc' }, take: 1 },
-                assets: { where: { isPrimary: true }, take: 1 }
+            select: {
+                id: true,
+                name: true,
+                thumbnailUrl: true,
+                tagline: true,
+                description: true
             },
             orderBy: {
-                createdAt: 'desc' // dua prod moi set featured len truoc
+                createdAt: 'desc'
             }
         });
     }

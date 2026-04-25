@@ -231,7 +231,7 @@ class _CartPageState extends State<CartPage> {
       automaticallyImplyLeading: false,
       titleSpacing: 20,
       title: Text(
-        'Selection',
+        'My Cart',
         style: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.w900,

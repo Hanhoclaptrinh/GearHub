@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:mobile/src/features/home/domain/models/category_model.dart';
+import 'package:mobile/src/features/home/data/models/category_model.dart';
 import 'package:mobile/src/shared/widgets/section_header.dart';
 import 'category_card.dart';
 

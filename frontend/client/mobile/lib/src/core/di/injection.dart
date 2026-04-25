@@ -5,6 +5,10 @@ import 'package:mobile/src/features/auth/data/datasources/auth_remote_datasource
 import 'package:mobile/src/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:mobile/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
+import 'package:mobile/src/features/home/data/datasources/home_remote_datasource.dart';
+import 'package:mobile/src/features/home/data/repositories/home_repository_impl.dart';
+import 'package:mobile/src/features/home/domain/repositories/home_repository.dart';
+import 'package:mobile/src/features/home/presentation/state/home_cubit.dart';
 
 final getIt = GetIt.instance;
 
@@ -32,5 +36,18 @@ void setupDependencies() {
 
   getIt.registerFactory<AuthCubit>(
     () => AuthCubit(repository: getIt<AuthRepository>()),
+  );
+
+  // home
+  getIt.registerLazySingleton<HomeRemoteDatasource>(
+    () => HomeRemoteDatasource(dio: getIt<ApiClient>().dio),
+  );
+
+  getIt.registerLazySingleton<HomeRepository>(
+    () => HomeRepositoryImpl(remoteDatasource: getIt<HomeRemoteDatasource>()),
+  );
+
+  getIt.registerFactory<HomeCubit>(
+    () => HomeCubit(repository: getIt<HomeRepository>()),
   );
 }
