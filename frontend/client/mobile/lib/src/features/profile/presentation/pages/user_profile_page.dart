@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/features/auth/presentation/pages/login_page.dart';
+import 'package:mobile/src/features/auth/presentation/pages/register_page.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:mobile/src/features/profile/presentation/widgets/order_status_card.dart';
@@ -39,59 +41,73 @@ class _UserProfilePageState extends State<UserProfilePage> {
       },
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: SafeArea(
-                top: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 48, 16, 0),
-                  child: Column(
-                    children: [
-                      const ProfileHeader(),
-                      const SizedBox(height: 24),
-                      const ProfileStats(),
-                      const SizedBox(height: 24),
-                      const OrderStatusCard(),
-                      const SizedBox(height: 24),
-                      const UtilitiesGrid(),
-                      const SizedBox(height: 24),
-                      ProfileMenuCard(
-                        groupLabel: 'PREFERENCES',
-                        items: [
-                          ProfileMenuItem(
-                            title: 'Dark Mode',
-                            icon: LucideIcons.moon,
-                            isToggle: true,
-                            toggleValue: _isDarkMode,
-                            onToggle: (val) {
-                              setState(() => _isDarkMode = val);
-                              HapticFeedback.selectionClick();
-                            },
+        body: BlocBuilder<AuthCubit, AuthState>(
+          builder: (context, state) {
+            final user = state is AuthAuthenticated ? state.user : null;
+            final isLoggedIn = state is AuthAuthenticated;
+
+            return CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 48, 16, 0),
+                      child: Column(
+                        children: [
+                          ProfileHeader(user: user),
+                          if (isLoggedIn) ...[
+                            const SizedBox(height: 24),
+                            const ProfileStats(),
+                            const SizedBox(height: 24),
+                            const OrderStatusCard(),
+                            const SizedBox(height: 24),
+                            const UtilitiesGrid(),
+                          ] else ...[
+                            const SizedBox(height: 48),
+                            _buildLoginCTA(context),
+                          ],
+                          const SizedBox(height: 24),
+                          ProfileMenuCard(
+                            groupLabel: 'Tùy chỉnh',
+                            items: [
+                              ProfileMenuItem(
+                                title: 'Chế độ tối',
+                                icon: LucideIcons.moon,
+                                isToggle: true,
+                                toggleValue: _isDarkMode,
+                                onToggle: (val) {
+                                  setState(() => _isDarkMode = val);
+                                  HapticFeedback.selectionClick();
+                                },
+                              ),
+                              if (isLoggedIn) ...[
+                                ProfileMenuItem(
+                                  title: 'Danh sách địa chỉ',
+                                  icon: LucideIcons.mapPin,
+                                  onTap: () {},
+                                ),
+                                ProfileMenuItem(
+                                  title: 'Phương thức thanh toán',
+                                  icon: LucideIcons.creditCard,
+                                  onTap: () {},
+                                ),
+                              ],
+                            ],
                           ),
-                          ProfileMenuItem(
-                            title: 'Address Book',
-                            icon: LucideIcons.mapPin,
-                            onTap: () {},
-                          ),
-                          ProfileMenuItem(
-                            title: 'Payment Methods',
-                            icon: LucideIcons.creditCard,
-                            onTap: () {},
-                          ),
+                          const SizedBox(height: 32),
+                          if (isLoggedIn) _buildLogoutButton(),
+                          const SizedBox(height: 24),
+                          _buildFooter(),
                         ],
                       ),
-                      const SizedBox(height: 32),
-                      _buildLogoutButton(),
-                      const SizedBox(height: 24),
-                      _buildFooter(),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );
@@ -140,7 +156,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     ),
                   )
                 : const Text(
-                    'Sign Out',
+                    'Đăng xuất',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -154,6 +170,100 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
+  Widget _buildLoginCTA(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const Icon(LucideIcons.userRound, size: 48, color: Color(0xFFD1D5DB)),
+          const SizedBox(height: 16),
+          const Text(
+            'Mở khóa đầy đủ tính năng',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF0A0A0F),
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Đăng nhập để theo dõi đơn hàng, lưu danh sách yêu thích và quản lý tài khoản của bạn.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF6B7280),
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    // navigate to login
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const LoginPage()),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0A0A0F),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Đăng nhập',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const RegisterPage()),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF0A0A0F),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    side: const BorderSide(color: Color(0xFFE5E7EB)),
+                  ),
+                  child: const Text(
+                    'Đăng ký',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showLogoutConfirmation(BuildContext context) {
     showDialog(
       context: context,
@@ -162,18 +272,18 @@ class _UserProfilePageState extends State<UserProfilePage> {
         surfaceTintColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text(
-          'Sign Out',
+          'Đăng xuất',
           style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20),
         ),
         content: const Text(
-          'Are you sure you want to sign out of GearHub?',
+          'Xác nhận đăng xuất?',
           style: TextStyle(color: Color(0xFF6B7280), fontSize: 15),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text(
-              'Cancel',
+              'Hủy',
               style: TextStyle(
                 color: Color(0xFF6B7280),
                 fontWeight: FontWeight.w600,
@@ -186,7 +296,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               context.read<AuthCubit>().logout();
             },
             child: const Text(
-              'Sign Out',
+              'Đăng xuất',
               style: TextStyle(
                 color: Color(0xFFFF4D4D),
                 fontWeight: FontWeight.w800,

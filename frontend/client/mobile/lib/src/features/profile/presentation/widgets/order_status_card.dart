@@ -25,7 +25,7 @@ class OrderStatusCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'My Orders',
+                'Đơn hàng của tôi',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
@@ -36,7 +36,7 @@ class OrderStatusCard extends StatelessWidget {
               GestureDetector(
                 onTap: () {},
                 child: const Text(
-                  'View All',
+                  'Xem lịch sử mua hàng',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -50,10 +50,18 @@ class OrderStatusCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildStatusItem(LucideIcons.wallet, 'To Pay', badgeCount: '2'),
-              _buildStatusItem(LucideIcons.package, 'To Ship'),
-              _buildStatusItem(LucideIcons.truck, 'Receiving', isActive: true),
-              _buildStatusItem(LucideIcons.star, 'To Review'),
+              _buildStatusItem(
+                LucideIcons.wallet,
+                'Chờ xác nhận',
+                badgeCount: '2',
+              ),
+              _buildStatusItem(LucideIcons.package, 'Chờ lấy hàng'),
+              _buildStatusItem(
+                LucideIcons.truck,
+                'Chờ giao hàng',
+                isActive: true,
+              ),
+              _buildStatusItem(LucideIcons.star, 'Đánh giá'),
             ],
           ),
         ],

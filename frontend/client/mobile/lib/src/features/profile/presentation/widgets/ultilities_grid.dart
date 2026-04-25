@@ -12,7 +12,7 @@ class UtilitiesGrid extends StatelessWidget {
         const Padding(
           padding: EdgeInsets.only(left: 4, bottom: 12),
           child: Text(
-            'UTILITIES',
+            'Tiện ích',
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w800,
@@ -26,8 +26,8 @@ class UtilitiesGrid extends StatelessWidget {
             Expanded(
               child: _buildGridCard(
                 icon: LucideIcons.sparkles,
-                title: 'AI Assistant',
-                subtitle: 'Smart search',
+                title: 'Trợ lý AI',
+                subtitle: 'Tìm kiếm thông minh',
                 gradient: const [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
                 isPremium: true,
               ),
@@ -37,7 +37,7 @@ class UtilitiesGrid extends StatelessWidget {
               child: _buildGridCard(
                 icon: LucideIcons.ticket,
                 title: 'Vouchers',
-                subtitle: '3 available',
+                subtitle: '3 vouchers có sẵn',
                 gradient: const [Color(0xFF0A0A0F), Color(0xFF2A2A35)],
               ),
             ),
@@ -49,8 +49,8 @@ class UtilitiesGrid extends StatelessWidget {
             Expanded(
               child: _buildGridCard(
                 icon: LucideIcons.shieldCheck,
-                title: 'Warranty',
-                subtitle: 'My devices',
+                title: 'Bảo hành',
+                subtitle: 'Thiết bị của tôi',
                 bgColor: Colors.white,
                 textColor: const Color(0xFF0A0A0F),
               ),
@@ -59,8 +59,8 @@ class UtilitiesGrid extends StatelessWidget {
             Expanded(
               child: _buildGridCard(
                 icon: LucideIcons.headphones,
-                title: 'Support',
-                subtitle: '24/7 Care',
+                title: 'Hỗ trợ',
+                subtitle: 'Hỗ trợ 24/7',
                 bgColor: Colors.white,
                 textColor: const Color(0xFF0A0A0F),
               ),
@@ -126,7 +126,7 @@ class UtilitiesGrid extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Text(
-                    'NEW',
+                    'MỚI',
                     style: TextStyle(
                       fontSize: 8,
                       fontWeight: FontWeight.w900,

@@ -1,11 +1,14 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/features/home/presentation/pages/home_page.dart';
 import 'package:mobile/src/features/cart/presentation/pages/cart_page.dart';
 import 'package:mobile/src/features/cart/data/services/cart_service.dart';
 import 'package:mobile/src/features/profile/presentation/pages/user_profile_page.dart';
+import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
+import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -108,45 +111,54 @@ class MainScreenState extends State<MainScreen> {
       const UserProfilePage(),
     ];
 
-    return Scaffold(
-      extendBody: true,
-      body: NotificationListener<UserScrollNotification>(
-        onNotification: (notification) {
-          // scroll ngang thi khong an/hien bottom bar
-          if (notification.metrics.axis != Axis.vertical) return false;
-
-          // neu dang o gio hang va gio hang trong, khong cho phep an
-          if (_selectedIndex == 2 && CartService().items.isEmpty) {
-            if (!_isBottomBarVisible) {
-              setState(() => _isBottomBarVisible = true);
-            }
-            return false;
+    return BlocListener<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is AuthUnauthenticated) {
+          if (!_isBottomBarVisible) {
+            setState(() => _isBottomBarVisible = true);
           }
+        }
+      },
+      child: Scaffold(
+        extendBody: true,
+        body: NotificationListener<UserScrollNotification>(
+          onNotification: (notification) {
+            // scroll ngang thi khong an/hien bottom bar
+            if (notification.metrics.axis != Axis.vertical) return false;
 
-          if (notification.direction == ScrollDirection.reverse) {
-            if (_isBottomBarVisible) {
-              setState(() => _isBottomBarVisible = false);
+            // neu dang o gio hang va gio hang trong, khong cho phep an
+            if (_selectedIndex == 2 && CartService().items.isEmpty) {
+              if (!_isBottomBarVisible) {
+                setState(() => _isBottomBarVisible = true);
+              }
+              return false;
             }
-          } else if (notification.direction == ScrollDirection.forward) {
-            if (!_isBottomBarVisible) {
-              setState(() => _isBottomBarVisible = true);
+
+            if (notification.direction == ScrollDirection.reverse) {
+              if (_isBottomBarVisible) {
+                setState(() => _isBottomBarVisible = false);
+              }
+            } else if (notification.direction == ScrollDirection.forward) {
+              if (!_isBottomBarVisible) {
+                setState(() => _isBottomBarVisible = true);
+              }
             }
-          }
-          return true;
-        },
-        child: PageView(
-          controller: _pageController,
-          physics: const NeverScrollableScrollPhysics(),
-          children: pages,
+            return true;
+          },
+          child: PageView(
+            controller: _pageController,
+            physics: const NeverScrollableScrollPhysics(),
+            children: pages,
+          ),
         ),
-      ),
-      bottomNavigationBar: AnimatedSlide(
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOutCubic,
-        offset: _isBottomBarVisible ? Offset.zero : const Offset(0, 2),
-        child: CustomBottomNavBar(
-          selectedIndex: _selectedIndex,
-          onItemSelected: onItemTapped,
+        bottomNavigationBar: AnimatedSlide(
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOutCubic,
+          offset: _isBottomBarVisible ? Offset.zero : const Offset(0, 2),
+          child: CustomBottomNavBar(
+            selectedIndex: _selectedIndex,
+            onItemSelected: onItemTapped,
+          ),
         ),
       ),
     );

@@ -5,7 +5,6 @@ import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/core/theme/app_theme.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
-import 'package:mobile/src/features/auth/presentation/pages/login_page.dart';
 import 'package:mobile/src/features/home/presentation/pages/main_screen.dart';
 
 void main() {
@@ -43,10 +42,7 @@ class GearHubApp extends StatelessWidget {
               curr is AuthUnauthenticated ||
               curr is AuthInitial,
           builder: (context, state) {
-            if (state is AuthAuthenticated) {
-              return const MainScreen();
-            }
-            return const LoginPage();
+            return const MainScreen();
           },
         ),
       ),

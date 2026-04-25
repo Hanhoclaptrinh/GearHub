@@ -20,11 +20,11 @@ class ProfileStats extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _buildStatItem('12', 'Orders'),
+          _buildStatItem('2.4K', 'Điểm thưởng'),
           _buildStatDivider(),
-          _buildStatItem('2,480', 'Points'),
+          _buildStatItem('28', 'Yêu thích'),
           _buildStatDivider(),
-          _buildStatItem('8', 'Wishlist'),
+          _buildStatItem('5.6M', 'Đã chi'),
         ],
       ),
     );
@@ -59,10 +59,6 @@ class ProfileStats extends StatelessWidget {
   }
 
   Widget _buildStatDivider() {
-    return Container(
-      width: 1,
-      height: 36,
-      color: const Color(0xFFF0F0F0),
-    );
+    return Container(width: 1, height: 36, color: const Color(0xFFF0F0F0));
   }
 }
