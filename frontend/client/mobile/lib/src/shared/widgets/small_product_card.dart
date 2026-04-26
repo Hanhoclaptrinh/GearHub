@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/src/shared/models/product.dart';
+import 'package:mobile/src/shared/models/product_model.dart';
 
 class SmallProductCard extends StatelessWidget {
-  final Product product;
+  final ProductModel product;
   final VoidCallback onTap;
 
   const SmallProductCard({

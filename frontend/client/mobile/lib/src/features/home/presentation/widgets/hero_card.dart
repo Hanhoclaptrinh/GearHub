@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:mobile/src/shared/models/product.dart';
+import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 import 'package:flutter/services.dart';
 import '../../domain/entities/hero_product_entity.dart';
@@ -41,7 +41,7 @@ class HeroCard extends StatelessWidget {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => ProductDetailPage(
-                product: Product(
+                product: ProductModel(
                   id: product.id,
                   name: product.name,
                   tagline: product.tagline,

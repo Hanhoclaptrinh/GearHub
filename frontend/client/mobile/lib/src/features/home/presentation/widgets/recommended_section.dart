@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mobile/src/shared/models/product.dart';
+import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 import 'package:mobile/src/shared/widgets/section_header.dart';
 import 'package:mobile/src/shared/widgets/trending_badge.dart';
@@ -8,8 +8,8 @@ import 'package:mobile/src/shared/widgets/trending_badge.dart';
 class RecommendedSection extends StatelessWidget {
   const RecommendedSection({super.key});
 
-  static const List<Product> _recommendedProducts = [
-    Product(
+  static const List<ProductModel> _recommendedProducts = [
+    ProductModel(
       id: 'r1',
       name: 'Keychron K2 Pro',
       tagline: 'Wireless Mechanical',
@@ -17,7 +17,7 @@ class RecommendedSection extends StatelessWidget {
       image: 'assets/images/keyboard_hero.png',
       tag: 'MATCH',
     ),
-    Product(
+    ProductModel(
       id: 'r2',
       name: 'MX Master 3S',
       tagline: 'Performance Mouse',
@@ -25,7 +25,7 @@ class RecommendedSection extends StatelessWidget {
       image: 'assets/images/mouse_product.png',
       tag: 'AI PICK',
     ),
-    Product(
+    ProductModel(
       id: 'r3',
       name: 'WH-1000XM5',
       tagline: 'Noise Cancelling',
@@ -71,7 +71,7 @@ class RecommendedSection extends StatelessWidget {
 }
 
 class BentoHeroCard extends StatefulWidget {
-  final Product product;
+  final ProductModel product;
   const BentoHeroCard({super.key, required this.product});
 
   @override
@@ -194,7 +194,7 @@ class _BentoHeroCardState extends State<BentoHeroCard> {
 }
 
 class BentoSquareCard extends StatefulWidget {
-  final Product product;
+  final ProductModel product;
   final bool isDark;
 
   const BentoSquareCard({

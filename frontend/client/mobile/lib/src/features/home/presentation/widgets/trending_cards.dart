@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mobile/src/shared/models/product.dart';
+import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/widgets/add_circle_button.dart';
 import 'package:mobile/src/shared/widgets/trending_badge.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 
 // tall card
 class TrendingCardLarge extends StatefulWidget {
-  final Product product;
+  final ProductModel product;
   const TrendingCardLarge({super.key, required this.product});
 
   @override
@@ -136,7 +136,7 @@ class _TrendingCardLargeState extends State<TrendingCardLarge> {
 
 // small card
 class TrendingCardSmall extends StatefulWidget {
-  final Product product;
+  final ProductModel product;
   const TrendingCardSmall({super.key, required this.product});
 
   @override

@@ -1,0 +1,56 @@
+import 'package:flutter/material.dart';
+
+class ProductModel {
+  final String id;
+  final String name;
+  final String tagline;
+  final double price;
+  final String image;
+  final List<Color> bgGradient;
+  final String? tag;
+
+  const ProductModel({
+    required this.id,
+    required this.name,
+    required this.tagline,
+    required this.price,
+    required this.image,
+    this.bgGradient = const [Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
+    this.tag,
+  });
+
+  factory ProductModel.fromJson(Map<String, dynamic> json) {
+    double price = 0.0;
+    if (json['variants'] != null && (json['variants'] as List).isNotEmpty) {
+      price =
+          double.tryParse(json['variants'][0]['price']?.toString() ?? '0') ??
+          0.0;
+    } else if (json['price'] != null) {
+      price = double.tryParse(json['price']?.toString() ?? '0') ?? 0.0;
+    }
+
+    final String description = json['description'] ?? '';
+    final String? apiTagline = json['tagline'];
+
+    return ProductModel(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      tagline: (apiTagline != null && apiTagline.isNotEmpty)
+          ? apiTagline
+          : _extractFirstSentence(description),
+      price: price,
+      image: json['thumbnailUrl'] ?? '',
+      tag: 'MỚI',
+    );
+  }
+
+  static String _extractFirstSentence(String description) {
+    if (description.isEmpty) return '';
+    final String firstSentence = description.split(RegExp(r'[.!?]')).first;
+    final String trimmed = firstSentence.trim();
+    if (trimmed.length > 60) {
+      return '${trimmed.substring(0, 57).trim()}...';
+    }
+    return trimmed;
+  }
+}

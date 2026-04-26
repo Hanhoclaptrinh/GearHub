@@ -11,11 +11,11 @@ import 'package:ar_flutter_plugin_2/managers/ar_session_manager.dart';
 import 'package:ar_flutter_plugin_2/models/ar_node.dart';
 import 'package:ar_flutter_plugin_2/models/ar_hittest_result.dart';
 import 'package:vector_math/vector_math_64.dart' hide Colors;
-import 'package:mobile/src/shared/models/product.dart';
+import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class ProductARViewPage extends StatefulWidget {
-  final Product product;
+  final ProductModel product;
 
   const ProductARViewPage({super.key, required this.product});
 

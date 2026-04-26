@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mobile/src/shared/models/product.dart';
+import 'package:mobile/src/shared/models/product_model.dart';
 
 class ProductInfoSection extends StatefulWidget {
-  final Product product;
+  final ProductModel product;
 
   const ProductInfoSection({super.key, required this.product});
 

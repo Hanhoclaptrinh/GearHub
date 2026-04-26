@@ -32,9 +32,9 @@ class SectionHeader extends StatelessWidget {
             child: Text(
               actionText!,
               style: theme.textTheme.bodyMedium?.copyWith(
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: theme.colorScheme.primary,
+                color: Colors.grey.shade800,
               ),
             ),
           ),

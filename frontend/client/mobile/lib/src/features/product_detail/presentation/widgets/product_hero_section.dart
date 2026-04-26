@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:mobile/src/shared/models/product.dart';
+import 'package:mobile/src/shared/models/product_model.dart';
 
 class ProductHeroSection extends StatefulWidget {
-  final Product product;
+  final ProductModel product;
   final int selectedColorIndex;
   final List<Color> variantColors;
   final int quantity;
@@ -164,13 +164,16 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                                     imageUrl: widget.product.image,
                                     fit: BoxFit.contain,
                                     placeholder: (context, url) => const Center(
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
                                     ),
-                                    errorWidget: (context, url, error) => const Icon(
-                                      Icons.broken_image_outlined,
-                                      size: 40,
-                                      color: Colors.black12,
-                                    ),
+                                    errorWidget: (context, url, error) =>
+                                        const Icon(
+                                          Icons.broken_image_outlined,
+                                          size: 40,
+                                          color: Colors.black12,
+                                        ),
                                   )
                                 : Image.asset(
                                     widget.product.image,

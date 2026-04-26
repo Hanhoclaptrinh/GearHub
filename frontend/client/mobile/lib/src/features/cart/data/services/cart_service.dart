@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/src/features/cart/domain/models/cart_item.dart';
-import 'package:mobile/src/shared/models/product.dart';
+import 'package:mobile/src/shared/models/product_model.dart';
 
 class CartService extends ChangeNotifier {
   static final CartService _instance = CartService._internal();
@@ -9,7 +9,7 @@ class CartService extends ChangeNotifier {
 
   final List<CartItem> _items = [
     CartItem(
-      product: const Product(
+      product: const ProductModel(
         id: '1',
         name: 'Sony WH-1000XM5',
         tagline: 'Noise Canceling Headphones',
@@ -19,7 +19,7 @@ class CartService extends ChangeNotifier {
       quantity: 1,
     ),
     CartItem(
-      product: const Product(
+      product: const ProductModel(
         id: '2',
         name: 'Apple Airpods Max',
         tagline: 'Spatial Audio.',
@@ -35,7 +35,7 @@ class CartService extends ChangeNotifier {
   int get uniqueItemsCount => _items.length;
 
   // them sp vao cart
-  void addItem(Product product) {
+  void addItem(ProductModel product) {
     // kiem tra sp da co trong cart chua
     final index = _items.indexWhere((item) => item.product.id == product.id);
     // neu co roi thi tang so luong

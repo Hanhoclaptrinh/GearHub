@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:mobile/src/shared/models/product.dart';
+import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../widgets/product_hero_section.dart';
@@ -13,7 +13,7 @@ import '../widgets/product_recommendations_section.dart';
 import 'product_ar_view_page.dart';
 
 class ProductDetailPage extends StatefulWidget {
-  final Product product;
+  final ProductModel product;
 
   const ProductDetailPage({super.key, required this.product});
 

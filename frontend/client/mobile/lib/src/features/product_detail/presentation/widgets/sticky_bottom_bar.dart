@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'dart:async';
-import 'package:mobile/src/shared/models/product.dart';
+import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/features/onboarding/presentation/widgets/three_animated_arrow.dart';
 
 class StickyBottomBar extends StatefulWidget {
-  final Product product;
+  final ProductModel product;
 
   const StickyBottomBar({super.key, required this.product});
 

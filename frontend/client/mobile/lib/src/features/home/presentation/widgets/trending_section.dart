@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:mobile/src/shared/models/product.dart';
+import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/widgets/section_header.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 import 'trending_cards.dart';
@@ -11,8 +11,8 @@ import 'trending_cards.dart';
 class TrendingSection extends StatelessWidget {
   const TrendingSection({super.key});
 
-  static const List<Product> _products = [
-    Product(
+  static const List<ProductModel> _products = [
+    ProductModel(
       id: 't1',
       name: 'ROG Strix Helios II',
       tagline: '2.4k bought this week',
@@ -20,7 +20,7 @@ class TrendingSection extends StatelessWidget {
       image: 'assets/images/hero3.png',
       tag: 'HOT',
     ),
-    Product(
+    ProductModel(
       id: 't2',
       name: 'AirPods Max',
       tagline: 'Trending in Audio',
@@ -28,7 +28,7 @@ class TrendingSection extends StatelessWidget {
       image: 'assets/images/hero2.png',
       tag: 'TRENDING',
     ),
-    Product(
+    ProductModel(
       id: 't3',
       name: 'DualSense Edge',
       tagline: 'Most wished in Gear',
@@ -36,7 +36,7 @@ class TrendingSection extends StatelessWidget {
       image: 'assets/images/hero1.png',
       tag: 'NEW',
     ),
-    Product(
+    ProductModel(
       id: 't4',
       name: 'Logitech MX Master 3S',
       tagline: 'Most wished · Mice',
@@ -91,7 +91,7 @@ class TrendingSection extends StatelessWidget {
 
 // wide card - specific to this layout
 class _TrendingCardWide extends StatefulWidget {
-  final Product product;
+  final ProductModel product;
   const _TrendingCardWide({required this.product});
 
   @override

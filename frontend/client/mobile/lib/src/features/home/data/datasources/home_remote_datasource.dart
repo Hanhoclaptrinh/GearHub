@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../models/category_model.dart';
 import '../models/hero_product_model.dart';
+import '../../../../shared/models/product_model.dart';
 
 class HomeRemoteDatasource {
   final Dio dio;
@@ -12,7 +13,9 @@ class HomeRemoteDatasource {
       final response = await dio.get('/products/featured');
       final List data = response.data;
       return data
-          .map((json) => HeroProductModel.fromJson(json as Map<String, dynamic>))
+          .map(
+            (json) => HeroProductModel.fromJson(json as Map<String, dynamic>),
+          )
           .toList();
     } catch (e) {
       rethrow;
@@ -25,6 +28,21 @@ class HomeRemoteDatasource {
       final List data = response.data;
       return data
           .map((json) => CategoryModel.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<ProductModel>> getNewArrivalsProducts({int limit = 8}) async {
+    try {
+      final response = await dio.get(
+        '/products',
+        queryParameters: {'limit': limit},
+      );
+      final List data = response.data['data'];
+      return data
+          .map((json) => ProductModel.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
       rethrow;

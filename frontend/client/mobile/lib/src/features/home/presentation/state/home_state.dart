@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import '../../domain/entities/hero_product_entity.dart';
 import '../../domain/entities/category_entity.dart';
+import '../../../../shared/models/product_model.dart';
 
 abstract class HomeState extends Equatable {
   const HomeState();
@@ -16,14 +17,16 @@ class HomeLoading extends HomeState {}
 class HomeLoaded extends HomeState {
   final List<HeroProductEntity> featuredProducts;
   final List<CategoryEntity> topCategories;
+  final List<ProductModel> newArrivals;
 
   const HomeLoaded({
     required this.featuredProducts,
     required this.topCategories,
+    required this.newArrivals,
   });
 
   @override
-  List<Object> get props => [featuredProducts, topCategories];
+  List<Object> get props => [featuredProducts, topCategories, newArrivals];
 }
 
 class HomeError extends HomeState {

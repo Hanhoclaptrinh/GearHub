@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/features/cart/data/services/cart_service.dart';
-import 'package:mobile/src/shared/models/product.dart';
+import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/widgets/small_product_card.dart';
 import 'package:mobile/src/shared/styles/app_colors.dart';
 import 'package:mobile/src/features/home/presentation/pages/main_screen.dart';
@@ -22,22 +22,22 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
-  final List<Product> _recommendations = [
-    const Product(
+  final List<ProductModel> _recommendations = [
+    const ProductModel(
       id: 'r1',
       name: 'USB-C Cable',
       tagline: 'Fast Charging 2m',
       price: 29,
       image: 'assets/images/hero1.png',
     ),
-    const Product(
+    const ProductModel(
       id: 'r2',
       name: 'Leather Case',
       tagline: 'Premium Grade Leather',
       price: 59,
       image: 'assets/images/hero4.png',
     ),
-    const Product(
+    const ProductModel(
       id: 'r3',
       name: 'Screen Protector',
       tagline: 'Tempered Glass',
