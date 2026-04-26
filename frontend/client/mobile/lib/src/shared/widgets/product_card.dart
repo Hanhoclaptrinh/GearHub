@@ -226,18 +226,20 @@ class _ContentSection extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text(
-                  'SKU · ${product.id}'.toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _kMuted,
-                    fontSize: 9,
-                    letterSpacing: 1.0,
-                    fontWeight: FontWeight.w600,
+              Row(
+                children: [
+                  const Icon(LucideIcons.eye, size: 12, color: _kMuted),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${product.viewsCount} lượt xem',
+                    style: const TextStyle(
+                      color: _kMuted,
+                      fontSize: 9,
+                      letterSpacing: 0.5,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
+                ],
               ),
               Row(
                 children: [

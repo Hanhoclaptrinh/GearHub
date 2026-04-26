@@ -8,6 +8,7 @@ class ProductModel {
   final String image;
   final List<Color> bgGradient;
   final String? tag;
+  final int viewsCount;
 
   const ProductModel({
     required this.id,
@@ -17,7 +18,30 @@ class ProductModel {
     required this.image,
     this.bgGradient = const [Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
     this.tag,
+    this.viewsCount = 0,
   });
+
+  ProductModel copyWith({
+    String? id,
+    String? name,
+    String? tagline,
+    double? price,
+    String? image,
+    List<Color>? bgGradient,
+    String? tag,
+    int? viewsCount,
+  }) {
+    return ProductModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      tagline: tagline ?? this.tagline,
+      price: price ?? this.price,
+      image: image ?? this.image,
+      bgGradient: bgGradient ?? this.bgGradient,
+      tag: tag ?? this.tag,
+      viewsCount: viewsCount ?? this.viewsCount,
+    );
+  }
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     double price = 0.0;
@@ -41,6 +65,7 @@ class ProductModel {
       price: price,
       image: json['thumbnailUrl'] ?? '',
       tag: 'MỚI',
+      viewsCount: json['viewsCount'] as int? ?? 0,
     );
   }
 

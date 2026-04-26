@@ -48,4 +48,15 @@ class HomeRemoteDatasource {
       rethrow;
     }
   }
+
+  Future<void> incrementProductView(String id, String deviceId) async {
+    try {
+      await dio.post(
+        '/products/$id/view',
+        data: {'deviceId': deviceId},
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

@@ -50,4 +50,13 @@ class HomeRepositoryImpl implements HomeRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<void> incrementProductView(String id, String deviceId) async {
+    try {
+      await remoteDatasource.incrementProductView(id, deviceId);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

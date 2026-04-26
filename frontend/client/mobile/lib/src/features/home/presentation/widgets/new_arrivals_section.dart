@@ -45,6 +45,7 @@ class NewArrivalsSection extends StatelessWidget {
                     return ProductCard(
                       product: product,
                       onTap: () {
+                        context.read<HomeCubit>().incrementView(product.id);
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) =>

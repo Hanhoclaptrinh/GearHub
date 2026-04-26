@@ -7,10 +7,13 @@ import { AssetType, Prisma } from '@prisma/client';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { UpdateVariantDto } from './dto/update-variant.dto';
+import { RedisService } from 'src/redis/redis.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class ProductsService {
     constructor(
+        private redisService: RedisService,
         private prisma: PrismaService,
         private cloudinaryService: CloudinaryService
     ) { }
@@ -633,7 +636,6 @@ export class ProductsService {
         };
     }
 
-
     async getFeaturedProducts() {
         const limit = 5;
         return await this.prisma.product.findMany({
@@ -648,33 +650,13 @@ export class ProductsService {
                 name: true,
                 thumbnailUrl: true,
                 tagline: true,
-                description: true
+                description: true,
+                viewsCount: true
             },
             orderBy: {
                 createdAt: 'desc'
             }
         });
-    }
-
-    async getProductBySlug(slug: string) {
-        const product = await this.prisma.product.findFirst({
-            where: { slug, isActive: true },
-            include: {
-                assets: { orderBy: { isPrimary: 'desc' } },
-                brand: true,
-                category: true,
-                variants: { orderBy: { price: 'asc' } }
-            },
-        });
-
-        if (!product) throw new NotFoundException('Sản phẩm không tồn tại');
-
-        await this.prisma.product.update({
-            where: { id: product.id },
-            data: { viewsCount: { increment: 1 } }
-        });
-
-        return product;
     }
 
     async getRelatedProducts(id: string) {
@@ -750,7 +732,7 @@ export class ProductsService {
             }),
             // active variants (of active products)
             this.prisma.productVariant.findMany({
-                where: { 
+                where: {
                     isActive: true,
                     product: { isActive: true }
                 },
@@ -904,4 +886,35 @@ export class ProductsService {
         });
     }
 
+    // tang view san pham
+    async incrementView(id: string, deviceId: string = 'default') {
+        const cacheKey = `view_check:${id}:${deviceId}`;
+        const isViewed = await this.redisService.get(cacheKey);
+
+        if (!isViewed) {
+            // danh dau key tranh spam trong 30p
+            await this.redisService.set(cacheKey, '1', 'EX', 1800);
+            // tong view moi chua luu vao db
+            await this.redisService.incr(`product_views_buffer:${id}`);
+        }
+    }
+
+    // su dung cron auto cong don view sau moi 10 phutt
+    // tranh nghen co chai neu co nhieu user truy cap dong thoi vao 1 item
+    @Cron(CronExpression.EVERY_10_MINUTES)
+    async syncViewsToDb() {
+        const keys = await this.redisService.keys('product_views_buffer:*');
+        for (const key of keys) {
+            const productId = key.split(':')[1];
+            const viewsToAdd = await this.redisService.get(key);
+
+            if (viewsToAdd) {
+                await this.prisma.product.update({
+                    where: { id: productId },
+                    data: { viewsCount: { increment: parseInt(viewsToAdd) } }
+                });
+                await this.redisService.del(key); // reset buffer
+            }
+        }
+    }
 }

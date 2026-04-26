@@ -25,6 +25,18 @@ class HomeLoaded extends HomeState {
     required this.newArrivals,
   });
 
+  HomeLoaded copyWith({
+    List<HeroProductEntity>? featuredProducts,
+    List<CategoryEntity>? topCategories,
+    List<ProductModel>? newArrivals,
+  }) {
+    return HomeLoaded(
+      featuredProducts: featuredProducts ?? this.featuredProducts,
+      topCategories: topCategories ?? this.topCategories,
+      newArrivals: newArrivals ?? this.newArrivals,
+    );
+  }
+
   @override
   List<Object> get props => [featuredProducts, topCategories, newArrivals];
 }

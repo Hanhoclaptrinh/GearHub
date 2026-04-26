@@ -52,14 +52,18 @@ export class ProductsController {
         return this.productsService.getFeaturedProducts();
     }
 
-    @Get(':slug')
-    async getProductBySlug(@Param('slug') slug: string) {
-        return this.productsService.getProductBySlug(slug);
-    }
-
     @Get(':id/related')
     async getRelatedProducts(@Param('id') id: string) {
         return this.productsService.getRelatedProducts(id);
+    }
+
+    @Post(':id/view')
+    async incrementView(
+        @Param('id') id: string,
+        @Body('deviceId') deviceId?: string
+    ) {
+        await this.productsService.incrementView(id, deviceId);
+        return { message: 'View incremented' };
     }
 
     @Post()
