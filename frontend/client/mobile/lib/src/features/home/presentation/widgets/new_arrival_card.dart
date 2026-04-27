@@ -12,12 +12,12 @@ const _kMuted = Color(0xFF50506A);
 const _kAccent = Color(0xFF7EE8C0);
 const _kAccentBg = Color(0xFF0C1F1A);
 
-class ProductCard extends StatefulWidget {
+class NewArrivalsCard extends StatefulWidget {
   final ProductModel product;
   final VoidCallback? onTap;
   final VoidCallback? onAddToCart;
 
-  const ProductCard({
+  const NewArrivalsCard({
     super.key,
     required this.product,
     this.onTap,
@@ -25,10 +25,10 @@ class ProductCard extends StatefulWidget {
   });
 
   @override
-  State<ProductCard> createState() => _ProductCardState();
+  State<NewArrivalsCard> createState() => _NewArrivalsCardState();
 }
 
-class _ProductCardState extends State<ProductCard>
+class _NewArrivalsCardState extends State<NewArrivalsCard>
     with TickerProviderStateMixin {
   late final AnimationController _press;
   late final AnimationController _breathe;
@@ -220,7 +220,8 @@ class _ContentSection extends StatelessWidget {
               height: 1.2,
             ),
             maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            overflow: TextOverflow.fade,
+            softWrap: false,
           ),
           const SizedBox(height: 6),
           Row(

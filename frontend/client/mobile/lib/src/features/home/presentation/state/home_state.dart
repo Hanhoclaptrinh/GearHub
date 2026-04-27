@@ -20,12 +20,14 @@ class HomeLoaded extends HomeState {
   final List<CategoryEntity> topCategories;
   final List<BrandEntity> topBrands;
   final List<ProductModel> newArrivals;
+  final List<ProductModel> topRatedProducts;
 
   const HomeLoaded({
     required this.featuredProducts,
     required this.topCategories,
     required this.topBrands,
     required this.newArrivals,
+    required this.topRatedProducts,
   });
 
   HomeLoaded copyWith({
@@ -33,18 +35,25 @@ class HomeLoaded extends HomeState {
     List<CategoryEntity>? topCategories,
     List<BrandEntity>? topBrands,
     List<ProductModel>? newArrivals,
+    List<ProductModel>? topRatedProducts,
   }) {
     return HomeLoaded(
       featuredProducts: featuredProducts ?? this.featuredProducts,
       topCategories: topCategories ?? this.topCategories,
       topBrands: topBrands ?? this.topBrands,
       newArrivals: newArrivals ?? this.newArrivals,
+      topRatedProducts: topRatedProducts ?? this.topRatedProducts,
     );
   }
 
   @override
-  List<Object?> get props =>
-      [featuredProducts, topCategories, topBrands, newArrivals];
+  List<Object?> get props => [
+        featuredProducts,
+        topCategories,
+        topBrands,
+        newArrivals,
+        topRatedProducts,
+      ];
 }
 
 class HomeError extends HomeState {

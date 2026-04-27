@@ -57,6 +57,11 @@ export class ProductsController {
         return this.productsService.getRelatedProducts(id);
     }
 
+    @Get('top-rated')
+    async getTopRatedProducts() {
+        return this.productsService.getTopRatedProducts(5);
+    }
+
     @Post(':id/view')
     async incrementView(
         @Param('id') id: string,

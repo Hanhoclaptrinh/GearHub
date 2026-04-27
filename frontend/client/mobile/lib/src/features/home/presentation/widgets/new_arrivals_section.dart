@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/src/shared/widgets/section_header.dart';
-import 'package:mobile/src/shared/widgets/product_card.dart';
+import '../widgets/new_arrival_card.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../state/home_cubit.dart';
@@ -36,7 +36,7 @@ class NewArrivalsSection extends StatelessWidget {
                       const SizedBox(width: 16),
                   itemBuilder: (context, index) {
                     final product = state.newArrivals[index];
-                    return ProductCard(
+                    return NewArrivalsCard(
                       product: product,
                       onTap: () {
                         context.read<HomeCubit>().incrementView(product.id);

@@ -9,6 +9,8 @@ class ProductModel {
   final List<Color> bgGradient;
   final String? tag;
   final int viewsCount;
+  final double averageRating;
+  final int reviewCount;
 
   const ProductModel({
     required this.id,
@@ -19,6 +21,8 @@ class ProductModel {
     this.bgGradient = const [Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
     this.tag,
     this.viewsCount = 0,
+    this.averageRating = 0.0,
+    this.reviewCount = 0,
   });
 
   ProductModel copyWith({
@@ -30,6 +34,8 @@ class ProductModel {
     List<Color>? bgGradient,
     String? tag,
     int? viewsCount,
+    double? averageRating,
+    int? reviewCount,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -40,6 +46,8 @@ class ProductModel {
       bgGradient: bgGradient ?? this.bgGradient,
       tag: tag ?? this.tag,
       viewsCount: viewsCount ?? this.viewsCount,
+      averageRating: averageRating ?? this.averageRating,
+      reviewCount: reviewCount ?? this.reviewCount,
     );
   }
 
@@ -66,6 +74,8 @@ class ProductModel {
       image: json['thumbnailUrl'] ?? '',
       tag: 'MỚI',
       viewsCount: json['viewsCount'] as int? ?? 0,
+      averageRating: double.tryParse(json['averageRating']?.toString() ?? '0.0') ?? 0.0,
+      reviewCount: json['reviewCount'] as int? ?? 0,
     );
   }
 

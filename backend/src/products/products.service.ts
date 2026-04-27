@@ -642,7 +642,12 @@ export class ProductsService {
             where: {
                 isActive: true,
                 isFeatured: true,
-                variants: { some: {} }
+                variants: {
+                    some: {
+                        isActive: true,
+                        stock: { gt: 0 }
+                    }
+                }
             },
             take: Number(limit),
             select: {
@@ -689,6 +694,60 @@ export class ProductsService {
                 }
             }
         });
+    }
+
+    // lay nhung sp duoc danh gia cao
+    // fallback khi chua co review -> lay sp theo sold cnt
+    // debug -> lay sp vua duoc tao
+    async getTopRatedProducts(limit: number = 5) {
+        const productSelect = {
+            id: true,
+            name: true,
+            slug: true,
+            thumbnailUrl: true,
+            tagline: true,
+            averageRating: true,
+            reviewCount: true,
+            soldCount: true,
+            brand: { select: { name: true } },
+            variants: {
+                where: { isActive: true, stock: { gt: 0 } },
+                orderBy: { price: 'asc' },
+                take: 1,
+                select: { price: true }
+            }
+        } satisfies Prisma.ProductSelect;
+
+        // layer 1: lay sp theo top rating & review cnt
+        let products = await this.prisma.product.findMany({
+            where: {
+                isActive: true,
+                averageRating: { gte: 4.5 },
+                reviewCount: { gt: 10 },
+                variants: { some: { stock: { gt: 0 }, isActive: true } }
+            },
+            select: productSelect,
+            orderBy: [{ averageRating: 'desc' }, { reviewCount: 'desc' }],
+            take: limit
+        });
+
+        // layer 2 & 3
+        if (products.length === 0) {
+            products = await this.prisma.product.findMany({
+                where: {
+                    isActive: true,
+                    variants: { some: { stock: { gt: 0 }, isActive: true } }
+                },
+                select: productSelect,
+                orderBy: [
+                    { soldCount: 'desc' }, // l2
+                    { createdAt: 'desc' } // l3: debug
+                ],
+                take: limit
+            });
+        }
+
+        return products;
     }
 
     async addVariant(id: string, data: CreateVariantDto) {

@@ -8,5 +8,6 @@ abstract class HomeRepository {
   Future<List<CategoryEntity>> getTopCategories();
   Future<List<BrandEntity>> getTopBrands();
   Future<List<ProductModel>> getNewArrivalsProducts({int limit = 8});
+  Future<List<ProductModel>> getTopRatedProducts({int limit = 5});
   Future<void> incrementProductView(String id, String deviceId);
 }

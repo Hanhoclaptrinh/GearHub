@@ -62,6 +62,15 @@ class HomeRepositoryImpl implements HomeRepository {
   }
 
   @override
+  Future<List<ProductModel>> getTopRatedProducts({int limit = 5}) async {
+    try {
+      return await remoteDatasource.getTopRatedProducts(limit: limit);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
   Future<void> incrementProductView(String id, String deviceId) async {
     try {
       await remoteDatasource.incrementProductView(id, deviceId);

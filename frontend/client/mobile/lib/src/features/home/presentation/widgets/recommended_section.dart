@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 import 'package:mobile/src/shared/widgets/section_header.dart';
-import 'package:mobile/src/shared/widgets/trending_badge.dart';
+import 'package:mobile/src/shared/widgets/rating_badge.dart';
 
 class RecommendedSection extends StatelessWidget {
   const RecommendedSection({super.key});
@@ -152,7 +152,7 @@ class _BentoHeroCardState extends State<BentoHeroCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    TrendingBadge(tag: widget.product.tag ?? 'MATCH'),
+                    const RatingBadge(rating: 0),
                     const Spacer(),
                     Text(
                       widget.product.name,

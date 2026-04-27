@@ -5,7 +5,7 @@ import '../widgets/search_bar_widget.dart';
 import '../widgets/hero_section.dart';
 import '../widgets/top_categories_section.dart';
 import '../widgets/new_arrivals_section.dart';
-import '../widgets/trending_section.dart';
+import '../widgets/top_rated_section.dart';
 import '../widgets/recommended_section.dart';
 import '../widgets/top_brands_section.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,7 +19,8 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin {
+class _HomePageState extends State<HomePage>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
 
@@ -60,7 +61,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                       const SizedBox(height: 32),
                       const TopBrandsSection(),
                       const SizedBox(height: 32),
-                      const TrendingSection(),
+                      const TopRatedSection(),
                       const SizedBox(height: 32),
                       const RecommendedSection(),
                       const SizedBox(height: 32),

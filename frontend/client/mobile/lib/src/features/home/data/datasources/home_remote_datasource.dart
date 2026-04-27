@@ -62,6 +62,18 @@ class HomeRemoteDatasource {
     }
   }
 
+  Future<List<ProductModel>> getTopRatedProducts({int limit = 5}) async {
+    try {
+      final response = await dio.get('/products/top-rated');
+      final List data = response.data;
+      return data
+          .map((json) => ProductModel.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> incrementProductView(String id, String deviceId) async {
     try {
       await dio.post(
