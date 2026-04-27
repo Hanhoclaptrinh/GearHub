@@ -21,12 +21,9 @@ class TopBrandsSection extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: SectionHeader(
-                  title: 'Hệ sinh thái',
-                  actionText: 'Khám phá',
-                ),
+              const SectionHeader(
+                title: 'Hệ sinh thái',
+                actionText: 'Khám phá',
               ),
               const SizedBox(height: 16),
               SizedBox(

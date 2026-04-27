@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:mobile/src/core/utils/currency_format.dart';
+import 'package:mobile/src/core/utils/formatter_utils.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 
 const _kSurface = Color(0xFF13131A);
@@ -231,7 +231,7 @@ class _ContentSection extends StatelessWidget {
                   const Icon(LucideIcons.eye, size: 12, color: _kMuted),
                   const SizedBox(width: 4),
                   Text(
-                    '${product.viewsCount} lượt xem',
+                    '${formatCompactNumber(product.viewsCount)} lượt xem',
                     style: const TextStyle(
                       color: _kMuted,
                       fontSize: 9,
