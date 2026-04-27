@@ -1,3 +1,4 @@
+import 'package:mobile/src/features/home/domain/entities/brand_entity.dart';
 import 'package:mobile/src/features/home/domain/entities/category_entity.dart';
 import 'package:mobile/src/features/home/domain/entities/hero_product_entity.dart';
 import 'package:mobile/src/features/home/domain/repositories/home_repository.dart';
@@ -24,6 +25,7 @@ class HomeCubit extends Cubit<HomeState> {
         _repository.getFeaturedProducts(),
         _repository.getTopCategories(),
         _repository.getNewArrivalsProducts(limit: 8),
+        _repository.getTopBrands(),
       ]);
 
       emit(
@@ -31,6 +33,7 @@ class HomeCubit extends Cubit<HomeState> {
           featuredProducts: results[0] as List<HeroProductEntity>,
           topCategories: results[1] as List<CategoryEntity>,
           newArrivals: results[2] as List<ProductModel>,
+          topBrands: results[3] as List<BrandEntity>,
         ),
       );
     } catch (e) {

@@ -23,6 +23,11 @@ export class BrandsController {
     return this.brandsService.getAllBrands();
   }
 
+  @Get('top-brands')
+  async getTopBrands() {
+    return this.brandsService.getTopBrands(8);
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)

@@ -14,13 +14,7 @@ class NewArrivalsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionHeader(
-          title: 'Sản phẩm mới',
-          actionText: 'Tất cả',
-          onActionTap: () {
-            // chuyen huong toi trang new arrivals
-          },
-        ),
+        const SectionHeader(title: 'Sản phẩm mới'),
         const SizedBox(height: 20),
         BlocBuilder<HomeCubit, HomeState>(
           builder: (context, state) {

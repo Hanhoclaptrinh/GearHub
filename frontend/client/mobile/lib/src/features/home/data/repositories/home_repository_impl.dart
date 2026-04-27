@@ -3,6 +3,7 @@ import '../datasources/home_remote_datasource.dart';
 import '../../domain/repositories/home_repository.dart';
 import '../../domain/entities/hero_product_entity.dart';
 import '../../domain/entities/category_entity.dart';
+import '../../domain/entities/brand_entity.dart';
 import '../../../../shared/models/product_model.dart';
 
 class HomeRepositoryImpl implements HomeRepository {
@@ -37,6 +38,15 @@ class HomeRepositoryImpl implements HomeRepository {
   Future<List<CategoryEntity>> getTopCategories() async {
     try {
       return await remoteDatasource.getTopCategories();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<BrandEntity>> getTopBrands() async {
+    try {
+      return await remoteDatasource.getTopBrands();
     } catch (e) {
       rethrow;
     }

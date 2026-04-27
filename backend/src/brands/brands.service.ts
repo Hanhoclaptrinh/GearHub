@@ -4,6 +4,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import slugify from 'slugify';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class BrandsService {
@@ -49,6 +50,60 @@ export class BrandsService {
       },
       orderBy: { name: 'asc' }
     });
+  }
+
+  async getTopBrands(limit: number = 8) {
+    return this.prisma.brand.findMany({
+      where: {
+        isActive: true,
+      },
+      orderBy: [
+        { isFeatured: 'desc' },
+        { score: 'desc' }
+      ],
+      take: limit,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        logoUrl: true
+      }
+    });
+  }
+
+  @Cron(CronExpression.EVERY_6_HOURS) // auto chay job moi 6 tieng
+  async updateBrandScores() {
+    // lay tat ca brand va data thong ke tu prod
+    const brands = await this.prisma.brand.findMany({
+      include: {
+        products: {
+          select: {
+            soldCount: true,
+            viewsCount: true,
+            averageRating: true
+          }
+        }
+      }
+    });
+
+    for (const b of brands) {
+      // chi so tong hop
+      const tSold = b.products.reduce((s, p) => s += p.soldCount, 0); // tong sp ban duoc theo brand
+      const tViews = b.products.reduce((s, p) => s += p.viewsCount, 0); // tong luot xem sp theo brand
+      const aRating = b.products.length > 0 ?
+        b.products.reduce((s, p) => s += p.averageRating, 0) / b.products.length :
+        0; // trung binh diem danh gia sp theo brand
+
+      const sc = (tSold * 5) + (aRating * 10) + (tViews * 0.1);
+
+      await this.prisma.brand.update({
+        where: { id: b.id },
+        data: {
+          score: sc,
+          lastScoredAt: new Date()
+        }
+      });
+    }
   }
 
   async updateBrand(id: string, data: UpdateBrandDto, file?: Express.Multer.File) {

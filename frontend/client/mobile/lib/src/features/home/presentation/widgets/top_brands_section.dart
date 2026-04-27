@@ -1,119 +1,150 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:mobile/src/features/home/domain/entities/brand_entity.dart';
 import 'package:mobile/src/shared/widgets/section_header.dart';
+import '../state/home_cubit.dart';
+import '../state/home_state.dart';
 
 class TopBrandsSection extends StatelessWidget {
   const TopBrandsSection({super.key});
 
-  static const List<_Brand> _brands = [
-    _Brand(name: 'Apple', letterColor: Color(0xFF1D1D1F)),
-    _Brand(name: 'Razer', letterColor: Color(0xFF44D62C)),
-    _Brand(name: 'Sony', letterColor: Color(0xFF000000)),
-    _Brand(name: 'Logitech', letterColor: Color(0xFF00B8FC)),
-    _Brand(name: 'ASUS', letterColor: Color(0xFF1E1E1E)),
-    _Brand(name: 'Akko', letterColor: Color(0xFFFF6B35)),
-    _Brand(name: 'Corsair', letterColor: Color(0xFFE2B030)),
-    _Brand(name: 'HyperX', letterColor: Color(0xFFCC0000)),
-    _Brand(name: 'SteelSeries', letterColor: Color(0xFFFF5200)),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SectionHeader(title: 'Top Brands', actionText: 'See All'),
-        const SizedBox(height: 20),
-        SizedBox(
-          height: 90,
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            clipBehavior: Clip.none,
-            itemCount: _brands.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              return _BrandCard(brand: _brands[index]);
-            },
-          ),
-        ),
-      ],
+    return BlocBuilder<HomeCubit, HomeState>(
+      builder: (context, state) {
+        if (state is HomeLoaded) {
+          final brands = state.topBrands;
+          if (brands.isEmpty) return const SizedBox.shrink();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: SectionHeader(
+                  title: 'Hệ sinh thái',
+                  actionText: 'Khám phá',
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 110,
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  clipBehavior: Clip.none,
+                  itemCount: brands.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 20),
+                  itemBuilder: (context, index) =>
+                      _BrandCard(brand: brands[index]),
+                ),
+              ),
+            ],
+          );
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 }
 
-class _Brand {
-  final String name;
-  final Color letterColor;
+class _BrandCard extends StatefulWidget {
+  final BrandEntity brand;
+  const _BrandCard({required this.brand});
 
-  const _Brand({required this.name, required this.letterColor});
+  @override
+  State<_BrandCard> createState() => _BrandCardState();
 }
 
-class _BrandCard extends StatelessWidget {
-  final _Brand brand;
-
-  const _BrandCard({required this.brand});
+class _BrandCardState extends State<_BrandCard>
+    with SingleTickerProviderStateMixin {
+  bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
       onTap: () {
-        HapticFeedback.selectionClick();
-        // chuyen huong toi trang top brands
+        HapticFeedback.lightImpact();
+        // chuyen toi trang brand tuong ung
+        print('clicked ${widget.brand.name}');
       },
-      child: Container(
-        width: 100,
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-            width: 0.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+      child: AnimatedScale(
+        scale: _isPressed ? 0.92 : 1.0,
+        duration: const Duration(milliseconds: 100),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 72,
+              height: 72,
               decoration: BoxDecoration(
-                color: brand.letterColor.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(10),
+                color: colorScheme.surface,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                  width: 0.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
-              alignment: Alignment.center,
-              child: Text(
-                brand.name[0],
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: brand.letterColor,
+              child: ClipOval(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  color: Colors.white.withValues(alpha: 0.1),
+                  child: widget.brand.logoUrl.isEmpty
+                      ? _buildErrorLogo(colorScheme)
+                      : SvgPicture.network(
+                          widget.brand.logoUrl,
+                          fit: BoxFit.contain,
+                          placeholderBuilder: (_) => const Center(
+                            child: SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.5,
+                              ),
+                            ),
+                          ),
+                        ),
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
-              brand.name,
+              widget.brand.name.toUpperCase(),
               style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: colorScheme.onSurface,
-                letterSpacing: -0.2,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.2,
+                color: colorScheme.onSurface.withValues(alpha: 0.8),
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorLogo(ColorScheme colorScheme) {
+    return Center(
+      child: Text(
+        widget.brand.name.isNotEmpty ? widget.brand.name.substring(0, 1) : '?',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: colorScheme.primary,
+          fontSize: 24,
         ),
       ),
     );

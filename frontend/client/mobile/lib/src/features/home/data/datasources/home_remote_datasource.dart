@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../models/category_model.dart';
+import '../models/brand_model.dart';
 import '../models/hero_product_model.dart';
 import '../../../../shared/models/product_model.dart';
 
@@ -28,6 +29,18 @@ class HomeRemoteDatasource {
       final List data = response.data;
       return data
           .map((json) => CategoryModel.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<BrandModel>> getTopBrands() async {
+    try {
+      final response = await dio.get('/brands/top-brands');
+      final List data = response.data;
+      return data
+          .map((json) => BrandModel.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
       rethrow;
