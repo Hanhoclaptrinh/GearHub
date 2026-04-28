@@ -6,6 +6,15 @@ import 'package:mobile/src/features/product_detail/presentation/pages/product_de
 import 'package:flutter/services.dart';
 import '../../domain/entities/hero_product_entity.dart';
 
+const _kBg = Color(0xFF080810);
+const _kSurface = Color(0xFF0C0C18);
+const _kBorder = Color(0xFF1A1A2E);
+const _kLine = Color(0xFF20203A);
+const _kWhite = Color(0xFFF0F0F8);
+const _kMuted = Color(0xFF4A4A6A);
+const _kGold = Color(0xFFD4A843);
+const _kGoldDim = Color(0xFF1A1200);
+
 class HeroCard extends StatelessWidget {
   final HeroProductEntity product;
   final double diff;
@@ -20,34 +29,29 @@ class HeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double scale = (1 - (diff.abs() * 0.1)).clamp(0.8, 1.0);
-    // chi su dung hero tag goc cho item dang duoc hien thi chinh (center)
-    // de tranh loi trung lap tag trong PageView vo tan
+    final double scale = (1 - diff.abs() * 0.10).clamp(0.8, 1.0);
     final String heroTag = diff.abs() < 0.5
         ? 'product_${product.id}'
         : 'product_${product.id}_$index';
 
     return Transform(
-      // chuyen doi ma tran 3d cho hinh 2d
-      transform:
-          Matrix4.identity() // tao ma tran goc
-            ..setEntry(3, 2, 0.001) // tao do sau cho hinh anh (3d mode)
-            ..rotateY(diff * -0.2) // xoay hinh anh theo chieu doc
-            ..scale(scale),
+      transform: Matrix4.identity()
+        ..setEntry(3, 2, 0.001)
+        ..rotateY(diff * -0.2)
+        ..scale(scale),
       alignment: FractionalOffset.center,
       child: GestureDetector(
         onTap: () {
-          HapticFeedback.mediumImpact();
+          HapticFeedback.lightImpact();
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => ProductDetailPage(
+              builder: (_) => ProductDetailPage(
                 product: ProductModel(
                   id: product.id,
                   name: product.name,
                   tagline: product.tagline,
                   price: 0,
                   image: product.image,
-                  bgGradient: product.gradient,
                 ),
               ),
             ),
@@ -55,16 +59,32 @@ class HeroCard extends StatelessWidget {
         },
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(40)),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(36),
+            border: Border.all(color: _kBorder, width: 0.8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.50),
+                blurRadius: 40,
+                offset: const Offset(0, 20),
+              ),
+              if (diff.abs() < 0.3)
+                BoxShadow(
+                  color: _kGold.withValues(alpha: 0.06),
+                  blurRadius: 30,
+                  spreadRadius: 4,
+                ),
+            ],
+          ),
           clipBehavior: Clip.antiAlias,
           child: Stack(
             children: [
               // l1 - background
-              Positioned.fill(
-                child: Container(
+              const Positioned.fill(
+                child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: product.gradient,
+                      colors: [_kBg, _kSurface],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -72,17 +92,26 @@ class HeroCard extends StatelessWidget {
                 ),
               ),
 
-              // l2 - radial glow
-              // tao hieu ung sang toa tu tam ra ngoai
+              // l2 - dot grid texture
               Positioned.fill(
                 child: IgnorePointer(
-                  child: Container(
+                  child: Opacity(
+                    opacity: 0.35,
+                    child: CustomPaint(painter: GridPainter()),
+                  ),
+                ),
+              ),
+
+              // l3 - radial glow
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: RadialGradient(
-                        center: const Alignment(0.5, -0.3),
-                        radius: 1.2,
+                        center: const Alignment(0.4, -0.4),
+                        radius: 1.1,
                         colors: [
-                          Colors.white.withValues(alpha: 0.12),
+                          Colors.white.withValues(alpha: 0.07),
                           Colors.transparent,
                         ],
                       ),
@@ -91,39 +120,117 @@ class HeroCard extends StatelessWidget {
                 ),
               ),
 
-              // l3 - title
+              // l4 - corner marks
+              const Positioned(
+                top: 20,
+                left: 20,
+                child: _CornerMark(flip: false, flipV: false),
+              ),
+              const Positioned(
+                top: 20,
+                right: 20,
+                child: _CornerMark(flip: true, flipV: false),
+              ),
+              const Positioned(
+                bottom: 100,
+                left: 20,
+                child: _CornerMark(flip: false, flipV: true),
+              ),
+              const Positioned(
+                bottom: 100,
+                right: 20,
+                child: _CornerMark(flip: true, flipV: true),
+              ),
+
+              // l5 - title & accent line
               Positioned(
-                top: 40,
-                left: 30,
-                right: 30,
-                // parallax title
-                // khi di chuyen sang trai thi title di chuyen sang phai va nguoc lai
+                top: 44,
+                left: 36,
+                right: 36,
                 child: Transform.translate(
                   offset: Offset((diff * -60).clamp(-60.0, 60.0), 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Row(
+                        children: [
+                          const Text(
+                            'FEATURED',
+                            style: TextStyle(
+                              color: _kMuted,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.6,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Text(
+                            '//',
+                            style: TextStyle(
+                              color: Color(0xFF2A2A45),
+                              fontSize: 9,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            product.id.length > 8
+                                ? product.id
+                                      .substring(product.id.length - 8)
+                                      .toUpperCase()
+                                : product.id.toUpperCase(),
+                            style: const TextStyle(
+                              color: _kGold,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // prod name
                       Text(
                         product.name.toUpperCase(),
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: const Color(0xFF1E293B),
+                        style: const TextStyle(
+                          color: _kWhite,
+                          fontSize: 22,
                           fontWeight: FontWeight.w900,
-                          letterSpacing: 1.2,
+                          letterSpacing: 0.5,
+                          height: 1.1,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.fade,
                         softWrap: false,
                       ),
-                      const SizedBox(height: 6),
-                      Container(height: 3, width: 40, color: Colors.cyanAccent),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Container(
+                            height: 2,
+                            width: 32,
+                            decoration: BoxDecoration(
+                              color: _kGold,
+                              borderRadius: BorderRadius.circular(1),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            height: 2,
+                            width: 10,
+                            decoration: BoxDecoration(
+                              color: _kGold.withValues(alpha: 0.30),
+                              borderRadius: BorderRadius.circular(1),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
               ),
 
-              // l4 - image
+              // l6 - prod img
               Positioned.fill(
-                // khi di chuyen sang trai thi anh di chuyen sang trai va nguoc lai
                 child: Transform.translate(
                   offset: Offset(
                     diff * 120 + product.imageOffset.dx,
@@ -139,17 +246,12 @@ class HeroCard extends StatelessWidget {
                                 fit: BoxFit.contain,
                                 width: 240,
                                 filterQuality: FilterQuality.medium,
-                                placeholder: (context, url) => const Center(
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
+                                placeholder: (_, __) => const SizedBox.shrink(),
+                                errorWidget: (_, __, ___) => const Icon(
+                                  Icons.broken_image_outlined,
+                                  size: 40,
+                                  color: _kMuted,
                                 ),
-                                errorWidget: (context, url, error) =>
-                                    const Icon(
-                                      Icons.broken_image_outlined,
-                                      size: 40,
-                                      color: Colors.black12,
-                                    ),
                               )
                             : Image.asset(
                                 product.image,
@@ -162,26 +264,25 @@ class HeroCard extends StatelessWidget {
                 ),
               ),
 
-              // l5 - glass bottom
+              // l7 - bottom
               Positioned(
                 bottom: 0,
                 left: 0,
                 right: 0,
                 child: ClipRRect(
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                     child: Container(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 22),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.2),
+                        color: Colors.black.withValues(alpha: 0.28),
                         border: const Border(
-                          top: BorderSide(color: Colors.white10),
+                          top: BorderSide(color: _kBorder, width: 0.5),
                         ),
                       ),
                       child: Row(
                         children: [
                           Expanded(
-                            // di chuyen sang trai khi keo sang phai
                             child: Transform.translate(
                               offset: Offset(
                                 (diff * -20).clamp(-30.0, 30.0),
@@ -193,23 +294,35 @@ class HeroCard extends StatelessWidget {
                                 children: [
                                   Text(
                                     product.tagline,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          color: Colors.white70,
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                                    style: const TextStyle(
+                                      color: _kMuted,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: 0.1,
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.fade,
                                     softWrap: false,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: List.generate(
+                                      4,
+                                      (i) => Container(
+                                        width: i == 0 ? 16 : 6,
+                                        height: 1,
+                                        margin: const EdgeInsets.only(right: 3),
+                                        color: _kLine,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          _buildCTA(context),
+                          const SizedBox(width: 14),
+
+                          const _CTAButton(),
                         ],
                       ),
                     ),
@@ -222,25 +335,63 @@ class HeroCard extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildCTA(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        'Khám phá',
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: Colors.black,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
 }
 
+// CTA button
+class _CTAButton extends StatelessWidget {
+  const _CTAButton();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+    decoration: BoxDecoration(
+      color: _kGoldDim,
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: _kGold.withValues(alpha: 0.35), width: 0.5),
+    ),
+    child: const Text(
+      'KHÁM PHÁ',
+      style: TextStyle(
+        color: _kGold,
+        fontSize: 11,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 1.2,
+      ),
+    ),
+  );
+}
+
+// corner mark
+class _CornerMark extends StatelessWidget {
+  final bool flip, flipV;
+  const _CornerMark({required this.flip, required this.flipV});
+
+  @override
+  Widget build(BuildContext context) => Transform.scale(
+    scaleX: flip ? -1 : 1,
+    scaleY: flipV ? -1 : 1,
+    child: CustomPaint(size: const Size(14, 14), painter: _CornerPainter()),
+  );
+}
+
+class _CornerPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFF252538)
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.square;
+
+    canvas.drawLine(Offset(0, size.height), const Offset(0, 0), paint);
+    canvas.drawLine(const Offset(0, 0), Offset(size.width, 0), paint);
+  }
+
+  @override
+  bool shouldRepaint(_) => false;
+}
+
+// hieu ung di chuyen len xuong
 class FloatingAnimation extends StatefulWidget {
   final Widget child;
   const FloatingAnimation({super.key, required this.child});
@@ -269,38 +420,31 @@ class _FloatingAnimationState extends State<FloatingAnimation>
   }
 
   @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        // hieu ung san pham di chuyen len xuong
-        double translationY =
-            12 * Curves.easeInOut.transform(_controller.value);
-        return Transform.translate(
-          offset: Offset(0, translationY),
-          child: child,
-        );
-      },
-      child: widget.child,
-    );
-  }
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _controller,
+    builder: (_, child) => Transform.translate(
+      offset: Offset(0, 12 * Curves.easeInOut.transform(_controller.value)),
+      child: child,
+    ),
+    child: widget.child,
+  );
 }
 
 class GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 0.5;
+      ..color = const Color(0xFF1A1A2E)
+      ..strokeWidth = 0.4;
 
-    for (double i = 0; i <= size.width; i += 25) {
-      canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
+    for (double x = 0; x <= size.width; x += 28) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
-    for (double i = 0; i <= size.height; i += 25) {
-      canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
+    for (double y = 0; y <= size.height; y += 28) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant CustomPainter _) => false;
 }

@@ -23,7 +23,7 @@ class TopBrandsSection extends StatelessWidget {
             children: [
               const SectionHeader(
                 index: '03',
-                title: 'Hệ sinh thái',
+                title: 'HỆ SINH THÁI',
                 actionText: 'Khám phá',
               ),
               const SizedBox(height: 16),

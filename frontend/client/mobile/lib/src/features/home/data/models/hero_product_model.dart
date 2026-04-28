@@ -8,11 +8,10 @@ class HeroProductModel extends HeroProductEntity {
     required super.tagline,
     required super.image,
     required super.description,
-    required super.gradient,
     super.imageOffset,
   });
 
-  factory HeroProductModel.fromJson(Map<String, dynamic> json, {List<Color>? gradient}) {
+  factory HeroProductModel.fromJson(Map<String, dynamic> json) {
     final String description = json['description'] ?? '';
     final String? apiTagline = json['tagline'];
 
@@ -24,19 +23,17 @@ class HeroProductModel extends HeroProductEntity {
           : _extractFirstSentence(description),
       image: json['thumbnailUrl'] ?? '',
       description: description,
-      gradient: gradient ?? [const Color(0xFFE2E8F0), const Color(0xFFCBD5E1)],
     );
   }
 
-  HeroProductModel copyWith({List<Color>? gradient}) {
+  HeroProductModel copyWith({Offset? imageOffset}) {
     return HeroProductModel(
       id: id,
       name: name,
       tagline: tagline,
       image: image,
       description: description,
-      gradient: gradient ?? this.gradient,
-      imageOffset: imageOffset,
+      imageOffset: imageOffset ?? this.imageOffset,
     );
   }
 
@@ -44,7 +41,7 @@ class HeroProductModel extends HeroProductEntity {
     if (description.isEmpty) return '';
     final String firstSentence = description.split(RegExp(r'[.!?]')).first;
     final String trimmed = firstSentence.trim();
-    
+
     if (trimmed.length > 60) {
       return '${trimmed.substring(0, 57).trim()}...';
     }

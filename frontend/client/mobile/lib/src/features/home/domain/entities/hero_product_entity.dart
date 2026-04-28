@@ -6,7 +6,6 @@ class HeroProductEntity {
   final String tagline;
   final String image;
   final String description;
-  final List<Color> gradient;
   final Offset imageOffset;
 
   const HeroProductEntity({
@@ -15,7 +14,6 @@ class HeroProductEntity {
     required this.tagline,
     required this.image,
     required this.description,
-    required this.gradient,
     this.imageOffset = Offset.zero,
   });
 }

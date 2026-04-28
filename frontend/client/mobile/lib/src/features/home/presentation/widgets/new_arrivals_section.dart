@@ -14,7 +14,7 @@ class NewArrivalsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(index: '02', title: 'Sản phẩm mới'),
+        const SectionHeader(index: '02', title: 'SẢN PHẨM MỚI'),
         const SizedBox(height: 20),
         BlocBuilder<HomeCubit, HomeState>(
           builder: (context, state) {

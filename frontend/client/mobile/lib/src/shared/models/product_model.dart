@@ -1,17 +1,13 @@
-import 'package:flutter/material.dart';
-
 class ProductModel {
   final String id;
   final String name;
   final String tagline;
   final double price;
   final String image;
-  final List<Color> bgGradient;
   final String? tag;
   final int viewsCount;
   final double averageRating;
   final int reviewCount;
-
   final Map<String, dynamic>? vaultSpecs;
 
   const ProductModel({
@@ -20,7 +16,6 @@ class ProductModel {
     required this.tagline,
     required this.price,
     required this.image,
-    this.bgGradient = const [Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
     this.tag,
     this.viewsCount = 0,
     this.averageRating = 0.0,
@@ -34,7 +29,6 @@ class ProductModel {
     String? tagline,
     double? price,
     String? image,
-    List<Color>? bgGradient,
     String? tag,
     int? viewsCount,
     double? averageRating,
@@ -47,7 +41,6 @@ class ProductModel {
       tagline: tagline ?? this.tagline,
       price: price ?? this.price,
       image: image ?? this.image,
-      bgGradient: bgGradient ?? this.bgGradient,
       tag: tag ?? this.tag,
       viewsCount: viewsCount ?? this.viewsCount,
       averageRating: averageRating ?? this.averageRating,
@@ -79,7 +72,8 @@ class ProductModel {
       image: json['thumbnailUrl'] ?? '',
       tag: 'MỚI',
       viewsCount: json['viewsCount'] as int? ?? 0,
-      averageRating: double.tryParse(json['averageRating']?.toString() ?? '0.0') ?? 0.0,
+      averageRating:
+          double.tryParse(json['averageRating']?.toString() ?? '0.0') ?? 0.0,
       reviewCount: json['reviewCount'] as int? ?? 0,
       vaultSpecs: json['vaultSpecs'] as Map<String, dynamic>?,
     );

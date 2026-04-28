@@ -22,7 +22,7 @@ class TopRatedSection extends StatelessWidget {
           children: [
             const SectionHeader(
               index: '04',
-              title: 'Dẫn đầu',
+              title: 'DẪN ĐẦU',
               actionText: 'Xem tất cả',
             ),
             const SizedBox(height: 16),
