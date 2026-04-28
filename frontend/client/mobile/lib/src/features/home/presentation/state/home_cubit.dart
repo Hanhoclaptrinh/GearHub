@@ -27,6 +27,7 @@ class HomeCubit extends Cubit<HomeState> {
         _repository.getNewArrivalsProducts(limit: 8),
         _repository.getTopBrands(),
         _repository.getTopRatedProducts(limit: 5),
+        _repository.getVaultProducts(),
       ]);
 
       emit(
@@ -36,6 +37,7 @@ class HomeCubit extends Cubit<HomeState> {
           newArrivals: results[2] as List<ProductModel>,
           topBrands: results[3] as List<BrandEntity>,
           topRatedProducts: results[4] as List<ProductModel>,
+          vaultProducts: results[5] as List<ProductModel>,
         ),
       );
     } catch (e) {

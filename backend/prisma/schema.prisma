@@ -106,6 +106,8 @@ model Product {
   createdAt    DateTime @default(now()) @map("created_at")
   averageRating Float @default(0) @map("average_rating")
   reviewCount   Int   @default(0) @map("review_count")
+  isVault      Boolean  @default(false) @map("is_vault")
+  vaultSpecs   Json?    @map("vault_specs")
 
   category Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   brand    Brand?           @relation(fields: [brandId], references: [id], onDelete: SetNull)
@@ -119,6 +121,7 @@ model Product {
   @@index([brandId])
   @@index([createdAt])
   @@map("products")
+  @@index([isVault])
 }
 
 model ProductVariant {

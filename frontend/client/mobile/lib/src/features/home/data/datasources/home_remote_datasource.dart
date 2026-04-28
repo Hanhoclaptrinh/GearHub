@@ -74,6 +74,18 @@ class HomeRemoteDatasource {
     }
   }
 
+  Future<List<ProductModel>> getVaultProducts() async {
+    try {
+      final response = await dio.get('/products/vault');
+      final List data = response.data;
+      return data
+          .map((json) => ProductModel.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> incrementProductView(String id, String deviceId) async {
     try {
       await dio.post(

@@ -21,6 +21,7 @@ class HomeLoaded extends HomeState {
   final List<BrandEntity> topBrands;
   final List<ProductModel> newArrivals;
   final List<ProductModel> topRatedProducts;
+  final List<ProductModel> vaultProducts;
 
   const HomeLoaded({
     required this.featuredProducts,
@@ -28,6 +29,7 @@ class HomeLoaded extends HomeState {
     required this.topBrands,
     required this.newArrivals,
     required this.topRatedProducts,
+    required this.vaultProducts,
   });
 
   HomeLoaded copyWith({
@@ -36,6 +38,7 @@ class HomeLoaded extends HomeState {
     List<BrandEntity>? topBrands,
     List<ProductModel>? newArrivals,
     List<ProductModel>? topRatedProducts,
+    List<ProductModel>? vaultProducts,
   }) {
     return HomeLoaded(
       featuredProducts: featuredProducts ?? this.featuredProducts,
@@ -43,6 +46,7 @@ class HomeLoaded extends HomeState {
       topBrands: topBrands ?? this.topBrands,
       newArrivals: newArrivals ?? this.newArrivals,
       topRatedProducts: topRatedProducts ?? this.topRatedProducts,
+      vaultProducts: vaultProducts ?? this.vaultProducts,
     );
   }
 
@@ -53,6 +57,7 @@ class HomeLoaded extends HomeState {
         topBrands,
         newArrivals,
         topRatedProducts,
+        vaultProducts,
       ];
 }
 

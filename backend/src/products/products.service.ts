@@ -750,6 +750,39 @@ export class ProductsService {
         return products;
     }
 
+    // lay cac san pham provip
+    async getVaultProducts() {
+        const products = await this.prisma.product.findMany({
+            where: {
+                isVault: true,
+                isActive: true,
+            },
+            select: {
+                id: true,
+                name: true,
+                thumbnailUrl: true,
+                tagline: true,
+                vaultSpecs: true,
+                description: true,
+                variants: {
+                    where: { isActive: true },
+                    take: 1,
+                    select: { price: true }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+
+        // lam phang data
+        return products.map(p => ({
+            ...p,
+            price: p.variants[0]?.price || 0,
+            variants: undefined
+        }));
+    }
+
     async addVariant(id: string, data: CreateVariantDto) {
         const product = await this.prisma.product.findUnique({
             where: { id }

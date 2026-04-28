@@ -12,6 +12,8 @@ class ProductModel {
   final double averageRating;
   final int reviewCount;
 
+  final Map<String, dynamic>? vaultSpecs;
+
   const ProductModel({
     required this.id,
     required this.name,
@@ -23,6 +25,7 @@ class ProductModel {
     this.viewsCount = 0,
     this.averageRating = 0.0,
     this.reviewCount = 0,
+    this.vaultSpecs,
   });
 
   ProductModel copyWith({
@@ -36,6 +39,7 @@ class ProductModel {
     int? viewsCount,
     double? averageRating,
     int? reviewCount,
+    Map<String, dynamic>? vaultSpecs,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -48,6 +52,7 @@ class ProductModel {
       viewsCount: viewsCount ?? this.viewsCount,
       averageRating: averageRating ?? this.averageRating,
       reviewCount: reviewCount ?? this.reviewCount,
+      vaultSpecs: vaultSpecs ?? this.vaultSpecs,
     );
   }
 
@@ -76,6 +81,7 @@ class ProductModel {
       viewsCount: json['viewsCount'] as int? ?? 0,
       averageRating: double.tryParse(json['averageRating']?.toString() ?? '0.0') ?? 0.0,
       reviewCount: json['reviewCount'] as int? ?? 0,
+      vaultSpecs: json['vaultSpecs'] as Map<String, dynamic>?,
     );
   }
 

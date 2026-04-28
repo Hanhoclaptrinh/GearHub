@@ -23,6 +23,7 @@ class TopCategoriesSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SectionHeader(
+                index: '01',
                 title: 'Danh mục nổi bật',
                 actionText: 'Tất cả',
                 onActionTap: () => print('Go to categories'),

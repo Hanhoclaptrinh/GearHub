@@ -20,7 +20,11 @@ class TopRatedSection extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SectionHeader(title: 'Dẫn đầu', actionText: 'Xem tất cả'),
+            const SectionHeader(
+              index: '04',
+              title: 'Dẫn đầu',
+              actionText: 'Xem tất cả',
+            ),
             const SizedBox(height: 16),
             StaggeredGrid.count(
               crossAxisCount: 2,

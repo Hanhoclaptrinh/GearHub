@@ -6,7 +6,7 @@ import '../widgets/hero_section.dart';
 import '../widgets/top_categories_section.dart';
 import '../widgets/new_arrivals_section.dart';
 import '../widgets/top_rated_section.dart';
-import '../widgets/recommended_section.dart';
+import '../widgets/vault_section.dart';
 import '../widgets/top_brands_section.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/core/di/injection.dart';
@@ -48,7 +48,7 @@ class _HomePageState extends State<HomePage>
                   colorScheme,
                 ),
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
                       const SearchBarWidget(),
@@ -63,7 +63,7 @@ class _HomePageState extends State<HomePage>
                       const SizedBox(height: 32),
                       const TopRatedSection(),
                       const SizedBox(height: 32),
-                      const RecommendedSection(),
+                      const VaultSection(),
                       const SizedBox(height: 32),
                     ]),
                   ),

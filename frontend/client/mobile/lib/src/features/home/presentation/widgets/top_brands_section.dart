@@ -22,6 +22,7 @@ class TopBrandsSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SectionHeader(
+                index: '03',
                 title: 'Hệ sinh thái',
                 actionText: 'Khám phá',
               ),

@@ -62,6 +62,11 @@ export class ProductsController {
         return this.productsService.getTopRatedProducts(5);
     }
 
+    @Get('vault')
+    async getVaultProducts() {
+        return this.productsService.getVaultProducts();
+    }
+
     @Post(':id/view')
     async incrementView(
         @Param('id') id: string,
