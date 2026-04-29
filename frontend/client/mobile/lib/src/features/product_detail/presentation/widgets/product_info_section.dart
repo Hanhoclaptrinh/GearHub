@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
+import 'package:mobile/src/shared/models/product_variant_model.dart';
 
 class ProductInfoSection extends StatefulWidget {
   final ProductModel product;
-  final int selectedConfigIndex;
-  final Function(int) onConfigChanged;
+  final Map<String, String> selectedAttributes;
+  final Function(String, String) onAttributeChanged;
+  final bool Function(String, String) isComboAvailable;
+  final bool Function(String, String) isValueInStock;
 
   const ProductInfoSection({
     super.key,
     required this.product,
-    required this.selectedConfigIndex,
-    required this.onConfigChanged,
+    required this.selectedAttributes,
+    required this.onAttributeChanged,
+    required this.isComboAvailable,
+    required this.isValueInStock,
   });
 
   @override
@@ -21,38 +26,59 @@ class ProductInfoSection extends StatefulWidget {
 class _ProductInfoSectionState extends State<ProductInfoSection> {
   bool _isDescriptionExpanded = false;
 
-  List<String> get _configurations {
-    if (widget.product.variants.isEmpty) return ['Standard'];
-    return widget.product.variants
-        .map((v) => v.name.replaceAll('${widget.product.name} - ', ''))
+  // color
+  String _getColorKey() {
+    if (widget.product.attributeConfig.isNotEmpty) {
+      return widget.product.attributeConfig.firstWhere(
+        (k) {
+          final lower = k.toLowerCase();
+          return lower.contains('color') ||
+              lower.contains('màu') ||
+              lower.contains('mau');
+        },
+        orElse: () => '',
+      );
+    }
+    return '';
+  }
+
+  List<String> _getDisplayConfigKeys() {
+    final colorKey = _getColorKey();
+    return widget.product.attributeConfig
+        .where((key) => key != colorKey)
         .toList();
+  }
+
+  List<String> _getUniqueValues(String key) {
+    return widget.product.variants
+        .where((v) => v.isActive)
+        .map((v) => v.attributes[key]?.toString())
+        .whereType<String>()
+        .toSet()
+        .toList();
+  }
+
+  ProductVariantModel? get _currentVariant {
+    if (widget.product.variants.isEmpty) return null;
+    for (final v in widget.product.variants) {
+      final allMatch = widget.selectedAttributes.entries.every((entry) =>
+          v.attributes[entry.key]?.toString() == entry.value);
+      if (allMatch) return v;
+    }
+    return widget.product.variants.first;
   }
 
   Map<String, String> get _specs {
     final Map<String, String> display = {};
+    final configKeys = widget.product.attributeConfig.toSet();
 
-    // top specs lay tu vaulspecs
-    if (widget.product.vaultSpecs != null) {
-      final specs = widget.product.vaultSpecs!;
-      if (specs.containsKey('processor')) {
-        display['Processor'] = specs['processor'].toString();
-      } else if (specs.containsKey('chip')) {
-        display['Chip'] = specs['chip'].toString();
-      }
-
-      if (specs.containsKey('display')) {
-        display['Display'] = specs['display'].toString();
-      }
-    }
-
-    // attributes bien the
-    if (widget.product.variants.isNotEmpty &&
-        widget.selectedConfigIndex < widget.product.variants.length) {
-      final currentVariant =
-          widget.product.variants[widget.selectedConfigIndex];
-      currentVariant.attributes.forEach((key, value) {
-        final formattedKey = key[0].toUpperCase() + key.substring(1);
-        display[formattedKey] = value.toString();
+    final variant = _currentVariant;
+    if (variant != null) {
+      variant.attributes.forEach((key, value) {
+        if (!configKeys.contains(key)) {
+          final formattedKey = key[0].toUpperCase() + key.substring(1);
+          display[formattedKey] = value.toString();
+        }
       });
     }
 
@@ -61,23 +87,14 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
 
   Map<String, String> get _fullSpecs {
     final Map<String, String> display = {};
-    if (widget.product.vaultSpecs != null) {
-      widget.product.vaultSpecs!.forEach((key, value) {
+    final variant = _currentVariant;
+    if (variant != null) {
+      variant.attributes.forEach((key, value) {
         final formattedKey = key[0].toUpperCase() + key.substring(1);
         display[formattedKey] = value.toString();
       });
     }
-    if (widget.product.variants.isNotEmpty &&
-        widget.selectedConfigIndex < widget.product.variants.length) {
-      final currentVariant =
-          widget.product.variants[widget.selectedConfigIndex];
-      currentVariant.attributes.forEach((key, value) {
-        final formattedKey = key[0].toUpperCase() + key.substring(1);
-        display[formattedKey] = value.toString();
-      });
-    }
-    if (display.isEmpty) return _specs;
-    return display;
+    return display.isEmpty ? _specs : display;
   }
 
   void _showFullSpecs() {
@@ -152,29 +169,43 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
 
   @override
   Widget build(BuildContext context) {
+    final displayKeys = _getDisplayConfigKeys();
+
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Cấu hình',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: Colors.black,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildVariantSelector(_configurations, widget.selectedConfigIndex, (
-            i,
-          ) {
-            HapticFeedback.selectionClick();
-            widget.onConfigChanged(i);
-          }),
-          const SizedBox(height: 36),
+          if (displayKeys.isNotEmpty) ...[
+            ...displayKeys.map((key) {
+              final uniqueValues = _getUniqueValues(key);
+              if (uniqueValues.isEmpty) return const SizedBox.shrink();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    key,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildConfigSelector(
+                    key,
+                    uniqueValues,
+                    widget.selectedAttributes[key],
+                  ),
+                  const SizedBox(height: 36),
+                ],
+              );
+            }),
+          ],
+
           const Text(
             'Mô tả sản phẩm',
             style: TextStyle(
@@ -236,69 +267,77 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
             ),
           ),
           const SizedBox(height: 36),
-          const Text(
-            'Thuộc tính',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: Colors.black,
-              letterSpacing: -0.5,
+
+          if (_specs.isNotEmpty) ...[
+            const Text(
+              'Thuộc tính',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: Colors.black,
+                letterSpacing: -0.5,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          _buildSpecsList(),
-          const SizedBox(height: 20),
-          Center(
-            child: GestureDetector(
-              onTap: _showFullSpecs,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFFE5E5EA)),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'Xem thêm thuộc tính',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
+            const SizedBox(height: 16),
+            _buildSpecsList(),
+            const SizedBox(height: 20),
+            Center(
+              child: GestureDetector(
+                onTap: _showFullSpecs,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: const Color(0xFFE5E5EA)),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'Xem thêm thuộc tính',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildVariantSelector(
-    List<String> options,
-    int selectedIndex,
-    Function(int) onSelect,
+  Widget _buildConfigSelector(
+    String key,
+    List<String> values,
+    String? selectedValue,
   ) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
       clipBehavior: Clip.none,
       child: Row(
-        children: List.generate(options.length, (index) {
-          final isSelected = selectedIndex == index;
-          final variant =
-              widget.product.variants.isNotEmpty &&
-                  index < widget.product.variants.length
-              ? widget.product.variants[index]
-              : null;
-          final isOutOfStock = (variant?.stock ?? 0) <= 0;
+        children: values.map((val) {
+          final isSelected = selectedValue == val;
+
+          final comboExists = widget.isComboAvailable(key, val);
+          final hasStock = widget.isValueInStock(key, val);
+
+          final isDisabled = !comboExists;
+          final isOutOfStock = comboExists && !hasStock;
 
           return GestureDetector(
-            onTap: isOutOfStock ? null : () => onSelect(index),
+            onTap: isDisabled
+                ? null
+                : () {
+                    HapticFeedback.selectionClick();
+                    widget.onAttributeChanged(key, val);
+                  },
             child: Opacity(
-              opacity: isOutOfStock ? 0.5 : 1.0,
+              opacity: isDisabled ? 0.35 : (isOutOfStock ? 0.55 : 1.0),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeOutCubic,
@@ -311,7 +350,11 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                   color: isSelected ? Colors.black : Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: isSelected ? Colors.black : const Color(0xFFE5E5EA),
+                    color: isSelected
+                        ? Colors.black
+                        : isDisabled
+                            ? const Color(0xFFD1D1D6)
+                            : const Color(0xFFE5E5EA),
                     width: 1,
                   ),
                   boxShadow: isSelected
@@ -324,16 +367,15 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                         ]
                       : [],
                 ),
-                child: Stack(
-                  alignment: Alignment.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      options[index],
+                      val,
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight: isSelected
-                            ? FontWeight.w700
-                            : FontWeight.w500,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w500,
                         color: isSelected
                             ? Colors.white
                             : const Color(0xFF3C3C43),
@@ -343,12 +385,25 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                             : null,
                       ),
                     ),
+                    if (isOutOfStock) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Hết hàng',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: isSelected
+                              ? Colors.white60
+                              : const Color(0xFFFF3B30),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
             ),
           );
-        }),
+        }).toList(),
       ),
     );
   }

@@ -51,4 +51,8 @@ export class CreateProductDto {
 
     @IsOptional()
     primaryIndex?: string;
+
+    @IsOptional()
+    @IsString()
+    attributeConfig?: string;
 }

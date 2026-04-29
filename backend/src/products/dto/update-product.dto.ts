@@ -60,4 +60,8 @@ export class UpdateProductDto {
     @IsString()
     @IsOptional()
     primaryIndex?: string;
+
+    @IsString()
+    @IsOptional()
+    attributeConfig?: string;
 }

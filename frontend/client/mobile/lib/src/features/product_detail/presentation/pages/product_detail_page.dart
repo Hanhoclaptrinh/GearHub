@@ -4,8 +4,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/shared/models/product_variant_model.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../widgets/product_hero_section.dart';
 import '../widgets/product_info_section.dart';
@@ -48,19 +48,159 @@ class _ProductDetailViewState extends State<ProductDetailView> {
   int _quantity = 1;
   Timer? _timer;
 
-  int _selectedConfigIndex = 0;
+  // ma tran bien the - dua vao thuoc tinh tung bien the + thuoc tinh mac dinh
+  Map<String, String> _selectedAttributes = {};
 
-  ProductVariantModel? _getCurrentVariant(ProductModel currentProduct) {
-    if (currentProduct.variants.isEmpty) return null;
-    if (_selectedConfigIndex >= currentProduct.variants.length) {
-      return currentProduct.variants.first;
+  // trang thai model 3d
+  // tat khi dung che do ar - tranh tranh chap tai nguyen -> crash app
+  bool _is3DMode = false;
+
+  // selection matrix logic
+  void _initializeAttributes(ProductModel product) {
+    // kiem tra combo thuoc tinh dang duoc lua chon co trong khong
+    // chi thuc hien neu combo hien tai chua duoc chon
+    if (product.variants.isNotEmpty && _selectedAttributes.isEmpty) { 
+      final activeVariants = product.variants.where((v) => v.isActive).toList();
+      if (activeVariants.isEmpty) return;
+
+      final firstVariant = activeVariants.first;
+      // danh sach thuoc tinh -> tao ma tran
+      // eg: 3 color * 2 version -> 6 combo
+      final configKeys = product.attributeConfig;
+
+      // set combo cho bien the dau tien
+      if (configKeys.isNotEmpty) {
+        for (var key in configKeys) {
+          if (firstVariant.attributes.containsKey(key)) {
+            _selectedAttributes[key] = firstVariant.attributes[key].toString();
+          }
+        }
+      } else {
+        _selectedAttributes = Map<String, String>.from(
+          firstVariant.attributes.map((k, v) => MapEntry(k, v.toString())),
+        );
+      }
     }
-    return currentProduct.variants[_selectedConfigIndex];
   }
 
-  int _getEffectiveMaxQuantity(ProductModel currentProduct) {
-    final v = _getCurrentVariant(currentProduct);
-    return v?.stock ?? 0;
+  // lay bien the khop voi combo user chon
+  ProductVariantModel? _getCurrentVariant(ProductModel product) {
+    if (product.variants.isEmpty) return null;
+
+    // lap qua danh sach bien the va tim combo khop voi lua chon user
+    for (final v in product.variants) {
+      if (!v.isActive) continue;
+
+      final allMatch = _selectedAttributes.entries.every(
+        (entry) => v.attributes[entry.key]?.toString() == entry.value,
+      );
+      if (allMatch) return v;
+    }
+
+    final activeVariants = product.variants.where((v) => v.isActive).toList();
+    return activeVariants.isNotEmpty ? activeVariants.first : null;
+  }
+
+  void _onAttributeChanged(String key, String value, ProductModel product) {
+    setState(() {
+      _selectedAttributes[key] = value; // cap nhat thuoc tinh vua chon
+
+      // kiem tra combo co ton tai khong
+      final exactMatch = product.variants.any((v) {
+        if (!v.isActive) return false;
+        return _selectedAttributes.entries.every(
+          (entry) => v.attributes[entry.key]?.toString() == entry.value,
+        );
+      });
+
+      if (!exactMatch) {
+        // neu khong co combo vua chon
+        // tim mot bien the thay the
+        // thay doi cac thuoc tinh con lai
+        final fallback = product.variants
+            .cast<ProductVariantModel?>()
+            .firstWhere(
+              (v) => v!.isActive && v.attributes[key]?.toString() == value,
+              orElse: () => null,
+            );
+        if (fallback != null) {
+          final configKeys = product.attributeConfig;
+          if (configKeys.isNotEmpty) {
+            final newMap = <String, String>{};
+            for (var k in configKeys) {
+              if (fallback.attributes.containsKey(k)) {
+                newMap[k] = fallback.attributes[k].toString();
+              }
+            }
+            _selectedAttributes = newMap;
+          } else {
+            _selectedAttributes = Map<String, String>.from(
+              fallback.attributes.map((k, v) => MapEntry(k, v.toString())),
+            );
+          }
+        }
+      }
+
+      // cap nhat so luong hang hoa theo tung combo bien the
+      final newVariant = _getCurrentVariant(product);
+      final maxQty = newVariant?.stock ?? 0;
+      if (maxQty == 0) {
+        _quantity = 0;
+      } else if (_quantity > maxQty) {
+        _quantity = maxQty;
+      } else if (_quantity == 0) {
+        _quantity = 1;
+      }
+    });
+  }
+
+  bool isComboAvailable(String key, String value, ProductModel product) {
+    final hypothetical = Map<String, String>.from(_selectedAttributes);
+    hypothetical[key] = value;
+
+    final configKeys = product.attributeConfig;
+
+    return product.variants.any((v) {
+      if (!v.isActive) return false; 
+
+      if (configKeys.isNotEmpty) {
+        return configKeys.every((k) {
+          final targetValue = hypothetical[k];
+          if (targetValue == null) return true;
+          return v.attributes[k]?.toString() == targetValue;
+        });
+      }
+
+      return hypothetical.entries.every(
+        (entry) => v.attributes[entry.key]?.toString() == entry.value,
+      );
+    });
+  }
+
+   bool isValueInStock(String key, String value, ProductModel product) {
+    return product.variants.any(
+      (v) => v.isActive && v.attributes[key]?.toString() == value && v.stock > 0,
+    );
+  }
+
+  // xu ly truoc khi chuyen sang mode ar
+  void _navigateToAR(ProductModel product) {
+    if (_is3DMode) {
+      // tat model 3d truoc de khong tranh chap tai nguyen phan cung voi ar mode
+      setState(() => _is3DMode = false);
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) _pushARPage(product);
+      });
+    } else {
+      _pushARPage(product);
+    }
+  }
+
+  void _pushARPage(ProductModel product) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ProductARViewPage(product: product)),
+    );
   }
 
   @override
@@ -68,6 +208,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
     super.initState();
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
+    _initializeAttributes(widget.initialProduct);
   }
 
   @override
@@ -100,10 +241,20 @@ class _ProductDetailViewState extends State<ProductDetailView> {
         final currentProduct = state is ProductDetailLoaded
             ? state.product
             : widget.initialProduct;
+
+        if (state is ProductDetailLoaded && _selectedAttributes.isEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() => _initializeAttributes(currentProduct));
+            }
+          });
+        }
+
         final relatedProducts = state is ProductDetailLoaded
             ? state.relatedProducts
             : <ProductModel>[];
-        final maxQty = _getEffectiveMaxQuantity(currentProduct);
+        final currentVariant = _getCurrentVariant(currentProduct);
+        final maxQty = currentVariant?.stock ?? 0;
 
         return Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -129,15 +280,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                     actions: [
                       IconButton(
                         icon: const Icon(LucideIcons.box, color: Colors.black),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  ProductARViewPage(product: currentProduct),
-                            ),
-                          );
-                        },
+                        onPressed: () => _navigateToAR(currentProduct),
                       ),
                       IconButton(
                         icon: const Icon(
@@ -151,20 +294,14 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                   SliverToBoxAdapter(
                     child: ProductHeroSection(
                       product: currentProduct,
-                      selectedVariantIndex: _selectedConfigIndex,
+                      currentVariant: currentVariant,
+                      selectedAttributes: _selectedAttributes,
+                      is3DMode: _is3DMode,
                       quantity: _quantity,
                       maxQuantity: maxQty,
-                      onColorTarget: (index) {
-                        setState(() {
-                          _selectedConfigIndex = index;
-                          if (_quantity > maxQty) _quantity = maxQty;
-                          if (maxQty == 0) {
-                            _quantity = 0;
-                          } else if (_quantity == 0) {
-                            _quantity = 1;
-                          }
-                        });
-                      },
+                      onAttributeChanged: (key, value) =>
+                          _onAttributeChanged(key, value, currentProduct),
+                      on3DToggle: () => setState(() => _is3DMode = !_is3DMode),
                       onIncrement: () {
                         if (_quantity < maxQty) {
                           setState(() => _quantity++);
@@ -191,18 +328,13 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                   SliverToBoxAdapter(
                     child: ProductInfoSection(
                       product: currentProduct,
-                      selectedConfigIndex: _selectedConfigIndex,
-                      onConfigChanged: (index) {
-                        setState(() {
-                          _selectedConfigIndex = index;
-                          if (_quantity > maxQty) _quantity = maxQty;
-                          if (maxQty == 0) {
-                            _quantity = 0;
-                          } else if (_quantity == 0) {
-                            _quantity = 1;
-                          }
-                        });
-                      },
+                      selectedAttributes: _selectedAttributes,
+                      onAttributeChanged: (key, value) =>
+                          _onAttributeChanged(key, value, currentProduct),
+                      isComboAvailable: (key, value) =>
+                          isComboAvailable(key, value, currentProduct),
+                      isValueInStock: (key, value) =>
+                          isValueInStock(key, value, currentProduct),
                     ),
                   ),
                   SliverToBoxAdapter(
@@ -224,6 +356,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                 right: 0,
                 child: StickyBottomBar(
                   product: currentProduct,
+                  selectedVariant: currentVariant,
                   isVisible: _showBottomBar,
                 ),
               ),

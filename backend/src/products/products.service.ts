@@ -68,6 +68,7 @@ export class ProductsService {
                         metadata: parsedMetadata,
                         thumbnailUrl: data.thumbnailUrl || null,
                         tagline: data.tagline || null,
+                        attributeConfig: data.attributeConfig ? JSON.parse(data.attributeConfig) : [],
                     }
                 });
 
@@ -197,6 +198,13 @@ export class ProductsService {
             if (data.brandId) updateData.brandId = data.brandId;
             if (data.thumbnailUrl) updateData.thumbnailUrl = data.thumbnailUrl;
             if (data.tagline) updateData.tagline = data.tagline;
+            if (data.attributeConfig) {
+                try {
+                    updateData.attributeConfig = JSON.parse(data.attributeConfig);
+                } catch (e) {
+                    throw new BadRequestException('AttributeConfig JSON không hợp lệ');
+                }
+            }
 
             if (data.isFeatured !== undefined) updateData.isFeatured = data.isFeatured === 'true';
             if (data.isActive !== undefined) updateData.isActive = data.isActive === 'true';
@@ -636,14 +644,16 @@ export class ProductsService {
         };
     }
 
-    async getProductById(id: string) {
+    async getProductById(idOrSlug: string) {
+        // regex uuid hop le
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+
         const product = await this.prisma.product.findUnique({
-            where: { id },
+            where: isUuid ? { id: idOrSlug } : { slug: idOrSlug },
             include: {
                 brand: { select: { name: true, logoUrl: true } },
                 category: { select: { name: true } },
                 variants: {
-                    where: { isActive: true },
                     orderBy: { price: "asc" },
                 },
                 assets: true
@@ -676,6 +686,7 @@ export class ProductsService {
                 description: true,
                 viewsCount: true,
                 vaultSpecs: true,
+                attributeConfig: true,
                 variants: {
                     where: { isActive: true },
                     orderBy: { price: 'asc' },
@@ -750,6 +761,7 @@ export class ProductsService {
             soldCount: true,
             description: true,
             vaultSpecs: true,
+            attributeConfig: true,
             brand: { select: { name: true } },
             variants: {
                 where: { isActive: true },

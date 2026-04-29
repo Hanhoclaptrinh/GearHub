@@ -87,6 +87,7 @@ export interface Product {
   isActive: boolean;
   assets: ProductAsset[];
   variants: ProductVariant[];
+  attributeConfig?: string[];
   createdAt: string;
 }
 

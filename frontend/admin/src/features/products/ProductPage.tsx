@@ -42,6 +42,7 @@ const productSchema = z.object({
   description: z.string().min(10, 'Mô tả ít nhất 10 ký tự'),
   categoryId: z.string().min(1, 'Vui lòng chọn danh mục'),
   brandId: z.string().min(1, 'Vui lòng chọn thương hiệu'),
+  attributeConfig: z.array(z.string()).optional(),
   variants: z.array(variantSchema).min(1, 'Ít nhất 1 phân loại sản phẩm'),
 });
 
@@ -125,6 +126,67 @@ const AttributeManager: React.FC<{
   );
 };
 
+const AttributeConfigManager: React.FC<{
+  value: string[];
+  onChange: (val: string[]) => void;
+}> = ({ value, onChange }) => {
+  const [items, setItems] = useState<string[]>(value?.length > 0 ? value : ['']);
+
+  const updateItems = (next: string[]) => {
+    setItems(next);
+    onChange(next.filter(i => i.trim() !== ''));
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-bold text-slate-700 ml-1 flex items-center gap-2">
+          <Layers className="w-4 h-4 text-primary/60" /> Các phím thuộc tính biến thể (Màu sắc, Cấu hình...)
+        </label>
+        <Button 
+          type="button" 
+          variant="ghost" 
+          size="sm" 
+          className="h-8 text-[10px] px-3 rounded-xl border border-slate-200"
+          onClick={() => updateItems([...items, ''])}
+        >
+          <Plus className="w-3 h-3 mr-1.5" /> Thêm key
+        </Button>
+      </div>
+      
+      <div className="flex flex-wrap gap-3">
+        {items.map((item, idx) => (
+          <div key={idx} className="flex gap-2 items-center animate-in fade-in zoom-in duration-200">
+            <input 
+              className="w-32 h-10 px-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-bold text-slate-700 text-xs"
+              placeholder="VD: Màu sắc"
+              value={item}
+              onChange={(e) => {
+                const next = [...items];
+                next[idx] = e.target.value;
+                updateItems(next);
+              }}
+            />
+            {items.length > 1 && (
+              <button 
+                type="button" 
+                className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                onClick={() => updateItems(items.filter((_, i) => i !== idx))}
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+      <p className="text-[10px] font-medium text-slate-400 italic mt-2">
+        * Các key này sẽ được dùng để tạo ma trận chọn biến thể.
+      </p>
+    </div>
+  );
+};
+
+
 export const ProductPage: React.FC = () => {
   const { slug } = useParams();
   const isEdit = !!slug;
@@ -159,6 +221,7 @@ export const ProductPage: React.FC = () => {
       description: '',
       categoryId: '',
       brandId: '',
+      attributeConfig: [],
       variants: [{ sku: '', price: 0, stock: 0 }],
     },
   });
@@ -176,6 +239,7 @@ export const ProductPage: React.FC = () => {
         description: editProduct.description,
         categoryId: editProduct.categoryId,
         brandId: editProduct.brandId,
+        attributeConfig: editProduct.attributeConfig || [],
         variants: editProduct.variants.map((v: any) => ({
           id: v.id,
           sku: v.sku,
@@ -243,6 +307,7 @@ export const ProductPage: React.FC = () => {
     formData.append('categoryId', values.categoryId);
     formData.append('brandId', values.brandId);
     formData.append('primaryIndex', primaryIndex.toString());
+    formData.append('attributeConfig', JSON.stringify(values.attributeConfig || []));
     formData.append('variants', JSON.stringify(values.variants));
     
     files.forEach(file => {
@@ -305,6 +370,17 @@ export const ProductPage: React.FC = () => {
                 />
                 {errors.description && <span className="text-xs font-bold text-red-500 ml-1">{errors.description.message}</span>}
               </div>
+
+              <Controller
+                name="attributeConfig"
+                control={control}
+                render={({ field }) => (
+                  <AttributeConfigManager 
+                    value={field.value || []} 
+                    onChange={field.onChange} 
+                  />
+                )}
+              />
 
               <div className="grid grid-cols-2 gap-6">
                  <div className="space-y-1.5 flex flex-col">

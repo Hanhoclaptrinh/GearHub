@@ -1,3 +1,4 @@
+import 'package:mobile/src/shared/models/product_asset_model.dart';
 import 'package:mobile/src/shared/models/product_variant_model.dart';
 
 class ProductModel {
@@ -14,6 +15,8 @@ class ProductModel {
   final Map<String, dynamic>? vaultSpecs;
   final String? brandName;
   final List<ProductVariantModel> variants;
+  final List<ProductAssetModel> assets;
+  final List<String> attributeConfig;
 
   const ProductModel({
     required this.id,
@@ -29,7 +32,42 @@ class ProductModel {
     this.vaultSpecs,
     this.brandName,
     this.variants = const [],
+    this.assets = const [],
+    this.attributeConfig = const [],
   });
+
+  List<ProductAssetModel> get imageAssets =>
+      assets.where((a) => a.type == AssetType.image).toList();
+
+  ProductAssetModel? get primaryImageAsset {
+    final primary = imageAssets.where((a) => a.isPrimary);
+    return primary.isNotEmpty ? primary.first : null;
+  }
+
+  ProductAssetModel? get glbAsset {
+    final glbs = assets.where((a) => a.type == AssetType.glb);
+    return glbs.isNotEmpty ? glbs.first : null;
+  }
+
+  ProductAssetModel? get usdzAsset {
+    final usdz = assets.where((a) => a.type == AssetType.usdz);
+    return usdz.isNotEmpty ? usdz.first : null;
+  }
+
+  bool get has3DModel => glbAsset != null;
+
+  List<String> get galleryUrls {
+    if (imageAssets.isEmpty) {
+      return image.isNotEmpty ? [image] : [];
+    }
+    final sorted = List<ProductAssetModel>.from(imageAssets)
+      ..sort((a, b) {
+        if (a.isPrimary && !b.isPrimary) return -1;
+        if (!a.isPrimary && b.isPrimary) return 1;
+        return 0;
+      });
+    return sorted.map((a) => a.url).toList();
+  }
 
   ProductModel copyWith({
     String? id,
@@ -45,6 +83,8 @@ class ProductModel {
     Map<String, dynamic>? vaultSpecs,
     String? brandName,
     List<ProductVariantModel>? variants,
+    List<ProductAssetModel>? assets,
+    List<String>? attributeConfig,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -60,6 +100,8 @@ class ProductModel {
       vaultSpecs: vaultSpecs ?? this.vaultSpecs,
       brandName: brandName ?? this.brandName,
       variants: variants ?? this.variants,
+      assets: assets ?? this.assets,
+      attributeConfig: attributeConfig ?? this.attributeConfig,
     );
   }
 
@@ -74,6 +116,18 @@ class ProductModel {
       price = variants.isNotEmpty ? variants.first.price : 0.0;
     } else if (json['price'] != null) {
       price = double.tryParse(json['price']?.toString() ?? '0') ?? 0.0;
+    }
+
+    List<ProductAssetModel> assets = [];
+    if (json['assets'] != null && (json['assets'] as List).isNotEmpty) {
+      assets = (json['assets'] as List)
+          .map((a) => ProductAssetModel.fromJson(a as Map<String, dynamic>))
+          .toList();
+    }
+
+    List<String> attributeConfig = [];
+    if (json['attributeConfig'] != null) {
+      attributeConfig = List<String>.from(json['attributeConfig']);
     }
 
     final String desc = json['description'] ?? '';
@@ -96,6 +150,8 @@ class ProductModel {
       vaultSpecs: json['vaultSpecs'] as Map<String, dynamic>?,
       brandName: json['brand']?['name'] as String?,
       variants: variants,
+      assets: assets,
+      attributeConfig: attributeConfig,
     );
   }
 
@@ -109,4 +165,3 @@ class ProductModel {
     return trimmed;
   }
 }
-

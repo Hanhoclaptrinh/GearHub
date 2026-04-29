@@ -5,6 +5,7 @@ class ProductVariantModel {
   final double price;
   final int stock;
   final Map<String, dynamic> attributes;
+  final bool isActive;
 
   const ProductVariantModel({
     required this.id,
@@ -13,6 +14,7 @@ class ProductVariantModel {
     required this.price,
     required this.stock,
     required this.attributes,
+    required this.isActive,
   });
 
   factory ProductVariantModel.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class ProductVariantModel {
       price: double.tryParse(json['price']?.toString() ?? '0') ?? 0.0,
       stock: json['stock'] as int? ?? 0,
       attributes: json['attributes'] as Map<String, dynamic>? ?? {},
+      isActive: json['isActive'] as bool? ?? true,
     );
   }
 }

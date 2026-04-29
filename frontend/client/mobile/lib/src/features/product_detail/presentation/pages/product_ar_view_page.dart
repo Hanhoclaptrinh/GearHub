@@ -36,6 +36,27 @@ class _ProductARViewPageState extends State<ProductARViewPage> {
 
   bool hasDetectedPlane = false;
 
+  // xu ly model tu prod assets
+  String get _modelUri {
+    final glb = widget.product.glbAsset;
+    if (glb != null && glb.url.startsWith('http')) {
+      return glb.url;
+    }
+    return 'assets/models/model1.glb';
+  }
+
+  NodeType get _modelNodeType {
+    final glb = widget.product.glbAsset;
+    if (glb != null && glb.url.startsWith('http')) {
+      return NodeType.webGLB;
+    }
+    return NodeType.localGLTF2;
+  }
+
+  double get _modelScale {
+    return widget.product.glbAsset?.arScale ?? 0.2;
+  }
+
   @override
   void dispose() {
     try {
@@ -113,12 +134,11 @@ class _ProductARViewPageState extends State<ProductARViewPage> {
     if (didAddAnchor == true) {
       anchors.add(newAnchor);
 
-      // khoi tao mot obj 3d ao truoc khi dua vao thuc te
       var newNode = ARNode(
-        type: NodeType.localGLTF2,
-        uri: 'assets/models/model1.glb',
-        scale: Vector3(0.2, 0.2, 0.2), // scale vat the de test
-        position: Vector3(0, 0, 0), // nam chinh giua anchor
+        type: _modelNodeType,
+        uri: _modelUri,
+        scale: Vector3(_modelScale, _modelScale, _modelScale),
+        position: Vector3(0, 0, 0),
         rotation: Vector4(1.0, 0.0, 0.0, 0.0),
       );
 
@@ -137,9 +157,9 @@ class _ProductARViewPageState extends State<ProductARViewPage> {
     } else {
       // fallback: dat node khong can anchor (dung planeHit)
       var fallbackNode = ARNode(
-        type: NodeType.localGLTF2,
-        uri: 'assets/models/model1.glb',
-        scale: Vector3(0.2, 0.2, 0.2),
+        type: _modelNodeType,
+        uri: _modelUri,
+        scale: Vector3(_modelScale, _modelScale, _modelScale),
         position: Vector3(
           planeHit.worldTransform.getColumn(3).x,
           planeHit.worldTransform.getColumn(3).y,

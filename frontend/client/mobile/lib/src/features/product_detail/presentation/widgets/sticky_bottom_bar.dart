@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
+import 'package:mobile/src/shared/models/product_variant_model.dart';
 import 'package:mobile/src/features/onboarding/presentation/widgets/three_animated_arrow.dart';
 
 const _kSurface = Color(0xFF0C0C18);
@@ -11,11 +12,13 @@ const _kGoldDim = Color(0xFF1A1200);
 
 class StickyBottomBar extends StatefulWidget {
   final ProductModel product;
+  final ProductVariantModel? selectedVariant;
   final bool isVisible;
 
   const StickyBottomBar({
     super.key,
     required this.product,
+    this.selectedVariant,
     this.isVisible = true,
   });
 
