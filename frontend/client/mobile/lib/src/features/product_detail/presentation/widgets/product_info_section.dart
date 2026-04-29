@@ -4,8 +4,15 @@ import 'package:mobile/src/shared/models/product_model.dart';
 
 class ProductInfoSection extends StatefulWidget {
   final ProductModel product;
+  final int selectedConfigIndex;
+  final Function(int) onConfigChanged;
 
-  const ProductInfoSection({super.key, required this.product});
+  const ProductInfoSection({
+    super.key,
+    required this.product,
+    required this.selectedConfigIndex,
+    required this.onConfigChanged,
+  });
 
   @override
   State<ProductInfoSection> createState() => _ProductInfoSectionState();
@@ -14,83 +21,170 @@ class ProductInfoSection extends StatefulWidget {
 class _ProductInfoSectionState extends State<ProductInfoSection> {
   bool _isDescriptionExpanded = false;
 
-  int _selectedConfigIndex = 1;
-  final List<String> _configurations = [
-    '256GB / 8GB RAM',
-    '512GB / 16GB RAM',
-    '1TB / 24GB RAM',
-    '2TB / 64GB RAM',
-  ];
+  List<String> get _configurations {
+    if (widget.product.variants.isEmpty) return ['Standard'];
+    return widget.product.variants
+        .map((v) => v.name.replaceAll('${widget.product.name} - ', ''))
+        .toList();
+  }
 
-  final Map<String, String> _specs = {
-    'Chip': 'Apple M2 Max',
-    'RAM': '16GB Unified',
-    'Storage': '512GB SSD',
-    'Display': '14.2" Liquid Retina XDR',
-  };
+  Map<String, String> get _specs {
+    final Map<String, String> display = {};
+
+    // top specs lay tu vaulspecs
+    if (widget.product.vaultSpecs != null) {
+      final specs = widget.product.vaultSpecs!;
+      if (specs.containsKey('processor')) {
+        display['Processor'] = specs['processor'].toString();
+      } else if (specs.containsKey('chip')) {
+        display['Chip'] = specs['chip'].toString();
+      }
+
+      if (specs.containsKey('display')) {
+        display['Display'] = specs['display'].toString();
+      }
+    }
+
+    // attributes bien the
+    if (widget.product.variants.isNotEmpty &&
+        widget.selectedConfigIndex < widget.product.variants.length) {
+      final currentVariant =
+          widget.product.variants[widget.selectedConfigIndex];
+      currentVariant.attributes.forEach((key, value) {
+        final formattedKey = key[0].toUpperCase() + key.substring(1);
+        display[formattedKey] = value.toString();
+      });
+    }
+
+    return display;
+  }
+
+  Map<String, String> get _fullSpecs {
+    final Map<String, String> display = {};
+    if (widget.product.vaultSpecs != null) {
+      widget.product.vaultSpecs!.forEach((key, value) {
+        final formattedKey = key[0].toUpperCase() + key.substring(1);
+        display[formattedKey] = value.toString();
+      });
+    }
+    if (widget.product.variants.isNotEmpty &&
+        widget.selectedConfigIndex < widget.product.variants.length) {
+      final currentVariant =
+          widget.product.variants[widget.selectedConfigIndex];
+      currentVariant.attributes.forEach((key, value) {
+        final formattedKey = key[0].toUpperCase() + key.substring(1);
+        display[formattedKey] = value.toString();
+      });
+    }
+    if (display.isEmpty) return _specs;
+    return display;
+  }
+
+  void _showFullSpecs() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Thuộc tính sản phẩm',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Expanded(
+                child: ListView(
+                  children: _fullSpecs.entries
+                      .map(
+                        (e) => Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  e.key,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF8E8E93),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  e.value,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black,
+                                  ),
+                                  textAlign: TextAlign.right,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Padding(
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // tags
-          if (widget.product.tag != null) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: colorScheme.primary.withValues(alpha: 0.1),
-                ),
-              ),
-              child: Text(
-                widget.product.tag!.toUpperCase(),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: colorScheme.primary,
-                  letterSpacing: 1.0,
-                ),
-              ),
-            ),
-            const SizedBox(height: 32),
-          ],
-
-          // configuration variants
-          Text(
-            'Configuration',
+          const Text(
+            'Cấu hình',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w800,
-              color: colorScheme.onSurface,
+              color: Colors.black,
               letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 16),
-          _buildVariantSelector(_configurations, _selectedConfigIndex, (i) {
+          _buildVariantSelector(_configurations, widget.selectedConfigIndex, (
+            i,
+          ) {
             HapticFeedback.selectionClick();
-            setState(() => _selectedConfigIndex = i);
-          }, colorScheme),
-
+            widget.onConfigChanged(i);
+          }),
           const SizedBox(height: 36),
-
-          // description
-          Text(
-            'Description',
+          const Text(
+            'Mô tả sản phẩm',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w800,
-              color: colorScheme.onSurface,
+              color: Colors.black,
               letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           GestureDetector(
             onTap: () {
               setState(() {
@@ -99,22 +193,22 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
             },
             child: AnimatedCrossFade(
               firstChild: Text(
-                'Experience unparalleled performance and stunning visuals with the latest Apple silicon technology. Designed for professionals and enthusiasts who demand the absolute best in reliability, speed, and elegance.',
+                widget.product.description,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w400,
-                  color: colorScheme.onSurfaceVariant,
+                  color: Color(0xFF3C3C43),
                   height: 1.5,
                 ),
               ),
               secondChild: Text(
-                'Experience unparalleled performance and stunning visuals with the latest Apple silicon technology. Designed for professionals and enthusiasts who demand the absolute best in reliability, speed, and elegance. This device seamlessly integrates into your workflow, providing exceptional battery life and an advanced thermal system to keep you going all day with blazing fast speeds and incredible efficiency.',
-                style: TextStyle(
+                widget.product.description,
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w400,
-                  color: colorScheme.onSurfaceVariant,
+                  color: Color(0xFF3C3C43),
                   height: 1.5,
                 ),
               ),
@@ -124,7 +218,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
               duration: const Duration(milliseconds: 300),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           GestureDetector(
             onTap: () {
               setState(() {
@@ -132,29 +226,51 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
               });
             },
             child: Text(
-              _isDescriptionExpanded ? 'Show less' : 'Show more',
-              style: TextStyle(
+              _isDescriptionExpanded ? 'Ẩn bớt' : 'Xem thêm',
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: colorScheme.primary,
+                color: Colors.black,
+                decoration: TextDecoration.underline,
               ),
             ),
           ),
-
           const SizedBox(height: 36),
-
-          // specs
-          Text(
-            'Specifications',
+          const Text(
+            'Thuộc tính',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w800,
-              color: colorScheme.onSurface,
+              color: Colors.black,
               letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 16),
-          _buildSpecsList(colorScheme),
+          _buildSpecsList(),
+          const SizedBox(height: 20),
+          Center(
+            child: GestureDetector(
+              onTap: _showFullSpecs,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  border: Border.all(color: const Color(0xFFE5E5EA)),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'Xem thêm thuộc tính',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -164,7 +280,6 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
     List<String> options,
     int selectedIndex,
     Function(int) onSelect,
-    ColorScheme colorScheme,
   ) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -173,44 +288,62 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
       child: Row(
         children: List.generate(options.length, (index) {
           final isSelected = selectedIndex == index;
+          final variant =
+              widget.product.variants.isNotEmpty &&
+                  index < widget.product.variants.length
+              ? widget.product.variants[index]
+              : null;
+          final isOutOfStock = (variant?.stock ?? 0) <= 0;
+
           return GestureDetector(
-            onTap: () => onSelect(index),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOutCubic,
-              margin: const EdgeInsets.only(right: 14),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              transform: Matrix4.identity()..scale(isSelected ? 1.02 : 1.0),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? colorScheme.onSurface
-                    : colorScheme.surfaceContainerHigh.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isSelected
-                      ? colorScheme.onSurface
-                      : colorScheme.outline.withValues(alpha: 0.2),
-                  width: 1.5,
+            onTap: isOutOfStock ? null : () => onSelect(index),
+            child: Opacity(
+              opacity: isOutOfStock ? 0.5 : 1.0,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                margin: const EdgeInsets.only(right: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
                 ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: colorScheme.onSurface.withValues(alpha: 0.2),
-                          blurRadius: 16,
-                          offset: const Offset(0, 8),
-                        ),
-                      ]
-                    : [],
-              ),
-              child: Text(
-                options[index],
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                  color: isSelected
-                      ? colorScheme.surface
-                      : colorScheme.onSurfaceVariant,
-                  letterSpacing: -0.3,
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.black : Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isSelected ? Colors.black : const Color(0xFFE5E5EA),
+                    width: 1,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
+                          ),
+                        ]
+                      : [],
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Text(
+                      options[index],
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: isSelected
+                            ? Colors.white
+                            : const Color(0xFF3C3C43),
+                        letterSpacing: -0.2,
+                        decoration: isOutOfStock
+                            ? TextDecoration.lineThrough
+                            : null,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -220,32 +353,25 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
     );
   }
 
-  Widget _buildSpecsList(ColorScheme colorScheme) {
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHigh.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
-      child: Column(
-        children: _specs.entries.map((entry) {
-          final isLast = entry.key == _specs.entries.last.key;
-          return Column(
-            children: [
-              Row(
+  Widget _buildSpecsList() {
+    return Column(
+      children: _specs.entries.map((entry) {
+        final isLast = entry.key == _specs.entries.last.key;
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     flex: 2,
                     child: Text(
                       entry.key,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.onSurfaceVariant,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xFF8E8E93),
                       ),
                     ),
                   ),
@@ -253,28 +379,21 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                     flex: 3,
                     child: Text(
                       entry.value,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: colorScheme.onSurface,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
                       ),
                       textAlign: TextAlign.right,
                     ),
                   ),
                 ],
               ),
-              if (!isLast) ...[
-                const SizedBox(height: 16),
-                Divider(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.2),
-                  height: 1,
-                ),
-                const SizedBox(height: 16),
-              ],
-            ],
-          );
-        }).toList(),
-      ),
+            ),
+            if (!isLast) Container(height: 0.5, color: const Color(0xFFE5E5EA)),
+          ],
+        );
+      }).toList(),
     );
   }
 }

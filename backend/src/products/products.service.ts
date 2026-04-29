@@ -636,6 +636,24 @@ export class ProductsService {
         };
     }
 
+    async getProductById(id: string) {
+        const product = await this.prisma.product.findUnique({
+            where: { id },
+            include: {
+                brand: { select: { name: true, logoUrl: true } },
+                category: { select: { name: true } },
+                variants: {
+                    where: { isActive: true },
+                    orderBy: { price: "asc" },
+                },
+                assets: true
+            }
+        });
+
+        if (!product) throw new NotFoundException('Sản phẩm không tồn tại');
+        return product;
+    }
+
     async getFeaturedProducts() {
         const limit = 5;
         return await this.prisma.product.findMany({
@@ -656,7 +674,20 @@ export class ProductsService {
                 thumbnailUrl: true,
                 tagline: true,
                 description: true,
-                viewsCount: true
+                viewsCount: true,
+                vaultSpecs: true,
+                variants: {
+                    where: { isActive: true },
+                    orderBy: { price: 'asc' },
+                    select: {
+                        id: true,
+                        sku: true,
+                        name: true,
+                        price: true,
+                        stock: true,
+                        attributes: true,
+                    }
+                }
             },
             orderBy: {
                 createdAt: 'desc'
@@ -685,8 +716,16 @@ export class ProductsService {
             include: {
                 brand: { select: { name: true, logoUrl: true } },
                 variants: {
+                    where: { isActive: true },
                     orderBy: { price: 'asc' },
-                    take: 1
+                    select: {
+                        id: true,
+                        sku: true,
+                        name: true,
+                        price: true,
+                        stock: true,
+                        attributes: true,
+                    }
                 },
                 assets: {
                     where: { isPrimary: true },
@@ -709,12 +748,20 @@ export class ProductsService {
             averageRating: true,
             reviewCount: true,
             soldCount: true,
+            description: true,
+            vaultSpecs: true,
             brand: { select: { name: true } },
             variants: {
-                where: { isActive: true, stock: { gt: 0 } },
+                where: { isActive: true },
                 orderBy: { price: 'asc' },
-                take: 1,
-                select: { price: true }
+                select: {
+                    id: true,
+                    sku: true,
+                    name: true,
+                    price: true,
+                    stock: true,
+                    attributes: true,
+                }
             }
         } satisfies Prisma.ProductSelect;
 
@@ -766,8 +813,15 @@ export class ProductsService {
                 description: true,
                 variants: {
                     where: { isActive: true },
-                    take: 1,
-                    select: { price: true }
+                    orderBy: { price: 'asc' },
+                    select: {
+                        id: true,
+                        sku: true,
+                        name: true,
+                        price: true,
+                        stock: true,
+                        attributes: true,
+                    }
                 }
             },
             orderBy: {
@@ -775,12 +829,7 @@ export class ProductsService {
             }
         });
 
-        // lam phang data
-        return products.map(p => ({
-            ...p,
-            price: p.variants[0]?.price || 0,
-            variants: undefined
-        }));
+        return products;
     }
 
     async addVariant(id: string, data: CreateVariantDto) {

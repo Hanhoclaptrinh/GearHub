@@ -84,7 +84,7 @@ class _HomePageState extends State<HomePage>
     ColorScheme colorScheme,
   ) {
     return SliverAppBar(
-      pinned: true,
+      floating: true,
       elevation: 0,
       scrolledUnderElevation: 0,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,

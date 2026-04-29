@@ -1,3 +1,5 @@
+import 'package:mobile/src/shared/models/product_variant_model.dart';
+
 class ProductModel {
   final String id;
   final String name;
@@ -8,7 +10,10 @@ class ProductModel {
   final int viewsCount;
   final double averageRating;
   final int reviewCount;
+  final String description;
   final Map<String, dynamic>? vaultSpecs;
+  final String? brandName;
+  final List<ProductVariantModel> variants;
 
   const ProductModel({
     required this.id,
@@ -16,11 +21,14 @@ class ProductModel {
     required this.tagline,
     required this.price,
     required this.image,
+    required this.description,
     this.tag,
     this.viewsCount = 0,
     this.averageRating = 0.0,
     this.reviewCount = 0,
     this.vaultSpecs,
+    this.brandName,
+    this.variants = const [],
   });
 
   ProductModel copyWith({
@@ -33,7 +41,10 @@ class ProductModel {
     int? viewsCount,
     double? averageRating,
     int? reviewCount,
+    String? description,
     Map<String, dynamic>? vaultSpecs,
+    String? brandName,
+    List<ProductVariantModel>? variants,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -45,21 +56,27 @@ class ProductModel {
       viewsCount: viewsCount ?? this.viewsCount,
       averageRating: averageRating ?? this.averageRating,
       reviewCount: reviewCount ?? this.reviewCount,
+      description: description ?? this.description,
       vaultSpecs: vaultSpecs ?? this.vaultSpecs,
+      brandName: brandName ?? this.brandName,
+      variants: variants ?? this.variants,
     );
   }
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     double price = 0.0;
+    List<ProductVariantModel> variants = [];
+
     if (json['variants'] != null && (json['variants'] as List).isNotEmpty) {
-      price =
-          double.tryParse(json['variants'][0]['price']?.toString() ?? '0') ??
-          0.0;
+      variants = (json['variants'] as List)
+          .map((v) => ProductVariantModel.fromJson(v))
+          .toList();
+      price = variants.isNotEmpty ? variants.first.price : 0.0;
     } else if (json['price'] != null) {
       price = double.tryParse(json['price']?.toString() ?? '0') ?? 0.0;
     }
 
-    final String description = json['description'] ?? '';
+    final String desc = json['description'] ?? '';
     final String? apiTagline = json['tagline'];
 
     return ProductModel(
@@ -67,7 +84,7 @@ class ProductModel {
       name: json['name'] as String,
       tagline: (apiTagline != null && apiTagline.isNotEmpty)
           ? apiTagline
-          : _extractFirstSentence(description),
+          : _extractFirstSentence(desc),
       price: price,
       image: json['thumbnailUrl'] ?? '',
       tag: 'MỚI',
@@ -75,7 +92,10 @@ class ProductModel {
       averageRating:
           double.tryParse(json['averageRating']?.toString() ?? '0.0') ?? 0.0,
       reviewCount: json['reviewCount'] as int? ?? 0,
+      description: desc,
       vaultSpecs: json['vaultSpecs'] as Map<String, dynamic>?,
+      brandName: json['brand']?['name'] as String?,
+      variants: variants,
     );
   }
 
@@ -89,3 +109,4 @@ class ProductModel {
     return trimmed;
   }
 }
+

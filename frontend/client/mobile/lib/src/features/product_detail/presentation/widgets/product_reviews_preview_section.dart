@@ -1,14 +1,17 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:mobile/src/shared/models/product_model.dart';
 import '../pages/product_reviews_page.dart';
 
 class ProductReviewsPreviewSection extends StatelessWidget {
-  final bool hasReviews;
+  final ProductModel product;
 
-  const ProductReviewsPreviewSection({super.key, this.hasReviews = false});
+  const ProductReviewsPreviewSection({super.key, required this.product});
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final hasReviews = product.reviewCount > 0;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -18,14 +21,34 @@ class ProductReviewsPreviewSection extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Reviews',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: colorScheme.onSurface,
-                  letterSpacing: -0.5,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Đánh giá',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  if (hasReviews)
+                    Row(
+                      children: [
+                        const Icon(Icons.star_rounded, size: 14, color: Colors.black),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${product.averageRating} (${product.reviewCount} đánh giá)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
               ),
               if (hasReviews)
                 GestureDetector(
@@ -36,13 +59,23 @@ class ProductReviewsPreviewSection extends StatelessWidget {
                       ),
                     );
                   },
-                  child: Text(
-                    'View all →',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: colorScheme.primary,
-                    ),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Tất cả',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 10,
+                        color: Colors.grey.shade700,
+                      ),
+                    ],
                   ),
                 ),
             ],
@@ -54,7 +87,7 @@ class ProductReviewsPreviewSection extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24.0),
               child: Text(
-                'Be the first to review',
+                'Chưa có đánh giá nào. Trở thành người đầu tiên!',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
@@ -68,6 +101,7 @@ class ProductReviewsPreviewSection extends StatelessWidget {
   }
 
   Widget _buildReviewCards(ColorScheme colorScheme) {
+    // Currently fallback to dummy if no reviews are fetched
     return const Column(
       children: [
         _ReviewCard(
@@ -99,55 +133,59 @@ class _ReviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHigh.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.2),
-          width: 0.5,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.03),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.black.withValues(alpha: 0.05),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ...List.generate(5, (index) {
-                return Icon(
-                  Icons.star_rounded,
-                  size: 16,
-                  color: index < rating
-                      ? colorScheme.onSurface
-                      : colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                );
-              }),
-              const Spacer(),
+              Row(
+                children: [
+                  ...List.generate(5, (index) {
+                    return Icon(
+                      Icons.star_rounded,
+                      size: 16,
+                      color: index < rating
+                          ? Colors.black
+                          : Colors.black.withValues(alpha: 0.2),
+                    );
+                  }),
+                  const Spacer(),
+                  Text(
+                    userName,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF8E8E93),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
               Text(
-                userName,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                comment,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.black,
+                  height: 1.5,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            comment,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: colorScheme.onSurface,
-              height: 1.4,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

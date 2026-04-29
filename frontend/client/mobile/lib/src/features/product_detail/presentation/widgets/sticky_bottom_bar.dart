@@ -1,61 +1,69 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:ui';
-import 'dart:async';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/features/onboarding/presentation/widgets/three_animated_arrow.dart';
 
+const _kSurface = Color(0xFF0C0C18);
+const _kBorder = Color(0xFF1A1A28);
+const _kGold = Color(0xFFD4A843);
+const _kGoldDim = Color(0xFF1A1200);
+
 class StickyBottomBar extends StatefulWidget {
   final ProductModel product;
+  final bool isVisible;
 
-  const StickyBottomBar({super.key, required this.product});
+  const StickyBottomBar({
+    super.key,
+    required this.product,
+    this.isVisible = true,
+  });
 
   @override
   State<StickyBottomBar> createState() => _StickyBottomBarState();
 }
 
-class _StickyBottomBarState extends State<StickyBottomBar>
-    with SingleTickerProviderStateMixin {
+class _StickyBottomBarState extends State<StickyBottomBar> {
   bool _isAdded = false;
   double _dragPosition = 0.0;
   double _sliderWidth = 0.0;
-  final double _thumbSize = 56.0;
+  final double _thumbSz = 52.0;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-        child: Container(
-          decoration: BoxDecoration(
-            color: colorScheme.surface.withValues(alpha: 0.70),
-            borderRadius: BorderRadius.circular(40),
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.2),
-              width: 0.5,
+    return AnimatedSlide(
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOutCubic,
+      offset: widget.isVisible ? Offset.zero : const Offset(0, 1.5),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 6, 20, 16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: _kSurface.withValues(alpha: 0.92),
+              borderRadius: BorderRadius.circular(36),
+              border: Border.all(color: _kBorder, width: 0.5),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x40000000),
+                  blurRadius: 28,
+                  offset: Offset(0, 10),
+                ),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 30,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(40),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-              child: Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: Row(
-                  children: [
-                    _buildOrderButton(colorScheme),
-                    const SizedBox(width: 10),
-                    Expanded(child: _buildSlideToAddButton(colorScheme)),
-                  ],
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(36),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Row(
+                    children: [
+                      _buildOrderBtn(),
+                      const SizedBox(width: 8),
+                      Expanded(child: _buildSlider()),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -65,166 +73,165 @@ class _StickyBottomBarState extends State<StickyBottomBar>
     );
   }
 
-  Widget _buildSlideToAddButton(ColorScheme colorScheme) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        _sliderWidth = constraints.maxWidth;
-        final maxDragPosition = _sliderWidth - _thumbSize - 8;
-
-        return Container(
-          height: 64,
-          decoration: BoxDecoration(
-            color: colorScheme.primaryContainer.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(
-              color: _isAdded
-                  ? const Color(0xFF34C759)
-                  : colorScheme.primary.withValues(alpha: 0.3),
-              width: 1,
-            ),
+  // order btn
+  Widget _buildOrderBtn() => GestureDetector(
+    onTap: () => HapticFeedback.lightImpact(),
+    child: Container(
+      height: 60,
+      padding: const EdgeInsets.symmetric(horizontal: 22),
+      decoration: BoxDecoration(
+        color: _kGoldDim,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: _kGold.withValues(alpha: 0.30), width: 0.5),
+      ),
+      child: const Center(
+        child: Text(
+          'MUA NGAY',
+          style: TextStyle(
+            color: _kGold,
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.2,
           ),
-          child: Stack(
-            alignment: Alignment.centerLeft,
-            children: [
-              AnimatedContainer(
+        ),
+      ),
+    ),
+  );
+
+  // slide to add
+  Widget _buildSlider() => LayoutBuilder(
+    builder: (context, box) {
+      _sliderWidth = box.maxWidth;
+      final maxDrag = _sliderWidth - _thumbSz - 8;
+
+      return Container(
+        height: 60,
+        decoration: BoxDecoration(
+          color: _kGoldDim.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: _isAdded
+                ? const Color(0xFF2A6A40)
+                : _kGold.withValues(alpha: 0.22),
+            width: 0.5,
+          ),
+        ),
+        child: Stack(
+          alignment: Alignment.centerLeft,
+          children: [
+            AnimatedContainer(
+              duration: _dragPosition == 0
+                  ? const Duration(milliseconds: 350)
+                  : Duration.zero,
+              curve: Curves.easeOutCubic,
+              width: _isAdded ? _sliderWidth : _dragPosition + _thumbSz + 8,
+              height: 60,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: _isAdded
+                      ? [const Color(0xFF1A4A30), const Color(0xFF1F5A38)]
+                      : [_kGoldDim, const Color(0xFF261A00)],
+                ),
+                borderRadius: BorderRadius.circular(28),
+              ),
+            ),
+
+            Center(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                child: Padding(
+                  key: ValueKey(_isAdded),
+                  padding: EdgeInsets.only(left: _isAdded ? 0 : 48),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _isAdded ? 'ĐÃ THÊM VÀO GIỎ' : 'THÊM VÀO GIỎ',
+                        style: TextStyle(
+                          color: _isAdded
+                              ? const Color(0xFF5DBA88)
+                              : _kGold.withValues(alpha: 0.70),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                      if (!_isAdded) ...[
+                        const SizedBox(width: 8),
+                        ThreeAnimatedArrows(
+                          color: _kGold.withValues(alpha: 0.40),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // thumb
+            if (!_isAdded)
+              AnimatedPositioned(
                 duration: _dragPosition == 0
-                    ? const Duration(milliseconds: 300)
+                    ? const Duration(milliseconds: 380)
                     : Duration.zero,
                 curve: Curves.easeOutCubic,
-                width: _isAdded ? _sliderWidth : _dragPosition + _thumbSize + 8,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: _isAdded
-                      ? const Color(0xFF34C759)
-                      : colorScheme.primary,
-                  borderRadius: BorderRadius.circular(32),
-                ),
-              ),
-
-              Center(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: Padding(
-                    key: ValueKey(_isAdded),
-                    padding: EdgeInsets.only(left: _isAdded ? 0 : 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _isAdded ? 'Added to Cart' : 'Add to Cart',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: _isAdded
-                                ? Colors.white
-                                : colorScheme.onPrimary,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        if (!_isAdded) ...[
-                          const SizedBox(width: 8),
-                          ThreeAnimatedArrows(color: colorScheme.onPrimary),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // slide thumb
-              if (!_isAdded)
-                AnimatedPositioned(
-                  duration: _dragPosition == 0
-                      ? const Duration(milliseconds: 400)
-                      : Duration.zero,
-                  curve: Curves.easeOutCubic,
-                  left: 4 + _dragPosition,
-                  child: GestureDetector(
-                    onHorizontalDragUpdate: (details) {
+                left: 4 + _dragPosition,
+                child: GestureDetector(
+                  onHorizontalDragUpdate: (d) => setState(() {
+                    _dragPosition = (_dragPosition + d.delta.dx).clamp(
+                      0,
+                      maxDrag,
+                    );
+                  }),
+                  onHorizontalDragEnd: (d) {
+                    if (_dragPosition > maxDrag * 0.75) {
+                      HapticFeedback.heavyImpact();
                       setState(() {
-                        _dragPosition += details.delta.dx;
-                        if (_dragPosition < 0) _dragPosition = 0;
-                        if (_dragPosition > maxDragPosition) {
-                          _dragPosition = maxDragPosition;
+                        _dragPosition = maxDrag;
+                        _isAdded = true;
+                      });
+                      Future.delayed(const Duration(seconds: 2), () {
+                        if (mounted) {
+                          setState(() {
+                            _isAdded = false;
+                            _dragPosition = 0;
+                          });
                         }
                       });
-                    },
-                    onHorizontalDragEnd: (details) {
-                      if (_dragPosition > maxDragPosition * 0.75) {
-                        HapticFeedback.heavyImpact();
-                        setState(() {
-                          _dragPosition = maxDragPosition;
-                          _isAdded = true;
-                        });
-
-                        Future.delayed(const Duration(seconds: 2), () {
-                          if (mounted) {
-                            setState(() {
-                              _isAdded = false;
-                              _dragPosition = 0.0;
-                            });
-                          }
-                        });
-                      } else {
-                        setState(() {
-                          _dragPosition = 0.0;
-                        });
-                        HapticFeedback.lightImpact();
-                      }
-                    },
-                    child: Container(
-                      width: _thumbSize,
-                      height: _thumbSize,
-                      decoration: BoxDecoration(
-                        color: colorScheme.onPrimary,
-                        borderRadius: BorderRadius.circular(28),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.15),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                    } else {
+                      HapticFeedback.lightImpact();
+                      setState(() => _dragPosition = 0);
+                    }
+                  },
+                  child: Container(
+                    width: _thumbSz,
+                    height: _thumbSz,
+                    decoration: BoxDecoration(
+                      color: _kGoldDim,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: _kGold.withValues(alpha: 0.45),
+                        width: 0.5,
                       ),
-                      child: Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        color: colorScheme.primary,
-                        size: 26,
-                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _kGold.withValues(alpha: 0.15),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: _kGold,
+                      size: 18,
                     ),
                   ),
                 ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildOrderButton(ColorScheme colorScheme) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.mediumImpact();
-      },
-      child: Container(
-        height: 64,
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        decoration: BoxDecoration(
-          color: colorScheme.onSurface,
-          borderRadius: BorderRadius.circular(32),
+              ),
+          ],
         ),
-        child: Center(
-          child: Text(
-            'Order',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              color: colorScheme.surface,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+      );
+    },
+  );
 }

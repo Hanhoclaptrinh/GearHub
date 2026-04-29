@@ -9,6 +9,10 @@ import 'package:mobile/src/features/home/data/datasources/home_remote_datasource
 import 'package:mobile/src/features/home/data/repositories/home_repository_impl.dart';
 import 'package:mobile/src/features/home/domain/repositories/home_repository.dart';
 import 'package:mobile/src/features/home/presentation/state/home_cubit.dart';
+import 'package:mobile/src/features/product_detail/data/datasources/product_detail_remote_datasource.dart';
+import 'package:mobile/src/features/product_detail/data/repositories/product_detail_repository_impl.dart';
+import 'package:mobile/src/features/product_detail/domain/repositories/product_detail_repository.dart';
+import 'package:mobile/src/features/product_detail/presentation/state/product_detail_cubit.dart';
 
 final getIt = GetIt.instance;
 
@@ -49,5 +53,22 @@ void setupDependencies() {
 
   getIt.registerFactory<HomeCubit>(
     () => HomeCubit(repository: getIt<HomeRepository>()),
+  );
+
+  // product detail
+  getIt.registerLazySingleton<ProductDetailRemoteDatasource>(
+    () => ProductDetailRemoteDatasource(dio: getIt<ApiClient>().dio),
+  );
+
+  getIt.registerLazySingleton<ProductDetailRepository>(
+    () => ProductDetailRepositoryImpl(
+      remoteDatasource: getIt<ProductDetailRemoteDatasource>(),
+    ),
+  );
+
+  getIt.registerFactory<ProductDetailCubit>(
+    () => ProductDetailCubit(
+      repository: getIt<ProductDetailRepository>(),
+    ),
   );
 }

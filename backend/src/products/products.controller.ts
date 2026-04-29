@@ -52,11 +52,6 @@ export class ProductsController {
         return this.productsService.getFeaturedProducts();
     }
 
-    @Get(':id/related')
-    async getRelatedProducts(@Param('id') id: string) {
-        return this.productsService.getRelatedProducts(id);
-    }
-
     @Get('top-rated')
     async getTopRatedProducts() {
         return this.productsService.getTopRatedProducts(5);
@@ -65,6 +60,16 @@ export class ProductsController {
     @Get('vault')
     async getVaultProducts() {
         return this.productsService.getVaultProducts();
+    }
+
+    @Get(':id')
+    async getProduct(@Param('id') id: string) {
+        return this.productsService.getProductById(id);
+    }
+
+    @Get(':id/related')
+    async getRelatedProducts(@Param('id') id: string) {
+        return this.productsService.getRelatedProducts(id);
     }
 
     @Post(':id/view')

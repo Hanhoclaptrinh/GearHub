@@ -52,6 +52,7 @@ class HeroCard extends StatelessWidget {
                   tagline: product.tagline,
                   price: 0,
                   image: product.image,
+                  description: product.description,
                 ),
               ),
             ),

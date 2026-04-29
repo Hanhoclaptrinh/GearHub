@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:vector_math/vector_math_64.dart' show Matrix4;
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/core/utils/formatter_utils.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 
 class ProductHeroSection extends StatefulWidget {
   final ProductModel product;
-  final int selectedColorIndex;
-  final List<Color> variantColors;
+  final int selectedVariantIndex;
   final int quantity;
   final Function(int) onColorTarget;
   final Function() onIncrement;
@@ -20,8 +21,7 @@ class ProductHeroSection extends StatefulWidget {
   const ProductHeroSection({
     super.key,
     required this.product,
-    required this.selectedColorIndex,
-    required this.variantColors,
+    required this.selectedVariantIndex,
     required this.quantity,
     required this.onColorTarget,
     required this.onIncrement,
@@ -44,13 +44,11 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
   void initState() {
     super.initState();
     _pageController = PageController(
-      initialPage: widget
-          .selectedColorIndex, // nhay den hinh anh cua mau duoc chon tu truoc
-      viewportFraction: 0.8, // 80% chieu ngang
+      initialPage: widget.selectedVariantIndex,
+      viewportFraction: 0.9,
     );
-    _pageOffset.value = widget.selectedColorIndex.toDouble();
+    _pageOffset.value = widget.selectedVariantIndex.toDouble();
 
-    // su kien scroll hero
     _pageController.addListener(() {
       if (_pageController.hasClients) {
         _pageOffset.value = _pageController.page ?? 0.0;
@@ -60,19 +58,10 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
 
   @override
   void didUpdateWidget(ProductHeroSection oldWidget) {
-    // chi thay doi khi co su thay doi bien the mau sac
-    if (oldWidget.selectedColorIndex != widget.selectedColorIndex) {
-      // scroll toi trang anh tuong ung voi mau sac duoc chon
-      if (_pageController.hasClients &&
-          _pageController.page?.toInt() != widget.selectedColorIndex) {
-        _pageController.animateToPage(
-          widget.selectedColorIndex,
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOutCubic,
-        );
-      }
+    if (oldWidget.selectedVariantIndex != widget.selectedVariantIndex) {
+      // logic for changing image if variants have different images
     }
-    super.didUpdateWidget(oldWidget); // cap nhat widget
+    super.didUpdateWidget(oldWidget);
   }
 
   @override
@@ -82,294 +71,396 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
     super.dispose();
   }
 
+  Color _parseColor(String? colorName) {
+    if (colorName == null) return Colors.grey;
+    final name = colorName.toLowerCase();
+    if (name.contains('gray') || name.contains('xám')) {
+      return const Color(0xFF1C1C1E);
+    }
+    if (name.contains('silver') || name.contains('bạc')) {
+      return const Color(0xFFE5E5EA);
+    }
+    if (name.contains('gold') || name.contains('vàng')) {
+      return const Color(0xFFFACC15);
+    }
+    if (name.contains('black') || name.contains('đen')) return Colors.black;
+    if (name.contains('white') || name.contains('trắng')) return Colors.white;
+    if (name.contains('blue') || name.contains('xanh')) return Colors.blue;
+    return Colors.grey;
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final colorScheme = Theme.of(context).colorScheme;
-    final selectedColor = widget.variantColors[widget.selectedColorIndex];
+    final currentVariant =
+        widget.product.variants.isNotEmpty &&
+            widget.selectedVariantIndex < widget.product.variants.length
+        ? widget.product.variants[widget.selectedVariantIndex]
+        : null;
+
+    final isOutOfStock = (currentVariant?.stock ?? 0) <= 0;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // qty col
-              _buildVerticalQty(colorScheme),
-              // color dots
-              _buildColorDots(colorScheme),
-              // fav button
-              _buildFavButton(colorScheme),
-            ],
-          ),
-          const SizedBox(height: 20),
-          // main img area
-          SizedBox(
-            height: size.height * 0.3,
-            child: Stack(
-              alignment: Alignment.center,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // glow
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 500),
-                  width: size.width * 0.5,
-                  height: size.width * 0.5,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: selectedColor.withValues(alpha: 0.15),
-                    boxShadow: [
-                      BoxShadow(
-                        color: selectedColor.withValues(alpha: 0.1),
-                        blurRadius: 80,
-                        spreadRadius: 20,
-                      ),
-                    ],
+                // brand
+                Text(
+                  widget.product.brandName?.toUpperCase() ?? '',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF8E8E93),
+                    letterSpacing: 2.0,
                   ),
                 ),
+                const SizedBox(height: 8),
 
-                // swipable img
-                PageView.builder(
-                  controller: _pageController,
-                  itemCount: widget.variantColors.length,
-                  onPageChanged: widget.onColorTarget,
-                  clipBehavior: Clip.none,
-                  itemBuilder: (context, index) {
-                    return ValueListenableBuilder<double>(
-                      valueListenable: _pageOffset,
-                      builder: (context, offset, child) {
-                        // tinh khoang cach hien tai cua anh toi tam man hinh
-                        final double diff = index - offset;
-                        // cang xa tam anh cang nho dan
-                        final double scale = (1 - (diff.abs() * 0.2)).clamp(
-                          0.7,
-                          1.0,
-                        );
+                // prod name
+                Text(
+                  widget.product.name.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black,
+                    letterSpacing: -0.5,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 12),
 
-                        return Transform(
-                          // dung ma tran vector de xoay anh
-                          transform: Matrix4.identity()
-                            ..setEntry(3, 2, 0.001)
-                            ..rotateY(diff * -0.15)
-                            ..scale(scale),
-                          alignment: Alignment.center,
-                          child: Hero(
-                            tag: index == widget.selectedColorIndex
-                                ? 'product_${widget.product.id}'
-                                : 'product_${widget.product.id}_$index',
+                // availability
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: isOutOfStock
+                            ? const Color(0xFFFF3B30)
+                            : const Color(0xFF34C759),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                (isOutOfStock
+                                        ? const Color(0xFFFF3B30)
+                                        : const Color(0xFF34C759))
+                                    .withValues(alpha: 0.3),
+                            blurRadius: 4,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      isOutOfStock
+                          ? 'Hết hàng'
+                          : 'Còn hàng - ${currentVariant?.stock} có sẵn',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isOutOfStock
+                            ? const Color(0xFFFF3B30)
+                            : const Color(0xFF34C759),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // price
+                Text(
+                  formatVND(currentVariant?.price ?? widget.product.price),
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black,
+                    letterSpacing: -1.0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // prod img
+          SizedBox(
+            height: size.height * 0.35,
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: 1,
+              itemBuilder: (context, index) {
+                return ValueListenableBuilder<double>(
+                  valueListenable: _pageOffset,
+                  builder: (context, offset, child) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: Center(
+                        child: Hero(
+                          tag: 'product_${widget.product.id}',
+                          child: ColorFiltered(
+                            colorFilter: isOutOfStock
+                                ? const ColorFilter.matrix([
+                                    0.2126,
+                                    0.7152,
+                                    0.0722,
+                                    0,
+                                    0,
+                                    0.2126,
+                                    0.7152,
+                                    0.0722,
+                                    0,
+                                    0,
+                                    0.2126,
+                                    0.7152,
+                                    0.0722,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    1,
+                                    0,
+                                  ])
+                                : const ColorFilter.mode(
+                                    Colors.transparent,
+                                    BlendMode.multiply,
+                                  ),
                             child: widget.product.image.startsWith('http')
                                 ? CachedNetworkImage(
                                     imageUrl: widget.product.image,
                                     fit: BoxFit.contain,
-                                    placeholder: (context, url) => const Center(
+                                    placeholder: (_, __) => const Center(
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
                                       ),
                                     ),
-                                    errorWidget: (context, url, error) =>
-                                        const Icon(
-                                          Icons.broken_image_outlined,
-                                          size: 40,
-                                          color: Colors.black12,
-                                        ),
+                                    errorWidget: (_, __, ___) => const Icon(
+                                      Icons.broken_image_outlined,
+                                      size: 40,
+                                      color: Colors.grey,
+                                    ),
                                   )
                                 : Image.asset(
                                     widget.product.image,
                                     fit: BoxFit.contain,
                                   ),
                           ),
-                        );
-                      },
+                        ),
+                      ),
                     );
                   },
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // color & qty
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(widget.product.variants.length, (i) {
+                    final variant = widget.product.variants[i];
+                    final colorName =
+                        variant.attributes['color'] ??
+                        variant.attributes['Màu sắc'];
+                    final dotColor = _parseColor(colorName);
+                    final selected = widget.selectedVariantIndex == i;
+                    final variantOutOfStock = variant.stock <= 0;
+
+                    return GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        widget.onColorTarget(i);
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        margin: const EdgeInsets.only(right: 12),
+                        width: selected ? 28 : 22,
+                        height: selected ? 28 : 22,
+                        decoration: BoxDecoration(
+                          color: dotColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: selected
+                                ? Colors.black
+                                : Colors.grey.shade300,
+                            width: selected ? 2 : 1,
+                          ),
+                        ),
+                        child: variantOutOfStock
+                            ? Center(
+                                child: Container(
+                                  width: 1.5,
+                                  height: 14,
+                                  color: selected ? Colors.black : Colors.grey,
+                                  transform: Matrix4.rotationZ(0.7),
+                                ),
+                              )
+                            : null,
+                      ),
+                    );
+                  }),
                 ),
+                _buildQuantitySelector(),
               ],
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 32),
 
-          // price
-          Column(
-            children: [
-              Text(
-                'Price',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildTrustBadge(LucideIcons.shieldCheck, 'Bảo hành 36 tháng'),
+                const SizedBox(width: 8),
+                _buildTrustBadge(LucideIcons.truck, 'Giao hàng hỏa tốc'),
+                const SizedBox(width: 8),
+                _buildTrustBadge(LucideIcons.badgeCheck, 'Cam kết chính hãng'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuantitySelector() {
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.black.withValues(alpha: 0.08),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // minus btn
+          _qtyBtn(
+            icon: LucideIcons.minus,
+            onTap: widget.onDecrement,
+            onLongPress: widget.onLongPressDecrement,
+            onLongPressUp: widget.onLongPressEnd,
+            disabled: widget.quantity <= 1,
+          ),
+
+          Container(
+            constraints: const BoxConstraints(minWidth: 40),
+            alignment: Alignment.center,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(scale: animation, child: child),
+                );
+              },
+              child: Text(
+                '${widget.quantity}',
+                key: ValueKey<int>(widget.quantity),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                  color: Colors.black,
                 ),
               ),
-              Text(
-                '\$${widget.product.price.toStringAsFixed(0)}',
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w900,
-                  color: colorScheme.onSurface,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
+            ),
+          ),
+
+          // plus btn
+          _qtyBtn(
+            icon: LucideIcons.plus,
+            onTap: widget.onIncrement,
+            onLongPress: widget.onLongPressIncrement,
+            onLongPressUp: widget.onLongPressEnd,
+            disabled: widget.quantity >= widget.maxQuantity,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildVerticalQty(ColorScheme colorScheme) {
-    final bool isMin = widget.quantity <= 1;
-    final bool isMax = widget.quantity >= widget.maxQuantity;
-
-    return Column(
-      children: [
-        Text(
-          'Qty',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-          ),
-        ),
-        const SizedBox(height: 8),
-        _circleControl(
-          LucideIcons.plus,
-          isMax ? null : widget.onIncrement,
-          isMax ? null : widget.onLongPressIncrement,
-          isMax,
-          colorScheme,
-        ),
-        const SizedBox(height: 8),
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: colorScheme.onSurface,
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: Text(
-              '${widget.quantity}',
-              style: TextStyle(
-                color: colorScheme.surface,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        _circleControl(
-          LucideIcons.minus,
-          isMin ? null : widget.onDecrement,
-          isMin ? null : widget.onLongPressDecrement,
-          isMin,
-          colorScheme,
-        ),
-      ],
-    );
-  }
-
-  Widget _circleControl(
-    IconData icon,
-    VoidCallback? onTap,
-    VoidCallback? onLongPress,
-    bool disabled,
-    ColorScheme colorScheme,
-  ) {
+  Widget _qtyBtn({
+    required IconData icon,
+    required VoidCallback onTap,
+    required VoidCallback onLongPress,
+    required VoidCallback onLongPressUp,
+    bool disabled = false,
+  }) {
     return GestureDetector(
-      onTap: onTap,
-      onLongPressStart: onLongPress != null ? (_) => onLongPress() : null,
-      onLongPressEnd: (_) => widget.onLongPressEnd(),
-      onLongPressCancel: widget.onLongPressEnd,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 200),
-        opacity: disabled ? 0.2 : 1.0,
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHigh.withValues(alpha: 0.5),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-            ),
-          ),
-          child: Icon(icon, size: 18, color: colorScheme.onSurface),
+      onTap: disabled
+          ? null
+          : () {
+              HapticFeedback.lightImpact();
+              onTap();
+            },
+      onLongPress: disabled ? null : onLongPress,
+      onLongPressUp: disabled ? null : onLongPressUp,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.transparent,
+        ),
+        child: Opacity(
+          opacity: disabled ? 0.2 : 1.0,
+          child: Icon(icon, size: 18, color: Colors.black),
         ),
       ),
     );
   }
 
-  Widget _buildColorDots(ColorScheme colorScheme) {
-    return Column(
-      children: [
-        Text(
-          'Active',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(widget.variantColors.length, (index) {
-            final isSelected = widget.selectedColorIndex == index;
-            final color = widget.variantColors[index];
-            return GestureDetector(
-              onTap: () => widget.onColorTarget(index),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: isSelected ? 24 : 14,
-                height: isSelected ? 24 : 14,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: isSelected
-                      ? Border.all(color: colorScheme.onSurface, width: 2)
-                      : null,
-                ),
-              ),
-            );
-          }),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFavButton(ColorScheme colorScheme) {
-    return Column(
-      children: [
-        Text(
-          'Fav',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHigh.withValues(alpha: 0.5),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+  Widget _buildTrustBadge(IconData icon, String label) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: const Color(0xFF1C1C1E)),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF8E8E93),
+              height: 1.3,
             ),
           ),
-          child: Icon(
-            LucideIcons.heart,
-            size: 20,
-            color: colorScheme.onSurface,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

@@ -29,6 +29,7 @@ class _CartPageState extends State<CartPage> {
       tagline: 'Fast Charging 2m',
       price: 29,
       image: 'assets/images/hero1.png',
+      description: "test",
     ),
     const ProductModel(
       id: 'r2',
@@ -36,6 +37,7 @@ class _CartPageState extends State<CartPage> {
       tagline: 'Premium Grade Leather',
       price: 59,
       image: 'assets/images/hero4.png',
+      description: "test",
     ),
     const ProductModel(
       id: 'r3',
@@ -43,6 +45,7 @@ class _CartPageState extends State<CartPage> {
       tagline: 'Tempered Glass',
       price: 19,
       image: 'assets/images/hero3.png',
+      description: "test",
     ),
   ];
 

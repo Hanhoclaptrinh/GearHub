@@ -1,44 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/src/shared/models/product_model.dart';
+import 'package:mobile/src/core/utils/formatter_utils.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../pages/product_detail_page.dart';
 
 class ProductRecommendationsSection extends StatelessWidget {
-  const ProductRecommendationsSection({super.key});
+  final List<ProductModel> recommendations;
+
+  const ProductRecommendationsSection({
+    super.key,
+    required this.recommendations,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    final List<Map<String, dynamic>> recommendations = [
-      {
-        'name': 'MacBook Pro 16"',
-        'price': '\$2499',
-        'image': 'assets/images/hero1.png',
-      },
-      {
-        'name': 'AirPods Max',
-        'price': '\$549',
-        'image': 'assets/images/hero2.png',
-      },
-      {
-        'name': 'ROG Helios II',
-        'price': '\$199',
-        'image': 'assets/images/hero3.png',
-      },
-    ];
+    if (recommendations.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 32.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24.0),
             child: Text(
-              'You might also like',
+              'Có thể bạn cũng thích',
               style: TextStyle(
                 fontSize: 22,
-                fontWeight: FontWeight.w900,
-                color: colorScheme.onSurface,
-                letterSpacing: -0.8,
+                fontWeight: FontWeight.w800,
+                color: Colors.black,
+                letterSpacing: -0.5,
               ),
             ),
           ),
@@ -48,13 +39,8 @@ class ProductRecommendationsSection extends StatelessWidget {
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
-              children: recommendations.map((item) {
-                return _RecommendationCard(
-                  name: item['name'],
-                  price: item['price'],
-                  image: item['image'],
-                  colorScheme: colorScheme,
-                );
+              children: recommendations.map((product) {
+                return _RecommendationCard(product: product);
               }).toList(),
             ),
           ),
@@ -65,69 +51,71 @@ class ProductRecommendationsSection extends StatelessWidget {
 }
 
 class _RecommendationCard extends StatelessWidget {
-  final String name;
-  final String price;
-  final String image;
-  final ColorScheme colorScheme;
+  final ProductModel product;
 
-  const _RecommendationCard({
-    required this.name,
-    required this.price,
-    required this.image,
-    required this.colorScheme,
-  });
+  const _RecommendationCard({required this.product});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 160,
-      margin: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AspectRatio(
-            aspectRatio: 1,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-                    colorScheme.surfaceContainerHigh.withValues(alpha: 0.2),
-                  ],
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProductDetailPage(product: product),
+          ),
+        );
+      },
+      child: Container(
+        width: 160,
+        margin: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AspectRatio(
+              aspectRatio: 1,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F7),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
                 ),
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.1),
+                child: Center(
+                  child: product.image.startsWith('http')
+                      ? CachedNetworkImage(
+                          imageUrl: product.image,
+                          fit: BoxFit.contain,
+                          placeholder: (_, __) => const SizedBox.shrink(),
+                          errorWidget: (_, __, ___) => const Icon(Icons.broken_image_outlined),
+                        )
+                      : Image.asset(product.image, fit: BoxFit.contain),
                 ),
               ),
-              child: Center(child: Image.asset(image, fit: BoxFit.contain)),
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: colorScheme.onSurface,
-              letterSpacing: -0.2,
+            const SizedBox(height: 12),
+            Text(
+              product.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+                letterSpacing: -0.2,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            price,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: colorScheme.primary,
+            const SizedBox(height: 4),
+            Text(
+              formatVND(product.price),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF8E8E93),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
