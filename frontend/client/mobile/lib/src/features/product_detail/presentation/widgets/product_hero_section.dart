@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../pages/product_gallery_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
@@ -14,6 +15,7 @@ class ProductHeroSection extends StatefulWidget {
   final bool is3DMode;
   final Function(String, String) onAttributeChanged;
   final VoidCallback on3DToggle;
+  final VoidCallback onARPressed;
 
   const ProductHeroSection({
     super.key,
@@ -23,6 +25,7 @@ class ProductHeroSection extends StatefulWidget {
     required this.is3DMode,
     required this.onAttributeChanged,
     required this.on3DToggle,
+    required this.onARPressed,
   });
 
   @override
@@ -209,6 +212,49 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                         ),
                       ),
                     ),
+                  )
+                else if (widget.product.hasAR)
+                  Positioned(
+                    right: 24,
+                    bottom: 12,
+                    child: GestureDetector(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        widget.onARPressed();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: const Color(0xFFE5E5EA)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(LucideIcons.box, size: 18, color: Theme.of(context).primaryColor),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Thử trong không gian',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
 
                 // indicator in 2d mode
@@ -266,13 +312,16 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
       itemCount: urls.length,
       onPageChanged: (i) => setState(() => _currentPage = i),
       itemBuilder: (context, index) {
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
-          child: Center(
-            child: _buildNetworkImage(
-              urls[index],
-              isOutOfStock,
-              heroTag: index == 0 ? 'product_${widget.product.id}' : null,
+        return GestureDetector(
+          onTap: () => _openGallery(context, urls, index),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+            child: Center(
+              child: _buildNetworkImage(
+                urls[index],
+                isOutOfStock,
+                heroTag: index == 0 ? 'product_${widget.product.id}' : 'product_gallery_$index',
+              ),
             ),
           ),
         );
@@ -280,13 +329,33 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
     );
   }
 
+  void _openGallery(BuildContext context, List<String> urls, int initialIndex) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => 
+          ProductGalleryPage(
+            images: urls, 
+            initialIndex: initialIndex,
+            mainHeroTag: 'product_${widget.product.id}',
+          ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+  }
+
   Widget _buildSingleImage(String url, bool isOutOfStock) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: Center(
-        child: Hero(
-          tag: 'product_${widget.product.id}',
-          child: _buildFilteredImage(url, isOutOfStock),
+    return GestureDetector(
+      onTap: () => _openGallery(context, [url], 0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: Hero(
+            tag: 'product_${widget.product.id}',
+            child: _buildFilteredImage(url, isOutOfStock),
+          ),
         ),
       ),
     );
@@ -360,5 +429,4 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
       ),
     );
   }
-
 }

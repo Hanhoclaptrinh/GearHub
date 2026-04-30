@@ -301,6 +301,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                       onAttributeChanged: (key, value) =>
                           _onAttributeChanged(key, value, currentProduct),
                       on3DToggle: () => setState(() => _is3DMode = !_is3DMode),
+                      onARPressed: () => _navigateToAR(currentProduct),
                     ),
                   ),
                   SliverToBoxAdapter(

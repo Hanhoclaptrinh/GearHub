@@ -56,6 +56,8 @@ class ProductModel {
 
   bool get has3DModel => glbAsset != null;
 
+  bool get hasAR => glbAsset != null || usdzAsset != null;
+
   List<String> get galleryUrls {
     if (imageAssets.isEmpty) {
       return image.isNotEmpty ? [image] : [];
