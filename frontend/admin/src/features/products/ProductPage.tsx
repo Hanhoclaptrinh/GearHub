@@ -66,6 +66,19 @@ const AttributeManager: React.FC<{
     onChange(result);
   };
 
+  useEffect(() => {
+    const newList = Object.entries(value || {}).map(([key, val]) => ({ key, val }));
+    const currentClean = items.filter(i => i.key.trim() !== '').map(i => ({ key: i.key.trim(), val: i.val }));
+    
+    if (JSON.stringify(newList) !== JSON.stringify(currentClean)) {
+      if (newList.length > 0) {
+        setItems(newList);
+      } else if (items.length === 0) {
+        setItems([{ key: '', val: '' }]);
+      }
+    }
+  }, [value]);
+
   return (
     <div className="mt-6 pt-6 border-t border-slate-100 space-y-4">
       <div className="flex items-center justify-between">
@@ -134,8 +147,21 @@ const AttributeConfigManager: React.FC<{
 
   const updateItems = (next: string[]) => {
     setItems(next);
-    onChange(next.filter(i => i.trim() !== ''));
+    onChange(next);
   };
+
+  useEffect(() => {
+    const cleanItems = items.filter(i => i.trim() !== '');
+    const cleanValue = (value || []).filter(i => i.trim() !== '');
+    
+    if (JSON.stringify(cleanItems) !== JSON.stringify(cleanValue)) {
+      if (value && value.length > 0) {
+        setItems(value);
+      } else if (items.length === 0) {
+        setItems(['']);
+      }
+    }
+  }, [value]);
 
   return (
     <div className="space-y-4">
@@ -253,9 +279,26 @@ export const ProductPage: React.FC = () => {
         setPreviews(editProduct.assets.map((a: any) => a.url));
         const pIdx = editProduct.assets.findIndex((a: any) => a.isPrimary);
         setPrimaryIndex(pIdx >= 0 ? pIdx : 0);
+      } else {
+        setPreviews([]);
+        setPrimaryIndex(0);
       }
+      setFiles([]);
+    } else if (!isEdit) {
+      reset({
+        name: '',
+        tagline: '',
+        description: '',
+        categoryId: '',
+        brandId: '',
+        attributeConfig: [],
+        variants: [{ sku: '', price: 0, stock: 0 }],
+      });
+      setPreviews([]);
+      setFiles([]);
+      setPrimaryIndex(0);
     }
-  }, [editProduct, reset]);
+  }, [editProduct, reset, isEdit]);
 
   const mutation = useMutation({
     mutationFn: (formData: FormData) => 
@@ -276,10 +319,17 @@ export const ProductPage: React.FC = () => {
   };
 
   const onRemoveImage = (index: number) => {
+    const oldAssetsCount = isEdit ? (editProduct?.assets?.length || 0) : 0;
+    
     setPreviews(prev => prev.filter((_, i) => i !== index));
-    if (index < files.length) {
-       setFiles(prev => prev.filter((_, i) => i !== index));
+    
+    if (index >= oldAssetsCount) {
+      const fileIndex = index - oldAssetsCount;
+      setFiles(prev => prev.filter((_, i) => i !== fileIndex));
+    } else if (isEdit && editProduct?.assets?.[index]) {
+      productService.removeAsset(editProduct.assets[index].id).catch(console.error);
     }
+    
     if (primaryIndex === index) setPrimaryIndex(0);
     else if (primaryIndex > index) setPrimaryIndex(primaryIndex - 1);
   };
@@ -307,14 +357,31 @@ export const ProductPage: React.FC = () => {
     formData.append('categoryId', values.categoryId);
     formData.append('brandId', values.brandId);
     formData.append('primaryIndex', primaryIndex.toString());
-    formData.append('attributeConfig', JSON.stringify(values.attributeConfig || []));
-    formData.append('variants', JSON.stringify(values.variants));
+    
+    const cleanConfig = (values.attributeConfig || []).filter(k => k.trim() !== '');
+    formData.append('attributeConfig', JSON.stringify(cleanConfig));
+    
+    const cleanVariants = values.variants.map(v => {
+      const cleanAttrs: Record<string, any> = {};
+      if (v.attributes) {
+        Object.entries(v.attributes).forEach(([k, val]) => {
+          if (k.trim()) cleanAttrs[k.trim()] = val;
+        });
+      }
+      return { ...v, attributes: cleanAttrs };
+    });
+    formData.append('variants', JSON.stringify(cleanVariants));
     
     files.forEach(file => {
       formData.append('files', file);
     });
 
     mutation.mutate(formData);
+  };
+
+  const onInvalid = (errors: any) => {
+    console.error('Form Validation Errors:', errors);
+    setError('Vui lòng kiểm tra lại các trường thông tin đỏ.');
   };
 
   if (isEdit && isEditLoading) return <div className="text-center py-20 font-bold text-primary animate-pulse font-heading">Đang tải dữ liệu sản phẩm...</div>;
@@ -331,7 +398,7 @@ export const ProductPage: React.FC = () => {
             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">{isEdit ? 'Cập nhật lại thông tin & kho' : 'Thiết lập nội dung & thuộc tính'}</p>
           </div>
         </div>
-        <Button onClick={handleSubmit(onSubmit)} isLoading={mutation.isPending} className="py-4 px-8 min-w-[200px] shadow-primary/20 shadow-2xl h-14">
+        <Button onClick={handleSubmit(onSubmit, onInvalid)} isLoading={mutation.isPending} className="py-4 px-8 min-w-[200px] shadow-primary/20 shadow-2xl h-14">
            <Save className="w-5 h-5 mr-3" />
            {isEdit ? 'Lưu thay đổi' : 'Đăng bán ngay'}
         </Button>

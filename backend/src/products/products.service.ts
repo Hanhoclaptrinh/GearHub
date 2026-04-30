@@ -166,7 +166,7 @@ export class ProductsService {
     async updateProduct(id: string, data: UpdateProductDto, files?: Express.Multer.File[]) {
         const product = await this.prisma.product.findUnique({
             where: { id },
-            include: { variants: { take: 1 } } // lay variant dau tien
+            include: { variants: { take: 1 }, assets: { orderBy: { createdAt: 'asc' } } }
         });
         if (!product) throw new NotFoundException('Sản phẩm không tồn tại');
 
@@ -283,6 +283,55 @@ export class ProductsService {
                     await tx.productVariant.update({
                         where: { id: firstVariant.id },
                         data: variantUpdate,
+                    });
+                }
+            }
+
+            // xu ly new assets
+            if (files && files.length > 0) {
+                for (const file of files) {
+                    const upload = await this.cloudinaryService.uploadFile(file);
+                    const fileName = file.originalname.toLowerCase();
+                    let type: AssetType = AssetType.IMAGE;
+                    if (fileName.endsWith('.glb')) type = AssetType.GLB;
+                    else if (fileName.endsWith('.usdz')) type = AssetType.USDZ;
+
+                    await tx.productAsset.create({
+                        data: {
+                            productId: id,
+                            url: upload.secure_url,
+                            type: type,
+                            isPrimary: false
+                        }
+                    });
+                }
+            }
+
+            // xu ly primary asset
+            if (data.primaryIndex !== undefined) {
+                const pIdx = parseInt(data.primaryIndex);
+                const allAssets = await tx.productAsset.findMany({
+                    where: { productId: id },
+                    orderBy: { createdAt: 'asc' }
+                });
+
+                if (allAssets.length > 0) {
+                    const targetIdx = Math.min(Math.max(0, pIdx), allAssets.length - 1);
+                    const primaryAsset = allAssets[targetIdx];
+
+                    await tx.productAsset.updateMany({
+                        where: { productId: id },
+                        data: { isPrimary: false }
+                    });
+
+                    await tx.productAsset.update({
+                        where: { id: primaryAsset.id },
+                        data: { isPrimary: true }
+                    });
+
+                    await tx.product.update({
+                        where: { id },
+                        data: { thumbnailUrl: primaryAsset.url }
                     });
                 }
             }
