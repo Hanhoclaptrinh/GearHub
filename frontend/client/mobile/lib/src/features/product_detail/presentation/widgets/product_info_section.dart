@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/models/product_variant_model.dart';
+
 class ProductInfoSection extends StatefulWidget {
   final ProductModel product;
   final Map<String, String> selectedAttributes;
@@ -270,7 +271,8 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                                     ? Colors.white24
                                     : Colors.black.withValues(alpha: 0.05),
                               ),
-                              image: (variant.imageUrl != null ||
+                              image:
+                                  (variant.imageUrl != null ||
                                       widget.product.image.isNotEmpty)
                                   ? DecorationImage(
                                       image: CachedNetworkImageProvider(
@@ -682,7 +684,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
               onTap();
             },
       onLongPress: disabled ? null : onLongPress,
-      onLongPressUp: onLongPressUp, 
+      onLongPressUp: onLongPressUp,
       onLongPressCancel: onLongPressUp,
       child: Container(
         width: 40,
