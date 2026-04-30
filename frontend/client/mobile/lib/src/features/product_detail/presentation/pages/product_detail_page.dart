@@ -6,12 +6,12 @@ import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/models/product_variant_model.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-
 import '../widgets/product_hero_section.dart';
 import '../widgets/product_info_section.dart';
 import '../widgets/sticky_bottom_bar.dart';
-import '../widgets/product_reviews_preview_section.dart';
-import '../widgets/product_recommendations_section.dart';
+import 'package:mobile/src/features/product_detail/presentation/widgets/product_reviews_preview_section.dart';
+import 'package:mobile/src/features/product_detail/presentation/widgets/product_trust_badges_section.dart';
+import 'package:mobile/src/features/product_detail/presentation/widgets/product_recommendations_section.dart';
 import '../state/product_detail_cubit.dart';
 import '../state/product_detail_state.dart';
 import 'product_ar_view_page.dart';
@@ -59,7 +59,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
   void _initializeAttributes(ProductModel product) {
     // kiem tra combo thuoc tinh dang duoc lua chon co trong khong
     // chi thuc hien neu combo hien tai chua duoc chon
-    if (product.variants.isNotEmpty && _selectedAttributes.isEmpty) { 
+    if (product.variants.isNotEmpty && _selectedAttributes.isEmpty) {
       final activeVariants = product.variants.where((v) => v.isActive).toList();
       if (activeVariants.isEmpty) return;
 
@@ -161,7 +161,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
     final configKeys = product.attributeConfig;
 
     return product.variants.any((v) {
-      if (!v.isActive) return false; 
+      if (!v.isActive) return false;
 
       if (configKeys.isNotEmpty) {
         return configKeys.every((k) {
@@ -177,9 +177,10 @@ class _ProductDetailViewState extends State<ProductDetailView> {
     });
   }
 
-   bool isValueInStock(String key, String value, ProductModel product) {
+  bool isValueInStock(String key, String value, ProductModel product) {
     return product.variants.any(
-      (v) => v.isActive && v.attributes[key]?.toString() == value && v.stock > 0,
+      (v) =>
+          v.isActive && v.attributes[key]?.toString() == value && v.stock > 0,
     );
   }
 
@@ -272,7 +273,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                     scrolledUnderElevation: 0,
                     leading: IconButton(
                       icon: const Icon(
-                        LucideIcons.chevronLeft,
+                        Icons.arrow_back_ios_rounded,
                         color: Colors.black,
                       ),
                       onPressed: () => Navigator.pop(context),
@@ -297,11 +298,23 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                       currentVariant: currentVariant,
                       selectedAttributes: _selectedAttributes,
                       is3DMode: _is3DMode,
+                      onAttributeChanged: (key, value) =>
+                          _onAttributeChanged(key, value, currentProduct),
+                      on3DToggle: () => setState(() => _is3DMode = !_is3DMode),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: ProductInfoSection(
+                      product: currentProduct,
+                      selectedAttributes: _selectedAttributes,
                       quantity: _quantity,
                       maxQuantity: maxQty,
                       onAttributeChanged: (key, value) =>
                           _onAttributeChanged(key, value, currentProduct),
-                      on3DToggle: () => setState(() => _is3DMode = !_is3DMode),
+                      isComboAvailable: (key, value) =>
+                          isComboAvailable(key, value, currentProduct),
+                      isValueInStock: (key, value) =>
+                          isValueInStock(key, value, currentProduct),
                       onIncrement: () {
                         if (_quantity < maxQty) {
                           setState(() => _quantity++);
@@ -326,22 +339,11 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                     ),
                   ),
                   SliverToBoxAdapter(
-                    child: ProductInfoSection(
-                      product: currentProduct,
-                      selectedAttributes: _selectedAttributes,
-                      onAttributeChanged: (key, value) =>
-                          _onAttributeChanged(key, value, currentProduct),
-                      isComboAvailable: (key, value) =>
-                          isComboAvailable(key, value, currentProduct),
-                      isValueInStock: (key, value) =>
-                          isValueInStock(key, value, currentProduct),
-                    ),
-                  ),
-                  SliverToBoxAdapter(
                     child: ProductReviewsPreviewSection(
                       product: currentProduct,
                     ),
                   ),
+                  const SliverToBoxAdapter(child: ProductTrustBadgesSection()),
                   SliverToBoxAdapter(
                     child: ProductRecommendationsSection(
                       recommendations: relatedProducts,

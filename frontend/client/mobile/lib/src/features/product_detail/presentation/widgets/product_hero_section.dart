@@ -12,15 +12,8 @@ class ProductHeroSection extends StatefulWidget {
   final ProductVariantModel? currentVariant;
   final Map<String, String> selectedAttributes;
   final bool is3DMode;
-  final int quantity;
-  final int maxQuantity;
   final Function(String, String) onAttributeChanged;
   final VoidCallback on3DToggle;
-  final VoidCallback onIncrement;
-  final VoidCallback onDecrement;
-  final VoidCallback onLongPressIncrement;
-  final VoidCallback onLongPressDecrement;
-  final VoidCallback onLongPressEnd;
 
   const ProductHeroSection({
     super.key,
@@ -28,15 +21,8 @@ class ProductHeroSection extends StatefulWidget {
     required this.currentVariant,
     required this.selectedAttributes,
     required this.is3DMode,
-    required this.quantity,
-    required this.maxQuantity,
     required this.onAttributeChanged,
     required this.on3DToggle,
-    required this.onIncrement,
-    required this.onDecrement,
-    required this.onLongPressIncrement,
-    required this.onLongPressDecrement,
-    required this.onLongPressEnd,
   });
 
   @override
@@ -59,74 +45,12 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
     super.dispose();
   }
 
-  // parse color --------------------
-  String _getColorKey() {
-    if (widget.product.attributeConfig.isNotEmpty) {
-      return widget.product.attributeConfig.firstWhere((k) {
-        final lower = k.toLowerCase();
-        return lower.contains('color') ||
-            lower.contains('màu') ||
-            lower.contains('mau');
-      }, orElse: () => widget.product.attributeConfig.first);
-    }
-
-    if (widget.product.variants.isEmpty) return 'color';
-    return widget.product.variants.first.attributes.keys.firstWhere((k) {
-      final lower = k.toLowerCase();
-      return lower.contains('color') ||
-          lower.contains('màu') ||
-          lower.contains('mau');
-    }, orElse: () => 'color');
-  }
-
-  List<String> _getUniqueColors() {
-    final colorKey = _getColorKey();
-    return widget.product.variants
-        .where((v) => v.isActive)
-        .map((v) => v.attributes[colorKey]?.toString())
-        .whereType<String>()
-        .toSet()
-        .toList();
-  }
-
-  Color _parseColor(String? colorName) {
-    if (colorName == null) return Colors.grey;
-    final name = colorName.toLowerCase();
-    if (name.contains('gray') || name.contains('xám')) {
-      return const Color(0xFF1C1C1E);
-    }
-    if (name.contains('silver') || name.contains('bạc')) {
-      return const Color(0xFFE5E5EA);
-    }
-    if (name.contains('gold') || name.contains('vàng')) {
-      return const Color(0xFFFACC15);
-    }
-    if (name.contains('black') || name.contains('đen')) return Colors.black;
-    if (name.contains('white') || name.contains('trắng')) return Colors.white;
-    if (name.contains('blue') || name.contains('xanh dương')) {
-      return const Color(0xFF007AFF);
-    }
-    if (name.contains('red') || name.contains('đỏ')) {
-      return const Color(0xFFFF3B30);
-    }
-    if (name.contains('green') || name.contains('xanh lá')) {
-      return const Color(0xFF34C759);
-    }
-    if (name.contains('pink') || name.contains('hồng')) {
-      return const Color(0xFFFF6B8A);
-    }
-    return Colors.grey;
-  }
-  // ----------------------------------------
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final currentVariant = widget.currentVariant;
     final isOutOfStock = (currentVariant?.stock ?? 0) <= 0;
     final galleryUrls = widget.product.galleryUrls;
-    final colorKey = _getColorKey();
-    final uniqueColors = _getUniqueColors();
 
     return Container(
       width: double.infinity,
@@ -315,88 +239,7 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
             ),
           ),
 
-          const SizedBox(height: 24),
-
-          // --- color dots + quantity ---
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (uniqueColors.isNotEmpty)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: uniqueColors.map((colorValue) {
-                      final dotColor = _parseColor(colorValue);
-                      final selectedColor = widget.selectedAttributes[colorKey];
-                      final isSelected = selectedColor == colorValue;
-
-                      // kiem tra so luong hang theo bien the
-                      final anyInStock = widget.product.variants.any(
-                        (v) =>
-                            v.isActive &&
-                            v.attributes[colorKey]?.toString() == colorValue &&
-                            v.stock > 0,
-                      );
-
-                      return GestureDetector(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          widget.onAttributeChanged(colorKey, colorValue);
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          margin: const EdgeInsets.only(right: 12),
-                          width: isSelected ? 28 : 22,
-                          height: isSelected ? 28 : 22,
-                          decoration: BoxDecoration(
-                            color: dotColor,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected
-                                  ? Colors.black
-                                  : Colors.grey.shade300,
-                              width: isSelected ? 2 : 1,
-                            ),
-                          ),
-                          child: !anyInStock
-                              ? Center(
-                                  child: Container(
-                                    width: 1.5,
-                                    height: 14,
-                                    color: isSelected
-                                        ? Colors.black
-                                        : Colors.grey,
-                                    transform: Matrix4.rotationZ(0.7),
-                                  ),
-                                )
-                              : null,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                _buildQuantitySelector(),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 32),
-
-          // --- trust badges ---
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildTrustBadge(LucideIcons.shieldCheck, 'Bảo hành 36 tháng'),
-                const SizedBox(width: 8),
-                _buildTrustBadge(LucideIcons.truck, 'Giao hàng hỏa tốc'),
-                const SizedBox(width: 8),
-                _buildTrustBadge(LucideIcons.badgeCheck, 'Cam kết chính hãng'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 12),
         ],
       ),
     );
@@ -518,120 +361,4 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
     );
   }
 
-  // qty selector
-  Widget _buildQuantitySelector() {
-    return Container(
-      height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.black.withValues(alpha: 0.08),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _qtyBtn(
-            icon: LucideIcons.minus,
-            onTap: widget.onDecrement,
-            onLongPress: widget.onLongPressDecrement,
-            onLongPressUp: widget.onLongPressEnd,
-            disabled: widget.quantity <= 1,
-          ),
-          Container(
-            constraints: const BoxConstraints(minWidth: 40),
-            alignment: Alignment.center,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: ScaleTransition(scale: animation, child: child),
-                );
-              },
-              child: Text(
-                '${widget.quantity}',
-                key: ValueKey<int>(widget.quantity),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  fontFeatures: [FontFeature.tabularFigures()],
-                  color: Colors.black,
-                ),
-              ),
-            ),
-          ),
-          _qtyBtn(
-            icon: LucideIcons.plus,
-            onTap: widget.onIncrement,
-            onLongPress: widget.onLongPressIncrement,
-            onLongPressUp: widget.onLongPressEnd,
-            disabled: widget.quantity >= widget.maxQuantity,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _qtyBtn({
-    required IconData icon,
-    required VoidCallback onTap,
-    required VoidCallback onLongPress,
-    required VoidCallback onLongPressUp,
-    bool disabled = false,
-  }) {
-    return GestureDetector(
-      onTap: disabled
-          ? null
-          : () {
-              HapticFeedback.lightImpact();
-              onTap();
-            },
-      onLongPress: disabled ? null : onLongPress,
-      onLongPressUp: disabled ? null : onLongPressUp,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.transparent,
-        ),
-        child: Opacity(
-          opacity: disabled ? 0.2 : 1.0,
-          child: Icon(icon, size: 18, color: Colors.black),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTrustBadge(IconData icon, String label) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: const Color(0xFF1C1C1E)),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF8E8E93),
-              height: 1.3,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

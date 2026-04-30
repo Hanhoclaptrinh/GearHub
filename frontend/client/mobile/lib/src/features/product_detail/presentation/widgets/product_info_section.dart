@@ -1,22 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/models/product_variant_model.dart';
-
 class ProductInfoSection extends StatefulWidget {
   final ProductModel product;
   final Map<String, String> selectedAttributes;
+  final int quantity;
+  final int maxQuantity;
   final Function(String, String) onAttributeChanged;
   final bool Function(String, String) isComboAvailable;
   final bool Function(String, String) isValueInStock;
+  final VoidCallback onIncrement;
+  final VoidCallback onDecrement;
+  final VoidCallback onLongPressIncrement;
+  final VoidCallback onLongPressDecrement;
+  final VoidCallback onLongPressEnd;
 
   const ProductInfoSection({
     super.key,
     required this.product,
     required this.selectedAttributes,
+    required this.quantity,
+    required this.maxQuantity,
     required this.onAttributeChanged,
     required this.isComboAvailable,
     required this.isValueInStock,
+    required this.onIncrement,
+    required this.onDecrement,
+    required this.onLongPressIncrement,
+    required this.onLongPressDecrement,
+    required this.onLongPressEnd,
   });
 
   @override
@@ -29,15 +44,12 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
   // color
   String _getColorKey() {
     if (widget.product.attributeConfig.isNotEmpty) {
-      return widget.product.attributeConfig.firstWhere(
-        (k) {
-          final lower = k.toLowerCase();
-          return lower.contains('color') ||
-              lower.contains('màu') ||
-              lower.contains('mau');
-        },
-        orElse: () => '',
-      );
+      return widget.product.attributeConfig.firstWhere((k) {
+        final lower = k.toLowerCase();
+        return lower.contains('color') ||
+            lower.contains('màu') ||
+            lower.contains('mau');
+      }, orElse: () => '');
     }
     return '';
   }
@@ -61,8 +73,9 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
   ProductVariantModel? get _currentVariant {
     if (widget.product.variants.isEmpty) return null;
     for (final v in widget.product.variants) {
-      final allMatch = widget.selectedAttributes.entries.every((entry) =>
-          v.attributes[entry.key]?.toString() == entry.value);
+      final allMatch = widget.selectedAttributes.entries.every(
+        (entry) => v.attributes[entry.key]?.toString() == entry.value,
+      );
       if (allMatch) return v;
     }
     return widget.product.variants.first;
@@ -169,6 +182,8 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
 
   @override
   Widget build(BuildContext context) {
+    final colorKey = _getColorKey();
+    final uniqueColors = colorKey.isNotEmpty ? _getUniqueValues(colorKey) : [];
     final displayKeys = _getDisplayConfigKeys();
 
     return Container(
@@ -177,6 +192,133 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // --- color selection (mini thumbnails) ---
+          if (colorKey.isNotEmpty && uniqueColors.isNotEmpty) ...[
+            const Text(
+              'Màu sắc',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: Colors.black,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 54,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.zero,
+                itemCount: uniqueColors.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (context, index) {
+                  final colorValue = uniqueColors[index];
+                  final isSelected =
+                      widget.selectedAttributes[colorKey] == colorValue;
+
+                  final variant = widget.product.variants.firstWhere(
+                    (v) =>
+                        v.isActive &&
+                        v.attributes[colorKey]?.toString() == colorValue,
+                    orElse: () => widget.product.variants.first,
+                  );
+
+                  final anyInStock = widget.product.variants.any(
+                    (v) =>
+                        v.isActive &&
+                        v.attributes[colorKey]?.toString() == colorValue &&
+                        v.stock > 0,
+                  );
+
+                  return GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      widget.onAttributeChanged(colorKey, colorValue);
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: isSelected ? Colors.black : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected
+                              ? Colors.black
+                              : const Color(0xFFE5E5EA),
+                          width: 1.5,
+                        ),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.2),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ]
+                            : [],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF2F2F7),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSelected
+                                    ? Colors.white24
+                                    : Colors.black.withValues(alpha: 0.05),
+                              ),
+                              image: (variant.imageUrl != null ||
+                                      widget.product.image.isNotEmpty)
+                                  ? DecorationImage(
+                                      image: CachedNetworkImageProvider(
+                                        variant.imageUrl ??
+                                            widget.product.image,
+                                      ),
+                                      fit: BoxFit.cover,
+                                      colorFilter: !anyInStock
+                                          ? const ColorFilter.mode(
+                                              Colors.grey,
+                                              BlendMode.saturation,
+                                            )
+                                          : null,
+                                    )
+                                  : null,
+                            ),
+                            child: !anyInStock
+                                ? Center(
+                                    child: Container(
+                                      width: 1.5,
+                                      height: 20,
+                                      transform: Matrix4.rotationZ(0.785),
+                                      color: isSelected
+                                          ? Colors.white70
+                                          : Colors.black38,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            colorValue,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: isSelected ? Colors.white : Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 36),
+          ],
+
           if (displayKeys.isNotEmpty) ...[
             ...displayKeys.map((key) {
               final uniqueValues = _getUniqueValues(key);
@@ -205,6 +347,24 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
               );
             }),
           ],
+
+          // --- quantity selector ---
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Số lượng',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              _buildQuantitySelector(),
+            ],
+          ),
+          const SizedBox(height: 36),
 
           const Text(
             'Mô tả sản phẩm',
@@ -353,8 +513,8 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                     color: isSelected
                         ? Colors.black
                         : isDisabled
-                            ? const Color(0xFFD1D1D6)
-                            : const Color(0xFFE5E5EA),
+                        ? const Color(0xFFD1D1D6)
+                        : const Color(0xFFE5E5EA),
                     width: 1,
                   ),
                   boxShadow: isSelected
@@ -374,8 +534,9 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                       val,
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight:
-                            isSelected ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                         color: isSelected
                             ? Colors.white
                             : const Color(0xFF3C3C43),
@@ -449,6 +610,92 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
           ],
         );
       }).toList(),
+    );
+  }
+
+  // qty selector
+  Widget _buildQuantitySelector() {
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF2F2F7),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _qtyBtn(
+            icon: LucideIcons.minus,
+            onTap: widget.onDecrement,
+            onLongPress: widget.onLongPressDecrement,
+            onLongPressUp: widget.onLongPressEnd,
+            disabled: widget.quantity <= 1,
+          ),
+          Container(
+            constraints: const BoxConstraints(minWidth: 40),
+            alignment: Alignment.center,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(scale: animation, child: child),
+                );
+              },
+              child: Text(
+                '${widget.quantity}',
+                key: ValueKey<int>(widget.quantity),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                  color: Colors.black,
+                ),
+              ),
+            ),
+          ),
+          _qtyBtn(
+            icon: LucideIcons.plus,
+            onTap: widget.onIncrement,
+            onLongPress: widget.onLongPressIncrement,
+            onLongPressUp: widget.onLongPressEnd,
+            disabled: widget.quantity >= widget.maxQuantity,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _qtyBtn({
+    required IconData icon,
+    required VoidCallback onTap,
+    required VoidCallback onLongPress,
+    required VoidCallback onLongPressUp,
+    bool disabled = false,
+  }) {
+    return GestureDetector(
+      onTap: disabled
+          ? null
+          : () {
+              HapticFeedback.lightImpact();
+              onTap();
+            },
+      onLongPress: disabled ? null : onLongPress,
+      onLongPressUp: onLongPressUp, 
+      onLongPressCancel: onLongPressUp,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.transparent,
+        ),
+        child: Opacity(
+          opacity: disabled ? 0.2 : 1.0,
+          child: Icon(icon, size: 18, color: Colors.black),
+        ),
+      ),
     );
   }
 }
