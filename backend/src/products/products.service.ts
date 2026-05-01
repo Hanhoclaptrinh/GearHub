@@ -36,9 +36,24 @@ export class ProductsService {
         const uploadedAssets: { url: string; type: AssetType; isPrimary: boolean }[] = [];
         const primaryIndex = parseInt(data.primaryIndex || '0');
 
-        if (files && files.length > 0) {
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
+        // cac file chung cho san pham
+        const generalFiles = (files || []).filter(f => f.fieldname === 'files' || !f.fieldname);
+        // gom nhom cac file thuoc tung bien the
+        const variantFilesMap: Record<number, Express.Multer.File[]> = {};
+
+        (files || []).forEach(f => {
+            if (f.fieldname && f.fieldname.startsWith('variant_files_')) {
+                const idx = parseInt(f.fieldname.replace('variant_files_', ''), 10);
+                if (!isNaN(idx)) {
+                    if (!variantFilesMap[idx]) variantFilesMap[idx] = [];
+                    variantFilesMap[idx].push(f);
+                }
+            }
+        });
+
+        if (generalFiles && generalFiles.length > 0) {
+            for (let i = 0; i < generalFiles.length; i++) {
+                const file = generalFiles[i];
                 const upload = await this.cloudinaryService.uploadFile(file);
                 const fileName = file.originalname.toLowerCase();
 
@@ -46,6 +61,9 @@ export class ProductsService {
                 if (fileName.endsWith('.glb')) type = AssetType.GLB;
                 else if (fileName.endsWith('.usdz')) type = AssetType.USDZ;
 
+
+                // upload assets len cld
+                // xac dinh anh primary
                 uploadedAssets.push({
                     url: upload.secure_url,
                     type,
@@ -97,9 +115,45 @@ export class ProductsService {
                 // handle variants
                 if (data.variants) {
                     const variantList = JSON.parse(data.variants);
-                    for (const v of variantList) {
+                    // dung cache tranh upload nhieu file vao cung 1 bien the
+                    const uploadedVariantFilesCache: Record<string, string> = {};
+
+                    for (let idx = 0; idx < variantList.length; idx++) {
+                        const v = variantList[idx];
                         const sku = v.sku || this.generateSKU(slug, v.attributes);
-                        await tx.productVariant.create({
+
+                        let variantImageUrl = v.imageUrl || null;
+                        const variantAssetUrls: { url: string; type: AssetType }[] = [];
+
+                        if (variantFilesMap[idx] && variantFilesMap[idx].length > 0) {
+                            for (let i = 0; i < variantFilesMap[idx].length; i++) {
+                                const vf = variantFilesMap[idx][i];
+                                const cacheKey = `${vf.originalname}_${vf.size}`;
+
+                                let secure_url: string;
+                                if (uploadedVariantFilesCache[cacheKey]) {
+                                    secure_url = uploadedVariantFilesCache[cacheKey];
+                                } else {
+                                    const upload = await this.cloudinaryService.uploadFile(vf);
+                                    secure_url = upload.secure_url;
+                                    uploadedVariantFilesCache[cacheKey] = secure_url;
+                                }
+
+                                const fName = vf.originalname.toLowerCase();
+
+                                let type: AssetType = AssetType.IMAGE;
+                                if (fName.endsWith('.glb')) type = AssetType.GLB;
+                                else if (fName.endsWith('.usdz')) type = AssetType.USDZ;
+
+                                if (i === 0 && type === AssetType.IMAGE && !variantImageUrl) {
+                                    variantImageUrl = secure_url;
+                                } else {
+                                    variantAssetUrls.push({ url: secure_url, type });
+                                }
+                            }
+                        }
+
+                        const createdVariant = await tx.productVariant.create({
                             data: {
                                 productId: product.id,
                                 sku,
@@ -107,10 +161,26 @@ export class ProductsService {
                                 price: parseFloat(v.price),
                                 stock: parseInt(v.stock || '0'),
                                 attributes: v.attributes || {},
-                                imageUrl: v.imageUrl || null,
+                                imageUrl: variantImageUrl,
                                 barcode: v.barcode || null,
                             }
                         });
+
+                        if (variantAssetUrls.length > 0) {
+                            await Promise.all(
+                                variantAssetUrls.map(va =>
+                                    tx.productAsset.create({
+                                        data: {
+                                            productId: product.id,
+                                            variantId: createdVariant.id,
+                                            url: va.url,
+                                            type: va.type,
+                                            isPrimary: false
+                                        }
+                                    })
+                                )
+                            );
+                        }
                     }
                 } else {
                     // fallback
@@ -269,6 +339,19 @@ export class ProductsService {
                 data: updateData
             });
 
+            const generalFiles = (files || []).filter(f => f.fieldname === 'files' || !f.fieldname);
+            const variantFilesMap: Record<number, Express.Multer.File[]> = {};
+
+            (files || []).forEach(f => {
+                if (f.fieldname && f.fieldname.startsWith('variant_files_')) {
+                    const idx = parseInt(f.fieldname.replace('variant_files_', ''), 10);
+                    if (!isNaN(idx)) {
+                        if (!variantFilesMap[idx]) variantFilesMap[idx] = [];
+                        variantFilesMap[idx].push(f);
+                    }
+                }
+            });
+
             // cap nhat thong tin bien the
             if (data.variants) {
                 const variants = JSON.parse(data.variants);
@@ -276,12 +359,47 @@ export class ProductsService {
                     where: { productId: id }
                 });
 
-                for (const vData of variants) {
+                const uploadedVariantFilesCache: Record<string, string> = {};
+
+                for (let idx = 0; idx < variants.length; idx++) {
+                    const vData = variants[idx];
                     const price = parseFloat(vData.price?.toString() || '0');
                     const stock = parseInt(vData.stock?.toString() || '0');
                     const sku = vData.sku || this.generateSKU(updatedProduct.slug, vData.attributes);
 
+                    let variantImageUrl = vData.imageUrl || null;
+                    const variantAssetUrls: { url: string; type: AssetType }[] = [];
+
+                    if (variantFilesMap[idx] && variantFilesMap[idx].length > 0) {
+                        for (let i = 0; i < variantFilesMap[idx].length; i++) {
+                            const vf = variantFilesMap[idx][i];
+                            const cacheKey = `${vf.originalname}_${vf.size}`;
+
+                            let secure_url: string;
+                            if (uploadedVariantFilesCache[cacheKey]) {
+                                secure_url = uploadedVariantFilesCache[cacheKey];
+                            } else {
+                                const upload = await this.cloudinaryService.uploadFile(vf);
+                                secure_url = upload.secure_url;
+                                uploadedVariantFilesCache[cacheKey] = secure_url;
+                            }
+
+                            const fName = vf.originalname.toLowerCase();
+
+                            let type: AssetType = AssetType.IMAGE;
+                            if (fName.endsWith('.glb')) type = AssetType.GLB;
+                            else if (fName.endsWith('.usdz')) type = AssetType.USDZ;
+
+                            if (i === 0 && type === AssetType.IMAGE && !variantImageUrl) {
+                                variantImageUrl = secure_url;
+                            } else {
+                                variantAssetUrls.push({ url: secure_url, type });
+                            }
+                        }
+                    }
+
                     const existing = existingVariants.find(ev => (vData.id && ev.id === vData.id) || ev.sku === sku);
+                    let finalVariantId = existing ? existing.id : null;
 
                     if (existing) {
                         await tx.productVariant.update({
@@ -292,12 +410,12 @@ export class ProductsService {
                                 price: price,
                                 stock: stock,
                                 attributes: vData.attributes || {},
-                                imageUrl: vData.imageUrl ?? existing.imageUrl,
+                                imageUrl: variantFilesMap[idx]?.length ? variantImageUrl : (vData.imageUrl || null),
                                 barcode: vData.barcode ?? existing.barcode,
                             }
                         });
                     } else {
-                        await tx.productVariant.create({
+                        const createdVariant = await tx.productVariant.create({
                             data: {
                                 productId: updatedProduct.id,
                                 sku: sku,
@@ -305,10 +423,27 @@ export class ProductsService {
                                 price: price,
                                 stock: stock,
                                 attributes: vData.attributes || {},
-                                imageUrl: vData.imageUrl || null,
+                                imageUrl: variantImageUrl || null,
                                 barcode: vData.barcode || null,
                             }
                         });
+                        finalVariantId = createdVariant.id;
+                    }
+
+                    if (finalVariantId && variantAssetUrls.length > 0) {
+                        await Promise.all(
+                            variantAssetUrls.map(va =>
+                                tx.productAsset.create({
+                                    data: {
+                                        productId: updatedProduct.id,
+                                        variantId: finalVariantId,
+                                        url: va.url,
+                                        type: va.type,
+                                        isPrimary: false
+                                    }
+                                })
+                            )
+                        );
                     }
                 }
             } else if (data.price || data.stock || data.sku || data.attributes) {
@@ -338,8 +473,8 @@ export class ProductsService {
             }
 
             // xu ly new assets
-            if (files && files.length > 0) {
-                for (const file of files) {
+            if (generalFiles && generalFiles.length > 0) {
+                for (const file of generalFiles) {
                     const upload = await this.cloudinaryService.uploadFile(file);
                     const fileName = file.originalname.toLowerCase();
                     let type: AssetType = AssetType.IMAGE;
@@ -390,6 +525,8 @@ export class ProductsService {
                 where: { id: updatedProduct.id },
                 include: { assets: true, variants: true }
             });
+        }, {
+            timeout: 20000 // 20s
         });
     }
 

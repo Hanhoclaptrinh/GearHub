@@ -22,6 +22,7 @@ import {
   Barcode,
   Settings2,
   Gem,
+  UploadCloud,
 } from 'lucide-react';
 import { productService } from '../../services/product.service';
 import { brandService } from '../../services/brand.service';
@@ -231,6 +232,7 @@ export const ProductPage: React.FC = () => {
   const [previews, setPreviews] = useState<string[]>([]);
   const [primaryIndex, setPrimaryIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [variantFiles, setVariantFiles] = useState<Record<number, File[]>>({});
 
   const [commonSpecs, setCommonSpecs] = useState<{ key: string; val: string }[]>([]);
   const [vaultSpecs, setVaultSpecs] = useState<{ key: string; val: string }[]>([]);
@@ -322,6 +324,20 @@ export const ProductPage: React.FC = () => {
         setPrimaryIndex(0);
       }
       setFiles([]);
+
+      if (editProduct.attributeConfig && editProduct.variants) {
+        const axes: Record<string, string> = {};
+        editProduct.attributeConfig.forEach((key: string) => {
+          const values = editProduct.variants
+            ?.map(v => v.attributes?.[key])
+            .filter(Boolean)
+            .map(v => String(v).trim());
+          if (values && values.length > 0) {
+            axes[key] = Array.from(new Set(values)).join(', ');
+          }
+        });
+        setGeneratorAxes(axes);
+      }
     } else if (!isEdit) {
       reset({
         name: '',
@@ -470,6 +486,12 @@ export const ProductPage: React.FC = () => {
 
     files.forEach(file => {
       formData.append('files', file);
+    });
+
+    Object.entries(variantFiles).forEach(([idx, vFiles]) => {
+      vFiles.forEach(file => {
+        formData.append(`variant_files_${idx}`, file);
+      });
     });
 
     mutation.mutate(formData);
@@ -702,6 +724,134 @@ export const ProductPage: React.FC = () => {
               </Button>
             </CardHeader>
             <CardContent className="px-10 pb-10 space-y-4">
+              {/* === BULK ACTION TOOLBAR === */}
+              <div className="bg-slate-100/60 border border-slate-200/50 p-5 rounded-2xl mb-6 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Wand2 className="w-5 h-5 text-indigo-600" />
+                  <span className="text-xs font-black text-slate-800 uppercase tracking-wide">Magic Bulk Action (Gán nhanh hàng loạt)</span>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1 flex items-center gap-1">Lọc theo Thuộc tính</label>
+                    <select 
+                      id="bulk-attr-filter-key"
+                      className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-primary transition-all font-bold text-slate-700 text-xs cursor-pointer"
+                    >
+                      <option value="">-- Tất cả thuộc tính --</option>
+                      {Array.from(new Set(
+                        (watch('variants') || []).flatMap((v: any) => v.attributes ? Object.keys(v.attributes) : [])
+                      )).map(k => (
+                        <option key={k} value={k}>{k}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1 flex items-center gap-1">Lọc theo Giá trị</label>
+                    <input 
+                      id="bulk-attr-filter-val"
+                      type="text" 
+                      placeholder="VD: Đen, 512GB" 
+                      className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-primary transition-all font-bold text-slate-700 text-xs"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2 flex items-center gap-2">
+                    <div className="flex-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase ml-1 flex items-center gap-1">Hành động áp dụng</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        <input id="bulk-price-val" type="number" placeholder="Gán Giá" className="h-10 px-3 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold w-full" />
+                        <input id="bulk-stock-val" type="number" placeholder="Gán Kho" className="h-10 px-3 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold w-full" />
+                        <input id="bulk-barcode-val" type="text" placeholder="Barcode" className="h-10 px-3 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold w-full" />
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const filterKey = (document.getElementById('bulk-attr-filter-key') as HTMLSelectElement)?.value;
+                        const filterVal = (document.getElementById('bulk-attr-filter-val') as HTMLInputElement)?.value.trim();
+                        const newPrice = (document.getElementById('bulk-price-val') as HTMLInputElement)?.value;
+                        const newStock = (document.getElementById('bulk-stock-val') as HTMLInputElement)?.value;
+                        const newBarcode = (document.getElementById('bulk-barcode-val') as HTMLInputElement)?.value;
+
+                        if (!filterKey && !filterVal && !newPrice && !newStock && !newBarcode) {
+                          alert('Vui lòng nhập thông tin lọc và gán.');
+                          return;
+                        }
+
+                        const currentVariants = watch('variants') || [];
+                        const updatedVariants = currentVariants.map((v: any) => {
+                          let matches = true;
+                          if (filterKey && filterVal) {
+                            matches = v.attributes && v.attributes[filterKey] === filterVal;
+                          } else if (filterVal) {
+                            matches = v.attributes && Object.values(v.attributes).includes(filterVal);
+                          }
+
+                          if (matches) {
+                            return {
+                              ...v,
+                              price: newPrice !== '' ? parseFloat(newPrice) : v.price,
+                              stock: newStock !== '' ? parseInt(newStock) : v.stock,
+                              barcode: newBarcode !== '' ? newBarcode : v.barcode
+                            };
+                          }
+                          return v;
+                        });
+
+                        setValue('variants', updatedVariants, { shouldDirty: true });
+                      }}
+                      className="h-10 px-4 bg-primary text-white font-black text-xs uppercase tracking-wider rounded-xl hover:bg-primary-600 active:scale-95 transition-all shadow-md cursor-pointer flex items-center justify-center min-w-[90px]"
+                    >
+                      Áp dụng
+                    </button>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-200/40 pt-3 flex flex-wrap items-center gap-3">
+                  <span className="text-[10px] font-black text-slate-400 uppercase">Hoặc gán thêm thuộc tính ẩn</span>
+                  <input id="bulk-attr-key" type="text" placeholder="Key (VD: Driver)" className="h-9 px-3 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold min-w-[140px]" />
+                  <input id="bulk-attr-val" type="text" placeholder="Value (VD: 30mm fiber)" className="h-9 px-3 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold min-w-[140px]" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const filterKey = (document.getElementById('bulk-attr-filter-key') as HTMLSelectElement)?.value;
+                      const filterVal = (document.getElementById('bulk-attr-filter-val') as HTMLInputElement)?.value.trim();
+                      const extraKey = (document.getElementById('bulk-attr-key') as HTMLInputElement)?.value.trim();
+                      const extraVal = (document.getElementById('bulk-attr-val') as HTMLInputElement)?.value.trim();
+
+                      if (!extraKey || !extraVal) {
+                        alert('Vui lòng điền Key và Value thuộc tính ẩn cần thêm.');
+                        return;
+                      }
+
+                      const currentVariants = watch('variants') || [];
+                      const updatedVariants = currentVariants.map((v: any) => {
+                        let matches = true;
+                        if (filterKey && filterVal) {
+                          matches = v.attributes && v.attributes[filterKey] === filterVal;
+                        } else if (filterVal) {
+                          matches = v.attributes && Object.values(v.attributes).includes(filterVal);
+                        }
+
+                        if (matches) {
+                          const attrs = { ...v.attributes, [extraKey]: extraVal };
+                          return { ...v, attributes: attrs };
+                        }
+                        return v;
+                      });
+
+                      setValue('variants', updatedVariants, { shouldDirty: true });
+                    }}
+                    className="h-9 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+                  >
+                    Thêm Thuộc Tính
+                  </button>
+                </div>
+              </div>
+
               {fields.map((field, idx) => (
                 <div key={field.id} className="relative p-6 bg-slate-50/50 rounded-2xl border border-slate-100 animate-in slide-in-from-right-2 duration-300">
                   <div className="absolute -top-3 left-4 px-3 bg-white border border-slate-100 rounded-full text-[10px] font-black text-primary shadow-sm">BIẾN THỂ #{idx + 1}</div>
@@ -730,16 +880,112 @@ export const ProductPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* imageUrl + barcode */}
-                  <div className="grid grid-cols-2 gap-4 mt-4">
+                  {/* image upload + barcode */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase ml-1 flex items-center gap-1"><FileText className="w-3 h-3" /> Image URL</label>
-                      <input className="w-full h-10 px-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-bold text-slate-700 text-xs"
-                        placeholder="URL ảnh riêng (tùy chọn)" {...register(`variants.${idx}.imageUrl` as const)} />
+                      <label className="text-[10px] font-black text-slate-400 uppercase ml-1 flex items-center gap-1">
+                        <UploadCloud className="w-3 h-3" /> Tải ảnh riêng cho SKU này
+                      </label>
+                      <div className="flex flex-wrap gap-2 mt-2 items-center bg-white p-3 rounded-xl border border-slate-200 min-h-[64px]">
+                        <input 
+                          type="file" 
+                          multiple
+                          accept="image/*,.glb,.usdz" 
+                          className="hidden" 
+                          id={`variant-file-${idx}`}
+                          onChange={(e) => {
+                            if (e.target.files) {
+                              const addedFiles = Array.from(e.target.files);
+                              const currentFiles = variantFiles[idx] || [];
+                              const newFiles = [...currentFiles, ...addedFiles];
+                              setVariantFiles({ ...variantFiles, [idx]: newFiles });
+                            }
+                          }} 
+                        />
+                        <button 
+                          type="button" 
+                          onClick={() => document.getElementById(`variant-file-${idx}`)?.click()}
+                          className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl border border-slate-200 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                        >
+                          <UploadCloud className="w-3.5 h-3.5" /> Chọn File
+                        </button>
+
+                        {watch(`variants.${idx}.imageUrl`) && !(variantFiles[idx]?.length) && (
+                          <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 flex items-center justify-center bg-slate-50 animate-in fade-in group">
+                            <img src={watch(`variants.${idx}.imageUrl`)} alt="existing preview" className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => setValue(`variants.${idx}.imageUrl` as any, '')}
+                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-all cursor-pointer backdrop-blur-sm"
+                            >
+                              <Trash2 className="w-2.5 h-2.5" />
+                            </button>
+                          </div>
+                        )}
+
+                        {(variantFiles[idx] || []).map((file, fileIdx) => {
+                          const fileUrl = URL.createObjectURL(file);
+                          const is3D = file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.usdz');
+                          return (
+                            <div key={fileIdx} className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 group flex items-center justify-center bg-slate-50 animate-in fade-in">
+                              {is3D ? (
+                                <span className="text-[9px] font-black uppercase text-indigo-500">3D</span>
+                              ) : (
+                                <img src={fileUrl} alt="preview" className="w-full h-full object-cover" />
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const currentFiles = variantFiles[idx] || [];
+                                  const updatedFiles = currentFiles.filter((_, fIdx) => fIdx !== fileIdx);
+                                  setVariantFiles({ ...variantFiles, [idx]: updatedFiles });
+                                }}
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 backdrop-blur-sm cursor-pointer"
+                              >
+                                <Trash2 className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentVariantAttributes = watch(`variants.${idx}.attributes`);
+                            if (!currentVariantAttributes) {
+                              alert('Vui lòng nhập thuộc tính màu sắc cho biến thể này trước.');
+                              return;
+                            }
+                            
+                            const colorKey = Object.keys(currentVariantAttributes).find(
+                              key => key.toLowerCase().includes('màu') || key.toLowerCase().includes('color')
+                            );
+                            if (!colorKey) {
+                              alert('Vui lòng điền màu sắc vào thuộc tính trước khi áp dụng hàng loạt.');
+                              return;
+                            }
+                            const colorValue = currentVariantAttributes[colorKey];
+                            if (!colorValue) return;
+
+                            const updatedVariantFiles = { ...variantFiles };
+                            const allVariants = watch('variants');
+                            allVariants.forEach((v: any, vIdx: number) => {
+                              if (v.attributes && v.attributes[colorKey] === colorValue) {
+                                updatedVariantFiles[vIdx] = variantFiles[idx] || [];
+                              }
+                            });
+                            setVariantFiles(updatedVariantFiles);
+                          }}
+                          className="ml-auto px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+                        >
+                          Áp dụng cho toàn bộ màu tương ứng
+                        </button>
+                      </div>
                     </div>
+
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase ml-1 flex items-center gap-1"><Barcode className="w-3 h-3" /> Barcode</label>
-                      <input className="w-full h-10 px-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-bold text-slate-700 text-xs"
+                      <input className="w-full h-14 px-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-bold text-slate-700 text-xs mt-2"
                         placeholder="Mã vạch (tùy chọn)" {...register(`variants.${idx}.barcode` as const)} />
                     </div>
                   </div>

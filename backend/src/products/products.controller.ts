@@ -4,7 +4,7 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor, AnyFilesInterceptor } from '@nestjs/platform-express';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
@@ -94,7 +94,7 @@ export class ProductsController {
     @Post()
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
-    @UseInterceptors(FilesInterceptor('files', 10))
+    @UseInterceptors(AnyFilesInterceptor())
     @LogActivity(ActivityAction.PRODUCT_CREATED)
     async createProduct(@Body() data: CreateProductDto, @UploadedFiles() files: Express.Multer.File[]) {
         return this.productsService.createProduct(data, files);
@@ -137,7 +137,7 @@ export class ProductsController {
     @Patch(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
-    @UseInterceptors(FilesInterceptor('files', 10))
+    @UseInterceptors(AnyFilesInterceptor())
     @LogActivity(ActivityAction.PRODUCT_UPDATED)
     async updateProduct(@Param('id') id: string, @Body() data: UpdateProductDto, @UploadedFiles() files: Express.Multer.File[]) {
         return this.productsService.updateProduct(id, data, files);

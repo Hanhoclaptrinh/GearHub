@@ -25,7 +25,7 @@ export class AuthService {
       sub: userId,
       email: email,
       role: role
-    }, { expiresIn: '20m' });
+    }, { expiresIn: '4h' });
   }
 
   private async generateRefreshToken(userId: string, deviceId: string = 'default') {
