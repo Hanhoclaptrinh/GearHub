@@ -13,6 +13,7 @@ class ProductModel {
   final int reviewCount;
   final String description;
   final Map<String, dynamic>? vaultSpecs;
+  final Map<String, dynamic>? commonSpecs;
   final String? brandName;
   final List<ProductVariantModel> variants;
   final List<ProductAssetModel> assets;
@@ -30,6 +31,7 @@ class ProductModel {
     this.averageRating = 0.0,
     this.reviewCount = 0,
     this.vaultSpecs,
+    this.commonSpecs,
     this.brandName,
     this.variants = const [],
     this.assets = const [],
@@ -83,6 +85,7 @@ class ProductModel {
     int? reviewCount,
     String? description,
     Map<String, dynamic>? vaultSpecs,
+    Map<String, dynamic>? commonSpecs,
     String? brandName,
     List<ProductVariantModel>? variants,
     List<ProductAssetModel>? assets,
@@ -100,6 +103,7 @@ class ProductModel {
       reviewCount: reviewCount ?? this.reviewCount,
       description: description ?? this.description,
       vaultSpecs: vaultSpecs ?? this.vaultSpecs,
+      commonSpecs: commonSpecs ?? this.commonSpecs,
       brandName: brandName ?? this.brandName,
       variants: variants ?? this.variants,
       assets: assets ?? this.assets,
@@ -132,6 +136,14 @@ class ProductModel {
       attributeConfig = List<String>.from(json['attributeConfig']);
     }
 
+    Map<String, dynamic>? commonSpecs;
+    if (json['metadata'] != null && json['metadata'] is Map) {
+      final meta = json['metadata'] as Map<String, dynamic>;
+      if (meta['common_specs'] != null && meta['common_specs'] is Map) {
+        commonSpecs = Map<String, dynamic>.from(meta['common_specs']);
+      }
+    }
+
     final String desc = json['description'] ?? '';
     final String? apiTagline = json['tagline'];
 
@@ -150,6 +162,7 @@ class ProductModel {
       reviewCount: json['reviewCount'] as int? ?? 0,
       description: desc,
       vaultSpecs: json['vaultSpecs'] as Map<String, dynamic>?,
+      commonSpecs: commonSpecs,
       brandName: json['brand']?['name'] as String?,
       variants: variants,
       assets: assets,

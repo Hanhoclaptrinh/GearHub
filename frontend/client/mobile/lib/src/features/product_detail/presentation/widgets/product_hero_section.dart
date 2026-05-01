@@ -53,7 +53,29 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
     final size = MediaQuery.of(context).size;
     final currentVariant = widget.currentVariant;
     final isOutOfStock = (currentVariant?.stock ?? 0) <= 0;
-    final galleryUrls = widget.product.galleryUrls;
+
+    final List<String> galleryUrls = [];
+    if (widget.currentVariant?.imageUrl != null &&
+        widget.currentVariant!.imageUrl!.isNotEmpty) {
+      galleryUrls.add(widget.currentVariant!.imageUrl!);
+    }
+    if (galleryUrls.isEmpty) {
+      galleryUrls.addAll(widget.product.galleryUrls);
+    }
+
+    String displayName = widget.product.name;
+    if (widget.currentVariant != null) {
+      final nonColorConfigs = <String>[];
+      widget.currentVariant!.attributes.forEach((key, val) {
+        final k = key.toLowerCase();
+        if (!k.contains('màu') && !k.contains('color') && !k.contains('mau')) {
+          nonColorConfigs.add(val.toString());
+        }
+      });
+      if (nonColorConfigs.isNotEmpty) {
+        displayName += ' ' + nonColorConfigs.join(' ');
+      }
+    }
 
     return Container(
       width: double.infinity,
@@ -78,7 +100,7 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  widget.product.name.toUpperCase(),
+                  displayName.toUpperCase(),
                   style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,

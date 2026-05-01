@@ -84,23 +84,39 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
 
   Map<String, String> get _specs {
     final Map<String, String> display = {};
-    final configKeys = widget.product.attributeConfig.toSet();
-
-    final variant = _currentVariant;
-    if (variant != null) {
-      variant.attributes.forEach((key, value) {
-        if (!configKeys.contains(key)) {
-          final formattedKey = key[0].toUpperCase() + key.substring(1);
-          display[formattedKey] = value.toString();
+    if (widget.product.commonSpecs != null && widget.product.commonSpecs!.isNotEmpty) {
+      int count = 0;
+      widget.product.commonSpecs!.forEach((key, value) {
+        if (count < 7) {
+          display[key] = value.toString();
+          count++;
         }
       });
     }
 
+    if (display.isEmpty) {
+      final configKeys = widget.product.attributeConfig.toSet();
+      final variant = _currentVariant;
+      if (variant != null) {
+        variant.attributes.forEach((key, value) {
+          if (!configKeys.contains(key)) {
+            final formattedKey = key[0].toUpperCase() + key.substring(1);
+            display[formattedKey] = value.toString();
+          }
+        });
+      }
+    }
     return display;
   }
 
   Map<String, String> get _fullSpecs {
     final Map<String, String> display = {};
+    if (widget.product.commonSpecs != null) {
+      widget.product.commonSpecs!.forEach((key, value) {
+        display[key] = value.toString();
+      });
+    }
+
     final variant = _currentVariant;
     if (variant != null) {
       variant.attributes.forEach((key, value) {
@@ -108,6 +124,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
         display[formattedKey] = value.toString();
       });
     }
+
     return display.isEmpty ? _specs : display;
   }
 
@@ -432,7 +449,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
 
           if (_specs.isNotEmpty) ...[
             const Text(
-              'Thuộc tính',
+              'Thuộc tính chung',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
