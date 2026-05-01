@@ -57,6 +57,26 @@ export class ProductsService {
         // mo transaction cho database operations
         try {
             return await this.prisma.$transaction(async (tx) => {
+                // build metadata with common_specs namespace
+                const finalMetadata = { ...parsedMetadata };
+                if (data.commonSpecs) {
+                    try {
+                        finalMetadata.common_specs = JSON.parse(data.commonSpecs);
+                    } catch (e) {
+                        throw new BadRequestException('Common Specs JSON không hợp lệ');
+                    }
+                }
+
+                // parse vault specs
+                let parsedVaultSpecs = null;
+                if (data.vaultSpecs) {
+                    try {
+                        parsedVaultSpecs = JSON.parse(data.vaultSpecs);
+                    } catch (e) {
+                        throw new BadRequestException('Vault Specs JSON không hợp lệ');
+                    }
+                }
+
                 // parent prod
                 const product = await tx.product.create({
                     data: {
@@ -65,10 +85,12 @@ export class ProductsService {
                         description: data.description,
                         categoryId: data.categoryId,
                         brandId: data.brandId,
-                        metadata: parsedMetadata,
+                        metadata: finalMetadata,
                         thumbnailUrl: data.thumbnailUrl || null,
                         tagline: data.tagline || null,
                         attributeConfig: data.attributeConfig ? JSON.parse(data.attributeConfig) : [],
+                        isVault: data.isVault === 'true',
+                        vaultSpecs: parsedVaultSpecs ?? undefined,
                     }
                 });
 
@@ -76,14 +98,17 @@ export class ProductsService {
                 if (data.variants) {
                     const variantList = JSON.parse(data.variants);
                     for (const v of variantList) {
+                        const sku = v.sku || this.generateSKU(slug, v.attributes);
                         await tx.productVariant.create({
                             data: {
                                 productId: product.id,
-                                sku: v.sku,
-                                name: `${data.name} - ${v.sku}`,
+                                sku,
+                                name: `${data.name} - ${sku}`,
                                 price: parseFloat(v.price),
                                 stock: parseInt(v.stock || '0'),
-                                attributes: v.attributes || {}
+                                attributes: v.attributes || {},
+                                imageUrl: v.imageUrl || null,
+                                barcode: v.barcode || null,
                             }
                         });
                     }
@@ -96,7 +121,7 @@ export class ProductsService {
                             name: `${data.name} - Standard`,
                             price: parseFloat(data.price || '0'),
                             stock: parseInt(data.stock || '0'),
-                            attributes: data.attributes ? JSON.parse(data.attributes) : {}
+                            attributes: data.attributes ? JSON.parse(data.attributes) : {},
                         }
                     });
                 }
@@ -208,12 +233,33 @@ export class ProductsService {
 
             if (data.isFeatured !== undefined) updateData.isFeatured = data.isFeatured === 'true';
             if (data.isActive !== undefined) updateData.isActive = data.isActive === 'true';
+            if (data.isVault !== undefined) updateData.isVault = data.isVault === 'true';
 
             if (data.metadata) {
                 try {
                     updateData.metadata = JSON.parse(data.metadata);
                 } catch (e) {
                     throw new BadRequestException('Metadata JSON không hợp lệ');
+                }
+            }
+
+            // merge common_specs vao metadata
+            if (data.commonSpecs) {
+                try {
+                    const existingMeta = updateData.metadata || (product.metadata as any) || {};
+                    existingMeta.common_specs = JSON.parse(data.commonSpecs);
+                    updateData.metadata = existingMeta;
+                } catch (e) {
+                    throw new BadRequestException('Common Specs JSON không hợp lệ');
+                }
+            }
+
+            // vault specs
+            if (data.vaultSpecs) {
+                try {
+                    updateData.vaultSpecs = JSON.parse(data.vaultSpecs);
+                } catch (e) {
+                    throw new BadRequestException('Vault Specs JSON không hợp lệ');
                 }
             }
 
@@ -233,7 +279,7 @@ export class ProductsService {
                 for (const vData of variants) {
                     const price = parseFloat(vData.price?.toString() || '0');
                     const stock = parseInt(vData.stock?.toString() || '0');
-                    const sku = vData.sku;
+                    const sku = vData.sku || this.generateSKU(updatedProduct.slug, vData.attributes);
 
                     const existing = existingVariants.find(ev => (vData.id && ev.id === vData.id) || ev.sku === sku);
 
@@ -245,7 +291,9 @@ export class ProductsService {
                                 name: `${updatedProduct.name} - ${sku}`,
                                 price: price,
                                 stock: stock,
-                                attributes: vData.attributes || {}
+                                attributes: vData.attributes || {},
+                                imageUrl: vData.imageUrl ?? existing.imageUrl,
+                                barcode: vData.barcode ?? existing.barcode,
                             }
                         });
                     } else {
@@ -256,7 +304,9 @@ export class ProductsService {
                                 name: `${updatedProduct.name} - ${sku}`,
                                 price: price,
                                 stock: stock,
-                                attributes: vData.attributes || {}
+                                attributes: vData.attributes || {},
+                                imageUrl: vData.imageUrl || null,
+                                barcode: vData.barcode || null,
                             }
                         });
                     }
@@ -1118,5 +1168,59 @@ export class ProductsService {
                 await this.redisService.del(key); // reset buffer
             }
         }
+    }
+
+    // SKU engine
+    private generateSKU(slug: string, attributes?: Record<string, any>): string {
+        const slugPart = slug
+            .split('-')
+            .map(word => word.substring(0, 4).toUpperCase())
+            .slice(0, 3)
+            .join('-');
+
+        if (!attributes || Object.keys(attributes).length === 0) {
+            return `${slugPart}-STD`;
+        }
+
+        const attrPart = Object.values(attributes)
+            .map(val => {
+                const str = String(val).toUpperCase().replace(/[^A-Z0-9]/g, '');
+                return str.substring(0, 5);
+            })
+            .join('-');
+
+        return `${slugPart}-${attrPart}`;
+    }
+
+    // tao ma tran bien the
+    async generateVariantMatrix(axes: Record<string, string[]>, productSlug?: string) {
+        // truc thuoc tinh
+        // dung de tao combo bien the
+        const keys = Object.keys(axes);
+        if (keys.length === 0) return [];
+
+        // tich de-cac (cartesian product)
+        const combinations: Record<string, string>[] = keys.reduce(
+            (acc, key) => {
+                const newCombos: Record<string, string>[] = [];
+                for (const combo of acc) {
+                    for (const value of axes[key]) {
+                        newCombos.push({ ...combo, [key]: value });
+                    }
+                }
+                return newCombos;
+            },
+            [{}] as Record<string, string>[]
+        );
+
+        return combinations.map(attrs => ({
+            sku: productSlug ? this.generateSKU(productSlug, attrs) : '',
+            name: '',
+            price: 0,
+            stock: 0,
+            attributes: attrs,
+            imageUrl: null,
+            barcode: null,
+        }));
     }
 }

@@ -20,4 +20,12 @@ export class CreateVariantDto {
     @IsOptional()
     @IsString()
     attributes?: string;
+
+    @IsOptional()
+    @IsString()
+    imageUrl?: string;
+
+    @IsOptional()
+    @IsString()
+    barcode?: string;
 }

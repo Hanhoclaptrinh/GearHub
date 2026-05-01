@@ -81,6 +81,16 @@ export class ProductsController {
         return { message: 'View incremented' };
     }
 
+    @Post('generate-variants')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    async generateVariants(@Body() body: { axes: Record<string, string[]>; productSlug?: string }) {
+        if (!body.axes || Object.keys(body.axes).length === 0) {
+            throw new BadRequestException('Vui lòng cung cấp ít nhất 1 trục thuộc tính');
+        }
+        return this.productsService.generateVariantMatrix(body.axes, body.productSlug);
+    }
+
     @Post()
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)

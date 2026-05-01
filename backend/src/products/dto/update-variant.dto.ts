@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsOptional, IsString, Min } from 'class-validator';
 
 export class UpdateVariantDto {
     @IsString()
@@ -20,4 +20,12 @@ export class UpdateVariantDto {
     @IsOptional()
     @IsString()
     attributes?: string;
+
+    @IsOptional()
+    @IsString()
+    imageUrl?: string;
+
+    @IsOptional()
+    @IsString()
+    barcode?: string;
 }

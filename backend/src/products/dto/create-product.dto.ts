@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, IsJSON } from 'class-validator';
+import { IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, IsBooleanString } from 'class-validator';
 
 export class CreateProductDto {
     @IsString()
@@ -11,7 +11,6 @@ export class CreateProductDto {
     @IsString()
     @IsOptional()
     tagline?: string;
-
 
     @IsString()
     @IsOptional()
@@ -55,4 +54,16 @@ export class CreateProductDto {
     @IsOptional()
     @IsString()
     attributeConfig?: string;
+
+    @IsOptional()
+    @IsBooleanString()
+    isVault?: string;
+
+    @IsOptional()
+    @IsString()
+    vaultSpecs?: string;
+
+    @IsOptional()
+    @IsString()
+    commonSpecs?: string;
 }

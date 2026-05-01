@@ -64,4 +64,16 @@ export class UpdateProductDto {
     @IsString()
     @IsOptional()
     attributeConfig?: string;
+
+    @IsOptional()
+    @IsBooleanString()
+    isVault?: string;
+
+    @IsOptional()
+    @IsString()
+    vaultSpecs?: string;
+    
+    @IsOptional()
+    @IsString()
+    commonSpecs?: string;
 }

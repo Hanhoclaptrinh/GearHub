@@ -69,5 +69,10 @@ export const productService = {
   async toggleVariant(variantId: string) {
     const { data } = await api.patch(`/products/variant/${variantId}/toggle`);
     return data;
+  },
+
+  async generateVariants(axes: Record<string, string[]>, productSlug?: string) {
+    const { data } = await api.post('/products/generate-variants', { axes, productSlug });
+    return data;
   }
 };
