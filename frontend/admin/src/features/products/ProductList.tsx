@@ -21,7 +21,8 @@ import {
   LayoutGrid,
   ShieldCheck,
   PackageCheck,
-  AlertTriangle
+  AlertTriangle,
+  Star
 } from 'lucide-react';
 import { productService } from '../../services/product.service';
 import { brandService } from '../../services/brand.service';
@@ -117,6 +118,17 @@ export const ProductList: React.FC = () => {
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.message || 'Không thể cập nhật trạng thái');
+    }
+  });
+
+  const toggleFeaturedMutation = useMutation({
+    mutationFn: (id: string) => productService.toggleFeatured(id),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast.success(res.message || 'Cập nhật trạng thái nổi bật thành công');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Không thể cập nhật trạng thái nổi bật');
     }
   });
 
@@ -600,6 +612,18 @@ export const ProductList: React.FC = () => {
                               </Button>
                             ) : (
                               <>
+                                <Button
+                                  variant="ghost"
+                                  className={cn(
+                                    "p-2 h-10 w-10 rounded-full shadow-none border-none transition-all hover:scale-110",
+                                    product.isFeatured ? "text-yellow-500 hover:bg-yellow-50" : "text-slate-400 hover:bg-slate-50"
+                                  )}
+                                  onClick={() => toggleFeaturedMutation.mutate(product.id)}
+                                  isLoading={toggleFeaturedMutation.isPending && toggleFeaturedMutation.variables === product.id}
+                                  title={product.isFeatured ? "Bỏ nổi bật" : "Đưa vào nổi bật"}
+                                >
+                                  <Star className={cn("w-5 h-5", product.isFeatured && "fill-yellow-500 text-yellow-500")} />
+                                </Button>
                                 <Button
                                   variant="ghost"
                                   className="p-2 h-10 w-10 text-amber-500 hover:bg-amber-50 rounded-full shadow-none border-none transition-all hover:scale-110"

@@ -31,6 +31,11 @@ export const productService = {
     return data;
   },
 
+  async toggleFeatured(id: string) {
+    const { data } = await api.patch(`/products/${id}/featured`);
+    return data;
+  },
+
   async hardDelete(id: string) {
     const { data } = await api.delete(`/products/${id}/hard-delete`);
     return data;

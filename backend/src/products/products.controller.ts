@@ -159,6 +159,13 @@ export class ProductsController {
         return this.productsService.toggleStatus(id);
     }
 
+    @Patch(':id/featured')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    async toggleFeatured(@Param('id') id: string) {
+        return this.productsService.toggleFeatured(id);
+    }
+
     @Patch(':id/restore')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)

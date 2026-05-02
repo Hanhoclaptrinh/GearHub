@@ -85,6 +85,7 @@ export interface Product {
   category?: Category;
   brand?: Brand;
   isActive: boolean;
+  isFeatured?: boolean;
   assets: ProductAsset[];
   variants: ProductVariant[];
   attributeConfig?: string[];

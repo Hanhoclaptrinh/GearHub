@@ -686,6 +686,25 @@ export class ProductsService {
         });
     }
 
+    async toggleFeatured(id: string) {
+        const product = await this.prisma.product.findUnique({
+            where: { id },
+            select: { id: true, name: true, isFeatured: true }
+        });
+
+        if (!product) throw new NotFoundException('Sản phẩm không tồn tại');
+
+        const updatedProduct = await this.prisma.product.update({
+            where: { id },
+            data: { isFeatured: !product.isFeatured }
+        });
+
+        return {
+            message: `Đã ${updatedProduct.isFeatured ? 'đưa' : 'gỡ'} sản phẩm '${product.name}' ${updatedProduct.isFeatured ? 'vào mục' : 'khỏi mục'} nổi bật`,
+            isFeatured: updatedProduct.isFeatured
+        };
+    }
+
     async removeProduct(id: string) {
         // tim san pham bao gom bien the va so luong don hang cua tung bien the
         const product = await this.prisma.product.findUnique({
