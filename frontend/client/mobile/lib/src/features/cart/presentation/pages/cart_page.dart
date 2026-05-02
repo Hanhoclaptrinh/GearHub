@@ -1,8 +1,12 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:mobile/src/features/cart/data/services/cart_service.dart';
+import 'package:mobile/src/core/utils/formatter_utils.dart';
+import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
+import 'package:mobile/src/features/cart/presentation/state/cart_state.dart';
+import 'package:mobile/src/features/cart/domain/entities/cart_item_entity.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/widgets/small_product_card.dart';
 import 'package:mobile/src/shared/styles/app_colors.dart';
@@ -49,9 +53,8 @@ class _CartPageState extends State<CartPage> {
     ),
   ];
 
-  // xoa item khoi cart
-  void _removeItem(String productId, String productName) {
-    CartService().removeItem(productId);
+  void _removeItem(String itemId) {
+    context.read<CartCubit>().removeItem(itemId);
     HapticFeedback.mediumImpact();
   }
 
@@ -62,19 +65,72 @@ class _CartPageState extends State<CartPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<CartCubit>().loadCart();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: CartService(),
-      builder: (context, _) {
-        final items = CartService().items;
-        final selectedItemsCount = items.where((i) => i.isSelected).length;
-        final hasSelection = selectedItemsCount > 0;
+    return BlocBuilder<CartCubit, CartState>(
+      builder: (context, state) {
+        if (state is CartLoading) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (state is CartError) {
+          return Scaffold(
+            appBar: _buildSimpleAppBar(),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Text(
+                      'Lỗi: ${state.message}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.red, fontSize: 16),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => context.read<CartCubit>().loadCart(),
+                    child: const Text('Thử lại'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        List<CartItemEntity> items = [];
+        double totalSelection = 0.0;
+        bool hasSelection = false;
+
+        if (state.cart != null) {
+          items = state.cart!.items;
+          final selectedItems = items.where((i) => i.isSelected);
+          hasSelection = selectedItems.isNotEmpty;
+          totalSelection = selectedItems.fold(
+            0.0,
+            (sum, i) => sum + i.itemTotal,
+          );
+        }
 
         // check cart empty
         if (items.isEmpty) {
           return Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            appBar: _buildSimpleAppBar(), // simple appbar khi cart empty
+            appBar: _buildSimpleAppBar(),
             body: Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -85,10 +141,15 @@ class _CartPageState extends State<CartPage> {
                       'assets/animations/emptycart.json',
                       height: 250,
                       repeat: true,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        LucideIcons.shoppingCart,
+                        size: 100,
+                        color: Colors.grey,
+                      ),
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      "YOUR CART IS EMPTY",
+                      "GIỎ HÀNG RỖNG",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 24,
@@ -99,7 +160,7 @@ class _CartPageState extends State<CartPage> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      "Looks like you haven't added any premium gear to your selection yet.",
+                      "Có vẻ như bạn chưa thêm bất kỳ sản phẩm nào vào giỏ hàng.",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 15,
@@ -134,26 +195,19 @@ class _CartPageState extends State<CartPage> {
                         final item = items[index];
                         return CartItemCard(
                           item: item,
-                          // tang giam so luong
-                          onIncrement: () => CartService().updateQuantity(
-                            item.product.id,
-                            item.quantity + 1,
-                          ),
-                          onDecrement: () => CartService().updateQuantity(
-                            item.product.id,
-                            item.quantity - 1,
-                          ),
-                          // xoa item
-                          onDelete: () =>
-                              _removeItem(item.product.id, item.product.name),
-                          // select/unselect item
-                          onToggleSelected: () =>
-                              CartService().toggleSelection(item.product.id),
-                          // xem san pham tuong tu
+                          onIncrement: () => context
+                              .read<CartCubit>()
+                              .updateQuantity(item.id, item.quantity + 1),
+                          onDecrement: () => context
+                              .read<CartCubit>()
+                              .updateQuantity(item.id, item.quantity - 1),
+                          onDelete: () => _removeItem(item.id),
+                          onToggleSelected: () => context
+                              .read<CartCubit>()
+                              .toggleItemSelection(item.id),
                           onViewSimilar: () {
-                            print("View similar for ${item.product.name}");
+                            debugPrint("View similar for ${item.product.name}");
                           },
-                          // long press xem chi tiet san pham
                           onLongPress: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
@@ -166,20 +220,16 @@ class _CartPageState extends State<CartPage> {
                       }, childCount: items.length),
                     ),
                   ),
-                  // promo section
                   const SliverPadding(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     sliver: SliverToBoxAdapter(child: PromoSection()),
                   ),
-                  // recommendations section
                   _buildRecommendationsSection(),
                   const SliverToBoxAdapter(child: SizedBox(height: 140)),
                 ],
               ),
-              // checkout bar
               Builder(
                 builder: (context) {
-                  // kiem tra trang thai bottom bar
                   final bool isNavVisible = widget.isNavVisible;
                   final double bottomPadding = MediaQuery.of(
                     context,
@@ -197,7 +247,7 @@ class _CartPageState extends State<CartPage> {
                     bottom: targetBottom,
                     child: _buildAnchoredCheckoutBar(
                       hasSelection,
-                      CartService().subtotal,
+                      totalSelection,
                     ),
                   );
                 },
@@ -215,7 +265,7 @@ class _CartPageState extends State<CartPage> {
       centerTitle: true,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       title: const Text(
-        'MY CART',
+        'GIỎ HÀNG',
         style: TextStyle(
           fontWeight: FontWeight.w900,
           fontSize: 18,
@@ -234,7 +284,7 @@ class _CartPageState extends State<CartPage> {
       automaticallyImplyLeading: false,
       titleSpacing: 20,
       title: Text(
-        'My Cart',
+        'GIỎ HÀNG',
         style: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.w900,
@@ -245,29 +295,42 @@ class _CartPageState extends State<CartPage> {
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: 12.0),
-          child: TextButton(
-            onPressed: () {
-              HapticFeedback.lightImpact();
-              CartService().selectAll();
+          child: BlocBuilder<CartCubit, CartState>(
+            builder: (context, state) {
+              bool allSelected = false;
+              if (state.cart != null) {
+                allSelected =
+                    state.cart!.items.isNotEmpty &&
+                    state.cart!.items.every((i) => i.isSelected);
+              }
+              return TextButton(
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  context.read<CartCubit>().toggleSelectAll(!allSelected);
+                },
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.05),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  allSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.onSurface,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              );
             },
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              backgroundColor: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.05),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              'Select All',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.onSurface,
-                letterSpacing: 0.5,
-              ),
-            ),
           ),
         ),
       ],
@@ -298,7 +361,7 @@ class _CartPageState extends State<CartPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'TOTAL SELECTION',
+                  'TỔNG GIỎ HÀNG',
                   style: TextStyle(
                     color: Colors.white54,
                     fontSize: 10,
@@ -308,7 +371,7 @@ class _CartPageState extends State<CartPage> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  hasSelection ? '\$${total.toStringAsFixed(0)}' : '\$0',
+                  hasSelection ? formatVND(total) : '0 ₫',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 22,
@@ -350,7 +413,7 @@ class _CartPageState extends State<CartPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        hasSelection ? 'CHECKOUT' : 'BUY NOW',
+                        hasSelection ? 'THANH TOÁN' : 'MUA NGAY',
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w900,
@@ -383,7 +446,7 @@ class _CartPageState extends State<CartPage> {
           const Padding(
             padding: EdgeInsets.fromLTRB(20, 24, 20, 16),
             child: Text(
-              'YOU MIGHT ALSO LIKE',
+              'CÓ THỂ BẠN CŨNG THÍCH',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w900,
@@ -449,7 +512,7 @@ class _CartPageState extends State<CartPage> {
             Icon(LucideIcons.shoppingBag, color: Colors.white, size: 20),
             SizedBox(width: 12),
             Text(
-              "START SHOPPING",
+              "BẮT ĐẦU MUA SẮM",
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w900,
@@ -460,99 +523,6 @@ class _CartPageState extends State<CartPage> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _SlideToPayAction extends StatefulWidget {
-  final VoidCallback onSuccess;
-
-  const _SlideToPayAction({required this.onSuccess});
-
-  @override
-  State<_SlideToPayAction> createState() => _SlideToPayActionState();
-}
-
-class _SlideToPayActionState extends State<_SlideToPayAction> {
-  double _dragValue = 0.0;
-  bool _isFinished = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final totalWidth = constraints.maxWidth;
-        const double handleWidth = 100.0;
-        final double maxDragDistance = totalWidth - handleWidth;
-
-        return Container(
-          width: double.infinity,
-          height: 64,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF1F5F9),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Stack(
-            children: [
-              const Center(
-                child: Text(
-                  'SLIDE TO PAY',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
-                    color: Color(0xFF94A3B8),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: _dragValue,
-                child: GestureDetector(
-                  onHorizontalDragUpdate: (details) {
-                    if (_isFinished) return;
-                    setState(() {
-                      _dragValue += details.delta.dx;
-                      _dragValue = _dragValue.clamp(0.0, maxDragDistance);
-                    });
-                  },
-                  onHorizontalDragEnd: (details) {
-                    if (_isFinished) return;
-                    if (_dragValue >= maxDragDistance * 0.9) {
-                      setState(() {
-                        _dragValue = maxDragDistance;
-                        _isFinished = true;
-                      });
-                      widget.onSuccess();
-                    } else {
-                      setState(() {
-                        _dragValue = 0;
-                      });
-                    }
-                  },
-                  child: Container(
-                    width: handleWidth,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0F172A),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF0F172A).withValues(alpha: 0.3),
-                          blurRadius: 10,
-                          offset: const Offset(4, 0),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      LucideIcons.arrowRight,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

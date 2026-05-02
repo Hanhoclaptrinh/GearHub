@@ -5,7 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/features/home/presentation/pages/home_page.dart';
 import 'package:mobile/src/features/cart/presentation/pages/cart_page.dart';
-import 'package:mobile/src/features/cart/data/services/cart_service.dart';
+import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
+import 'package:mobile/src/features/cart/presentation/state/cart_state.dart';
 import 'package:mobile/src/features/profile/presentation/pages/user_profile_page.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
@@ -27,19 +28,10 @@ class MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _selectedIndex);
-    CartService().addListener(_onCartChanged);
-  }
-
-  void _onCartChanged() {
-    // neu gio hang trong, luon hien bottom bar
-    if (CartService().items.isEmpty && !_isBottomBarVisible) {
-      setState(() => _isBottomBarVisible = true);
-    }
   }
 
   @override
   void dispose() {
-    CartService().removeListener(_onCartChanged);
     _pageController.dispose();
     super.dispose();
   }
@@ -95,6 +87,9 @@ class MainScreenState extends State<MainScreen> {
       _selectedIndex = index;
       _isBottomBarVisible = true; // luon hien khi chuyen tab
     });
+    if (index == 1) {
+      context.read<CartCubit>().loadCart();
+    }
     _pageController.animateToPage(
       index,
       duration: const Duration(milliseconds: 400),
@@ -113,26 +108,22 @@ class MainScreenState extends State<MainScreen> {
 
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
-        if (state is AuthUnauthenticated) {
+        if (state is AuthAuthenticated) {
+          context.read<CartCubit>().syncCart();
+        } else if (state is AuthUnauthenticated) {
           if (!_isBottomBarVisible) {
             setState(() => _isBottomBarVisible = true);
           }
+          context.read<CartCubit>().loadCart();
         }
       },
+
       child: Scaffold(
         extendBody: true,
         body: NotificationListener<UserScrollNotification>(
           onNotification: (notification) {
             // scroll ngang thi khong an/hien bottom bar
             if (notification.metrics.axis != Axis.vertical) return false;
-
-            // neu dang o gio hang va gio hang trong, khong cho phep an
-            if (_selectedIndex == 2 && CartService().items.isEmpty) {
-              if (!_isBottomBarVisible) {
-                setState(() => _isBottomBarVisible = true);
-              }
-              return false;
-            }
 
             if (notification.direction == ScrollDirection.reverse) {
               if (_isBottomBarVisible) {
@@ -267,10 +258,12 @@ class CustomBottomNavBar extends StatelessWidget {
                       : colorScheme.onSurface.withValues(alpha: 0.4),
                 ),
                 if (index == 1)
-                  ListenableBuilder(
-                    listenable: CartService(),
-                    builder: (context, _) {
-                      final count = CartService().uniqueItemsCount;
+                  BlocBuilder<CartCubit, CartState>(
+                    builder: (context, state) {
+                      int count = 0;
+                      if (state.cart != null) {
+                        count = state.cart!.items.length;
+                      }
                       if (count == 0) return const SizedBox.shrink();
                       return Positioned(
                         top: -5,
@@ -286,7 +279,6 @@ class CustomBottomNavBar extends StatelessWidget {
                             minHeight: 16,
                           ),
                           child: Text(
-                            // so luong san pham trong gio hang
                             '$count',
                             style: const TextStyle(
                               color: Colors.white,

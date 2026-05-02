@@ -37,11 +37,11 @@ class PromoSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Enter Promo Code',
+                'Áp dụng vouchers',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
               Text(
-                'Unlock special discounts',
+                'Mở khóa giảm giá đặc biệt',
                 style: TextStyle(color: Colors.black45, fontSize: 12),
               ),
             ],

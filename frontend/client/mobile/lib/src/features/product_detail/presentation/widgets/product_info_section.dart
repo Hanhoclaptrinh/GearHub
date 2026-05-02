@@ -4,6 +4,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/models/product_variant_model.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 
 class ProductInfoSection extends StatefulWidget {
   final ProductModel product;
@@ -84,7 +86,8 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
 
   Map<String, String> get _specs {
     final Map<String, String> display = {};
-    if (widget.product.commonSpecs != null && widget.product.commonSpecs!.isNotEmpty) {
+    if (widget.product.commonSpecs != null &&
+        widget.product.commonSpecs!.isNotEmpty) {
       int count = 0;
       widget.product.commonSpecs!.forEach((key, value) {
         if (count < 7) {
@@ -383,6 +386,35 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
               _buildQuantitySelector(),
             ],
           ),
+          () {
+            final cartState = context.watch<CartCubit>().state;
+            int existingQty = 0;
+            if (cartState.cart != null && _currentVariant != null) {
+              final existing = cartState.cart!.items
+                  .where((i) => i.productVariant.id == _currentVariant!.id)
+                  .firstOrNull;
+              existingQty = existing?.quantity ?? 0;
+            }
+            if (existingQty + widget.quantity >= widget.maxQuantity) {
+              return Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    'Số lượng tối đa bạn có thể mua là ${widget.maxQuantity} sản phẩm\n(Bạn đã có $existingQty trong giỏ)',
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFFFF3B30),
+                      height: 1.3,
+                    ),
+                  ),
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          }(),
           const SizedBox(height: 36),
 
           const Text(

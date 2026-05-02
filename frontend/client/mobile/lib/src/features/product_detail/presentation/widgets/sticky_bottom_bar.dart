@@ -5,6 +5,10 @@ import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/models/product_variant_model.dart';
 import 'package:mobile/src/features/onboarding/presentation/widgets/three_animated_arrow.dart';
 
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
+import 'package:mobile/src/features/cart/presentation/state/cart_state.dart';
+
 const _kSurface = Color(0xFF0C0C18);
 const _kBorder = Color(0xFF1A1A28);
 const _kGold = Color(0xFFD4A843);
@@ -13,12 +17,14 @@ const _kGoldDim = Color(0xFF1A1200);
 class StickyBottomBar extends StatefulWidget {
   final ProductModel product;
   final ProductVariantModel? selectedVariant;
+  final int quantity;
   final bool isVisible;
 
   const StickyBottomBar({
     super.key,
     required this.product,
     this.selectedVariant,
+    this.quantity = 1,
     this.isVisible = true,
   });
 
@@ -34,38 +40,56 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedSlide(
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOutCubic,
-      offset: widget.isVisible ? Offset.zero : const Offset(0, 1.5),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 6, 20, 16),
-          child: Container(
-            decoration: BoxDecoration(
-              color: _kSurface.withValues(alpha: 0.92),
-              borderRadius: BorderRadius.circular(36),
-              border: Border.all(color: _kBorder, width: 0.5),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x40000000),
-                  blurRadius: 28,
-                  offset: Offset(0, 10),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(36),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Row(
-                    children: [
-                      _buildOrderBtn(),
-                      const SizedBox(width: 8),
-                      Expanded(child: _buildSlider()),
-                    ],
+    return BlocListener<CartCubit, CartState>(
+      listener: (context, state) {
+        if (state is CartAddSuccess) {
+          // When add is successful, show successful state for a short moment then pull thumb back
+          setState(() {
+            _isAdded = true;
+          });
+          Future.delayed(const Duration(milliseconds: 1200), () {
+            if (mounted) {
+              setState(() {
+                _isAdded = false;
+                _dragPosition = 0;
+              });
+            }
+          });
+        }
+      },
+      child: AnimatedSlide(
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOutCubic,
+        offset: widget.isVisible ? Offset.zero : const Offset(0, 1.5),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 6, 20, 16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: _kSurface.withValues(alpha: 0.92),
+                borderRadius: BorderRadius.circular(36),
+                border: Border.all(color: _kBorder, width: 0.5),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x40000000),
+                    blurRadius: 28,
+                    offset: Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(36),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Row(
+                      children: [
+                        _buildOrderBtn(),
+                        const SizedBox(width: 8),
+                        Expanded(child: _buildSlider()),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -189,18 +213,123 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                   onHorizontalDragEnd: (d) {
                     if (_dragPosition > maxDrag * 0.75) {
                       HapticFeedback.heavyImpact();
+                      final variant =
+                          widget.selectedVariant ??
+                          (widget.product.variants
+                                  .where((v) => v.isActive)
+                                  .firstOrNull ??
+                              widget.product.variants.first);
+
+                      final cartState = context.read<CartCubit>().state;
+                      int existingQty = 0;
+                      if (cartState.cart != null) {
+                        final existing = cartState.cart!.items
+                            .where((i) => i.productVariant.id == variant.id)
+                            .firstOrNull;
+                        existingQty = existing?.quantity ?? 0;
+                      }
+
+                      if (existingQty + widget.quantity > variant.stock) {
+                        showDialog(
+                          context: context,
+                          barrierDismissible: true,
+                          builder: (context) {
+                            return Dialog(
+                              backgroundColor: const Color(0xFF0C0C18),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                                side: const BorderSide(
+                                  color: Color(0xFF1A1A28),
+                                  width: 0.5,
+                                ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 56,
+                                      height: 56,
+                                      decoration: BoxDecoration(
+                                        color: const Color(
+                                          0xFFFF3B30,
+                                        ).withValues(alpha: 0.12),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.warning_amber_rounded,
+                                        color: Color(0xFFFF453A),
+                                        size: 28,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    const Text(
+                                      'Vượt quá giới hạn',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                        letterSpacing: -0.4,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'Số lượng sản phẩm trong kho không đủ để thêm vào giỏ hàng.\n\nKho hiện còn ${variant.stock} sản phẩm và bạn đã có $existingQty sản phẩm trong giỏ.',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w400,
+                                        color: Color(0xFF8A8A9E),
+                                        height: 1.45,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 24),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: _kGold,
+                                          foregroundColor: Colors.black,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                          ),
+                                          elevation: 0,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 14,
+                                          ),
+                                        ),
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text(
+                                          'ĐÃ HIỂU',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w800,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                        setState(() => _dragPosition = 0);
+                        return;
+                      }
+
                       setState(() {
                         _dragPosition = maxDrag;
-                        _isAdded = true;
                       });
-                      Future.delayed(const Duration(seconds: 2), () {
-                        if (mounted) {
-                          setState(() {
-                            _isAdded = false;
-                            _dragPosition = 0;
-                          });
-                        }
-                      });
+                      context.read<CartCubit>().addToCart(
+                        variant,
+                        widget.product,
+                        widget.quantity,
+                      );
                     } else {
                       HapticFeedback.lightImpact();
                       setState(() => _dragPosition = 0);

@@ -11,7 +11,6 @@ const _kDark = Color(0xFF0F0F14);
 const _kDarkAlt = Color(0xFF13131B);
 const _kBorder = Color(0xFF1D1D27);
 const _kGold = Color(0xFFCBA97A);
-const _kGoldDim = Color(0xFF1C1508);
 const _kWhite = Color(0xFFECECF4);
 const _kMuted = Color(0xFF474760);
 const _kCream = Color(0xFFF2ECE2);
@@ -62,22 +61,6 @@ class _PressableState extends State<_Pressable>
       widget.onTap?.call();
     },
     child: ScaleTransition(scale: _scale, child: widget.child),
-  );
-}
-
-class _AddBtn extends StatelessWidget {
-  const _AddBtn();
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 34,
-    height: 34,
-    decoration: BoxDecoration(
-      color: _kGoldDim,
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: _kGold.withValues(alpha: 0.28), width: 0.5),
-    ),
-    child: const Icon(LucideIcons.plus, color: _kGold, size: 15),
   );
 }
 
@@ -152,11 +135,7 @@ class TopRatedCardLarge extends StatelessWidget {
                   ),
                 ),
 
-                Expanded(
-                  child: Center(
-                    child: _img(product),
-                  ),
-                ),
+                Expanded(child: Center(child: _img(product))),
 
                 // price
                 Padding(
@@ -176,7 +155,6 @@ class TopRatedCardLarge extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const _AddBtn(),
                     ],
                   ),
                 ),
@@ -266,7 +244,6 @@ class TopRatedCardSmall extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const _AddBtn(),
                       ],
                     ),
                   ],
@@ -452,10 +429,7 @@ class TopRatedPremiumCard extends StatelessWidget {
             colors: [_kDarkAlt, _kDark],
           ),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: _kGold.withValues(alpha: 0.15),
-            width: 1,
-          ),
+          border: Border.all(color: _kGold.withValues(alpha: 0.15), width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.25),
@@ -485,9 +459,7 @@ class TopRatedPremiumCard extends StatelessWidget {
                     ),
                     Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: Center(
-                        child: _img(product),
-                      ),
+                      child: Center(child: _img(product)),
                     ),
                     Positioned(
                       top: 14,
@@ -521,7 +493,11 @@ class TopRatedPremiumCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        const Icon(LucideIcons.shoppingBag, size: 11, color: _kMuted),
+                        const Icon(
+                          LucideIcons.shoppingBag,
+                          size: 11,
+                          color: _kMuted,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           'Đã bán ${formatCompactNumber(product.soldCount)}',
@@ -550,7 +526,6 @@ class TopRatedPremiumCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const _AddBtn(),
                       ],
                     ),
                   ],

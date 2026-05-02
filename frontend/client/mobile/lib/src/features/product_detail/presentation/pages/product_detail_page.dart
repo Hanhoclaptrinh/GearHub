@@ -360,6 +360,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                 child: StickyBottomBar(
                   product: currentProduct,
                   selectedVariant: currentVariant,
+                  quantity: _quantity,
                   isVisible: _showBottomBar,
                 ),
               ),

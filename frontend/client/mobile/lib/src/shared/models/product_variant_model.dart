@@ -26,9 +26,22 @@ class ProductVariantModel {
       name: json['name'] as String? ?? '',
       price: double.tryParse(json['price']?.toString() ?? '0') ?? 0.0,
       stock: json['stock'] as int? ?? 0,
-      attributes: json['attributes'] as Map<String, dynamic>? ?? {},
+      attributes: json['attributes'] != null ? Map<String, dynamic>.from(json['attributes']) : {},
       isActive: json['isActive'] as bool? ?? true,
       imageUrl: json['imageUrl'] as String?,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'sku': sku,
+      'name': name,
+      'price': price,
+      'stock': stock,
+      'attributes': attributes,
+      'isActive': isActive,
+      'imageUrl': imageUrl,
+    };
   }
 }

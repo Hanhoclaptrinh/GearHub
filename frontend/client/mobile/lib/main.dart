@@ -7,10 +7,12 @@ import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:mobile/src/features/home/presentation/pages/main_screen.dart';
 
-void main() {
+import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  setupDependencies();
+  await setupDependencies();
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -30,8 +32,11 @@ class GearHubApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => getIt<AuthCubit>()..checkAuthStatus(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<AuthCubit>(create: (_) => getIt<AuthCubit>()..checkAuthStatus()),
+        BlocProvider<CartCubit>(create: (_) => getIt<CartCubit>()..loadCart()),
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'GearHub',

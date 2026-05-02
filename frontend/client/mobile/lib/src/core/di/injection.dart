@@ -13,11 +13,21 @@ import 'package:mobile/src/features/product_detail/data/datasources/product_deta
 import 'package:mobile/src/features/product_detail/data/repositories/product_detail_repository_impl.dart';
 import 'package:mobile/src/features/product_detail/domain/repositories/product_detail_repository.dart';
 import 'package:mobile/src/features/product_detail/presentation/state/product_detail_cubit.dart';
+import 'package:mobile/src/features/cart/data/datasources/cart_remote_datasource.dart' as mobile_cart_remote;
+import 'package:mobile/src/features/cart/data/datasources/cart_local_datasource.dart' as mobile_cart_local;
+import 'package:mobile/src/features/cart/data/repositories/cart_repository_impl.dart' as mobile_cart_repo_impl;
+import 'package:mobile/src/features/cart/domain/repositories/cart_repository.dart' as mobile_cart_repo;
+import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart' as mobile_cart_cubit;
+import 'package:shared_preferences/shared_preferences.dart';
 
 final getIt = GetIt.instance;
 
-void setupDependencies() {
+Future<void> setupDependencies() async {
   // core
+  final sharedPreferences = await SharedPreferences.getInstance();
+  getIt.registerLazySingleton<SharedPreferences>(() => sharedPreferences);
+
+
   getIt.registerLazySingleton<SecureStorageService>(
     () => SecureStorageService(),
   );
@@ -70,5 +80,26 @@ void setupDependencies() {
     () => ProductDetailCubit(
       repository: getIt<ProductDetailRepository>(),
     ),
+  );
+
+  // cart
+  getIt.registerLazySingleton<mobile_cart_remote.CartRemoteDataSource>(
+    () => mobile_cart_remote.CartRemoteDataSourceImpl(apiClient: getIt<ApiClient>()),
+  );
+
+  getIt.registerLazySingleton<mobile_cart_local.CartLocalDataSource>(
+    () => mobile_cart_local.CartLocalDataSourceImpl(sharedPreferences: getIt<SharedPreferences>()),
+  );
+
+  getIt.registerLazySingleton<mobile_cart_repo.CartRepository>(
+    () => mobile_cart_repo_impl.CartRepositoryImpl(
+      remoteDataSource: getIt<mobile_cart_remote.CartRemoteDataSource>(),
+      localDataSource: getIt<mobile_cart_local.CartLocalDataSource>(),
+      authRepository: getIt<AuthRepository>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<mobile_cart_cubit.CartCubit>(
+    () => mobile_cart_cubit.CartCubit(repository: getIt<mobile_cart_repo.CartRepository>()),
   );
 }

@@ -301,36 +301,6 @@ class _ContentSection extends StatelessWidget {
                   ],
                 ),
               ),
-
-              GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  onAddToCart?.call();
-                  print('add to cart');
-                },
-                child: AnimatedBuilder(
-                  animation: breath,
-                  builder: (_, __) => Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: _kAccentBg,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: _kAccent.withValues(
-                          alpha: 0.2 + 0.3 * breath.value,
-                        ),
-                        width: 1,
-                      ),
-                    ),
-                    child: const Icon(
-                      LucideIcons.plus,
-                      color: _kAccent,
-                      size: 16,
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         ],

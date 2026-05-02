@@ -13,39 +13,43 @@ export class CartService {
         private productService: ProductsService
     ) { }
 
-    // tao cart cho user khi vao app
+    // su dung upsert nguyen tu de tranh loi duplicate khi goi dong thoi
     private async getOrCreateCart(userId: string) {
-        let cart = await this.prisma.cart.findUnique({
+        return this.prisma.cart.upsert({
             where: { userId },
+            update: {},
+            create: { userId },
             include: { items: true }
         });
-
-        if (!cart) {
-            cart = await this.prisma.cart.create({
-                data: { userId },
-                include: { items: true }
-            });
-        }
-
-        return cart;
     }
 
-    // them sp vao gio
     async addToCart(userId: string, data: AddToCartDto) {
         const variant = await this.prisma.productVariant.findUnique({
             where: { id: data.variantId },
-            select: { stock: true, name: true }
+            include: { product: true }
         });
 
-        if (!variant) throw new NotFoundException('Sản phẩm không tồn tại hoặc đã bị xóa');
+        if (!variant || !variant.isActive || !variant.product.isActive) {
+            throw new NotFoundException('Sản phẩm không tồn tại hoặc đã ngừng kinh doanh');
+        }
 
-        // them vao gio hang nhieu hon so luong con lai
-        if (variant.stock < data.quantity)
-            throw new BadRequestException(`Sản phẩm ${variant.name} chỉ còn ${variant.stock} sản phẩm trong kho`);
+        const cart = await this.getOrCreateCart(userId);
 
-        const cart = await this.getOrCreateCart(userId); // dam bao luon co 1 gio hang
+        const existingItem = await this.prisma.cartItem.findUnique({
+            where: {
+                cartId_productVariantId: {
+                    cartId: cart.id,
+                    productVariantId: data.variantId
+                }
+            }
+        });
 
-        return this.prisma.cartItem.upsert({
+        const currentQuantity = existingItem ? existingItem.quantity : 0;
+        if (variant.stock < currentQuantity + data.quantity) {
+            throw new BadRequestException(`Sản phẩm ${variant.name} chỉ còn ${variant.stock} sản phẩm trong kho (Bạn đã có ${currentQuantity} trong giỏ)`);
+        }
+
+        await this.prisma.cartItem.upsert({
             where: {
                 cartId_productVariantId: {
                     cartId: cart.id,
@@ -53,33 +57,34 @@ export class CartService {
                 }
             },
             update: {
-                quantity: { increment: data.quantity } // cong don neu da co sp
+                quantity: { increment: data.quantity }
             },
             create: {
                 cartId: cart.id,
                 productVariantId: data.variantId,
-                quantity: data.quantity // chua co thi tao moi
+                quantity: data.quantity
             }
         });
+
+        return this.getCart(userId);
     }
 
     async getCart(userId: string) {
         const cart = await this.prisma.cart.findUnique({
             where: { userId },
             include: {
-                // lay danh sach cac sp trong gio
                 items: {
                     include: {
-                        // lay thong tin bien the tung sp
                         productVariant: {
                             include: {
-                                // lay thong tin goc cua sp
                                 product: {
                                     select: {
                                         id: true,
                                         name: true,
                                         slug: true,
-                                        thumbnailUrl: true
+                                        thumbnailUrl: true,
+                                        isActive: true,
+                                        variants: true
                                     }
                                 }
                             }
@@ -92,20 +97,29 @@ export class CartService {
 
         if (!cart) return this.getOrCreateCart(userId);
 
-        // tinh tien tung sp trong gio
-        const itemsWithTotal = cart.items.map(item => ({
-            ...item,
-            itemTotal: item.quantity * Number(item.productVariant.price)
-        }));
+        // filter va canh bao san pham da het hang hoac dung kinh doanh
+        const itemsWithTotal = cart.items.map(item => {
+            const isAvailable = 
+                item.productVariant.isActive && 
+                item.productVariant.product.isActive && 
+                item.productVariant.stock > 0;
 
-        // tong tien trong gio
-        const cartTotal = itemsWithTotal.reduce((sum, item) => sum + item.itemTotal, 0);
+            return {
+                ...item,
+                isAvailable,
+                itemTotal: item.quantity * Number(item.productVariant.price)
+            };
+        });
+
+        const cartTotal = itemsWithTotal
+            .filter(item => item.isAvailable)
+            .reduce((sum, item) => sum + item.itemTotal, 0);
 
         return {
             ...cart,
             items: itemsWithTotal,
             cartTotal
-        }
+        };
     }
 
     async getCartCount(userId: string) {
@@ -119,33 +133,27 @@ export class CartService {
 
     async updateQuantity(userId: string, id: string, data: UpdateCartItemDto) {
         const cartItem = await this.prisma.cartItem.findFirst({
-            where: {
-                id,
-                cart: { userId }
-            },
+            where: { id, cart: { userId } },
             include: { productVariant: true }
         });
+
         if (!cartItem) throw new NotFoundException('Món hàng không tồn tại trong giỏ');
 
-        if (cartItem.productVariant.stock < data.quantity)
+        if (cartItem.productVariant.stock < data.quantity) {
             throw new BadRequestException(`Kho chỉ còn ${cartItem.productVariant.stock} sản phẩm`);
+        }
 
         await this.prisma.cartItem.update({
             where: { id },
             data: { quantity: data.quantity }
         });
 
-        // cap nhat ui
         return this.getCart(userId);
     }
 
     async removeItem(userId: string, id: string) {
-        // item phai nam trong gio moi cho xoa
         const item = await this.prisma.cartItem.findFirst({
-            where: {
-                id,
-                cart: { userId }
-            }
+            where: { id, cart: { userId } }
         });
 
         if (!item) throw new NotFoundException('Món hàng không tồn tại');
@@ -154,7 +162,6 @@ export class CartService {
             where: { id }
         });
 
-        // cap nhat ui
         return this.getCart(userId);
     }
 
@@ -166,7 +173,7 @@ export class CartService {
 
         return await this.prisma.cartItem.deleteMany({
             where: { cartId: cart.id }
-        })
+        });
     }
 
     async clearSelectedItems(userId: string, data: ClearSelectedDto) {
@@ -178,42 +185,71 @@ export class CartService {
         await this.prisma.cartItem.deleteMany({
             where: {
                 cartId: cart.id,
-                productVariantId: {
-                    in: data.variantIds // chi xoa nhung sp duoc chon
-                }
+                productVariantId: { in: data.variantIds }
             }
         });
 
         return this.getCart(userId);
     }
 
-    // dong bo hoa gio hang khi khach hang chua dang nhap va dang nhap
-    // khach chua login -> them hang
-    // khach login -> sync toan bo sp vao
     async syncCart(userId: string, data: SyncCartDto) {
         const cart = await this.getOrCreateCart(userId);
 
+        // gom cac item trung variantId tu client gui len
+        const aggregatedItems = data.items.reduce((acc, item) => {
+            const existing = acc.find(i => i.variantId === item.variantId);
+            if (existing) {
+                existing.quantity += item.quantity;
+            } else {
+                acc.push({ ...item });
+            }
+            return acc;
+        }, [] as { variantId: string; quantity: number }[]);
+
+        // lay danh sach bien the tu db de check stock va isactive
+        const variantIds = aggregatedItems.map(i => i.variantId);
+        const variants = await this.prisma.productVariant.findMany({
+            where: {
+                id: { in: variantIds },
+                isActive: true,
+                product: { isActive: true }
+            },
+            select: { id: true, stock: true }
+        });
+
+        // thuc hien dong bo
         await Promise.all(
-            data.items.map(item => {
-                this.prisma.cartItem.upsert({
+            aggregatedItems.map(async (item) => {
+                const v = variants.find(v => v.id === item.variantId);
+                if (!v) return;
+
+                // tim xem mon nay da co trong gio hang cua user chua
+                const existingInCart = cart.items.find(i => i.productVariantId === item.variantId);
+                const currentInCart = existingInCart ? existingInCart.quantity : 0;
+
+                // tinh so luong cuoi cung: (trong db + local gui len) nhung khong vuot qua so luong ton kho
+                const finalQuantity = Math.min(currentInCart + item.quantity, v.stock);
+
+                if (finalQuantity <= 0) return;
+
+                // dung upsert voi finalQty da duoc tinh
+                return this.prisma.cartItem.upsert({
                     where: {
                         cartId_productVariantId: {
                             cartId: cart.id,
                             productVariantId: item.variantId
                         }
                     },
-                    update: {
-                        quantity: { increment: item.quantity }
-                    },
+                    update: { quantity: finalQuantity },
                     create: {
                         cartId: cart.id,
                         productVariantId: item.variantId,
-                        quantity: item.quantity
+                        quantity: finalQuantity
                     }
-                })
+                });
             })
         );
-
+        // tra ve gio hang de UI cap nhat
         return this.getCart(userId);
     }
 }

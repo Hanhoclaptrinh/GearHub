@@ -5,12 +5,14 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class QuantitySelector extends StatefulWidget {
   final int quantity;
+  final int? maxQuantity;
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
 
   const QuantitySelector({
     super.key,
     required this.quantity,
+    this.maxQuantity,
     required this.onIncrement,
     required this.onDecrement,
   });
@@ -102,7 +104,7 @@ class _QuantitySelectorState extends State<QuantitySelector>
           _buildButton(
             icon: LucideIcons.plus,
             onPressed: widget.onIncrement,
-            enabled: true,
+            enabled: widget.maxQuantity == null || widget.quantity < widget.maxQuantity!,
           ),
         ],
       ),

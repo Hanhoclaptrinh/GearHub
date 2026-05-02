@@ -211,7 +211,7 @@ class ProductModel {
           double.tryParse(json['averageRating']?.toString() ?? '0.0') ?? 0.0,
       reviewCount: json['reviewCount'] as int? ?? 0,
       description: desc,
-      vaultSpecs: json['vaultSpecs'] as Map<String, dynamic>?,
+      vaultSpecs: json['vaultSpecs'] != null ? Map<String, dynamic>.from(json['vaultSpecs']) : null,
       commonSpecs: commonSpecs,
       brandName: json['brand']?['name'] as String?,
       variants: variants,
@@ -228,5 +228,25 @@ class ProductModel {
       return '${trimmed.substring(0, 57).trim()}...';
     }
     return trimmed;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': baseName,
+      'tagline': tagline,
+      'price': basePrice,
+      'thumbnailUrl': baseImage,
+      'tag': tag,
+      'viewsCount': viewsCount,
+      'soldCount': soldCount,
+      'averageRating': averageRating,
+      'reviewCount': reviewCount,
+      'description': description,
+      'vaultSpecs': vaultSpecs,
+      'brand': brandName != null ? {'name': brandName} : null,
+      'variants': variants.map((e) => e.toJson()).toList(),
+      'attributeConfig': attributeConfig,
+    };
   }
 }

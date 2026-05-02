@@ -5,6 +5,7 @@ import 'package:mobile/src/features/product_detail/presentation/pages/product_de
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../state/home_cubit.dart';
 import '../state/home_state.dart';
+import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 
 class NewArrivalsSection extends StatelessWidget {
   const NewArrivalsSection({super.key});
@@ -46,6 +47,33 @@ class NewArrivalsSection extends StatelessWidget {
                                 ProductDetailPage(product: product),
                           ),
                         );
+                      },
+                      onAddToCart: () {
+                        final variant = product.variants.where((v) => v.isActive).firstOrNull ??
+                            (product.variants.isNotEmpty ? product.variants.first : null);
+                        if (variant != null) {
+                          final cartState = context.read<CartCubit>().state;
+                          int existingQty = 0;
+                          if (cartState.cart != null) {
+                            final existing = cartState.cart!.items
+                                .where((i) => i.productVariant.id == variant.id)
+                                .firstOrNull;
+                            existingQty = existing?.quantity ?? 0;
+                          }
+
+                          if (existingQty + 1 > variant.stock) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Sản phẩm ${product.name} chỉ còn ${variant.stock} sản phẩm (Bạn đã có $existingQty trong giỏ)',
+                                ),
+                                backgroundColor: Colors.redAccent,
+                              ),
+                            );
+                            return;
+                          }
+                          context.read<CartCubit>().addToCart(variant, product, 1);
+                        }
                       },
                     );
                   },
