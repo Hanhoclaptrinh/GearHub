@@ -303,32 +303,97 @@ class _CartPageState extends State<CartPage> {
                     state.cart!.items.isNotEmpty &&
                     state.cart!.items.every((i) => i.isSelected);
               }
-              return TextButton(
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  context.read<CartCubit>().toggleSelectAll(!allSelected);
-                },
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      context.read<CartCubit>().toggleSelectAll(!allSelected);
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.05),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      allSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onSurface,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
                   ),
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.05),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () {
+                      HapticFeedback.heavyImpact();
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext dialogContext) {
+                          return AlertDialog(
+                            backgroundColor: Theme.of(
+                              context,
+                            ).scaffoldBackgroundColor,
+                            title: const Text(
+                              'Xóa giỏ hàng',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            content: const Text(
+                              'Bạn có chắc chắn muốn xóa toàn bộ sản phẩm trong giỏ hàng không?',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(dialogContext),
+                                child: const Text('Hủy'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(dialogContext);
+                                  context.read<CartCubit>().clearCart();
+                                },
+                                child: const Text(
+                                  'Xóa',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      backgroundColor: const Color(
+                        0xFFFF3B30,
+                      ).withValues(alpha: 0.1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Xóa tất cả',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFFF3B30),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
                   ),
-                ),
-                child: Text(
-                  allSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).colorScheme.onSurface,
-                    letterSpacing: 0.5,
-                  ),
-                ),
+                ],
               );
             },
           ),

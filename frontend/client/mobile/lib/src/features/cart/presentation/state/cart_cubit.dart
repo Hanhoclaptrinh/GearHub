@@ -105,6 +105,15 @@ class CartCubit extends Cubit<CartState> {
     );
   }
 
+  Future<void> clearCart() async {
+    emit(CartLoading());
+    final result = await repository.clearCart();
+    await result.fold(
+      (failure) async => emit(CartError(message: failure.message)),
+      (_) async => loadCart(),
+    );
+  }
+
   Future<void> changeVariant(
     String oldItemId,
     String oldVariantId,
