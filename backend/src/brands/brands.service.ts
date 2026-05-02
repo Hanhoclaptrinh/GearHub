@@ -53,6 +53,7 @@ export class BrandsService {
   }
 
   async getTopBrands(limit: number = 8) {
+    await this.updateBrandScores();
     return this.prisma.brand.findMany({
       where: {
         isActive: true,

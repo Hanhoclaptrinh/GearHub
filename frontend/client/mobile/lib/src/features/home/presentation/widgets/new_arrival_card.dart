@@ -227,20 +227,26 @@ class _ContentSection extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(LucideIcons.eye, size: 12, color: _kMuted),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${formatCompactNumber(product.viewsCount)} lượt xem',
-                    style: const TextStyle(
-                      color: _kMuted,
-                      fontSize: 9,
-                      letterSpacing: 0.5,
-                      fontWeight: FontWeight.w600,
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(LucideIcons.eye, size: 12, color: _kMuted),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        '${formatCompactNumber(product.viewsCount)} lượt xem',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: _kMuted,
+                          fontSize: 9,
+                          letterSpacing: 0.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               Row(
                 children: [
@@ -260,36 +266,40 @@ class _ContentSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'GIÁ BÁN',
-                    style: TextStyle(
-                      color: _kMuted,
-                      fontSize: 8,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  AnimatedBuilder(
-                    animation: breath,
-                    builder: (_, __) => Text(
-                      formatVND(product.price),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'GIÁ BÁN',
                       style: TextStyle(
-                        color: Color.lerp(
-                          _kAccent,
-                          const Color(0xFFB8F5E2),
-                          breath.value,
-                        ),
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                        height: 1,
+                        color: _kMuted,
+                        fontSize: 8,
+                        letterSpacing: 1.0,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 2),
+                    AnimatedBuilder(
+                      animation: breath,
+                      builder: (_, __) => Text(
+                        formatVND(product.price),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Color.lerp(
+                            _kAccent,
+                            const Color(0xFFB8F5E2),
+                            breath.value,
+                          ),
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                          height: 1,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
 
               GestureDetector(

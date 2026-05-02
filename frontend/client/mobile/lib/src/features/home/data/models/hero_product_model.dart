@@ -15,13 +15,52 @@ class HeroProductModel extends HeroProductEntity {
     final String description = json['description'] ?? '';
     final String? apiTagline = json['tagline'];
 
+    String name = json['name'] as String? ?? '';
+    String image = json['thumbnailUrl'] as String? ?? '';
+
+    if (json['variants'] != null && (json['variants'] as List).isNotEmpty) {
+      final variants = (json['variants'] as List);
+      var firstVariant = variants.firstOrNull;
+      for (final v in variants) {
+        if (v['isActive'] == true || v['isActive'] == null) {
+          firstVariant = v;
+          break;
+        }
+      }
+
+      if (firstVariant != null) {
+        final attrs = firstVariant['attributes'] as Map<String, dynamic>? ?? {};
+        final nonColorConfigs = <String>[];
+        attrs.forEach((key, val) {
+          final k = key.toLowerCase();
+          if (!k.contains('màu') && !k.contains('color') && !k.contains('mau')) {
+            nonColorConfigs.add(val.toString());
+          }
+        });
+        if (nonColorConfigs.isNotEmpty) {
+          name += ' ' + nonColorConfigs.join(' ');
+        }
+
+        if (firstVariant['imageUrl'] != null && firstVariant['imageUrl'].toString().isNotEmpty) {
+          image = firstVariant['imageUrl'].toString();
+        } else {
+          for (final v in variants) {
+            if (v['imageUrl'] != null && v['imageUrl'].toString().isNotEmpty) {
+              image = v['imageUrl'].toString();
+              break;
+            }
+          }
+        }
+      }
+    }
+
     return HeroProductModel(
       id: json['id'],
-      name: json['name'],
+      name: name,
       tagline: (apiTagline != null && apiTagline.isNotEmpty)
           ? apiTagline
           : _extractFirstSentence(description),
-      image: json['thumbnailUrl'] ?? '',
+      image: image,
       description: description,
     );
   }

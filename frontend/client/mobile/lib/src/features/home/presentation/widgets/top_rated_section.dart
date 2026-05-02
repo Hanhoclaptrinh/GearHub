@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:mobile/src/shared/widgets/section_header.dart';
 import 'top_rated_cards.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -26,36 +25,19 @@ class TopRatedSection extends StatelessWidget {
               actionText: 'Xem tất cả',
             ),
             const SizedBox(height: 16),
-            StaggeredGrid.count(
-              crossAxisCount: 2,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              children: [
-                if (products.isNotEmpty)
-                  StaggeredGridTile.count(
-                    crossAxisCellCount: 1,
-                    mainAxisCellCount: 2,
-                    child: TopRatedCardLarge(product: products[0]),
-                  ),
-                if (products.length >= 2)
-                  StaggeredGridTile.count(
-                    crossAxisCellCount: 1,
-                    mainAxisCellCount: 1,
-                    child: TopRatedCardSmall(product: products[1]),
-                  ),
-                if (products.length >= 3)
-                  StaggeredGridTile.count(
-                    crossAxisCellCount: 1,
-                    mainAxisCellCount: 1,
-                    child: TopRatedCardSmall(product: products[2]),
-                  ),
-                if (products.length >= 4)
-                  StaggeredGridTile.count(
-                    crossAxisCellCount: 2,
-                    mainAxisCellCount: 0.72,
-                    child: TopRatedCardWide(product: products[3]),
-                  ),
-              ],
+            GridView.builder(
+              physics: const NeverScrollableScrollPhysics(),
+              shrinkWrap: true,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 0.63,
+              ),
+              itemCount: products.length > 4 ? 4 : products.length,
+              itemBuilder: (context, index) {
+                return TopRatedPremiumCard(product: products[index]);
+              },
             ),
           ],
         );

@@ -147,9 +147,8 @@ export class ProductsService {
 
                                 if (i === 0 && type === AssetType.IMAGE && !variantImageUrl) {
                                     variantImageUrl = secure_url;
-                                } else {
-                                    variantAssetUrls.push({ url: secure_url, type });
                                 }
+                                variantAssetUrls.push({ url: secure_url, type });
                             }
                         }
 
@@ -392,9 +391,8 @@ export class ProductsService {
 
                             if (i === 0 && type === AssetType.IMAGE && !variantImageUrl) {
                                 variantImageUrl = secure_url;
-                            } else {
-                                variantAssetUrls.push({ url: secure_url, type });
                             }
+                            variantAssetUrls.push({ url: secure_url, type });
                         }
                     }
 
@@ -428,6 +426,19 @@ export class ProductsService {
                             }
                         });
                         finalVariantId = createdVariant.id;
+                    }
+
+                    if (existing) {
+                        const keptAssetIds = (vData.assets || [])
+                            .map((a: any) => a.id)
+                            .filter(Boolean);
+
+                        await tx.productAsset.deleteMany({
+                            where: {
+                                variantId: existing.id,
+                                id: { notIn: keptAssetIds }
+                            }
+                        });
                     }
 
                     if (finalVariantId && variantAssetUrls.length > 0) {
@@ -891,6 +902,7 @@ export class ProductsService {
                 category: { select: { name: true } },
                 variants: {
                     orderBy: { price: "asc" },
+                    include: { assets: true }
                 },
                 assets: true
             }
@@ -933,6 +945,8 @@ export class ProductsService {
                         price: true,
                         stock: true,
                         attributes: true,
+                        imageUrl: true,
+                        isActive: true,
                     }
                 }
             },
@@ -972,6 +986,8 @@ export class ProductsService {
                         price: true,
                         stock: true,
                         attributes: true,
+                        imageUrl: true,
+                        isActive: true,
                     }
                 },
                 assets: {
@@ -1009,6 +1025,8 @@ export class ProductsService {
                     price: true,
                     stock: true,
                     attributes: true,
+                    imageUrl: true,
+                    isActive: true,
                 }
             }
         } satisfies Prisma.ProductSelect;
@@ -1069,6 +1087,8 @@ export class ProductsService {
                         price: true,
                         stock: true,
                         attributes: true,
+                        imageUrl: true,
+                        isActive: true,
                     }
                 }
             },

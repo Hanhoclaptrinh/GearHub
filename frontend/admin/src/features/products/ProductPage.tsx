@@ -42,6 +42,7 @@ const variantSchema = z.object({
   attributes: z.record(z.string(), z.any()).optional(),
   imageUrl: z.string().optional(),
   barcode: z.string().optional(),
+  assets: z.array(z.any()).optional(),
 });
 
 const productSchema = z.object({
@@ -296,6 +297,7 @@ export const ProductPage: React.FC = () => {
           attributes: v.attributes,
           imageUrl: v.imageUrl || '',
           barcode: v.barcode || '',
+          assets: v.assets || [],
         })) as any,
       });
 
@@ -316,8 +318,9 @@ export const ProductPage: React.FC = () => {
       }
 
       if (editProduct.assets?.length) {
-        setPreviews(editProduct.assets.map((a: any) => a.url));
-        const pIdx = editProduct.assets.findIndex((a: any) => a.isPrimary);
+        const prodAssets = editProduct.assets.filter((a: any) => !a.variantId);
+        setPreviews(prodAssets.map((a: any) => a.url));
+        const pIdx = prodAssets.findIndex((a: any) => a.isPrimary);
         setPrimaryIndex(pIdx >= 0 ? pIdx : 0);
       } else {
         setPreviews([]);
@@ -910,7 +913,27 @@ export const ProductPage: React.FC = () => {
                           <UploadCloud className="w-3.5 h-3.5" /> Chọn File
                         </button>
 
-                        {watch(`variants.${idx}.imageUrl`) && !(variantFiles[idx]?.length) && (
+                        {watch(`variants.${idx}.assets`)?.length ? (
+                          (watch(`variants.${idx}.assets`) || []).map((a: any, aIdx: number) => (
+                            <div key={aIdx} className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 flex items-center justify-center bg-slate-50 animate-in fade-in group">
+                              <img src={a.url} alt="existing asset preview" className="w-full h-full object-cover" />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const currentAssets = watch(`variants.${idx}.assets`) || [];
+                                  const updatedAssets = currentAssets.filter((_: any, i: number) => i !== aIdx);
+                                  setValue(`variants.${idx}.assets` as any, updatedAssets);
+                                  if (a.url === watch(`variants.${idx}.imageUrl`)) {
+                                    setValue(`variants.${idx}.imageUrl` as any, updatedAssets[0]?.url || '');
+                                  }
+                                }}
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-all cursor-pointer backdrop-blur-sm"
+                              >
+                                <Trash2 className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
+                          ))
+                        ) : watch(`variants.${idx}.imageUrl`) && !(variantFiles[idx]?.length) && (
                           <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 flex items-center justify-center bg-slate-50 animate-in fade-in group">
                             <img src={watch(`variants.${idx}.imageUrl`)} alt="existing preview" className="w-full h-full object-cover" />
                             <button

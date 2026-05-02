@@ -2,6 +2,7 @@ enum AssetType { image, glb, usdz }
 
 class ProductAssetModel {
   final String id;
+  final String? variantId;
   final AssetType type;
   final String url;
   final bool isPrimary;
@@ -12,6 +13,7 @@ class ProductAssetModel {
 
   const ProductAssetModel({
     required this.id,
+    this.variantId,
     required this.type,
     required this.url,
     this.isPrimary = false,
@@ -24,6 +26,7 @@ class ProductAssetModel {
   factory ProductAssetModel.fromJson(Map<String, dynamic> json) {
     return ProductAssetModel(
       id: json['id'] as String,
+      variantId: json['variantId'] as String?,
       type: _parseType(json['type'] as String? ?? 'IMAGE'),
       url: json['url'] as String,
       isPrimary: json['isPrimary'] as bool? ?? false,

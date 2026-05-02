@@ -3,12 +3,13 @@ import 'package:mobile/src/shared/models/product_variant_model.dart';
 
 class ProductModel {
   final String id;
-  final String name;
+  final String baseName;
   final String tagline;
-  final double price;
-  final String image;
+  final double basePrice;
+  final String baseImage;
   final String? tag;
   final int viewsCount;
+  final int soldCount;
   final double averageRating;
   final int reviewCount;
   final String description;
@@ -21,13 +22,14 @@ class ProductModel {
 
   const ProductModel({
     required this.id,
-    required this.name,
+    required String name,
     required this.tagline,
-    required this.price,
-    required this.image,
+    required double price,
+    required String image,
     required this.description,
     this.tag,
     this.viewsCount = 0,
+    this.soldCount = 0,
     this.averageRating = 0.0,
     this.reviewCount = 0,
     this.vaultSpecs,
@@ -36,7 +38,52 @@ class ProductModel {
     this.variants = const [],
     this.assets = const [],
     this.attributeConfig = const [],
-  });
+  })  : baseName = name,
+        basePrice = price,
+        baseImage = image;
+
+  String get name {
+    if (variants.isEmpty) return baseName;
+    final firstVariant = variants.where((v) => v.isActive).firstOrNull ?? variants.first;
+    String displayName = baseName;
+    final nonColorConfigs = <String>[];
+    firstVariant.attributes.forEach((key, val) {
+      final k = key.toLowerCase();
+      if (!k.contains('màu') && !k.contains('color') && !k.contains('mau')) {
+        nonColorConfigs.add(val.toString());
+      }
+    });
+    if (nonColorConfigs.isNotEmpty) {
+      displayName += ' ' + nonColorConfigs.join(' ');
+    }
+    return displayName;
+  }
+
+  double get price {
+    if (variants.isEmpty) return basePrice;
+    final firstVariant = variants.where((v) => v.isActive).firstOrNull ?? variants.first;
+    return firstVariant.price;
+  }
+
+  String get image {
+    if (variants.isEmpty) return baseImage;
+    final activeVariants = variants.where((v) => v.isActive).toList();
+    final firstVariant = activeVariants.firstOrNull ?? variants.first;
+    if (firstVariant.imageUrl != null && firstVariant.imageUrl!.isNotEmpty) {
+      return firstVariant.imageUrl!;
+    }
+    for (final v in activeVariants) {
+      if (v.imageUrl != null && v.imageUrl!.isNotEmpty) {
+        return v.imageUrl!;
+      }
+    }
+    for (final v in variants) {
+      if (v.imageUrl != null && v.imageUrl!.isNotEmpty) {
+        return v.imageUrl!;
+      }
+    }
+    return baseImage;
+  }
 
   List<ProductAssetModel> get imageAssets =>
       assets.where((a) => a.type == AssetType.image).toList();
@@ -81,6 +128,7 @@ class ProductModel {
     String? image,
     String? tag,
     int? viewsCount,
+    int? soldCount,
     double? averageRating,
     int? reviewCount,
     String? description,
@@ -93,12 +141,13 @@ class ProductModel {
   }) {
     return ProductModel(
       id: id ?? this.id,
-      name: name ?? this.name,
+      name: name ?? this.baseName,
       tagline: tagline ?? this.tagline,
-      price: price ?? this.price,
-      image: image ?? this.image,
+      price: price ?? this.basePrice,
+      image: image ?? this.baseImage,
       tag: tag ?? this.tag,
       viewsCount: viewsCount ?? this.viewsCount,
+      soldCount: soldCount ?? this.soldCount,
       averageRating: averageRating ?? this.averageRating,
       reviewCount: reviewCount ?? this.reviewCount,
       description: description ?? this.description,
@@ -157,6 +206,7 @@ class ProductModel {
       image: json['thumbnailUrl'] ?? '',
       tag: 'MỚI',
       viewsCount: json['viewsCount'] as int? ?? 0,
+      soldCount: json['soldCount'] as int? ?? 0,
       averageRating:
           double.tryParse(json['averageRating']?.toString() ?? '0.0') ?? 0.0,
       reviewCount: json['reviewCount'] as int? ?? 0,

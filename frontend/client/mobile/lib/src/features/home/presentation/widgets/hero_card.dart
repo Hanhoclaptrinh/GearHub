@@ -4,6 +4,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/src/features/home/presentation/state/home_cubit.dart';
+import 'package:mobile/src/features/home/presentation/state/home_state.dart';
 import '../../domain/entities/hero_product_entity.dart';
 
 const _kBg = Color(0xFF080810);
@@ -43,10 +46,16 @@ class HeroCard extends StatelessWidget {
       child: GestureDetector(
         onTap: () {
           HapticFeedback.lightImpact();
+          final state = context.read<HomeCubit>().state;
+          ProductModel? fullProduct;
+          if (state is HomeLoaded) {
+            fullProduct = state.newArrivals.where((p) => p.id == product.id).firstOrNull ??
+                state.vaultProducts.where((p) => p.id == product.id).firstOrNull;
+          }
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => ProductDetailPage(
-                product: ProductModel(
+                product: fullProduct ?? ProductModel(
                   id: product.id,
                   name: product.name,
                   tagline: product.tagline,

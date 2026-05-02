@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
+import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 
 class VaultCard extends StatelessWidget {
   final ProductModel product;
@@ -28,7 +29,11 @@ class VaultCard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         HapticFeedback.mediumImpact();
-        print('prod vip');
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ProductDetailPage(product: product),
+          ),
+        );
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8),

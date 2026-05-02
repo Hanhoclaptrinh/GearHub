@@ -154,10 +154,7 @@ class TopRatedCardLarge extends StatelessWidget {
 
                 Expanded(
                   child: Center(
-                    child: Hero(
-                      tag: 'product_${product.id}',
-                      child: _img(product),
-                    ),
+                    child: _img(product),
                   ),
                 ),
 
@@ -167,12 +164,16 @@ class TopRatedCardLarge extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        formatVND(product.price),
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w900,
-                          color: _kWhite,
+                      Expanded(
+                        child: Text(
+                          formatVND(product.price),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w900,
+                            color: _kWhite,
+                          ),
                         ),
                       ),
                       const _AddBtn(),
@@ -212,12 +213,9 @@ class TopRatedCardSmall extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Hero(
-                      tag: 'product_${product.id}',
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 14, 12, 8),
-                        child: _img(product),
-                      ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 14, 12, 8),
+                      child: _img(product),
                     ),
                     Positioned(
                       top: 10,
@@ -255,13 +253,17 @@ class TopRatedCardSmall extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          formatVND(product.price),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: _kGold,
-                            letterSpacing: -0.3,
+                        Expanded(
+                          child: Text(
+                            formatVND(product.price),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: _kGold,
+                              letterSpacing: -0.3,
+                            ),
                           ),
                         ),
                         const _AddBtn(),
@@ -427,6 +429,134 @@ class TopRatedCardWideState extends State<TopRatedCardWide>
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class TopRatedPremiumCard extends StatelessWidget {
+  final ProductModel product;
+  const TopRatedPremiumCard({super.key, required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    return _Pressable(
+      onTap: () => _push(context, product),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [_kDarkAlt, _kDark],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: _kGold.withValues(alpha: 0.15),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                          colors: [
+                            _kGold.withValues(alpha: 0.05),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Center(
+                        child: _img(product),
+                      ),
+                    ),
+                    Positioned(
+                      top: 14,
+                      left: 14,
+                      child: RatingBadge(
+                        rating: product.averageRating,
+                        isCompact: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(height: 1, width: double.infinity, color: _kBorder),
+              Padding(
+                padding: const EdgeInsets.all(14.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: _kWhite,
+                        height: 1.25,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(LucideIcons.shoppingBag, size: 11, color: _kMuted),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Đã bán ${formatCompactNumber(product.soldCount)}',
+                          style: const TextStyle(
+                            color: _kMuted,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            formatVND(product.price),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: _kGold,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                        ),
+                        const _AddBtn(),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:mobile/src/shared/models/product_asset_model.dart';
 import '../pages/product_gallery_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -55,15 +56,24 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
     final isOutOfStock = (currentVariant?.stock ?? 0) <= 0;
 
     final List<String> galleryUrls = [];
-    if (widget.currentVariant?.imageUrl != null &&
-        widget.currentVariant!.imageUrl!.isNotEmpty) {
-      galleryUrls.add(widget.currentVariant!.imageUrl!);
+    if (widget.currentVariant != null) {
+      final variantAssets = widget.product.assets
+          .where((a) => a.variantId == widget.currentVariant!.id && a.type == AssetType.image)
+          .map((a) => a.url)
+          .toList();
+      if (variantAssets.isNotEmpty) {
+        galleryUrls.addAll(variantAssets);
+      } else if (widget.currentVariant!.imageUrl != null &&
+          widget.currentVariant!.imageUrl!.isNotEmpty) {
+        galleryUrls.add(widget.currentVariant!.imageUrl!);
+      }
     }
+
     if (galleryUrls.isEmpty) {
       galleryUrls.addAll(widget.product.galleryUrls);
     }
 
-    String displayName = widget.product.name;
+    String displayName = widget.product.baseName;
     if (widget.currentVariant != null) {
       final nonColorConfigs = <String>[];
       widget.currentVariant!.attributes.forEach((key, val) {

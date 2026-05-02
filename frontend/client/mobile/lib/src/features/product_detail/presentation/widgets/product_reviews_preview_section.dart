@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import '../pages/product_reviews_page.dart';
+import '../pages/write_review_page.dart';
 
 class ProductReviewsPreviewSection extends StatelessWidget {
   final ProductModel product;
@@ -83,9 +84,9 @@ class ProductReviewsPreviewSection extends StatelessWidget {
           const SizedBox(height: 16),
           if (hasReviews)
             _buildReviewCards(colorScheme)
-          else
+          else ...[
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24.0),
+              padding: const EdgeInsets.only(top: 8.0, bottom: 20.0),
               child: Text(
                 'Chưa có đánh giá nào. Trở thành người đầu tiên!',
                 style: TextStyle(
@@ -95,13 +96,40 @@ class ProductReviewsPreviewSection extends StatelessWidget {
                 ),
               ),
             ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const WriteReviewPage(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.edit_note_rounded, size: 20, color: Colors.white),
+              label: const Text(
+                'Viết đánh giá đầu tiên',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
   Widget _buildReviewCards(ColorScheme colorScheme) {
-    // Currently fallback to dummy if no reviews are fetched
     return const Column(
       children: [
         _ReviewCard(
