@@ -1,10 +1,20 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import '../../../auth/domain/entities/user_entity.dart';
+import 'package:mobile/src/features/auth/domain/entities/user_entity.dart';
+import 'package:mobile/src/features/profile/presentation/pages/membership_tier_page.dart';
+import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
+import 'package:mobile/src/features/profile/presentation/state/orders_state.dart';
+
+double _toDouble(dynamic val) {
+  if (val == null) return 0.0;
+  if (val is num) return val.toDouble();
+  if (val is String) return double.tryParse(val) ?? 0.0;
+  return 0.0;
+}
 
 class ProfileHeader extends StatelessWidget {
-  // thong tin user duoc tra ve tu repo sau khi cubit nhan data tu backend
   final UserEntity? user;
   const ProfileHeader({super.key, this.user});
 
@@ -78,7 +88,91 @@ class ProfileHeader extends StatelessWidget {
                 ),
                 if (user != null) ...[
                   const SizedBox(height: 10),
-                  const _ProBadge(),
+                  BlocBuilder<OrdersCubit, OrdersState>(
+                    builder: (context, state) {
+                      double totalSpent = 0.0;
+                      if (state is OrdersLoaded) {
+                        for (final order in state.orders) {
+                          final String s = order['status'] ?? 'PENDING';
+                          if (s == 'DELIVERED') {
+                            totalSpent += _toDouble(order['totalAmount'] ?? order['total']);
+                          }
+                        }
+                      }
+
+                      if (totalSpent == 0.0) return const SizedBox.shrink();
+
+                      String tierName = 'BẠC';
+                      Color startColor = const Color(0xFF64748B);
+                      Color endColor = const Color(0xFF94A3B8);
+                      Color fgColor = const Color(0xFF475569);
+                      IconData tierIcon = LucideIcons.shield;
+
+                      if (totalSpent >= 150000000.0) {
+                        tierName = 'VIP';
+                        startColor = const Color(0xFFEF4444);
+                        endColor = const Color(0xFFEC4899);
+                        fgColor = const Color(0xFF9D174D);
+                        tierIcon = LucideIcons.crown;
+                      } else if (totalSpent >= 50000000.0) {
+                        tierName = 'KIM CƯƠNG';
+                        startColor = const Color(0xFF06B6D4);
+                        endColor = const Color(0xFF3B82F6);
+                        fgColor = const Color(0xFF1D4ED8);
+                        tierIcon = LucideIcons.gem;
+                      } else if (totalSpent >= 15000000.0) {
+                        tierName = 'VÀNG';
+                        startColor = const Color(0xFFF59E0B);
+                        endColor = const Color(0xFFFCD34D);
+                        fgColor = const Color(0xFFB45309);
+                        tierIcon = LucideIcons.sparkles;
+                      }
+
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => MembershipTierPage(totalSpent: totalSpent),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [startColor, endColor],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          padding: const EdgeInsets.all(1.5),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8.5),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(tierIcon, size: 11, color: startColor),
+                                const SizedBox(width: 4),
+                                Text(
+                                  tierName,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    color: fgColor,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ],
               ],
             ),
@@ -99,48 +193,6 @@ class ProfileHeader extends StatelessWidget {
           fontWeight: FontWeight.w900,
           color: Colors.white,
           letterSpacing: -1,
-        ),
-      ),
-    );
-  }
-}
-
-class _ProBadge extends StatelessWidget {
-  const _ProBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6), Color(0xFFEC4899)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      padding: const EdgeInsets.all(1.5),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8.5),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(LucideIcons.zap, size: 11, color: Color(0xFF8B5CF6)),
-            SizedBox(width: 4),
-            Text(
-              'VIP',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF0A0A0F),
-                letterSpacing: 0.3,
-              ),
-            ),
-          ],
         ),
       ),
     );
