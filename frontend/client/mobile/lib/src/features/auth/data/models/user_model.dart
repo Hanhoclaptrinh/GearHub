@@ -8,16 +8,20 @@ class UserModel extends UserEntity {
     super.fullName,
     super.avatarUrl,
     super.phone,
+    super.address,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final profile = json['profile'] as Map<String, dynamic>?;
+
     return UserModel(
       id: json['id'] as String,
       email: json['email'] as String,
       role: json['role'] as String? ?? 'USER',
-      fullName: json['fullName'] as String?,
-      avatarUrl: json['avatarUrl'] as String?,
-      phone: json['phone'] as String?,
+      fullName: (json['fullName'] ?? profile?['fullName']) as String?,
+      avatarUrl: (json['avatarUrl'] ?? profile?['avatarUrl']) as String?,
+      phone: (json['phone'] ?? profile?['phone']) as String?,
+      address: (json['address'] ?? profile?['address']) as String?,
     );
   }
 
@@ -28,5 +32,6 @@ class UserModel extends UserEntity {
         'fullName': fullName,
         'avatarUrl': avatarUrl,
         'phone': phone,
+        'address': address,
       };
 }

@@ -126,6 +126,28 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  Future<void> updateProfile({
+    String? fullName,
+    String? phone,
+    String? address,
+    String? avatarUrl,
+    String? filePath,
+  }) async {
+    emit(const AuthLoading());
+    try {
+      final user = await _repository.updateProfile(
+        fullName: fullName,
+        phone: phone,
+        address: address,
+        avatarUrl: avatarUrl,
+        filePath: filePath,
+      );
+      emit(AuthAuthenticated(user: user));
+    } catch (e) {
+      emit(AuthError(message: _extractError(e)));
+    }
+  }
+
   Future<void> logout() async {
     emit(const AuthLoading());
     try {

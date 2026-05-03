@@ -142,6 +142,33 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<UserEntity> updateProfile({
+    String? fullName,
+    String? phone,
+    String? address,
+    String? avatarUrl,
+    String? filePath,
+  }) async {
+    final response = await _remoteDatasource.updateProfile(
+      fullName: fullName,
+      phone: phone,
+      address: address,
+      avatarUrl: avatarUrl,
+      filePath: filePath,
+    );
+
+    if (response.containsKey('data')) {
+      final data = response['data'];
+      if (data is Map<String, dynamic> && data.containsKey('user')) {
+        return UserModel.fromJson(data['user'] as Map<String, dynamic>);
+      }
+      return UserModel.fromJson(response);
+    }
+      return UserModel.fromJson(response);
+    
+  }
+
+  @override
   Future<void> logout() async {
     try {
       await _remoteDatasource.logout();

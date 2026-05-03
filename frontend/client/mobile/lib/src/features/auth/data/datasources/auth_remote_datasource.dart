@@ -106,6 +106,35 @@ class AuthRemoteDatasource {
     return response.data as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> updateProfile({
+    String? fullName,
+    String? phone,
+    String? address,
+    String? avatarUrl,
+    String? filePath,
+  }) async {
+    final Map<String, dynamic> map = {};
+    if (fullName != null) map['fullName'] = fullName;
+    if (phone != null) map['phone'] = phone;
+    if (address != null) map['address'] = address;
+    if (avatarUrl != null) map['avatarUrl'] = avatarUrl;
+
+    if (filePath != null && filePath.isNotEmpty) {
+      map['file'] = await MultipartFile.fromFile(
+        filePath,
+        filename: filePath.split('/').last,
+      );
+    }
+
+    final formData = FormData.fromMap(map);
+
+    final response = await _dio.patch(
+      '/users/update-profile',
+      data: formData,
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> logout() async {
     final response = await _dio.post('/auth/logout');
     return response.data as Map<String, dynamic>;

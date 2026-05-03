@@ -43,6 +43,14 @@ abstract class AuthRepository {
 
   Future<UserEntity> getMe();
 
+  Future<UserEntity> updateProfile({
+    String? fullName,
+    String? phone,
+    String? address,
+    String? avatarUrl,
+    String? filePath,
+  });
+
   Future<void> logout();
 
   Future<bool> isLoggedIn();

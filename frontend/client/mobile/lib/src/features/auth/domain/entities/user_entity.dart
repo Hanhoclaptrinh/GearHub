@@ -5,6 +5,7 @@ class UserEntity {
   final String? fullName;
   final String? avatarUrl;
   final String? phone;
+  final String? address;
 
   const UserEntity({
     required this.id,
@@ -13,5 +14,6 @@ class UserEntity {
     this.fullName,
     this.avatarUrl,
     this.phone,
+    this.address,
   });
 }
