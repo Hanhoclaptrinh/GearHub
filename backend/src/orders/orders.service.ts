@@ -116,7 +116,7 @@ export class OrdersService {
                     items: {
                         include: {
                             productVariant: {
-                                select: {
+                                include: {
                                     product: {
                                         select: {
                                             name: true,
@@ -215,11 +215,7 @@ export class OrdersService {
                 items: {
                     include: {
                         productVariant: {
-                            select: {
-                                id: true,
-                                name: true,
-                                sku: true,
-                                attributes: true,
+                            include: {
                                 product: {
                                     select: {
                                         name: true,

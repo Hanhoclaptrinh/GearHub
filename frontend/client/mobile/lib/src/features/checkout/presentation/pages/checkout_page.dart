@@ -16,6 +16,7 @@ import 'package:mobile/src/features/checkout/presentation/widgets/payment_select
 import 'package:mobile/src/features/checkout/presentation/widgets/price_breakdown_section.dart';
 import 'package:mobile/src/features/checkout/presentation/widgets/edit_address_modal.dart';
 import 'vnpay_payment_page.dart';
+import 'package:mobile/src/features/profile/presentation/pages/order_history_page.dart';
 
 class CheckoutArguments {
   final List<CartItemEntity> items;
@@ -435,6 +436,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const OrderHistoryPage(initialStatus: 'PENDING'),
+                  ),
+                );
               },
               child: Container(
                 height: 56,

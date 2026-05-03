@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/features/auth/presentation/pages/login_page.dart';
 import 'package:mobile/src/features/auth/presentation/pages/register_page.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
@@ -11,6 +12,7 @@ import 'package:mobile/src/features/profile/presentation/widgets/profile_header.
 import 'package:mobile/src/features/profile/presentation/widgets/profile_menu_card.dart';
 import 'package:mobile/src/features/profile/presentation/widgets/profile_stats.dart';
 import 'package:mobile/src/features/profile/presentation/widgets/ultilities_grid.dart';
+import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -39,17 +41,24 @@ class _UserProfilePageState extends State<UserProfilePage> {
           );
         }
       },
-      child: Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: BlocBuilder<AuthCubit, AuthState>(
-          builder: (context, state) {
-            final user = state is AuthAuthenticated ? state.user : null;
-            final isLoggedIn = state is AuthAuthenticated;
+      child: BlocProvider(
+        create: (context) => getIt<OrdersCubit>()..fetchMyOrders(status: 'ALL'),
+        child: Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: BlocBuilder<AuthCubit, AuthState>(
+            builder: (context, state) {
+              final user = state is AuthAuthenticated ? state.user : null;
+              final isLoggedIn = state is AuthAuthenticated;
 
-            return CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(
+              return RefreshIndicator(
+                color: const Color(0xFF3B82F6),
+                onRefresh: () async {
+                  if (isLoggedIn) {
+                    await context.read<OrdersCubit>().fetchMyOrders(status: 'ALL');
+                  }
+                },
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   child: SafeArea(
                     top: false,
                     child: Padding(
@@ -105,9 +114,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     ),
                   ),
                 ),
-              ],
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );

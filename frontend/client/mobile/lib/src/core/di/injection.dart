@@ -19,6 +19,7 @@ import 'package:mobile/src/features/cart/data/repositories/cart_repository_impl.
 import 'package:mobile/src/features/cart/domain/repositories/cart_repository.dart' as mobile_cart_repo;
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart' as mobile_cart_cubit;
 import 'package:mobile/src/features/checkout/presentation/state/checkout_cubit.dart' as mobile_checkout_cubit;
+import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final getIt = GetIt.instance;
@@ -106,5 +107,9 @@ Future<void> setupDependencies() async {
 
   getIt.registerFactory<mobile_checkout_cubit.CheckoutCubit>(
     () => mobile_checkout_cubit.CheckoutCubit(apiClient: getIt<ApiClient>()),
+  );
+
+  getIt.registerFactory<OrdersCubit>(
+    () => OrdersCubit(apiClient: getIt<ApiClient>()),
   );
 }
