@@ -21,11 +21,20 @@ export class PaymentService {
 
         if (!order) throw new NotFoundException('Đơn hàng không tồn tại');
 
+        if (order.paymentStatus === PaymentStatus.PAID) {
+            throw new BadRequestException('Đơn hàng đã được thanh toán');
+        }
+
+        if (order.status === OrderStatus.CANCELLED) {
+            throw new BadRequestException('Đơn hàng đã bị hủy');
+        }
+
         const paymentUrl = await this.vnpayGateway.createPayment({
             orderId: order.id,
             amount: Number(order.totalAmount),
             ipAddr,
-            orderInfo: description
+            orderInfo: description,
+            platform
         });
 
         // tao bang ghi giao dich o trang thai pending
@@ -56,149 +65,153 @@ export class PaymentService {
 
     async processVnpayReturn(query: any) {
         try {
-            // log received query parameters
-            // this.logger.debug(`VNPay return query: ${JSON.stringify(query)}`);
-
-            // kiem tra chu ky
             const isValid = await this.vnpayGateway.verifyReturn(query);
             if (!isValid) {
-                // this.logger.warn('VNPay signature verification failed');
                 return { success: false, message: 'Chữ ký không hợp lệ' };
             }
 
             const orderId = query['vnp_TxnRef'];
-            const responseCode = query['vnp_ResponseCode'];
-            const transactionNo = query['vnp_TransactionNo'];
-
             if (!orderId) {
-                // this.logger.error('Missing vnp_TxnRef in VNPay response');
                 return { success: false, message: 'Thiếu thông tin đơn hàng' };
             }
 
-            // this.logger.log(`Processing payment - Order: ${orderId}, Response: ${responseCode}, TxnNo: ${transactionNo}`);
+            return await this.confirmPayment(query);
+        } catch (error) {
+            this.logger.error(`Error in vnpayReturn: ${error.message}`, error.stack);
+            return { success: false, message: error.message || 'Lỗi xử lý thanh toán' };
+        }
+    }
 
-            // giao dich thanh cong khi responseCode = '00'
-            if (responseCode === '00') {
-                // lay thong tin don hang va item
-                const order = await this.prisma.order.findUnique({
-                    where: { id: orderId },
-                    include: {
-                        items: {
-                            include: {
-                                productVariant: {
-                                    include: { product: true }
-                                }
-                            }
-                        }
-                    }
-                });
-
-                if (!order) {
-                    // this.logger.error(`Order not found: ${orderId}`);
-                    throw new NotFoundException('Đơn hàng không tồn tại');
-                }
-
-                // this.logger.debug(`Found order: ${order.id}, items count: ${order.items.length}`);
-
-                // su dung transaction de cap nhat dong thoi
-                const result = await this.prisma.$transaction(
-                    async (tx) => {
-                        // cap nhat transaction
-                        // this.logger.log(`[STEP 1] Updating transaction for order: ${orderId}`);
-                        const updatedTransaction = await tx.transaction.update({
-                            where: { orderId: orderId },
-                            data: {
-                                status: TransactionStatus.SUCCESS,
-                                providerTransactionId: transactionNo,
-                                transactionCode: transactionNo,
-                                description: query['vnp_OrderInfo'],
-                                paymentDate: new Date(),
-                            },
-                        });
-                        // this.logger.log(`Transaction updated - ID: ${updatedTransaction.id}, Status: SUCCESS, PaymentDate: ${updatedTransaction.paymentDate}`);
-
-                        // cap nhat order
-                        // this.logger.log(`[STEP 2] Updating order: ${orderId}`);
-                        const updatedOrder = await tx.order.update({
-                            where: { id: orderId },
-                            data: {
-                                paymentStatus: PaymentStatus.PAID,
-                                paymentMethod: PaymentMethod.PAYMENT_GATEWAY,
-                                status: OrderStatus.CONFIRMED
-                            },
-                        });
-                        // this.logger.log(`Order updated - Status: ${updatedOrder.status}, PaymentStatus: ${updatedOrder.paymentStatus}, PaymentMethod: ${updatedOrder.paymentMethod}`);
-
-                        // cap nhat soldCount cho tung product
-                        let productUpdateCount = 0;
-                        for (const item of order.items) {
-                            if (!item.productVariant || !item.productVariant.product) {
-                                // this.logger.warn(`Skipping item - missing product variant or product data`);
-                                continue;
-                            }
-
-                            const product = item.productVariant.product;
-                            const newSoldCount = (product.soldCount || 0) + item.quantity;
-
-                            // this.logger.log(`[STEP 3.${productUpdateCount + 1}] Updating product: ${product.id} (${product.name}), qty: ${item.quantity}`);
-                            const updatedProduct = await tx.product.update({
-                                where: { id: product.id },
-                                data: {
-                                    soldCount: newSoldCount
-                                }
-                            });
-                            // this.logger.log(`✓ Product updated - ID: ${updatedProduct.id}, Sold: ${updatedProduct.soldCount}`);
-                            productUpdateCount++;
-                        }
-
-                        if (productUpdateCount === 0) {
-                            // this.logger.warn(`Warning: No products were updated for order ${orderId}`);
-                        }
-
-                        // tao order tracking
-                        // this.logger.log(`[STEP 4] Creating order tracking`);
-                        const tracking = await tx.orderTracking.create({
-                            data: {
-                                orderId: orderId,
-                                statusLabel: 'Thanh toán thành công',
-                                description: `Thanh toán ${Number(order.totalAmount).toLocaleString('vi-VN')} VND qua VNPay thành công - Transaction ID: ${transactionNo}`
-                            }
-                        });
-                        // this.logger.log(`✓ OrderTracking created - ID: ${tracking.id}`);
-
-                        return { orderId, transactionId: updatedTransaction.id, productCount: productUpdateCount };
-                    },
-                    {
-                        timeout: 30000, // 30 seconds timeout
-                    }
-                );
-
-                // this.logger.log(`Payment processed successfully - Order: ${orderId}, Transactions: 1, Products: ${result.productCount}`);
-                return { success: true, orderId };
+    async processVnpayIpn(query: any) {
+        try {
+            const isValid = await this.vnpayGateway.verifyReturn(query);
+            if (!isValid) {
+                return { RspCode: '97', Message: 'Chữ ký không hợp lệ' };
             }
 
-            // this.logger.warn(`Payment failed - Order: ${orderId}, ResponseCode: ${responseCode}`);
+            const orderId = query['vnp_TxnRef'];
+            const responseCode = query['vnp_ResponseCode'];
+            const vnpAmount = Number(query['vnp_Amount']);
 
-            // update transaction status thanh FAILED neu response code khac '00'
-            if (responseCode && responseCode !== '00') {
-                try {
-                    await this.prisma.transaction.update({
+            if (!orderId) {
+                return { RspCode: '01', Message: 'Đơn hàng không tồn tại' };
+            }
+
+            const order = await this.prisma.order.findUnique({
+                where: { id: orderId },
+            });
+
+            if (!order) {
+                return { RspCode: '01', Message: 'Đơn hàng không tồn tại' };
+            }
+
+            if (Math.floor(Number(order.totalAmount) * 100) !== vnpAmount) {
+                return { RspCode: '04', Message: 'Số tiền thanh toán không khớp' };
+            }
+
+            if (order.paymentStatus === PaymentStatus.PAID) {
+                return { RspCode: '02', Message: 'Đơn hàng đã được thanh toán' };
+            }
+
+            const result = await this.confirmPayment(query);
+            if (result.success) {
+                return { RspCode: '00', Message: 'Thanh toán thành công' };
+            } else {
+                return { RspCode: '99', Message: result.message || 'Lỗi xử lý thanh toán' };
+            }
+        } catch (error) {
+            this.logger.error(`Error in vnpayIpn: ${error.message}`, error.stack);
+            return { RspCode: '99', Message: error.message || 'Lỗi xử lý thanh toán' };
+        }
+    }
+
+    private async confirmPayment(query: any) {
+        const orderId = query['vnp_TxnRef'];
+        const transactionNo = query['vnp_TransactionNo'];
+        const vnpAmount = Number(query['vnp_Amount']);
+        const responseCode = query['vnp_ResponseCode'];
+
+        const order = await this.prisma.order.findUnique({
+            where: { id: orderId },
+            include: {
+                items: {
+                    include: {
+                        productVariant: {
+                            include: { product: true }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!order) {
+            throw new NotFoundException('Đơn hàng không tồn tại');
+        }
+
+        if (Math.floor(Number(order.totalAmount) * 100) !== vnpAmount) {
+            return { success: false, message: 'Số tiền thanh toán không khớp' };
+        }
+
+        if (order.paymentStatus === PaymentStatus.PAID) {
+            return { success: true, orderId };
+        }
+
+        if (responseCode === '00') {
+            await this.prisma.$transaction(
+                async (tx) => {
+                    await tx.transaction.update({
                         where: { orderId: orderId },
                         data: {
-                            status: TransactionStatus.FAILED,
+                            status: TransactionStatus.SUCCESS,
                             providerTransactionId: transactionNo,
+                            transactionCode: transactionNo,
+                            description: query['vnp_OrderInfo'],
+                            paymentDate: new Date(),
+                            rawResponse: JSON.stringify(query)
                         },
                     });
-                    // this.logger.log(`Transaction marked as FAILED: ${orderId}, Code: ${responseCode}`);
-                } catch (updateError) {
-                    // this.logger.error(`Error updating failed transaction: ${updateError}`);
-                }
-            }
 
+                    await tx.order.update({
+                        where: { id: orderId },
+                        data: {
+                            paymentStatus: PaymentStatus.PAID,
+                            paymentMethod: PaymentMethod.PAYMENT_GATEWAY,
+                            status: OrderStatus.CONFIRMED
+                        },
+                    });
+
+                    for (const item of order.items) {
+                        if (!item.productVariant || !item.productVariant.product) continue;
+                        const product = item.productVariant.product;
+                        await tx.product.update({
+                            where: { id: product.id },
+                            data: {
+                                soldCount: { increment: item.quantity }
+                            }
+                        });
+                    }
+
+                    await tx.orderTracking.create({
+                        data: {
+                            orderId: orderId,
+                            statusLabel: 'Thanh toán thành công',
+                            description: `Thanh toán ${Number(order.totalAmount).toLocaleString('vi-VN')} VND qua VNPay thành công - Transaction ID: ${transactionNo}`
+                        }
+                    });
+                },
+                { timeout: 30000 }
+            );
+            return { success: true, orderId };
+        } else {
+            await this.prisma.transaction.update({
+                where: { orderId: orderId },
+                data: {
+                    status: TransactionStatus.FAILED,
+                    providerTransactionId: transactionNo,
+                    rawResponse: JSON.stringify(query)
+                },
+            }).catch(() => {});
             return { success: false, message: 'Thanh toán thất bại' };
-        } catch (error) {
-            // this.logger.error(`Error processing VNPay return: ${error.message}`, error.stack);
-            return { success: false, message: error.message || 'Lỗi xử lý thanh toán' };
         }
     }
 

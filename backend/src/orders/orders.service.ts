@@ -77,12 +77,16 @@ export class OrdersService {
 
             // tru stock trong kho
             for (const item of items) {
-                await tx.productVariant.update({
-                    where: { id: item.variantId },
+                const variant = variants.find(v => v.id === item.variantId);
+                const result = await tx.productVariant.updateMany({
+                    where: { id: item.variantId, stock: { gte: item.quantity } },
                     data: {
                         stock: { decrement: item.quantity }
                     }
                 });
+                if (result.count === 0) {
+                    throw new BadRequestException(`Sản phẩm ${variant?.name || item.variantId} không đủ tồn kho`);
+                }
             }
 
             // don gio hang

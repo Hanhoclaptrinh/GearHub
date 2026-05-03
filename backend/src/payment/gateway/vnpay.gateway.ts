@@ -16,38 +16,45 @@ export class VnPayGateway implements PaymentGateway {
 
         const createDate = moment().format('YYYYMMDDHHmmss');
 
+        // add platform to return url
         if (data.platform) {
-            vnpReturnUrl += vnpReturnUrl.includes('?')
-                ? `&platform=${data.platform}`
-                : `?platform=${data.platform}`;
+            const url = new URL(vnpReturnUrl);
+            url.searchParams.set('platform', data.platform);
+            vnpReturnUrl = url.toString();
         }
 
         const vnp_Params: any = {
-            vnp_Amount: Math.floor(data.amount * 100),
+            vnp_Version: '2.1.0',
             vnp_Command: 'pay',
-            vnp_CreateDate: createDate,
+            vnp_TmnCode: vnpTmnCode,
+            vnp_Amount: Math.floor(data.amount * 100),
             vnp_CurrCode: 'VND',
-            vnp_IpAddr: data.ipAddr,
-            vnp_Locale: 'vn',
+            vnp_TxnRef: data.orderId,
             vnp_OrderInfo: data.orderInfo,
             vnp_OrderType: 'other',
+            vnp_Locale: 'vn',
             vnp_ReturnUrl: vnpReturnUrl,
-            vnp_TmnCode: vnpTmnCode,
-            vnp_TxnRef: data.orderId,
-            vnp_Version: '2.1.0',
+            vnp_IpAddr: data.ipAddr,
+            vnp_CreateDate: createDate,
         };
 
         const sortedParams = this.sortObject(vnp_Params);
 
-        const signData = new URLSearchParams(sortedParams).toString();
+        // build query string
+        const signData = Object.keys(sortedParams)
+            .map((key) => `${key}=${encodeURIComponent(sortedParams[key]).replace(/%20/g, "+")}`)
+            .join('&');
 
+        // hash data
         const hmac = crypto.createHmac('sha512', vnpHashSecret);
         const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
 
-        return `${vnpUrl}?${signData}&vnp_SecureHash=${signed}`;
+        // url generate
+        const finalUrl = `${vnpUrl}?${signData}&vnp_SecureHash=${signed}`;
+        return finalUrl;
     }
 
-    private sortObject(obj: any) {
+    private sortObject(obj: object) {
         const sorted: any = {};
         const keys = Object.keys(obj).sort();
         keys.forEach((key) => {
@@ -66,6 +73,7 @@ export class VnPayGateway implements PaymentGateway {
 
         const sortedParams = this.sortObject(data);
 
+        // encoding
         const signData = Object.keys(sortedParams)
             .map((key) => {
                 const value = encodeURIComponent(sortedParams[key].toString()).replace(/%20/g, "+");
@@ -75,11 +83,6 @@ export class VnPayGateway implements PaymentGateway {
 
         const hmac = crypto.createHmac('sha512', vnpHashSecret);
         const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
-
-        // log chuoi hash 2 chieu
-        // console.log('Chuỗi băm chiều về:', signData);
-        // console.log('Mã băm tự tính:', signed);
-        // console.log('Mã băm VNPAY gửi:', vnpSecureHash);
 
         return signed === vnpSecureHash;
     }

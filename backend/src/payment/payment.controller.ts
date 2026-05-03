@@ -49,17 +49,21 @@ export class PaymentController {
             const result = await this.paymentService.processVnpayReturn(query);
 
             if (result.success) {
-                // this.logger.log(`Payment successful for order: ${result.orderId}`);
-                return res.redirect(`${baseRedirect}?status=success&orderId=${result.orderId}`);
+                const r: any = result;
+                return res.redirect(`${baseRedirect}?status=success&orderId=${r.orderId}`);
             } else {
-                // const message = result.message || 'Unknown error';
-                // this.logger.warn(`Payment failed: ${message}`);
-                return res.redirect(`${baseRedirect}?status=failed&message=${encodeURIComponent(result.message)}`);
+                const r: any = result;
+                return res.redirect(`${baseRedirect}?status=failed&message=${encodeURIComponent(r.message || 'Unknown error')}`);
             }
         } catch (error) {
             // this.logger.error(`Error in vnpayReturn: ${error.message}`, error.stack);
             return res.redirect(`${baseRedirect}?status=error&message=${encodeURIComponent(error.message)}`);
         }
+    }
+
+    @Get('vnpay_ipn')
+    async vnpayIpn(@Query() query: any) {
+        return this.paymentService.processVnpayIpn(query);
     }
 
     @Get('admin/transactions')
