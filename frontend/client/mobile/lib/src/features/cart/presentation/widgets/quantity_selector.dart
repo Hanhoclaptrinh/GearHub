@@ -77,10 +77,10 @@ class _QuantitySelectorState extends State<QuantitySelector>
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: colorScheme.outlineVariant.withValues(alpha: 0.3),
           width: 1,
@@ -95,10 +95,10 @@ class _QuantitySelectorState extends State<QuantitySelector>
             enabled: widget.quantity > 1,
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(
               '${widget.quantity}',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
             ),
           ),
           _buildButton(
@@ -142,16 +142,16 @@ class _QuantitySelectorState extends State<QuantitySelector>
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: Container(
-          padding: const EdgeInsets.all(6),
+          padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
             color: enabled
                 ? colorScheme.primary.withValues(alpha: 0.1)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(6),
           ),
           child: Icon(
             icon,
-            size: 16,
+            size: 13,
             color: enabled
                 ? colorScheme.primary
                 : colorScheme.onSurface.withValues(alpha: 0.2),

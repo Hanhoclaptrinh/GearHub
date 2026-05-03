@@ -29,10 +29,22 @@ export const TransactionList: React.FC = () => {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [selectedTx, setSelectedTx] = useState<any>(null);
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [status, setStatus] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['transactions', search, page],
-    queryFn: () => transactionService.getAllTransactions({ search, page, limit: 10 }),
+    queryKey: ['transactions', search, page, paymentMethod, status, startDate, endDate],
+    queryFn: () => transactionService.getAllTransactions({ 
+      search, 
+      page, 
+      limit: 10,
+      paymentMethod: paymentMethod || undefined,
+      status: status || undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined
+    }),
   });
 
   const transactions = data?.data || [];
@@ -90,23 +102,85 @@ export const TransactionList: React.FC = () => {
 
       <Card className="border-none shadow-2xl shadow-slate-200/50 bg-white/80 backdrop-blur-sm rounded-[32px] overflow-hidden">
         <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            <div className="relative flex-1 w-full group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
-              <Input
-                placeholder="Tìm kiếm theo mã GD hoặc mã đơn hàng..."
-                className="pl-11 py-2.5 h-11 border-slate-200 focus:border-primary transition-all rounded-2xl"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+          <div className="space-y-4">
+            <div className="flex flex-col md:flex-row gap-4 items-center">
+              <div className="relative flex-1 w-full group">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                <Input
+                  placeholder="Tìm kiếm theo mã GD hoặc mã đơn hàng..."
+                  className="pl-11 py-2.5 h-11 border-slate-200 focus:border-primary transition-all rounded-2xl"
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
+                />
+              </div>
+              <Button 
+                  variant="outline" 
+                  className="px-6 h-11 rounded-2xl hover:bg-slate-50 border-slate-200"
+                  onClick={() => refetch()}
+              >
+                <RefreshCcw className="w-5 h-5" />
+              </Button>
             </div>
-            <Button 
-                variant="outline" 
-                className="px-6 h-11 rounded-2xl hover:bg-slate-50 border-slate-200"
-                onClick={() => refetch()}
-            >
-              <RefreshCcw className="w-5 h-5" />
-            </Button>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 w-full">
+              <select
+                className="h-11 px-4 rounded-2xl border border-slate-200 focus:border-primary focus:outline-none transition-all text-sm bg-white font-bold text-slate-700"
+                value={paymentMethod}
+                onChange={(e) => {
+                  setPaymentMethod(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">Tất cả phương thức</option>
+                <option value="COD">Thanh toán COD</option>
+                <option value="PAYMENT_GATEWAY">Cổng thanh toán (VNPay)</option>
+                <option value="BANK_TRANSFER">Chuyển khoản</option>
+                <option value="E_WALLET">Ví điện tử</option>
+              </select>
+
+              <select
+                className="h-11 px-4 rounded-2xl border border-slate-200 focus:border-primary focus:outline-none transition-all text-sm bg-white font-bold text-slate-700"
+                value={status}
+                onChange={(e) => {
+                  setStatus(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">Tất cả trạng thái</option>
+                <option value="SUCCESS">Thành công</option>
+                <option value="PENDING">Chờ xử lý</option>
+                <option value="FAILED">Thất bại</option>
+              </select>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase text-slate-400 pl-2 shrink-0">Từ ngày</span>
+                <Input
+                  type="date"
+                  className="h-11 px-4 rounded-2xl border border-slate-200 focus:border-primary transition-all text-sm bg-white font-bold text-slate-700"
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setPage(1);
+                  }}
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase text-slate-400 pl-2 shrink-0">Đến ngày</span>
+                <Input
+                  type="date"
+                  className="h-11 px-4 rounded-2xl border border-slate-200 focus:border-primary transition-all text-sm bg-white font-bold text-slate-700"
+                  value={endDate}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setPage(1);
+                  }}
+                />
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

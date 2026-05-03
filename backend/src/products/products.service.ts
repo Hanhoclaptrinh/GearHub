@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -12,10 +12,12 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class ProductsService {
+    private readonly logger = new Logger(ProductsService.name);
+
     constructor(
         private redisService: RedisService,
         private prisma: PrismaService,
-        private cloudinaryService: CloudinaryService
+        private cloudinaryService: CloudinaryService,
     ) { }
 
     // ADMIN
@@ -1337,10 +1339,14 @@ export class ProductsService {
             const viewsToAdd = await this.redisService.get(key);
 
             if (viewsToAdd) {
-                await this.prisma.product.update({
-                    where: { id: productId },
-                    data: { viewsCount: { increment: parseInt(viewsToAdd) } }
-                });
+                try {
+                    await this.prisma.product.update({
+                        where: { id: productId },
+                        data: { viewsCount: { increment: parseInt(viewsToAdd) } }
+                    });
+                } catch (err) {
+                    this.logger.error(`Failed to sync views for product ${productId}: ${err.message}`);
+                }
                 await this.redisService.del(key); // reset buffer
             }
         }

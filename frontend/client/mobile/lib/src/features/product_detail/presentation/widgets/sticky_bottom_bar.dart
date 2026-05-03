@@ -1,11 +1,14 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lottie/lottie.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/models/product_variant_model.dart';
 import 'package:mobile/src/features/onboarding/presentation/widgets/three_animated_arrow.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/src/features/cart/domain/entities/cart_item_entity.dart';
+import 'package:mobile/src/features/checkout/presentation/pages/checkout_page.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_state.dart';
 
@@ -102,7 +105,28 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
 
   // order btn
   Widget _buildOrderBtn() => GestureDetector(
-    onTap: () => HapticFeedback.lightImpact(),
+    onTap: () {
+      HapticFeedback.lightImpact();
+      final variant = widget.selectedVariant ??
+          (widget.product.variants.where((v) => v.isActive).firstOrNull ??
+              widget.product.variants.first);
+      final item = CartItemEntity(
+        id: "buy_now_${DateTime.now().millisecondsSinceEpoch}",
+        cartId: "buy_now",
+        productVariant: variant,
+        product: widget.product,
+        quantity: widget.quantity,
+      );
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CheckoutPage(
+            args: CheckoutArguments(items: [item], isFromCart: false),
+          ),
+        ),
+      );
+    },
     child: Container(
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 22),
@@ -257,10 +281,9 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                                         ).withValues(alpha: 0.12),
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Icon(
-                                        Icons.warning_amber_rounded,
-                                        color: Color(0xFFFF453A),
-                                        size: 28,
+                                      child: Lottie.asset(
+                                        'assets/animations/warning.json',
+                                        repeat: false,
                                       ),
                                     ),
                                     const SizedBox(height: 20),

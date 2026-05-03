@@ -29,6 +29,10 @@ export class CreateOrderDto {
     @IsOptional()
     note?: string;
 
+    @IsString()
+    @IsOptional()
+    paymentMethod?: any;
+
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => OrderItemDto)

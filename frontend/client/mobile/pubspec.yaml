@@ -48,6 +48,8 @@ dependencies:
   ar_flutter_plugin_2: ^0.0.3
   vector_math: ^2.1.4
   model_viewer_plus: ^1.6.0
+  flutter_inappwebview: ^6.1.5
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

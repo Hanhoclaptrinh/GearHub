@@ -215,8 +215,16 @@ export class PaymentService {
         }
     }
 
-    async getAllTransactions(query: { page?: number; limit?: number; search?: string }) {
-        const { page = 1, limit = 10, search } = query;
+    async getAllTransactions(query: { 
+        page?: number; 
+        limit?: number; 
+        search?: string;
+        paymentMethod?: PaymentMethod;
+        status?: TransactionStatus;
+        startDate?: string;
+        endDate?: string;
+    }) {
+        const { page = 1, limit = 10, search, paymentMethod, status, startDate, endDate } = query;
         const skip = (page - 1) * limit;
 
         const where: any = {};
@@ -225,6 +233,26 @@ export class PaymentService {
                 { transactionCode: { contains: search } },
                 { orderId: { contains: search } },
             ];
+        }
+
+        if (paymentMethod) {
+            where.paymentMethod = paymentMethod;
+        }
+
+        if (status) {
+            where.status = status;
+        }
+
+        if (startDate || endDate) {
+            where.createdAt = {};
+            if (startDate) {
+                where.createdAt.gte = new Date(startDate);
+            }
+            if (endDate) {
+                const d = new Date(endDate);
+                d.setHours(23, 59, 59, 999);
+                where.createdAt.lte = d;
+            }
         }
 
         const [items, total] = await Promise.all([

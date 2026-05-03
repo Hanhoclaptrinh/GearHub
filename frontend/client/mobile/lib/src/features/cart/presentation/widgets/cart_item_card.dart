@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:lottie/lottie.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
 import 'package:mobile/src/features/cart/domain/entities/cart_item_entity.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -193,10 +194,9 @@ class _CartItemCardState extends State<CartItemCard>
                                             ).withValues(alpha: 0.12),
                                             shape: BoxShape.circle,
                                           ),
-                                          child: const Icon(
-                                            Icons.warning_amber_rounded,
-                                            color: Color(0xFFFF453A),
-                                            size: 28,
+                                          child: Lottie.asset(
+                                            'assets/animations/warning.json',
+                                            repeat: false,
                                           ),
                                         ),
                                         const SizedBox(height: 20),
@@ -404,8 +404,8 @@ class _CartItemCardState extends State<CartItemCard>
                           ),
                         ),
                         Container(
-                          width: 90,
-                          height: 90,
+                          width: 100,
+                          height: 100,
                           decoration: BoxDecoration(
                             color: const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(20),
@@ -432,72 +432,67 @@ class _CartItemCardState extends State<CartItemCard>
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 6),
-                              if (widget.item.product.variants.length > 1)
-                                GestureDetector(
-                                  onTap: () =>
-                                      _showVariantSelectionSheet(context),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.surfaceTint.withValues(
-                                        alpha: 0.05,
-                                      ),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: colorScheme.outlineVariant
-                                            .withValues(alpha: 0.5),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Flexible(
-                                          child: Text(
-                                            _getVariantComboName(
-                                                  widget.item.productVariant,
-                                                ).isEmpty
-                                                ? 'Mặc định'
-                                                : _getVariantComboName(
-                                                    widget.item.productVariant,
-                                                  ),
-                                            style: TextStyle(
-                                              color: colorScheme.onSurface
-                                                  .withValues(alpha: 0.7),
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Icon(
-                                          LucideIcons.chevronDown,
-                                          size: 14,
-                                          color: colorScheme.onSurface
-                                              .withValues(alpha: 0.7),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 8),
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    formatVND(productPrice),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 18,
-                                      color: Color(0xFF00B4D8),
-                                    ),
-                                  ),
+                                  if (widget.item.product.variants.length > 1)
+                                    Flexible(
+                                      child: GestureDetector(
+                                        onTap: () =>
+                                            _showVariantSelectionSheet(context),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: colorScheme.surfaceTint.withValues(
+                                              alpha: 0.05,
+                                            ),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: colorScheme.outlineVariant
+                                                  .withValues(alpha: 0.5),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Flexible(
+                                                child: Text(
+                                                  _getVariantComboName(
+                                                        widget.item.productVariant,
+                                                      ).isEmpty
+                                                      ? 'Mặc định'
+                                                      : _getVariantComboName(
+                                                          widget.item.productVariant,
+                                                        ),
+                                                  style: TextStyle(
+                                                    color: colorScheme.onSurface
+                                                        .withValues(alpha: 0.7),
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                LucideIcons.chevronDown,
+                                                size: 14,
+                                                color: colorScheme.onSurface
+                                                    .withValues(alpha: 0.7),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    const SizedBox(),
                                   QuantitySelector(
                                     quantity: widget.item.quantity,
                                     maxQuantity:
@@ -506,6 +501,15 @@ class _CartItemCardState extends State<CartItemCard>
                                     onDecrement: widget.onDecrement,
                                   ),
                                 ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                formatVND(productPrice),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 18,
+                                  color: Color(0xFF00B4D8),
+                                ),
                               ),
                             ],
                           ),

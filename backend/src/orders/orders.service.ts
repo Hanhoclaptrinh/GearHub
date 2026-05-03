@@ -4,7 +4,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { ProductsService } from 'src/products/products.service';
 import { ActivityLogService } from 'src/activity-log/activity-log.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { OrderStatus, Prisma, Role, PaymentStatus } from '@prisma/client';
+import { OrderStatus, Prisma, Role, PaymentStatus, PaymentMethod, TransactionStatus } from '@prisma/client';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 @Injectable()
@@ -286,6 +286,46 @@ export class OrdersService {
                 where: { id: orderId },
                 data: { status }
             });
+
+            if (isNewRefundStatus) {
+                if (order.paymentStatus === PaymentStatus.PAID) {
+                    await tx.order.update({
+                        where: { id: orderId },
+                        data: { paymentStatus: PaymentStatus.REFUNDED }
+                    });
+
+                    await tx.transaction.updateMany({
+                        where: { orderId: orderId },
+                        data: { status: TransactionStatus.FAILED }
+                    });
+                }
+            } else if (status === OrderStatus.DELIVERED && order.paymentMethod === PaymentMethod.COD) {
+                await tx.order.update({
+                    where: { id: orderId },
+                    data: { paymentStatus: PaymentStatus.PAID }
+                });
+
+                await tx.transaction.upsert({
+                    where: { orderId: orderId },
+                    update: {
+                        status: TransactionStatus.SUCCESS,
+                        amount: order.totalAmount,
+                        provider: 'CASH',
+                        paymentMethod: order.paymentMethod,
+                        description: `Thanh toán COD cho đơn hàng #${orderId.slice(0, 8)}`,
+                        paymentDate: new Date(),
+                    },
+                    create: {
+                        orderId: orderId,
+                        status: TransactionStatus.SUCCESS,
+                        amount: order.totalAmount,
+                        provider: 'CASH',
+                        paymentMethod: order.paymentMethod,
+                        description: `Thanh toán COD cho đơn hàng #${orderId.slice(0, 8)}`,
+                        paymentDate: new Date(),
+                    }
+                });
+            }
 
             // tracking cho khach theo doi
             await tx.orderTracking.create({

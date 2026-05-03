@@ -15,7 +15,7 @@ import 'package:mobile/src/features/product_detail/presentation/pages/product_de
 import 'package:lottie/lottie.dart';
 import '../widgets/cart_item_card.dart';
 import '../widgets/cart_extra_views.dart';
-import 'checkout_address_page.dart';
+import 'package:mobile/src/features/checkout/presentation/pages/checkout_page.dart';
 
 class CartPage extends StatefulWidget {
   final bool isNavVisible;
@@ -58,9 +58,13 @@ class _CartPageState extends State<CartPage> {
     HapticFeedback.mediumImpact();
   }
 
-  void _navigateToCheckout() {
+  void _navigateToCheckout(List<CartItemEntity> selectedItems) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const CheckoutAddressPage()),
+      MaterialPageRoute(
+        builder: (context) => CheckoutPage(
+          args: CheckoutArguments(items: selectedItems, isFromCart: true),
+        ),
+      ),
     );
   }
 
@@ -248,6 +252,7 @@ class _CartPageState extends State<CartPage> {
                     child: _buildAnchoredCheckoutBar(
                       hasSelection,
                       totalSelection,
+                      items,
                     ),
                   );
                 },
@@ -402,7 +407,11 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-  Widget _buildAnchoredCheckoutBar(bool hasSelection, double total) {
+  Widget _buildAnchoredCheckoutBar(
+    bool hasSelection,
+    double total,
+    List<CartItemEntity> items,
+  ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       height: 80,
@@ -449,7 +458,11 @@ class _CartPageState extends State<CartPage> {
             Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: hasSelection ? _navigateToCheckout : null,
+                onTap: hasSelection
+                    ? () => _navigateToCheckout(
+                          items.where((i) => i.isSelected).toList(),
+                        )
+                    : null,
                 borderRadius: BorderRadius.circular(18),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),

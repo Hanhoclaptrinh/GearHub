@@ -68,8 +68,15 @@ export class VnPayGateway implements PaymentGateway {
         const vnpSecureHash = query['vnp_SecureHash'];
 
         const data = { ...query };
+
         delete data['vnp_SecureHash'];
         delete data['vnp_SecureHashType'];
+
+        Object.keys(data).forEach(key => {
+            if (!key.startsWith('vnp_')) {
+                delete data[key];
+            }
+        });
 
         const sortedParams = this.sortObject(data);
 

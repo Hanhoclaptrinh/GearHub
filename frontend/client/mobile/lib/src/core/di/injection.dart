@@ -18,6 +18,7 @@ import 'package:mobile/src/features/cart/data/datasources/cart_local_datasource.
 import 'package:mobile/src/features/cart/data/repositories/cart_repository_impl.dart' as mobile_cart_repo_impl;
 import 'package:mobile/src/features/cart/domain/repositories/cart_repository.dart' as mobile_cart_repo;
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart' as mobile_cart_cubit;
+import 'package:mobile/src/features/checkout/presentation/state/checkout_cubit.dart' as mobile_checkout_cubit;
 import 'package:shared_preferences/shared_preferences.dart';
 
 final getIt = GetIt.instance;
@@ -101,5 +102,9 @@ Future<void> setupDependencies() async {
 
   getIt.registerLazySingleton<mobile_cart_cubit.CartCubit>(
     () => mobile_cart_cubit.CartCubit(repository: getIt<mobile_cart_repo.CartRepository>()),
+  );
+
+  getIt.registerFactory<mobile_checkout_cubit.CheckoutCubit>(
+    () => mobile_checkout_cubit.CheckoutCubit(apiClient: getIt<ApiClient>()),
   );
 }
