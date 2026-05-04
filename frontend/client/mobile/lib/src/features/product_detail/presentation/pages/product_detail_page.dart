@@ -15,6 +15,7 @@ import 'package:mobile/src/features/product_detail/presentation/widgets/product_
 import '../state/product_detail_cubit.dart';
 import '../state/product_detail_state.dart';
 import 'product_ar_view_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProductDetailPage extends StatelessWidget {
   final ProductModel product;
@@ -151,6 +152,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
       } else if (_quantity == 0) {
         _quantity = 1;
       }
+      _saveRecentlyViewed(product);
     });
   }
 
@@ -204,12 +206,41 @@ class _ProductDetailViewState extends State<ProductDetailView> {
     );
   }
 
+  // luu san pham da xem vao local storage
+  void _saveRecentlyViewed(ProductModel product) {
+    try {
+      final prefs = getIt<SharedPreferences>();
+      final List<String> currentList = prefs.getStringList('recently_viewed') ?? [];
+      final currentVariant = _getCurrentVariant(product);
+      final priceToSave = currentVariant?.price ?? product.basePrice;
+      
+      String imageToSave = product.baseImage;
+      if (currentVariant != null && currentVariant.imageUrl != null && currentVariant.imageUrl!.isNotEmpty) {
+        imageToSave = currentVariant.imageUrl!;
+      }
+
+      final entryToSave = '${product.id}|${product.name}|$priceToSave|$imageToSave';
+      
+      currentList.removeWhere((e) => e.startsWith('${product.id}|${product.name}|'));
+      currentList.insert(0, entryToSave);
+
+      if (currentList.length > 5) {
+        currentList.removeRange(5, currentList.length);
+      }
+
+      prefs.setStringList('recently_viewed', currentList);
+    } catch (e) {
+      debugPrint('Error saving recently viewed: $e');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     _initializeAttributes(widget.initialProduct);
+    _saveRecentlyViewed(widget.initialProduct);
   }
 
   @override

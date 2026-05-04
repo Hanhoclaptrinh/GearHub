@@ -10,7 +10,7 @@ class AppTheme {
 
   static ThemeData theme(BuildContext context) {
     final baseTheme = ThemeData.light();
-    final textTheme = GoogleFonts.exo2TextTheme(baseTheme.textTheme);
+    final textTheme = GoogleFonts.beVietnamProTextTheme(baseTheme.textTheme);
 
     return ThemeData(
       useMaterial3: true,

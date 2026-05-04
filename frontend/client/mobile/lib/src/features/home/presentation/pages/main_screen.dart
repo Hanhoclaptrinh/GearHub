@@ -198,7 +198,7 @@ class CustomBottomNavBar extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildNavItem(context, 0, LucideIcons.house, 'Home'),
+                _buildNavItem(context, 0, LucideIcons.house, 'Trang chủ'),
                 _buildNavItem(context, 1, LucideIcons.shoppingCart, 'Cart'),
                 _buildNavItem(context, 2, LucideIcons.heart, 'Wishlist'),
                 _buildNavItem(context, 3, LucideIcons.userRound, 'Profile'),
@@ -304,7 +304,7 @@ class CustomBottomNavBar extends StatelessWidget {
                         style: TextStyle(
                           color: accentColor,
                           fontWeight: FontWeight.w800,
-                          fontSize: 14,
+                          fontSize: 12,
                           letterSpacing: -0.2,
                         ),
                       ),
