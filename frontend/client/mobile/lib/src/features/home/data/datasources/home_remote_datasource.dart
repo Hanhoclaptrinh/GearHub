@@ -118,4 +118,21 @@ class HomeRemoteDatasource {
       rethrow;
     }
   }
+
+  Future<List<ProductModel>> getProductsByCategory({
+    required String categoryId,
+    int limit = 40,
+  }) async {
+    try {
+      final Map<String, dynamic> params = {'categoryId': categoryId, 'limit': limit};
+      final response = await dio.get('/products', queryParameters: params);
+      final List? data = response.data['data'];
+      if (data == null) return [];
+      return data
+          .map((json) => ProductModel.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

@@ -6,6 +6,7 @@ class CategoryModel extends CategoryEntity {
     required super.title,
     required super.slug,
     super.iconUrl,
+    super.description,
     required super.totalSold,
   });
 
@@ -15,6 +16,7 @@ class CategoryModel extends CategoryEntity {
       title: json['name'] as String,
       slug: json['slug'] as String,
       iconUrl: json['iconUrl'] as String?,
+      description: json['description'] as String?,
       totalSold: json['totalSold'] ?? 0,
     );
   }

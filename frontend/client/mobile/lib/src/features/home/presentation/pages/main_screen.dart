@@ -199,9 +199,14 @@ class CustomBottomNavBar extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildNavItem(context, 0, LucideIcons.house, 'Trang chủ'),
-                _buildNavItem(context, 1, LucideIcons.shoppingCart, 'Cart'),
+                _buildNavItem(context, 1, LucideIcons.shoppingCart, 'Giỏ hàng'),
                 _buildNavItem(context, 2, LucideIcons.heart, 'Wishlist'),
-                _buildNavItem(context, 3, LucideIcons.userRound, 'Profile'),
+                _buildNavItem(
+                  context,
+                  3,
+                  LucideIcons.userRound,
+                  'Trang cá nhân',
+                ),
               ],
             ),
           ),

@@ -183,6 +183,7 @@ export class CategoriesService {
                 name: true,
                 slug: true,
                 iconUrl: true,
+                description: true,
             },
         });
 
@@ -199,6 +200,7 @@ export class CategoriesService {
                 name: c.name,
                 slug: c.slug,
                 iconUrl: c.iconUrl,
+                description: c.description,
                 totalSold: g._sum.soldCount ?? 0,
             };
         }).filter(Boolean);

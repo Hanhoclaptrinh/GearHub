@@ -169,7 +169,7 @@ class _HomePageState extends State<HomePage>
               Text(
                 '$greeting $name',
                 style: const TextStyle(
-                  fontSize: 28,
+                  fontSize: 26,
                   fontWeight: FontWeight.w900,
                   color: Color(0xFF0A0A0F),
                   letterSpacing: -0.8,

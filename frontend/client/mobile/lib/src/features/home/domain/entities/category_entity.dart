@@ -3,6 +3,7 @@ class CategoryEntity {
   final String title;
   final String slug;
   final String? iconUrl;
+  final String? description;
   final int totalSold;
 
   const CategoryEntity({
@@ -10,6 +11,7 @@ class CategoryEntity {
     required this.title,
     required this.slug,
     this.iconUrl,
+    this.description,
     required this.totalSold,
   });
 }

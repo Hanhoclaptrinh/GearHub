@@ -76,7 +76,7 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> {
             const Text(
               'Đã xem gần đây',
               style: TextStyle(
-                fontSize: 28,
+                fontSize: 26,
                 fontWeight: FontWeight.w900,
                 color: Color(0xFF0A0A0F),
                 letterSpacing: -0.5,
