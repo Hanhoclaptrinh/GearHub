@@ -96,4 +96,26 @@ class HomeRemoteDatasource {
       rethrow;
     }
   }
+
+  Future<List<ProductModel>> searchProducts({
+    required String query,
+    int limit = 40,
+    double? minPrice,
+    double? maxPrice,
+  }) async {
+    try {
+      final Map<String, dynamic> params = {'search': query, 'limit': limit};
+      if (minPrice != null) params['minPrice'] = minPrice;
+      if (maxPrice != null) params['maxPrice'] = maxPrice;
+
+      final response = await dio.get('/products', queryParameters: params);
+      final List? data = response.data['data'];
+      if (data == null) return [];
+      return data
+          .map((json) => ProductModel.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

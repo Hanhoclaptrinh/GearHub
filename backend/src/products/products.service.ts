@@ -817,22 +817,51 @@ export class ProductsService {
         }
 
         if (search) {
-            const searchConditions = [
-                { name: { contains: search } },
-                { description: { contains: search } },
-            ];
+            const words = search.trim().split(/\s+/).filter(w => w.length > 0);
+            if (words.length > 0) {
+                // cho phep tim kiem sau hon
+                // khong phu thuoc viet hoa viet thuong
+                const searchConditions = words.map(word => {
+                    const l = word.toLowerCase();
+                    const u = word.toUpperCase();
+                    const c = word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
 
-            if (showInactiveOnly && whereCondition.OR) {
-                // merge search conditions vao OR da co san pham inactive
-                whereCondition.AND = [
-                    { OR: whereCondition.OR },
-                    { OR: searchConditions }
-                ];
-                delete whereCondition.OR;
-            } else {
-                whereCondition.OR = searchConditions;
+                    return {
+                        // tim kiem theo ca ten san pham, danh muc, thuong hieu
+                        OR: [
+                            { name: { contains: word } },
+                            { name: { contains: l } },
+                            { name: { contains: u } },
+                            { name: { contains: c } },
+                            { brand: { name: { contains: word } } },
+                            { brand: { name: { contains: l } } },
+                            { brand: { name: { contains: u } } },
+                            { brand: { name: { contains: c } } },
+                            { category: { name: { contains: word } } },
+                            { category: { name: { contains: l } } },
+                            { category: { name: { contains: u } } },
+                            { category: { name: { contains: c } } },
+                            { category: { parent: { name: { contains: word } } } },
+                            { category: { parent: { name: { contains: l } } } },
+                            { category: { parent: { name: { contains: u } } } },
+                            { category: { parent: { name: { contains: c } } } },
+                        ],
+                    };
+                });
+
+                if (showInactiveOnly && whereCondition.OR) {
+                    // merge search conditions vao OR da co san pham inactive
+                    whereCondition.AND = [
+                        { OR: whereCondition.OR },
+                        ...searchConditions
+                    ];
+                    delete whereCondition.OR;
+                } else {
+                    whereCondition.AND = searchConditions;
+                }
             }
         }
+
 
         // loc gia qua variant
         if (minPrice || maxPrice) {

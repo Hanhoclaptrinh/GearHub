@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/features/home/presentation/pages/search_page.dart';
 
 class SearchBarWidget extends StatelessWidget {
   const SearchBarWidget({super.key});
@@ -12,7 +13,9 @@ class SearchBarWidget extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        // chuyen huong qua trang search
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SearchPage()),
+        );
       },
       behavior: HitTestBehavior.opaque,
       child: Container(
@@ -35,7 +38,7 @@ class SearchBarWidget extends StatelessWidget {
             const SizedBox(width: 14),
             Expanded(
               child: Text(
-                'Search products, brands...',
+                'Tìm kiếm sản phẩm, thương hiệu...',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
