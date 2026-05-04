@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
+import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_state.dart';
 import 'package:mobile/src/features/cart/domain/entities/cart_item_entity.dart';
@@ -16,6 +17,8 @@ import 'package:lottie/lottie.dart';
 import '../widgets/cart_item_card.dart';
 import '../widgets/cart_extra_views.dart';
 import 'package:mobile/src/features/checkout/presentation/pages/checkout_page.dart';
+import 'package:mobile/src/features/auth/presentation/pages/login_page.dart';
+import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 
 class CartPage extends StatefulWidget {
   final bool isNavVisible;
@@ -58,7 +61,136 @@ class _CartPageState extends State<CartPage> {
     HapticFeedback.mediumImpact();
   }
 
+  void _showAuthRequiredBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(32),
+          decoration: const BoxDecoration(
+            color: Color(0xFF0C0C18),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(32),
+              topRight: Radius.circular(32),
+            ),
+            border: Border(
+              top: BorderSide(color: Color(0xFF1A1A28), width: 1),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 48,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.white12,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 32),
+              Container(
+                height: 64,
+                width: 64,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD4A843).withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  LucideIcons.lock,
+                  color: Color(0xFFD4A843),
+                  size: 28,
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'YÊU CẦU ĐĂNG NHẬP',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Vui lòng đăng nhập để tiếp tục thanh toán, lưu giỏ hàng và nhận các ưu đãi thành viên đặc biệt của GearHub.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xFF8A8A9E),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 36),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD4A843),
+                    foregroundColor: Colors.black,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const LoginPage()),
+                    );
+                  },
+                  child: const Text(
+                    'ĐĂNG NHẬP NGAY',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white54,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'ĐỂ SAU',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _navigateToCheckout(List<CartItemEntity> selectedItems) {
+    final authState = context.read<AuthCubit>().state;
+    if (authState is! AuthAuthenticated) {
+      _showAuthRequiredBottomSheet(context);
+      return;
+    }
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => CheckoutPage(
@@ -460,8 +592,8 @@ class _CartPageState extends State<CartPage> {
               child: InkWell(
                 onTap: hasSelection
                     ? () => _navigateToCheckout(
-                          items.where((i) => i.isSelected).toList(),
-                        )
+                        items.where((i) => i.isSelected).toList(),
+                      )
                     : null,
                 borderRadius: BorderRadius.circular(18),
                 child: AnimatedContainer(
