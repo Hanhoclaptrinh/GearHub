@@ -14,6 +14,8 @@ class ProductReviewsPreviewSection extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final hasReviews = product.reviewCount > 0;
 
+    if (!hasReviews) return const SizedBox.shrink();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       child: Column(

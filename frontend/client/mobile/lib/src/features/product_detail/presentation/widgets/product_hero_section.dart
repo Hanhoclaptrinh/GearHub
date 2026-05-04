@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile/src/shared/models/product_asset_model.dart';
-import '../pages/product_gallery_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
@@ -58,7 +57,11 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
     final List<String> galleryUrls = [];
     if (widget.currentVariant != null) {
       final variantAssets = widget.product.assets
-          .where((a) => a.variantId == widget.currentVariant!.id && a.type == AssetType.image)
+          .where(
+            (a) =>
+                a.variantId == widget.currentVariant!.id &&
+                a.type == AssetType.image,
+          )
           .map((a) => a.url)
           .toList();
       if (variantAssets.isNotEmpty) {
@@ -177,20 +180,45 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
           // --- image area: gallery / 3D viewer ---
           SizedBox(
             height: size.height * 0.35,
-            child: Stack(
-              children: [
-                // change 2d / 3d mode
-                if (widget.is3DMode && widget.product.has3DModel)
-                  _build3DViewer()
-                else
-                  _buildImageGallery(galleryUrls, isOutOfStock),
+            child: widget.is3DMode && widget.product.has3DModel
+                ? _build3DViewer()
+                : _buildImageGallery(galleryUrls, isOutOfStock),
+          ),
 
-                // 3D toggle button
-                if (widget.product.has3DModel)
-                  Positioned(
-                    right: 24,
-                    bottom: 12,
-                    child: GestureDetector(
+          // action button & indicator row
+          if ((!widget.is3DMode && galleryUrls.length > 1) ||
+              widget.product.has3DModel ||
+              widget.product.hasAR)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // indicator
+                  if (!widget.is3DMode && galleryUrls.length > 1)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(galleryUrls.length, (i) {
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          width: _currentPage == i ? 18 : 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: _currentPage == i
+                                ? Colors.black
+                                : Colors.black.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        );
+                      }),
+                    )
+                  else
+                    const SizedBox.shrink(),
+
+                  // toggle button
+                  if (widget.product.has3DModel)
+                    GestureDetector(
                       onTap: () {
                         HapticFeedback.mediumImpact();
                         widget.on3DToggle();
@@ -199,7 +227,7 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                         duration: const Duration(milliseconds: 300),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
-                          vertical: 10,
+                          vertical: 8,
                         ),
                         decoration: BoxDecoration(
                           color: widget.is3DMode ? Colors.black : Colors.white,
@@ -211,9 +239,9 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
@@ -233,7 +261,7 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                             Text(
                               widget.is3DMode ? '2D' : '3D',
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w700,
                                 color: widget.is3DMode
                                     ? Colors.white
@@ -243,43 +271,44 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                           ],
                         ),
                       ),
-                    ),
-                  )
-                else if (widget.product.hasAR)
-                  Positioned(
-                    right: 24,
-                    bottom: 12,
-                    child: GestureDetector(
+                    )
+                  else if (widget.product.hasAR)
+                    GestureDetector(
                       onTap: () {
                         HapticFeedback.lightImpact();
                         widget.onARPressed();
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
+                          horizontal: 14,
+                          vertical: 8,
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(20),
                           border: Border.all(color: const Color(0xFFE5E5EA)),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.08),
-                              blurRadius: 15,
-                              offset: const Offset(0, 5),
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(LucideIcons.box, size: 18, color: Theme.of(context).primaryColor),
-                            const SizedBox(width: 8),
+                            Icon(
+                              LucideIcons.box,
+                              size: 16,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                            const SizedBox(width: 6),
                             const Text(
-                              'Thử trong không gian',
+                              'AR Mode',
                               style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
                                 color: Colors.black,
                               ),
                             ),
@@ -287,37 +316,11 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                         ),
                       ),
                     ),
-                  ),
-
-                // indicator in 2d mode
-                if (!widget.is3DMode && galleryUrls.length > 1)
-                  Positioned(
-                    bottom: 16,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(galleryUrls.length, (i) {
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          margin: const EdgeInsets.symmetric(horizontal: 3),
-                          width: _currentPage == i ? 20 : 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: _currentPage == i
-                                ? Colors.black
-                                : Colors.black.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        );
-                      }),
-                    ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -352,7 +355,9 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
               child: _buildNetworkImage(
                 urls[index],
                 isOutOfStock,
-                heroTag: index == 0 ? 'product_${widget.product.id}' : 'product_gallery_$index',
+                heroTag: index == 0
+                    ? 'product_${widget.product.id}'
+                    : 'product_gallery_$index',
               ),
             ),
           ),
@@ -362,19 +367,16 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
   }
 
   void _openGallery(BuildContext context, List<String> urls, int initialIndex) {
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => 
-          ProductGalleryPage(
-            images: urls, 
-            initialIndex: initialIndex,
-            mainHeroTag: 'product_${widget.product.id}',
-          ),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      builder: (context) {
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16),
+          backgroundColor: Colors.transparent,
+          child: _ProductGalleryModal(images: urls, initialIndex: initialIndex),
+        );
+      },
     );
   }
 
@@ -458,6 +460,139 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
         cameraControls: true,
         disableZoom: false,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      ),
+    );
+  }
+}
+
+class _ProductGalleryModal extends StatefulWidget {
+  final List<String> images;
+  final int initialIndex;
+
+  const _ProductGalleryModal({
+    required this.images,
+    required this.initialIndex,
+  });
+
+  @override
+  State<_ProductGalleryModal> createState() => _ProductGalleryModalState();
+}
+
+class _ProductGalleryModalState extends State<_ProductGalleryModal> {
+  late PageController _pageController;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: MediaQuery.of(context).size.height * 0.58,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 24,
+            spreadRadius: 4,
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: 16,
+            right: 16,
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(LucideIcons.x, color: Colors.black, size: 20),
+              ),
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 64, 16, 24),
+            child: Column(
+              children: [
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: widget.images.length,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentIndex = index;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      final url = widget.images[index];
+                      return Center(
+                        child: InteractiveViewer(
+                          clipBehavior: Clip.none,
+                          minScale: 1.0,
+                          maxScale: 4.0,
+                          child: url.startsWith('http')
+                              ? CachedNetworkImage(
+                                  imageUrl: url,
+                                  fit: BoxFit.contain,
+                                  placeholder: (_, __) => const Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                  errorWidget: (_, __, ___) => const Icon(
+                                    Icons.broken_image_outlined,
+                                    size: 40,
+                                    color: Colors.grey,
+                                  ),
+                                )
+                              : Image.asset(url, fit: BoxFit.contain),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(widget.images.length, (index) {
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      width: _currentIndex == index ? 8 : 6,
+                      height: _currentIndex == index ? 8 : 6,
+                      decoration: BoxDecoration(
+                        color: _currentIndex == index
+                            ? Colors.black
+                            : Colors.black.withValues(alpha: 0.25),
+                        shape: BoxShape.circle,
+                      ),
+                    );
+                  }),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

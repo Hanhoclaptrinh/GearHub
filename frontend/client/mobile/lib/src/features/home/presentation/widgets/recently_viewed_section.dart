@@ -133,7 +133,7 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> {
                 },
                 child: Container(
                   width: 156,
-                  margin: const EdgeInsets.only(right: 16),
+                  margin: const EdgeInsets.only(right: 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -142,8 +142,7 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> {
                         width: 156,
                         decoration: BoxDecoration(
                           color: const Color.fromARGB(110, 221, 221, 221),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         clipBehavior: Clip.none,
                         child: Center(

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/src/shared/widgets/section_header.dart';
 import 'top_rated_cards.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../state/home_cubit.dart';
@@ -19,20 +18,26 @@ class TopRatedSection extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SectionHeader(
-              index: '04',
-              title: 'DẪN ĐẦU',
-              actionText: 'Xem tất cả',
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                'Sản phẩm dẫn đầu',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF0A0A0F),
+                  letterSpacing: -0.5,
+                ),
+              ),
             ),
-            const SizedBox(height: 16),
             GridView.builder(
               physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.63,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: 0.61,
               ),
               itemCount: products.length > 4 ? 4 : products.length,
               itemBuilder: (context, index) {

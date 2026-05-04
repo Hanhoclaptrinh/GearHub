@@ -132,7 +132,7 @@ class _HomePageState extends State<HomePage>
             // Chat/message action
           },
           icon: const Icon(
-            LucideIcons.messageSquare,
+            LucideIcons.messageCircle,
             size: 24,
             color: Color(0xFF0A0A0F),
           ),

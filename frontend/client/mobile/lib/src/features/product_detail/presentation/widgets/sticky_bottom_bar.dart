@@ -16,10 +16,10 @@ import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-const _kSurface = Color(0xFF0C0C18);
-const _kBorder = Color(0xFF1A1A28);
-const _kGold = Color(0xFFD4A843);
-const _kGoldDim = Color(0xFF1A1200);
+const _kSurface = Color(0xFFFFFFFF);
+const _kBorder = Color(0xFFE5E5EA);
+const _kGold = Color(0xFF0A0A0F);
+const _kGoldDim = Color(0xFFF2F2F7);
 
 class StickyBottomBar extends StatefulWidget {
   final ProductModel product;
@@ -50,7 +50,6 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
     return BlocListener<CartCubit, CartState>(
       listener: (context, state) {
         if (state is CartAddSuccess) {
-          // When add is successful, show successful state for a short moment then pull thumb back
           setState(() {
             _isAdded = true;
           });
@@ -73,14 +72,14 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
             padding: const EdgeInsets.fromLTRB(20, 6, 20, 16),
             child: Container(
               decoration: BoxDecoration(
-                color: _kSurface.withValues(alpha: 0.92),
+                color: _kSurface.withValues(alpha: 0.96),
                 borderRadius: BorderRadius.circular(36),
-                border: Border.all(color: _kBorder, width: 0.5),
-                boxShadow: const [
+                border: Border.all(color: _kBorder, width: 1),
+                boxShadow: [
                   BoxShadow(
-                    color: Color(0x40000000),
+                    color: Colors.black.withValues(alpha: 0.06),
                     blurRadius: 28,
-                    offset: Offset(0, 10),
+                    offset: const Offset(0, 10),
                   ),
                 ],
               ),
@@ -117,13 +116,13 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
         return Container(
           padding: const EdgeInsets.all(32),
           decoration: const BoxDecoration(
-            color: Color(0xFF0C0C18),
+            color: Colors.white,
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(32),
               topRight: Radius.circular(32),
             ),
             border: Border(
-              top: BorderSide(color: Color(0xFF1A1A28), width: 1),
+              top: BorderSide(color: Color(0xFFE5E5EA), width: 1),
             ),
           ),
           child: Column(
@@ -133,7 +132,7 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                 width: 48,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: Colors.white12,
+                  color: Colors.black12,
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -142,12 +141,12 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                 height: 64,
                 width: 64,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD4A843).withValues(alpha: 0.1),
+                  color: Colors.black.withValues(alpha: 0.05),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   LucideIcons.lock,
-                  color: Color(0xFFD4A843),
+                  color: Colors.black,
                   size: 28,
                 ),
               ),
@@ -155,10 +154,10 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
               const Text(
                 'YÊU CẦU ĐĂNG NHẬP',
                 style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: 1.2,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black,
+                  letterSpacing: 1.0,
                 ),
               ),
               const SizedBox(height: 12),
@@ -168,7 +167,7 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
-                  color: Color(0xFF8A8A9E),
+                  color: Color(0xFF5C5C6B),
                   height: 1.5,
                 ),
               ),
@@ -178,8 +177,8 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                 height: 56,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD4A843),
-                    foregroundColor: Colors.black,
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
@@ -194,8 +193,8 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                   child: const Text(
                     'ĐĂNG NHẬP NGAY',
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
                       letterSpacing: 1,
                     ),
                   ),
@@ -207,7 +206,7 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                 height: 56,
                 child: TextButton(
                   style: TextButton.styleFrom(
-                    foregroundColor: Colors.white54,
+                    foregroundColor: const Color(0xFF8E8E93),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),
@@ -266,16 +265,16 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
       decoration: BoxDecoration(
         color: _kGoldDim,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: _kGold.withValues(alpha: 0.30), width: 0.5),
+        border: Border.all(color: const Color(0xFFE5E5EA), width: 1),
       ),
       child: const Center(
         child: Text(
           'MUA NGAY',
           style: TextStyle(
-            color: _kGold,
+            color: Colors.black,
             fontSize: 11,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.2,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.1,
           ),
         ),
       ),
@@ -291,14 +290,8 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
       return Container(
         height: 60,
         decoration: BoxDecoration(
-          color: _kGoldDim.withValues(alpha: 0.7),
+          color: _kGold,
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: _isAdded
-                ? const Color(0xFF2A6A40)
-                : _kGold.withValues(alpha: 0.22),
-            width: 0.5,
-          ),
         ),
         child: Stack(
           alignment: Alignment.centerLeft,
@@ -311,11 +304,7 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
               width: _isAdded ? _sliderWidth : _dragPosition + _thumbSz + 8,
               height: 60,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: _isAdded
-                      ? [const Color(0xFF1A4A30), const Color(0xFF1F5A38)]
-                      : [_kGoldDim, const Color(0xFF261A00)],
-                ),
+                color: _isAdded ? const Color(0xFF2EA44F) : _kGold,
                 borderRadius: BorderRadius.circular(28),
               ),
             ),
@@ -332,10 +321,8 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                     children: [
                       Text(
                         _isAdded ? 'ĐÃ THÊM VÀO GIỎ' : 'THÊM VÀO GIỎ',
-                        style: TextStyle(
-                          color: _isAdded
-                              ? const Color(0xFF5DBA88)
-                              : _kGold.withValues(alpha: 0.70),
+                        style: const TextStyle(
+                          color: Colors.white,
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1.0,
@@ -343,8 +330,8 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                       ),
                       if (!_isAdded) ...[
                         const SizedBox(width: 8),
-                        ThreeAnimatedArrows(
-                          color: _kGold.withValues(alpha: 0.40),
+                        const ThreeAnimatedArrows(
+                          color: Colors.white60,
                         ),
                       ],
                     ],
@@ -392,12 +379,12 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                           barrierDismissible: true,
                           builder: (context) {
                             return Dialog(
-                              backgroundColor: const Color(0xFF0C0C18),
+                              backgroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(24),
                                 side: const BorderSide(
-                                  color: Color(0xFF1A1A28),
-                                  width: 0.5,
+                                  color: Color(0xFFE5E5EA),
+                                  width: 1,
                                 ),
                               ),
                               child: Padding(
@@ -425,7 +412,7 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                                       style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.w800,
-                                        color: Colors.white,
+                                        color: Colors.black,
                                         letterSpacing: -0.4,
                                       ),
                                     ),
@@ -436,7 +423,7 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                                       style: const TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w400,
-                                        color: Color(0xFF8A8A9E),
+                                        color: Color(0xFF5C5C6B),
                                         height: 1.45,
                                       ),
                                     ),
@@ -445,8 +432,8 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                                       width: double.infinity,
                                       child: ElevatedButton(
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: _kGold,
-                                          foregroundColor: Colors.black,
+                                          backgroundColor: Colors.black,
+                                          foregroundColor: Colors.white,
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
                                               16,
@@ -495,23 +482,19 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                     width: _thumbSz,
                     height: _thumbSz,
                     decoration: BoxDecoration(
-                      color: _kGoldDim,
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: _kGold.withValues(alpha: 0.45),
-                        width: 0.5,
-                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: _kGold.withValues(alpha: 0.15),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
                     child: const Icon(
                       Icons.arrow_forward_ios_rounded,
-                      color: _kGold,
+                      color: Colors.black,
                       size: 18,
                     ),
                   ),

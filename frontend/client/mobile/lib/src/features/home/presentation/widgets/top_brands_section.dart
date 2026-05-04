@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mobile/src/features/home/domain/entities/brand_entity.dart';
-import 'package:mobile/src/shared/widgets/section_header.dart';
 import '../state/home_cubit.dart';
 import '../state/home_state.dart';
 
@@ -21,21 +20,27 @@ class TopBrandsSection extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SectionHeader(
-                index: '03',
-                title: 'HỆ SINH THÁI',
-                actionText: 'Khám phá',
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  'Thương hiệu hàng đầu',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF0A0A0F),
+                    letterSpacing: -0.5,
+                  ),
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               SizedBox(
-                height: 110,
+                height: 125,
                 child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
                   clipBehavior: Clip.none,
                   itemCount: brands.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 20),
+                  separatorBuilder: (_, __) => const SizedBox(width: 16),
                   itemBuilder: (context, index) =>
                       _BrandCard(brand: brands[index]),
                 ),
@@ -71,36 +76,33 @@ class _BrandCardState extends State<_BrandCard>
       onTapCancel: () => setState(() => _isPressed = false),
       onTap: () {
         HapticFeedback.lightImpact();
-        // chuyen toi trang brand tuong ung
+        // chuyen den trang loc theo thuong hieu
         print('clicked ${widget.brand.name}');
       },
       child: AnimatedScale(
-        scale: _isPressed ? 0.92 : 1.0,
+        scale: _isPressed ? 0.94 : 1.0,
         duration: const Duration(milliseconds: 100),
         child: Column(
           children: [
             Container(
-              width: 72,
-              height: 72,
+              width: 86,
+              height: 86,
               decoration: BoxDecoration(
-                color: colorScheme.surface,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-                  width: 0.5,
-                ),
+                color: const Color.fromARGB(240, 245, 246, 248),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.white, width: 1.5),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 20,
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 18,
                     offset: const Offset(0, 8),
                   ),
                 ],
               ),
-              child: ClipOval(
-                child: Container(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Padding(
                   padding: const EdgeInsets.all(16),
-                  color: Colors.white.withValues(alpha: 0.1),
                   child: widget.brand.logoUrl.isEmpty
                       ? _buildErrorLogo(colorScheme)
                       : SvgPicture.network(
@@ -112,6 +114,7 @@ class _BrandCardState extends State<_BrandCard>
                               height: 12,
                               child: CircularProgressIndicator(
                                 strokeWidth: 1.5,
+                                color: Colors.black,
                               ),
                             ),
                           ),
@@ -121,12 +124,14 @@ class _BrandCardState extends State<_BrandCard>
             ),
             const SizedBox(height: 10),
             Text(
-              widget.brand.name.toUpperCase(),
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.2,
-                color: colorScheme.onSurface.withValues(alpha: 0.8),
+              widget.brand.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF0A0A0F),
+                letterSpacing: -0.2,
               ),
             ),
           ],

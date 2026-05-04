@@ -148,7 +148,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
               const Text(
                 'Thuộc tính sản phẩm',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 22,
                   fontWeight: FontWeight.w800,
                   color: Colors.black,
                   letterSpacing: -0.5,
@@ -218,7 +218,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
             const Text(
               'Màu sắc',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 22,
                 fontWeight: FontWeight.w800,
                 color: Colors.black,
                 letterSpacing: -0.5,
@@ -352,7 +352,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                   Text(
                     key,
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 22,
                       fontWeight: FontWeight.w800,
                       color: Colors.black,
                       letterSpacing: -0.5,
@@ -377,7 +377,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
               const Text(
                 'Số lượng',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 22,
                   fontWeight: FontWeight.w800,
                   color: Colors.black,
                   letterSpacing: -0.5,
@@ -417,64 +417,94 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
           }(),
           const SizedBox(height: 36),
 
-          const Text(
-            'Mô tả sản phẩm',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: Colors.black,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 16),
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _isDescriptionExpanded = !_isDescriptionExpanded;
-              });
-            },
-            child: AnimatedCrossFade(
-              firstChild: Text(
-                widget.product.description,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xFF3C3C43),
-                  height: 1.5,
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE5E5EA), width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
-              ),
-              secondChild: Text(
-                widget.product.description,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xFF3C3C43),
-                  height: 1.5,
-                ),
-              ),
-              crossFadeState: _isDescriptionExpanded
-                  ? CrossFadeState.showSecond
-                  : CrossFadeState.showFirst,
-              duration: const Duration(milliseconds: 300),
+              ],
             ),
-          ),
-          const SizedBox(height: 12),
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _isDescriptionExpanded = !_isDescriptionExpanded;
-              });
-            },
-            child: Text(
-              _isDescriptionExpanded ? 'Ẩn bớt' : 'Xem thêm',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Colors.black,
-                decoration: TextDecoration.underline,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Center(
+                  child: Text(
+                    'Mô tả sản phẩm',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black,
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                AnimatedCrossFade(
+                  firstChild: Text(
+                    widget.product.description,
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFF5C5C6B),
+                      height: 1.5,
+                    ),
+                  ),
+                  secondChild: Text(
+                    widget.product.description,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFF5C5C6B),
+                      height: 1.5,
+                    ),
+                  ),
+                  crossFadeState: _isDescriptionExpanded
+                      ? CrossFadeState.showSecond
+                      : CrossFadeState.showFirst,
+                  duration: const Duration(milliseconds: 300),
+                ),
+                const SizedBox(height: 14),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isDescriptionExpanded = !_isDescriptionExpanded;
+                    });
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _isDescriptionExpanded
+                            ? 'Thu gọn'
+                            : 'Xem thêm chi tiết',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF007AFF),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        _isDescriptionExpanded
+                            ? LucideIcons.chevronUp
+                            : LucideIcons.chevronDown,
+                        size: 14,
+                        color: const Color(0xFF007AFF),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 36),
@@ -483,7 +513,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
             const Text(
               'Thuộc tính chung',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 22,
                 fontWeight: FontWeight.w800,
                 color: Colors.black,
                 letterSpacing: -0.5,

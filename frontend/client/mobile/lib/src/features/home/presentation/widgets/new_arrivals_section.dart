@@ -32,17 +32,19 @@ class NewArrivalsSection extends StatelessWidget {
                 return const SizedBox.shrink();
               }
               return SizedBox(
-                height: 610,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
+                height: 600,
+                child: PageView.builder(
+                  controller: PageController(viewportFraction: 1.0),
                   clipBehavior: Clip.none,
                   itemCount: state.newArrivals.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(width: 16),
                   itemBuilder: (context, index) {
                     final product = state.newArrivals[index];
-                    return NewArrivalsCard(product: product);
+                    return FractionallySizedBox(
+                      widthFactor: 0.92,
+                      child: Center(
+                        child: NewArrivalsCard(product: product),
+                      ),
+                    );
                   },
                 ),
               );

@@ -150,7 +150,7 @@ class _CategoryProductCard extends StatelessWidget {
       margin: const EdgeInsets.only(right: 18),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),

@@ -229,18 +229,24 @@ class _ProductDetailViewState extends State<ProductDetailView> {
   void _saveRecentlyViewed(ProductModel product) {
     try {
       final prefs = getIt<SharedPreferences>();
-      final List<String> currentList = prefs.getStringList('recently_viewed') ?? [];
+      final List<String> currentList =
+          prefs.getStringList('recently_viewed') ?? [];
       final currentVariant = _getCurrentVariant(product);
       final priceToSave = currentVariant?.price ?? product.basePrice;
-      
+
       String imageToSave = product.baseImage;
-      if (currentVariant != null && currentVariant.imageUrl != null && currentVariant.imageUrl!.isNotEmpty) {
+      if (currentVariant != null &&
+          currentVariant.imageUrl != null &&
+          currentVariant.imageUrl!.isNotEmpty) {
         imageToSave = currentVariant.imageUrl!;
       }
 
-      final entryToSave = '${product.id}|${product.name}|$priceToSave|$imageToSave';
-      
-      currentList.removeWhere((e) => e.startsWith('${product.id}|${product.name}|'));
+      final entryToSave =
+          '${product.id}|${product.name}|$priceToSave|$imageToSave';
+
+      currentList.removeWhere(
+        (e) => e.startsWith('${product.id}|${product.name}|'),
+      );
       currentList.insert(0, entryToSave);
 
       if (currentList.length > 5) {
@@ -335,7 +341,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                       ),
                       IconButton(
                         icon: const Icon(
-                          LucideIcons.share2,
+                          LucideIcons.messageCircle,
                           color: Colors.black,
                         ),
                         onPressed: () {},
@@ -389,12 +395,12 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                       onLongPressEnd: () => _timer?.cancel(),
                     ),
                   ),
+                  const SliverToBoxAdapter(child: ProductTrustBadgesSection()),
                   SliverToBoxAdapter(
                     child: ProductReviewsPreviewSection(
                       product: currentProduct,
                     ),
                   ),
-                  const SliverToBoxAdapter(child: ProductTrustBadgesSection()),
                   SliverToBoxAdapter(
                     child: ProductRecommendationsSection(
                       recommendations: relatedProducts,

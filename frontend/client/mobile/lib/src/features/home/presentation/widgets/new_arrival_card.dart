@@ -10,8 +10,6 @@ import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 import 'package:mobile/src/features/home/presentation/state/home_cubit.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 
-const _kGold = Color(0xFFD4A843);
-
 class NewArrivalsCard extends StatefulWidget {
   final ProductModel product;
 
@@ -237,11 +235,10 @@ class _NewArrivalsCardState extends State<NewArrivalsCard> {
         );
       },
       child: Container(
-        width: 320,
+        width: double.infinity,
         decoration: BoxDecoration(
-          color: const Color.fromARGB(240, 245, 246, 248),
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: Colors.white, width: 1.5),
+          color: const Color.fromARGB(255, 226, 227, 230),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -341,12 +338,12 @@ class _NewArrivalsCardState extends State<NewArrivalsCard> {
                       barrierDismissible: true,
                       builder: (context) {
                         return Dialog(
-                          backgroundColor: const Color(0xFF0C0C18),
+                          backgroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(24),
                             side: const BorderSide(
-                              color: Color(0xFF1A1A28),
-                              width: 0.5,
+                              color: Color(0xFFE5E5EA),
+                              width: 1,
                             ),
                           ),
                           child: Padding(
@@ -374,7 +371,7 @@ class _NewArrivalsCardState extends State<NewArrivalsCard> {
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w800,
-                                    color: Colors.white,
+                                    color: Colors.black,
                                     letterSpacing: -0.4,
                                   ),
                                 ),
@@ -385,7 +382,7 @@ class _NewArrivalsCardState extends State<NewArrivalsCard> {
                                   style: const TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w400,
-                                    color: Color(0xFF8A8A9E),
+                                    color: Color(0xFF5C5C6B),
                                     height: 1.45,
                                   ),
                                 ),
@@ -394,8 +391,8 @@ class _NewArrivalsCardState extends State<NewArrivalsCard> {
                                   width: double.infinity,
                                   child: ElevatedButton(
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: _kGold,
-                                      foregroundColor: Colors.black,
+                                      backgroundColor: Colors.black,
+                                      foregroundColor: Colors.white,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(16),
                                       ),
