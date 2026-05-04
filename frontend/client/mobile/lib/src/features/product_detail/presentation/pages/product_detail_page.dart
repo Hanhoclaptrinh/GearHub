@@ -19,8 +19,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ProductDetailPage extends StatelessWidget {
   final ProductModel product;
+  final Map<String, String>? initialAttributes;
 
-  const ProductDetailPage({super.key, required this.product});
+  const ProductDetailPage({
+    super.key,
+    required this.product,
+    this.initialAttributes,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -28,15 +33,23 @@ class ProductDetailPage extends StatelessWidget {
       create: (context) => getIt<ProductDetailCubit>()
         ..loadProduct(product.id)
         ..incrementView(product.id, 'device_id_placeholder'),
-      child: ProductDetailView(initialProduct: product),
+      child: ProductDetailView(
+        initialProduct: product,
+        initialAttributes: initialAttributes,
+      ),
     );
   }
 }
 
 class ProductDetailView extends StatefulWidget {
   final ProductModel initialProduct;
+  final Map<String, String>? initialAttributes;
 
-  const ProductDetailView({super.key, required this.initialProduct});
+  const ProductDetailView({
+    super.key,
+    required this.initialProduct,
+    this.initialAttributes,
+  });
 
   @override
   State<ProductDetailView> createState() => _ProductDetailViewState();
@@ -58,6 +71,12 @@ class _ProductDetailViewState extends State<ProductDetailView> {
 
   // selection matrix logic
   void _initializeAttributes(ProductModel product) {
+    if (widget.initialAttributes != null &&
+        widget.initialAttributes!.isNotEmpty &&
+        _selectedAttributes.isEmpty) {
+      _selectedAttributes = Map<String, String>.from(widget.initialAttributes!);
+      return;
+    }
     // kiem tra combo thuoc tinh dang duoc lua chon co trong khong
     // chi thuc hien neu combo hien tai chua duoc chon
     if (product.variants.isNotEmpty && _selectedAttributes.isEmpty) {

@@ -1,359 +1,462 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lottie/lottie.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
+import 'package:mobile/src/shared/models/product_variant_model.dart';
+import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
+import 'package:mobile/src/features/home/presentation/state/home_cubit.dart';
+import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 
-const _kSurface = Color(0xFF13131A);
-const _kBorder = Color(0xFF1C1C26);
-const _kText = Color(0xFFEDEDF5);
-const _kMuted = Color(0xFF50506A);
-const _kAccent = Color(0xFF7EE8C0);
-const _kAccentBg = Color(0xFF0C1F1A);
+const _kGold = Color(0xFFD4A843);
 
 class NewArrivalsCard extends StatefulWidget {
   final ProductModel product;
-  final VoidCallback? onTap;
-  final VoidCallback? onAddToCart;
 
-  const NewArrivalsCard({
-    super.key,
-    required this.product,
-    this.onTap,
-    this.onAddToCart,
-  });
+  const NewArrivalsCard({super.key, required this.product});
 
   @override
   State<NewArrivalsCard> createState() => _NewArrivalsCardState();
 }
 
-class _NewArrivalsCardState extends State<NewArrivalsCard>
-    with TickerProviderStateMixin {
-  late final AnimationController _press;
-  late final AnimationController _breathe;
-  late final Animation<double> _scale;
-  late final Animation<double> _breath;
+class _NewArrivalsCardState extends State<NewArrivalsCard> {
+  Map<String, String> _selectedAttributes = {};
 
   @override
   void initState() {
     super.initState();
-    _press = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 90),
-    );
-    _scale = Tween<double>(
-      begin: 1.0,
-      end: 0.97,
-    ).animate(CurvedAnimation(parent: _press, curve: Curves.easeOut));
-
-    _breathe = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2400),
-    )..repeat(reverse: true);
-    _breath = CurvedAnimation(parent: _breathe, curve: Curves.easeInOut);
+    _initializeAttributes();
   }
 
-  @override
-  void dispose() {
-    _press.dispose();
-    _breathe.dispose();
-    super.dispose();
-  }
+  void _initializeAttributes() {
+    if (widget.product.variants.isNotEmpty && _selectedAttributes.isEmpty) {
+      final activeVariants = widget.product.variants
+          .where((v) => v.isActive)
+          .toList();
+      if (activeVariants.isEmpty) return;
 
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => _press.forward(),
-      onTapUp: (_) => _press.reverse(),
-      onTapCancel: _press.reverse,
-      onTap: () {
-        HapticFeedback.lightImpact();
-        widget.onTap?.call();
-      },
-      child: ScaleTransition(
-        scale: _scale,
-        child: AnimatedBuilder(
-          animation: _breath,
-          builder: (context, child) => Container(
-            width: double.infinity,
-            constraints: const BoxConstraints(maxWidth: 270),
-            decoration: BoxDecoration(
-              color: _kSurface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                width: 1,
-                color: Color.lerp(
-                  _kBorder,
-                  _kAccent.withValues(alpha: 0.4),
-                  _breath.value,
-                )!,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: _kAccent.withValues(
-                    alpha: 0.03 + 0.05 * _breath.value,
-                  ),
-                  blurRadius: 20 + 10 * _breath.value,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: child,
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // main img
-                AspectRatio(
-                  aspectRatio: 1.0, // 1:1 ratio
-                  child: _ImageSection(
-                    product: widget.product,
-                    breath: _breath,
-                  ),
-                ),
-                Container(height: 1, width: double.infinity, color: _kBorder),
-                _ContentSection(
-                  product: widget.product,
-                  breath: _breath,
-                  onAddToCart: widget.onAddToCart,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+      final firstVariant = activeVariants.first;
+      final configKeys = widget.product.attributeConfig;
 
-class _ImageSection extends StatelessWidget {
-  final ProductModel product;
-  final Animation<double> breath;
-
-  const _ImageSection({required this.product, required this.breath});
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        const CustomPaint(painter: _DotGridPainter()),
-        AnimatedBuilder(
-          animation: breath,
-          builder: (_, __) => Center(
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: _kAccent.withValues(
-                      alpha: 0.10 + 0.15 * breath.value,
-                    ),
-                    blurRadius: 40 + 20 * breath.value,
-                    spreadRadius: 5 + 10 * breath.value,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // img with hero anim
-        Hero(
-          tag: 'product_${product.id}',
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: _buildImage(),
-          ),
-        ),
-
-        if (product.tag != null)
-          Positioned(top: 12, left: 12, child: _TagBadge(label: product.tag!)),
-      ],
-    );
-  }
-
-  Widget _buildImage() {
-    final url = product.image;
-    if (url.startsWith('http')) {
-      return CachedNetworkImage(
-        imageUrl: url,
-        fit: BoxFit.contain,
-        errorWidget: (_, __, ___) =>
-            const Icon(LucideIcons.imageOff, color: _kMuted, size: 32),
-      );
-    }
-    return Image.asset(url, fit: BoxFit.contain);
-  }
-}
-
-class _ContentSection extends StatelessWidget {
-  final ProductModel product;
-  final Animation<double> breath;
-  final VoidCallback? onAddToCart;
-
-  const _ContentSection({
-    required this.product,
-    required this.breath,
-    this.onAddToCart,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            product.name,
-            style: const TextStyle(
-              color: _kText,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              height: 1.2,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.fade,
-            softWrap: false,
-          ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    const Icon(LucideIcons.eye, size: 12, color: _kMuted),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        '${formatCompactNumber(product.viewsCount)} lượt xem',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: _kMuted,
-                          fontSize: 9,
-                          letterSpacing: 0.5,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Row(
-                children: [
-                  Container(
-                    width: 16,
-                    height: 1,
-                    color: _kAccent.withValues(alpha: 0.5),
-                  ),
-                  const SizedBox(width: 4),
-                  Container(width: 4, height: 1, color: _kBorder),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'GIÁ BÁN',
-                      style: TextStyle(
-                        color: _kMuted,
-                        fontSize: 8,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    AnimatedBuilder(
-                      animation: breath,
-                      builder: (_, __) => Text(
-                        formatVND(product.price),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Color.lerp(
-                            _kAccent,
-                            const Color(0xFFB8F5E2),
-                            breath.value,
-                          ),
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
-                          height: 1,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TagBadge extends StatelessWidget {
-  final String label;
-  const _TagBadge({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: _kAccentBg,
-        borderRadius: BorderRadius.circular(5),
-        border: Border.all(color: _kAccent.withValues(alpha: 0.28), width: 0.5),
-      ),
-      child: Text(
-        label.toUpperCase(),
-        style: const TextStyle(
-          color: _kAccent,
-          fontSize: 8,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.9,
-        ),
-      ),
-    );
-  }
-}
-
-class _DotGridPainter extends CustomPainter {
-  const _DotGridPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF1C1C28)
-      ..style = PaintingStyle.fill;
-
-    const spacing = 13.0;
-    const radius = 0.85;
-
-    for (var x = spacing; x < size.width; x += spacing) {
-      for (var y = spacing; y < size.height; y += spacing) {
-        canvas.drawCircle(Offset(x, y), radius, paint);
+      if (configKeys.isNotEmpty) {
+        for (var key in configKeys) {
+          if (firstVariant.attributes.containsKey(key)) {
+            _selectedAttributes[key] = firstVariant.attributes[key].toString();
+          }
+        }
+      } else {
+        _selectedAttributes = Map<String, String>.from(
+          firstVariant.attributes.map((k, v) => MapEntry(k, v.toString())),
+        );
       }
     }
   }
 
+  ProductVariantModel? _getCurrentVariant() {
+    if (widget.product.variants.isEmpty) return null;
+
+    for (final v in widget.product.variants) {
+      if (!v.isActive) continue;
+
+      final allMatch = _selectedAttributes.entries.every(
+        (entry) => v.attributes[entry.key]?.toString() == entry.value,
+      );
+      if (allMatch) return v;
+    }
+
+    final activeVariants = widget.product.variants
+        .where((v) => v.isActive)
+        .toList();
+    return activeVariants.isNotEmpty ? activeVariants.first : null;
+  }
+
+  Map<String, List<String>> _getAttributeOptions() {
+    final Map<String, List<String>> options = {};
+    for (final v in widget.product.variants) {
+      if (!v.isActive) continue;
+      v.attributes.forEach((k, vVal) {
+        if (!options.containsKey(k)) options[k] = [];
+        final strVal = vVal.toString();
+        if (!options[k]!.contains(strVal)) {
+          options[k]!.add(strVal);
+        }
+      });
+    }
+    return options;
+  }
+
+  Widget _buildColorBubbles(String key, List<String> values) {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 6,
+      runSpacing: 6,
+      children: values.map((val) {
+        final isSelected = _selectedAttributes[key] == val;
+
+        final variant = widget.product.variants.firstWhere(
+          (v) => v.isActive && v.attributes[key]?.toString() == val,
+          orElse: () => widget.product.variants.first,
+        );
+
+        final anyInStock = widget.product.variants.any(
+          (v) =>
+              v.isActive && v.attributes[key]?.toString() == val && v.stock > 0,
+        );
+
+        return GestureDetector(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            setState(() {
+              _selectedAttributes[key] = val;
+            });
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: isSelected ? Colors.black : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected ? Colors.black : const Color(0xFFE5E5EA),
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF2F2F7),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? Colors.white24 : Colors.black12,
+                    ),
+                    image:
+                        (variant.imageUrl != null ||
+                            widget.product.image.isNotEmpty)
+                        ? DecorationImage(
+                            image: CachedNetworkImageProvider(
+                              variant.imageUrl ?? widget.product.image,
+                            ),
+                            fit: BoxFit.cover,
+                            colorFilter: !anyInStock
+                                ? const ColorFilter.mode(
+                                    Colors.grey,
+                                    BlendMode.saturation,
+                                  )
+                                : null,
+                          )
+                        : null,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  val,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isSelected ? Colors.white : Colors.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildChipRow(String key, List<String> values) {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 6,
+      runSpacing: 6,
+      children: values.map((val) {
+        final isSelected = _selectedAttributes[key] == val;
+        return GestureDetector(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            setState(() {
+              _selectedAttributes[key] = val;
+            });
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected ? Colors.black : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected ? Colors.black : const Color(0xFFE5E5EA),
+                width: 1.5,
+              ),
+            ),
+            child: Text(
+              val,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                color: isSelected ? Colors.white : const Color(0xFF4B5563),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   @override
-  bool shouldRepaint(_DotGridPainter oldDelegate) => false;
+  Widget build(BuildContext context) {
+    final currentVariant = _getCurrentVariant();
+    final priceToDisplay = currentVariant != null
+        ? currentVariant.price
+        : widget.product.basePrice;
+    final imageToDisplay =
+        currentVariant != null &&
+            currentVariant.imageUrl != null &&
+            currentVariant.imageUrl!.isNotEmpty
+        ? currentVariant.imageUrl!
+        : widget.product.image;
+
+    final options = _getAttributeOptions();
+
+    return GestureDetector(
+      onTap: () {
+        context.read<HomeCubit>().incrementView(widget.product.id);
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ProductDetailPage(
+              product: widget.product,
+              initialAttributes: _selectedAttributes,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: 320,
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(240, 245, 246, 248),
+          borderRadius: BorderRadius.circular(32),
+          border: Border.all(color: Colors.white, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Center(
+                child: Hero(
+                  tag:
+                      'product_image_${widget.product.id}_${currentVariant?.id ?? "base"}',
+                  child: CachedNetworkImage(
+                    imageUrl: imageToDisplay,
+                    fit: BoxFit.contain,
+                    placeholder: (context, url) => const SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.black12,
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => const Icon(
+                      Icons.image_not_supported_outlined,
+                      color: Color(0xFF9CA3AF),
+                      size: 64,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              widget.product.baseName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF0A0A0F),
+                letterSpacing: -0.6,
+                height: 1.15,
+              ),
+            ),
+            const SizedBox(height: 12),
+            // build cau hinh bien the
+            ...options.entries.map((entry) {
+              final k = entry.key;
+              final vals = entry.value;
+              if (k.toLowerCase().contains('color') ||
+                  k.toLowerCase().contains('màu')) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 22),
+                  child: _buildColorBubbles(k, vals),
+                );
+              }
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildChipRow(k, vals),
+              );
+            }),
+            const SizedBox(height: 12),
+            Text(
+              formatVND(priceToDisplay),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF0A0A0F),
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: () {
+                final variant = _getCurrentVariant();
+                if (variant != null) {
+                  final cartCubit = context.read<CartCubit>();
+                  final cartState = cartCubit.state;
+                  int existingQty = 0;
+                  if (cartState.cart != null) {
+                    final existing = cartState.cart!.items
+                        .where((i) => i.productVariant.id == variant.id)
+                        .firstOrNull;
+                    existingQty = existing?.quantity ?? 0;
+                  }
+
+                  if (existingQty + 1 > variant.stock) {
+                    showDialog(
+                      context: context,
+                      barrierDismissible: true,
+                      builder: (context) {
+                        return Dialog(
+                          backgroundColor: const Color(0xFF0C0C18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            side: const BorderSide(
+                              color: Color(0xFF1A1A28),
+                              width: 0.5,
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 56,
+                                  height: 56,
+                                  decoration: BoxDecoration(
+                                    color: const Color(
+                                      0xFFFF3B30,
+                                    ).withValues(alpha: 0.12),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Lottie.asset(
+                                    'assets/animations/warning.json',
+                                    repeat: false,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                const Text(
+                                  'Vượt quá giới hạn',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: -0.4,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Số lượng sản phẩm trong kho không đủ để thêm vào giỏ hàng.\n\nKho hiện còn ${variant.stock} sản phẩm và bạn đã có $existingQty sản phẩm trong giỏ.',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w400,
+                                    color: Color(0xFF8A8A9E),
+                                    height: 1.45,
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: _kGold,
+                                      foregroundColor: Colors.black,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                    ),
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text(
+                                      'ĐÃ HIỂU',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                    return;
+                  }
+
+                  cartCubit.addToCart(variant, widget.product, 1);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Đã thêm ${widget.product.baseName} vào giỏ hàng thành công!',
+                      ),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              },
+              child: Container(
+                width: double.infinity,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0A0A0F),
+                  borderRadius: BorderRadius.circular(26),
+                ),
+                child: const Center(
+                  child: Text(
+                    'Thêm vào giỏ hàng',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
