@@ -11,16 +11,16 @@ import 'package:mobile/src/features/wishlist/domain/repositories/wishlist_reposi
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 
-class CategoryProductCard extends StatefulWidget {
+class ProductCard extends StatefulWidget {
   final ProductModel product;
 
-  const CategoryProductCard({super.key, required this.product});
+  const ProductCard({super.key, required this.product});
 
   @override
-  State<CategoryProductCard> createState() => _CategoryProductCardState();
+  State<ProductCard> createState() => _ProductCardState();
 }
 
-class _CategoryProductCardState extends State<CategoryProductCard> {
+class _ProductCardState extends State<ProductCard> {
   bool _isWishlisted = false;
   final _repository = getIt<WishlistRepository>();
 
@@ -117,7 +117,7 @@ class _CategoryProductCardState extends State<CategoryProductCard> {
                       const SizedBox(height: 32),
                       Row(
                         children: [
-                          const Icon(Icons.star, color: Color.fromARGB(255, 0, 0, 0), size: 16),
+                          const Icon(Icons.star, color: Colors.black, size: 16),
                           const SizedBox(width: 4),
                           Text(
                             '${widget.product.averageRating} (${widget.product.reviewCount})',

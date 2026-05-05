@@ -6,9 +6,9 @@ import 'package:mobile/src/features/explore/domain/repositories/explore_reposito
 import '../../../home/domain/entities/category_entity.dart';
 import '../state/category_detail_cubit.dart';
 import '../state/category_detail_state.dart';
-import '../widgets/category_product_card.dart';
-import '../widgets/category_product_shimmer.dart';
-import '../widgets/category_filter_drawer.dart';
+import '../../../../shared/widgets/product_card.dart';
+import '../../../../shared/widgets/product_card_shimmer.dart';
+import '../../../../shared/widgets/product_filter_drawer.dart';
 
 class CategoryDetailPage extends StatelessWidget {
   final CategoryEntity category;
@@ -64,7 +64,7 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
           key: _scaffoldKey,
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           endDrawer: state is CategoryDetailLoaded
-              ? CategoryFilterDrawer(
+              ? ProductFilterDrawer(
                   initialMinPrice: state.minPrice,
                   initialMaxPrice: state.maxPrice,
                   initialSortBy: state.sortBy,
@@ -87,6 +87,7 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
                 pinned: true,
                 elevation: 0,
                 scrolledUnderElevation: 0,
+                automaticallyImplyLeading: false,
                 centerTitle: true,
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back_ios_new_rounded),
@@ -113,7 +114,7 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
                   padding: const EdgeInsets.all(12),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
-                      (context, index) => const CategoryProductShimmer(),
+                      (context, index) => const ProductCardShimmer(),
                       childCount: 5,
                     ),
                   ),
@@ -178,7 +179,7 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
                               child: Center(child: CircularProgressIndicator(color: Colors.black)),
                             );
                           }
-                          return CategoryProductCard(product: state.products[index]);
+                          return ProductCard(product: state.products[index]);
                         },
                         childCount: state.products.length + (state.isLoadingMore ? 1 : 0),
                       ),

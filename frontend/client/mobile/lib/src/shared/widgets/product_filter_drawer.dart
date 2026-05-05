@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:intl/intl.dart';
 
-class CategoryFilterDrawer extends StatefulWidget {
+class ProductFilterDrawer extends StatefulWidget {
   final double? initialMinPrice;
   final double? initialMaxPrice;
   final String initialSortBy;
   final Function(double? min, double? max, String sort) onApply;
 
-  const CategoryFilterDrawer({
+  const ProductFilterDrawer({
     super.key,
     this.initialMinPrice,
     this.initialMaxPrice,
@@ -17,10 +17,10 @@ class CategoryFilterDrawer extends StatefulWidget {
   });
 
   @override
-  State<CategoryFilterDrawer> createState() => _CategoryFilterDrawerState();
+  State<ProductFilterDrawer> createState() => _ProductFilterDrawerState();
 }
 
-class _CategoryFilterDrawerState extends State<CategoryFilterDrawer> {
+class _ProductFilterDrawerState extends State<ProductFilterDrawer> {
   late double _minPrice;
   late double _maxPrice;
   late String _sortBy;

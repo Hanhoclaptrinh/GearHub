@@ -822,29 +822,12 @@ export class ProductsService {
                 // cho phep tim kiem sau hon
                 // khong phu thuoc viet hoa viet thuong
                 const searchConditions = words.map(word => {
-                    const l = word.toLowerCase();
-                    const u = word.toUpperCase();
-                    const c = word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-
                     return {
-                        // tim kiem theo ca ten san pham, danh muc, thuong hieu
                         OR: [
                             { name: { contains: word } },
-                            { name: { contains: l } },
-                            { name: { contains: u } },
-                            { name: { contains: c } },
                             { brand: { name: { contains: word } } },
-                            { brand: { name: { contains: l } } },
-                            { brand: { name: { contains: u } } },
-                            { brand: { name: { contains: c } } },
                             { category: { name: { contains: word } } },
-                            { category: { name: { contains: l } } },
-                            { category: { name: { contains: u } } },
-                            { category: { name: { contains: c } } },
                             { category: { parent: { name: { contains: word } } } },
-                            { category: { parent: { name: { contains: l } } } },
-                            { category: { parent: { name: { contains: u } } } },
-                            { category: { parent: { name: { contains: c } } } },
                         ],
                     };
                 });

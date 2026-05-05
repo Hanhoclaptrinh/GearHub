@@ -8,6 +8,7 @@ import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/features/home/presentation/widgets/search_history_tags_widget.dart';
 import 'package:mobile/src/features/home/presentation/widgets/search_suggestion_item.dart';
 import 'package:mobile/src/features/home/presentation/widgets/search_product_grid.dart';
+import 'package:mobile/src/shared/widgets/product_filter_drawer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SearchPage extends StatefulWidget {
@@ -18,6 +19,7 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _controller = TextEditingController();
   Timer? _debounceTimer;
   bool _isLoading = false;
@@ -222,290 +224,90 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
-  void _showFilterBottomSheet() {
-    final minController = TextEditingController(
-      text: _minPrice?.toStringAsFixed(0),
-    );
-    final maxController = TextEditingController(
-      text: _maxPrice?.toStringAsFixed(0),
-    );
-    String localSort = _sortBy;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(32),
-                  topRight: Radius.circular(32),
-                ),
-              ),
-              padding: EdgeInsets.only(
-                top: 24,
-                left: 24,
-                right: 24,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Bộ lọc',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFF0A0A0F),
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(
-                            LucideIcons.x,
-                            size: 20,
-                            color: Color(0xFF6B7280),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Sắp xếp theo giá',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0A0A0F),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        _buildSortChip(
-                          setModalState,
-                          'Giá tăng dần',
-                          'price_asc',
-                          localSort,
-                          (val) {
-                            localSort = val;
-                          },
-                        ),
-                        const SizedBox(width: 10),
-                        _buildSortChip(
-                          setModalState,
-                          'Giá giảm dần',
-                          'price_desc',
-                          localSort,
-                          (val) {
-                            localSort = val;
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Khoảng giá (đ)',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0A0A0F),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: minController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              hintText: 'Từ',
-                              filled: true,
-                              fillColor: const Color(0xFFF3F4F6),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextField(
-                            controller: maxController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              hintText: 'Đến',
-                              filled: true,
-                              fillColor: const Color(0xFFF3F4F6),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 54,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF3B82F6),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _sortBy = localSort;
-                            _minPrice = double.tryParse(
-                              minController.text.trim(),
-                            );
-                            _maxPrice = double.tryParse(
-                              maxController.text.trim(),
-                            );
-                          });
-                          Navigator.pop(context);
-                          _executeFullSearch();
-                        },
-                        child: const Text(
-                          'Áp dụng bộ lọc',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildSortChip(
-    void Function(void Function()) setModalState,
-    String label,
-    String value,
-    String current,
-    void Function(String) onSelect,
-  ) {
-    final bool isSelected = value == current;
-    return GestureDetector(
-      onTap: () {
-        setModalState(() {
-          onSelect(isSelected ? '' : value);
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF3B82F6) : const Color(0xFFF3F4F6),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: isSelected ? Colors.white : const Color(0xFF4B5563),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: const Color(0xFFF9FAFB),
-      appBar: AppBar(
-        toolbarHeight: 74,
-        elevation: 0,
-        backgroundColor: Colors.white,
-        automaticallyImplyLeading: false,
-        title: Row(
-          children: [
-            GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3F4F6),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  LucideIcons.arrowLeft,
-                  size: 20,
-                  color: Color(0xFF0A0A0F),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Container(
-                height: 52,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3F4F6),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: TextField(
-                  controller: _controller,
-                  autofocus: true,
-                  textInputAction: TextInputAction.search,
-                  onChanged: _onSearchChanged,
-                  onSubmitted: (_) => _executeFullSearch(),
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(
-                      LucideIcons.search,
-                      size: 18,
-                      color: Color(0xFF9CA3AF),
-                    ),
-                    suffixIcon: _controller.text.isNotEmpty
-                        ? GestureDetector(
-                            onTap: () {
-                              _controller.clear();
-                              _onSearchChanged('');
-                            },
-                            child: const Icon(
-                              LucideIcons.x,
-                              size: 18,
-                              color: Color(0xFF6B7280),
-                            ),
-                          )
-                        : null,
-                    hintText: 'Tìm kiếm sản phẩm...',
-                    hintStyle: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF9CA3AF),
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
+      endDrawer: ProductFilterDrawer(
+        initialMinPrice: _minPrice,
+        initialMaxPrice: _maxPrice,
+        initialSortBy: _sortBy.isEmpty ? 'newest' : _sortBy,
+        onApply: (min, max, sort) {
+          setState(() {
+            _minPrice = min;
+            _maxPrice = max;
+            _sortBy = sort;
+          });
+          _executeFullSearch();
+        },
+      ),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(74),
+        child: Container(
+          color: Colors.white,
+          padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+          alignment: Alignment.center,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
                   ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Container(
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: TextField(
+                      controller: _controller,
+                      autofocus: true,
+                      textInputAction: TextInputAction.search,
+                      onChanged: _onSearchChanged,
+                      onSubmitted: (_) => _executeFullSearch(),
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(
+                          LucideIcons.search,
+                          size: 18,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                        suffixIcon: _controller.text.isNotEmpty
+                            ? GestureDetector(
+                                onTap: () {
+                                  _controller.clear();
+                                  _onSearchChanged('');
+                                },
+                                child: const Icon(
+                                  LucideIcons.x,
+                                  size: 18,
+                                  color: Color(0xFF6B7280),
+                                ),
+                              )
+                            : null,
+                        hintText: 'Tìm kiếm sản phẩm...',
+                        hintStyle: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
       body: _isLoading
@@ -515,7 +317,7 @@ class _SearchPageState extends State<SearchPage> {
           : _isFullSearchMode
           ? SearchProductGrid(
               searchResults: _searchResults,
-              onShowFilters: _showFilterBottomSheet,
+              onShowFilters: () => _scaffoldKey.currentState?.openEndDrawer(),
             )
           : _buildSearchSuggestions(),
     );
