@@ -8,6 +8,7 @@ class CategoryModel extends CategoryEntity {
     super.iconUrl,
     super.description,
     required super.totalSold,
+    super.children,
   });
 
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
@@ -18,6 +19,11 @@ class CategoryModel extends CategoryEntity {
       iconUrl: json['iconUrl'] as String?,
       description: json['description'] as String?,
       totalSold: json['totalSold'] ?? 0,
+      children: json['children'] != null
+          ? (json['children'] as List)
+              .map((i) => CategoryModel.fromJson(i as Map<String, dynamic>))
+              .toList()
+          : const [],
     );
   }
 }

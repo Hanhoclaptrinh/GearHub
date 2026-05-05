@@ -157,6 +157,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
               const SizedBox(height: 24),
               Expanded(
                 child: ListView(
+                  physics: const BouncingScrollPhysics(),
                   children: _fullSpecs.entries
                       .map(
                         (e) => Padding(
@@ -232,6 +233,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
               height: 54,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 clipBehavior: Clip.none,
                 itemCount: uniqueColors.length,

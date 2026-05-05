@@ -4,8 +4,10 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/features/home/presentation/state/home_cubit.dart';
 import 'package:mobile/src/features/home/presentation/state/home_state.dart';
+import 'package:mobile/src/features/home/domain/entities/category_entity.dart';
 import 'package:mobile/src/shared/widgets/search_bar_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'category_detail_page.dart';
 
 class ExplorePage extends StatelessWidget {
   const ExplorePage({super.key});
@@ -15,16 +17,15 @@ class ExplorePage extends StatelessWidget {
     return BlocProvider(
       create: (context) => getIt<HomeCubit>()..loadHomeData(),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
             SliverAppBar(
               floating: true,
-              pinned: false,
               elevation: 0,
               scrolledUnderElevation: 0,
-              backgroundColor: Colors.white,
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               automaticallyImplyLeading: false,
               centerTitle: false,
               title: const Padding(
@@ -108,7 +109,12 @@ class _CategoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        print('cate ${category.title} clicked');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CategoryDetailPage(category: category as CategoryEntity),
+          ),
+        );
       },
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

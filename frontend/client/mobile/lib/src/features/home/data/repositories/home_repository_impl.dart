@@ -74,6 +74,33 @@ class HomeRepositoryImpl implements HomeRepository {
   }
 
   @override
+  Future<List<ProductModel>> getProducts({
+    String? categoryId,
+    String? brandId,
+    String? search,
+    double? minPrice,
+    double? maxPrice,
+    int? limit,
+    int? page,
+    String? sortBy,
+  }) async {
+    try {
+      return await remoteDatasource.getProducts(
+        categoryId: categoryId,
+        brandId: brandId,
+        search: search,
+        minPrice: minPrice,
+        maxPrice: maxPrice,
+        limit: limit,
+        page: page,
+        sortBy: sortBy,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
   Future<void> incrementProductView(String id, String deviceId) async {
     try {
       await remoteDatasource.incrementProductView(id, deviceId);

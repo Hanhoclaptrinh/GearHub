@@ -184,6 +184,14 @@ class _SearchPageState extends State<SearchPage> {
     setState(() {
       _isLoading = true;
       _isFullSearchMode = true;
+      // reset filter tranh xung dot
+      if (keyword != null || _controller.text != q) {
+        _minPrice = null;
+        _maxPrice = null;
+        _sortBy = '';
+      }
+      _searchResults = [];
+      _suggestions = [];
     });
 
     try {

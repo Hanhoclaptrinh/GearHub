@@ -7,30 +7,7 @@ class CartService extends ChangeNotifier {
   factory CartService() => _instance;
   CartService._internal();
 
-  final List<CartItem> _items = [
-    CartItem(
-      product: const ProductModel(
-        id: '1',
-        name: 'Sony WH-1000XM5',
-        tagline: 'Noise Canceling Headphones',
-        price: 399,
-        image: 'assets/images/hero1.png',
-        description: "test",
-      ),
-      quantity: 1,
-    ),
-    CartItem(
-      product: const ProductModel(
-        id: '2',
-        name: 'Apple Airpods Max',
-        tagline: 'Spatial Audio.',
-        price: 549,
-        image: 'assets/images/hero2.png',
-        description: "test",
-      ),
-      quantity: 2,
-    ),
-  ];
+  final List<CartItem> _items = [];
 
   List<CartItem> get items => List.unmodifiable(_items);
 
