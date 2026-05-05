@@ -1,10 +1,10 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../home/domain/repositories/home_repository.dart';
+import 'package:mobile/src/features/explore/domain/repositories/explore_repository.dart';
 import '../../../home/domain/entities/category_entity.dart';
 import 'category_detail_state.dart';
 
 class CategoryDetailCubit extends Cubit<CategoryDetailState> {
-  final HomeRepository repository;
+  final ExploreRepository repository;
 
   CategoryDetailCubit({required this.repository})
     : super(CategoryDetailInitial());

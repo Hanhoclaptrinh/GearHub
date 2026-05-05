@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
+import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
+import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
+import 'package:mobile/src/features/wishlist/domain/repositories/wishlist_repository.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 
@@ -16,6 +22,53 @@ class CategoryProductCard extends StatefulWidget {
 
 class _CategoryProductCardState extends State<CategoryProductCard> {
   bool _isWishlisted = false;
+  final _repository = getIt<WishlistRepository>();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkInitialWishlist();
+  }
+
+  Future<void> _checkInitialWishlist() async {
+    final authState = context.read<AuthCubit>().state;
+    if (authState is AuthAuthenticated) {
+      final isFav = await _repository.checkIsFavorite(widget.product.id);
+      if (mounted) {
+        setState(() {
+          _isWishlisted = isFav;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleWishlist() async {
+    final authState = context.read<AuthCubit>().state;
+    if (authState is! AuthAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng đăng nhập để lưu vào yêu thích')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isWishlisted = !_isWishlisted;
+    });
+
+    try {
+      await _repository.toggleWishlist(widget.product.id);
+      HapticFeedback.lightImpact();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isWishlisted = !_isWishlisted;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Lỗi khi cập nhật danh sách yêu thích')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,11 +157,7 @@ class _CategoryProductCardState extends State<CategoryProductCard> {
                         top: 0,
                         right: 0,
                         child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _isWishlisted = !_isWishlisted;
-                            });
-                          },
+                          onTap: _toggleWishlist,
                           child: Icon(
                             _isWishlisted ? Icons.favorite_rounded : LucideIcons.heart,
                             color: _isWishlisted ? Colors.red : Colors.black,

@@ -11,15 +11,5 @@ abstract class HomeRepository {
   Future<List<ProductModel>> getNewArrivalsProducts({int limit = 8});
   Future<List<ProductModel>> getTopRatedProducts({int limit = 5});
   Future<List<ProductModel>> getVaultProducts();
-  Future<List<ProductModel>> getProducts({
-    String? categoryId,
-    String? brandId,
-    String? search,
-    double? minPrice,
-    double? maxPrice,
-    int? limit,
-    int? page,
-    String? sortBy,
-  });
   Future<void> incrementProductView(String id, String deviceId);
 }

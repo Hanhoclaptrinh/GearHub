@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
-import 'package:mobile/src/features/home/data/datasources/home_remote_datasource.dart';
+import 'package:mobile/src/features/explore/domain/repositories/explore_repository.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 import '../state/home_cubit.dart';
 import '../state/home_state.dart';
@@ -66,8 +66,8 @@ class _CategoryPromoRowState extends State<_CategoryPromoRow>
 
   Future<List<ProductModel>> _fetchCategoryProducts() async {
     try {
-      final ds = getIt<HomeRemoteDatasource>();
-      final products = await ds.getProductsByCategory(
+      final repository = getIt<ExploreRepository>();
+      final products = await repository.getProducts(
         categoryId: widget.category.id,
         limit: 6,
       );

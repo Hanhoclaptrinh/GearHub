@@ -20,6 +20,12 @@ import 'package:mobile/src/features/cart/domain/repositories/cart_repository.dar
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart' as mobile_cart_cubit;
 import 'package:mobile/src/features/checkout/presentation/state/checkout_cubit.dart' as mobile_checkout_cubit;
 import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
+import 'package:mobile/src/features/wishlist/data/datasources/wishlist_remote_datasource.dart';
+import 'package:mobile/src/features/wishlist/data/repositories/wishlist_repository_impl.dart';
+import 'package:mobile/src/features/wishlist/domain/repositories/wishlist_repository.dart';
+import 'package:mobile/src/features/explore/data/datasources/explore_remote_datasource.dart';
+import 'package:mobile/src/features/explore/data/repositories/explore_repository_impl.dart';
+import 'package:mobile/src/features/explore/domain/repositories/explore_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final getIt = GetIt.instance;
@@ -111,5 +117,21 @@ Future<void> setupDependencies() async {
 
   getIt.registerFactory<OrdersCubit>(
     () => OrdersCubit(apiClient: getIt<ApiClient>()),
+  );
+
+  // wishlist
+  getIt.registerLazySingleton<WishlistRemoteDatasource>(
+    () => WishlistRemoteDatasource(dio: getIt<ApiClient>().dio),
+  );
+  getIt.registerLazySingleton<WishlistRepository>(
+    () => WishlistRepositoryImpl(remoteDatasource: getIt<WishlistRemoteDatasource>()),
+  );
+
+  // explore
+  getIt.registerLazySingleton<ExploreRemoteDatasource>(
+    () => ExploreRemoteDatasource(dio: getIt<ApiClient>().dio),
+  );
+  getIt.registerLazySingleton<ExploreRepository>(
+    () => ExploreRepositoryImpl(remoteDatasource: getIt<ExploreRemoteDatasource>()),
   );
 }

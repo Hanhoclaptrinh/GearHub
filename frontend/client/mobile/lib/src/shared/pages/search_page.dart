@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/di/injection.dart';
+import 'package:mobile/src/features/explore/domain/repositories/explore_repository.dart';
 import 'package:mobile/src/features/home/data/datasources/home_remote_datasource.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/features/home/presentation/widgets/search_history_tags_widget.dart';
@@ -157,8 +158,8 @@ class _SearchPageState extends State<SearchPage> {
     });
 
     try {
-      final datasource = getIt<HomeRemoteDatasource>();
-      final items = await datasource.searchProducts(query: query, limit: 6);
+      final repository = getIt<ExploreRepository>();
+      final items = await repository.getProducts(search: query, limit: 6);
       setState(() {
         _suggestions = items;
       });
@@ -195,9 +196,9 @@ class _SearchPageState extends State<SearchPage> {
     });
 
     try {
-      final datasource = getIt<HomeRemoteDatasource>();
-      List<ProductModel> items = await datasource.searchProducts(
-        query: q,
+      final repository = getIt<ExploreRepository>();
+      List<ProductModel> items = await repository.getProducts(
+        search: q,
         limit: 40,
         minPrice: _minPrice,
         maxPrice: _maxPrice,

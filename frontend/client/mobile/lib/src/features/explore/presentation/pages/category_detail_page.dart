@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/di/injection.dart';
+import 'package:mobile/src/features/explore/domain/repositories/explore_repository.dart';
 import '../../../home/domain/entities/category_entity.dart';
-import '../../../home/domain/repositories/home_repository.dart';
 import '../state/category_detail_cubit.dart';
 import '../state/category_detail_state.dart';
 import '../widgets/category_product_card.dart';
@@ -19,7 +19,7 @@ class CategoryDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) =>
-          CategoryDetailCubit(repository: getIt<HomeRepository>())
+          CategoryDetailCubit(repository: getIt<ExploreRepository>())
             ..loadCategoryProducts(category),
       child: const _CategoryDetailView(),
     );
