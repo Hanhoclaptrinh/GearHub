@@ -102,7 +102,11 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> {
         const SizedBox(height: 16),
         SizedBox(
           height: 230,
-          child: ListView.builder(
+          child: OverflowBox(
+            maxWidth: MediaQuery.of(context).size.width,
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              clipBehavior: Clip.none,
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             itemCount: _recentProducts.length,
@@ -197,6 +201,7 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> {
               );
             },
           ),
+        ),
         ),
       ],
     );

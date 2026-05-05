@@ -10,16 +10,16 @@ import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 import 'package:mobile/src/features/home/presentation/state/home_cubit.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 
-class NewArrivalsCard extends StatefulWidget {
+class LargeProductCard extends StatefulWidget {
   final ProductModel product;
 
-  const NewArrivalsCard({super.key, required this.product});
+  const LargeProductCard({super.key, required this.product});
 
   @override
-  State<NewArrivalsCard> createState() => _NewArrivalsCardState();
+  State<LargeProductCard> createState() => _LargeProductCardState();
 }
 
-class _NewArrivalsCardState extends State<NewArrivalsCard> {
+class _LargeProductCardState extends State<LargeProductCard> {
   Map<String, String> _selectedAttributes = {};
 
   @override

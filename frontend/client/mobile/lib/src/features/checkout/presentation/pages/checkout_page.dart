@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:lottie/lottie.dart';
@@ -22,19 +23,13 @@ class CheckoutArguments {
   final List<CartItemEntity> items;
   final bool isFromCart;
 
-  CheckoutArguments({
-    required this.items,
-    required this.isFromCart,
-  });
+  CheckoutArguments({required this.items, required this.isFromCart});
 }
 
 class CheckoutPage extends StatefulWidget {
   final CheckoutArguments args;
 
-  const CheckoutPage({
-    super.key,
-    required this.args,
-  });
+  const CheckoutPage({super.key, required this.args});
 
   @override
   State<CheckoutPage> createState() => _CheckoutPageState();
@@ -76,9 +71,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
     if (!_saveAsDefault) return;
     try {
       final prefs = getIt<SharedPreferences>();
-      await prefs.setString('default_receiver_name', _nameController.text.trim());
-      await prefs.setString('default_receiver_phone', _phoneController.text.trim());
-      await prefs.setString('default_shipping_address', _addressController.text.trim());
+      await prefs.setString(
+        'default_receiver_name',
+        _nameController.text.trim(),
+      );
+      await prefs.setString(
+        'default_receiver_phone',
+        _phoneController.text.trim(),
+      );
+      await prefs.setString(
+        'default_shipping_address',
+        _addressController.text.trim(),
+      );
     } catch (_) {}
   }
 
@@ -91,12 +95,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
     super.dispose();
   }
 
-  double get _subtotal => widget.args.items.fold(
-    0.0,
-    (sum, item) => sum + item.itemTotal,
-  );
+  double get _subtotal =>
+      widget.args.items.fold(0.0, (sum, item) => sum + item.itemTotal);
 
-  double get _shipping => 35000.0;
+  double get _shipping => 0.0;
   double get _discount => 0.0;
   double get _total => _subtotal + _shipping - _discount;
 
@@ -112,33 +114,41 @@ class _CheckoutPageState extends State<CheckoutPage> {
             if (_saveAsDefault) {
               await _saveDefaultShippingInfo();
             }
-            if (state.paymentMethod == 'PAYMENT_GATEWAY' && state.paymentUrl != null) {
-              final bool? paymentResult = await Navigator.of(context).push<bool>(
-                MaterialPageRoute(
-                  builder: (_) => VnpayPaymentPage(
-                    paymentUrl: state.paymentUrl!,
-                    orderId: state.orderId,
-                  ),
-                ),
-              );
+            if (state.paymentMethod == 'PAYMENT_GATEWAY' &&
+                state.paymentUrl != null) {
+              final bool? paymentResult = await Navigator.of(context)
+                  .push<bool>(
+                    MaterialPageRoute(
+                      builder: (_) => VnpayPaymentPage(
+                        paymentUrl: state.paymentUrl!,
+                        orderId: state.orderId,
+                      ),
+                    ),
+                  );
 
               if (paymentResult == true) {
                 if (widget.args.isFromCart) {
-                  final variantIds = widget.args.items.map((i) => i.productVariant.id).toList();
+                  final variantIds = widget.args.items
+                      .map((i) => i.productVariant.id)
+                      .toList();
                   context.read<CartCubit>().clearSelectedItems(variantIds);
                 }
                 _showSuccessDialog();
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Thanh toán VNPay không thành công hoặc đã bị hủy.'),
+                    content: Text(
+                      'Thanh toán VNPay không thành công hoặc đã bị hủy.',
+                    ),
                     backgroundColor: Colors.red,
                   ),
                 );
               }
             } else {
               if (widget.args.isFromCart) {
-                final variantIds = widget.args.items.map((i) => i.productVariant.id).toList();
+                final variantIds = widget.args.items
+                    .map((i) => i.productVariant.id)
+                    .toList();
                 context.read<CartCubit>().clearSelectedItems(variantIds);
               }
               _showSuccessDialog();
@@ -225,11 +235,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
         onPressed: () => Navigator.pop(context),
       ),
       title: const Text(
-        "THANH TOÁN",
+        "Thanh toán",
         style: TextStyle(
           color: Color(0xFF0F172A),
           fontWeight: FontWeight.w800,
-          fontSize: 18,
+          fontSize: 22,
           letterSpacing: -0.5,
         ),
       ),
@@ -267,7 +277,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
             controller: _noteController,
             maxLines: 1,
             decoration: const InputDecoration(
-              icon: Icon(LucideIcons.fileText, size: 20, color: Color(0xFF94A3B8)),
+              icon: Icon(
+                LucideIcons.fileText,
+                size: 20,
+                color: Color(0xFF94A3B8),
+              ),
               hintText: "Thêm ghi chú cho đơn hàng...",
               hintStyle: TextStyle(color: Color(0xFF94A3B8)),
               border: InputBorder.none,
@@ -278,7 +292,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  Widget _buildBottomBar(double bottomPadding, BuildContext context, CheckoutState state) {
+  Widget _buildBottomBar(
+    double bottomPadding,
+    BuildContext context,
+    CheckoutState state,
+  ) {
     final bool isLoading = state is CheckoutLoading;
 
     return Positioned(
@@ -328,23 +346,19 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 onTap: isLoading
                     ? () {}
                     : () {
-                        if (_nameController.text.trim().isEmpty || _addressController.text.trim().isEmpty) {
+                        if (_nameController.text.trim().isEmpty ||
+                            _addressController.text.trim().isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Vui lòng thêm đầy đủ thông tin giao hàng.'),
+                              content: Text(
+                                'Vui lòng thêm đầy đủ thông tin giao hàng.',
+                              ),
                               backgroundColor: Colors.red,
                             ),
                           );
                           return;
                         }
-                        context.read<CheckoutCubit>().placeOrder(
-                              receiverName: _nameController.text,
-                              receiverPhone: _phoneController.text,
-                              shippingAddress: _addressController.text,
-                              note: _noteController.text,
-                              paymentMethod: _selectedPaymentMethod,
-                              items: widget.args.items,
-                            );
+                        _showConfirmOrderDialog(context);
                       },
                 child: Container(
                   height: 56,
@@ -375,6 +389,76 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showConfirmOrderDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text(
+          "Xác nhận đặt hàng",
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            fontSize: 20,
+            letterSpacing: -0.5,
+          ),
+        ),
+        content: Text(
+          "Bạn có chắc chắn muốn đặt đơn hàng này với tổng số tiền là ${formatVND(_total)}?",
+          style: const TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 15,
+            height: 1.5,
+          ),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text(
+              "Hủy",
+              style: TextStyle(
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              HapticFeedback.heavyImpact();
+              context.read<CheckoutCubit>().placeOrder(
+                    receiverName: _nameController.text,
+                    receiverPhone: _phoneController.text,
+                    shippingAddress: _addressController.text,
+                    note: _noteController.text,
+                    paymentMethod: _selectedPaymentMethod,
+                    items: widget.args.items,
+                  );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text(
+              "Xác nhận",
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 15,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -438,7 +522,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 Navigator.pop(context);
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => const OrderHistoryPage(initialStatus: 'PENDING'),
+                    builder: (_) =>
+                        const OrderHistoryPage(initialStatus: 'PENDING'),
                   ),
                 );
               },

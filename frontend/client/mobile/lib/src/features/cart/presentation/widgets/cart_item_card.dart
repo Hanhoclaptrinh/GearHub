@@ -172,12 +172,12 @@ class _CartItemCardState extends State<CartItemCard>
                               barrierDismissible: true,
                               builder: (context) {
                                 return Dialog(
-                                  backgroundColor: const Color(0xFF0C0C18),
+                                  backgroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(24),
                                     side: const BorderSide(
-                                      color: Color(0xFF1A1A28),
-                                      width: 0.5,
+                                      color: Color(0xFFE5E5EA),
+                                      width: 1,
                                     ),
                                   ),
                                   child: Padding(
@@ -205,7 +205,7 @@ class _CartItemCardState extends State<CartItemCard>
                                           style: TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.w800,
-                                            color: Colors.white,
+                                            color: Colors.black,
                                             letterSpacing: -0.4,
                                           ),
                                         ),
@@ -216,7 +216,7 @@ class _CartItemCardState extends State<CartItemCard>
                                           style: const TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w400,
-                                            color: Color(0xFF8A8A9E),
+                                            color: Color(0xFF5C5C6B),
                                             height: 1.45,
                                           ),
                                         ),
@@ -225,10 +225,8 @@ class _CartItemCardState extends State<CartItemCard>
                                           width: double.infinity,
                                           child: ElevatedButton(
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: const Color(
-                                                0xFFD4A843,
-                                              ),
-                                              foregroundColor: Colors.black,
+                                              backgroundColor: Colors.black,
+                                              foregroundColor: Colors.white,
                                               shape: RoundedRectangleBorder(
                                                 borderRadius:
                                                     BorderRadius.circular(16),
@@ -291,7 +289,7 @@ class _CartItemCardState extends State<CartItemCard>
         widget.item.productVariant.imageUrl ?? widget.item.product.image;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 20),
       child: Stack(
         clipBehavior: Clip.antiAlias,
         children: [
@@ -352,169 +350,156 @@ class _CartItemCardState extends State<CartItemCard>
                 curve: Curves.easeOutCubic,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: colorScheme.surface,
+                  color: isSelected
+                      ? const Color(0xFFF9FAFB)
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: isSelected
-                        ? colorScheme.primary
-                        : colorScheme.outlineVariant.withValues(alpha: 0.2),
-                    width: isSelected ? 2.0 : 1.0,
-                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: isSelected
-                          ? colorScheme.primary.withValues(alpha: 0.08)
-                          : Colors.black.withValues(alpha: 0.04),
-                      blurRadius: isSelected ? 30 : 20,
-                      offset: const Offset(0, 10),
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: Stack(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          width: 12,
-                          height: 12,
-                          margin: const EdgeInsets.only(left: 4, right: 12),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? colorScheme.primary
-                                : Colors.transparent,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected
-                                  ? colorScheme.primary
-                                  : colorScheme.outlineVariant,
-                              width: 2,
-                            ),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: colorScheme.primary.withValues(
-                                        alpha: 0.3,
-                                      ),
-                                      blurRadius: 10,
-                                      spreadRadius: 1,
-                                    ),
-                                  ]
-                                : null,
-                          ),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: 14,
+                      height: 14,
+                      margin: const EdgeInsets.only(top: 4, right: 12),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? Colors.black
+                            : Colors.transparent,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSelected
+                              ? Colors.black
+                              : const Color(0xFFC7C7CC),
+                          width: 2,
                         ),
-                        Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: Hero(
-                              tag: 'product_${widget.item.product.id}',
-                              child: _buildProductImage(productImage),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                productName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  if (widget.item.product.variants.length > 1)
-                                    Flexible(
-                                      child: GestureDetector(
-                                        onTap: () =>
-                                            _showVariantSelectionSheet(context),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: colorScheme.surfaceTint.withValues(
-                                              alpha: 0.05,
-                                            ),
-                                            borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(
-                                              color: colorScheme.outlineVariant
-                                                  .withValues(alpha: 0.5),
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Flexible(
-                                                child: Text(
-                                                  _getVariantComboName(
-                                                        widget.item.productVariant,
-                                                      ).isEmpty
-                                                      ? 'Mặc định'
-                                                      : _getVariantComboName(
-                                                          widget.item.productVariant,
-                                                        ),
-                                                  style: TextStyle(
-                                                    color: colorScheme.onSurface
-                                                        .withValues(alpha: 0.7),
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Icon(
-                                                LucideIcons.chevronDown,
-                                                size: 14,
-                                                color: colorScheme.onSurface
-                                                    .withValues(alpha: 0.7),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                  else
-                                    const SizedBox(),
-                                  QuantitySelector(
-                                    quantity: widget.item.quantity,
-                                    maxQuantity:
-                                        widget.item.productVariant.stock,
-                                    onIncrement: widget.onIncrement,
-                                    onDecrement: widget.onDecrement,
+                              Expanded(
+                                child: Text(
+                                  productName,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                    color: Colors.black,
                                   ),
-                                ],
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(width: 12),
                               Text(
                                 formatVND(productPrice),
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 18,
-                                  color: Color(0xFF00B4D8),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  color: Color(0xFF0061FE),
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  _getVariantComboName(
+                                        widget.item.productVariant,
+                                      ).isEmpty
+                                      ? 'Mặc định'
+                                      : _getVariantComboName(
+                                          widget.item.productVariant,
+                                        ),
+                                  style: TextStyle(
+                                    color: Colors.black.withValues(alpha: 0.6),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (widget.item.product.variants.length > 1)
+                                GestureDetector(
+                                  onTap: () =>
+                                      _showVariantSelectionSheet(context),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          Colors.black.withValues(alpha: 0.04),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'Đổi',
+                                          style: TextStyle(
+                                            color: Colors.black
+                                                .withValues(alpha: 0.7),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Icon(
+                                          LucideIcons.chevronDown,
+                                          size: 13,
+                                          color: Colors.black
+                                              .withValues(alpha: 0.7),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              SizedBox(
+                                width: 100,
+                                height: 100,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Hero(
+                                    tag: 'product_${widget.item.product.id}',
+                                    child: _buildProductImage(productImage),
+                                  ),
+                                ),
+                              ),
+                              QuantitySelector(
+                                quantity: widget.item.quantity,
+                                maxQuantity: widget.item.productVariant.stock,
+                                onIncrement: widget.onIncrement,
+                                onDecrement: widget.onDecrement,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

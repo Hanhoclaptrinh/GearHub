@@ -222,7 +222,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
         final price = _toDouble(i['priceAtPurchase'] ?? i['price']);
         final qty = (i['quantity'] as num?)?.toInt() ?? 1;
         return sum + (price * qty);
-      }) + 35000.0;
+      });
     }
     final String createdAt = order['createdAt'] != null
         ? DateTime.parse(order['createdAt']).toLocal().toString().substring(0, 16)
@@ -516,7 +516,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
         return sum + (price * qty);
       });
     }
-    final double shipping = _toDouble(order['shippingFee'] ?? 35000.0);
+    final double shipping = _toDouble(order['shippingFee'] ?? 0.0);
     final double discount = _toDouble(order['discount']);
     double totalAmount = _toDouble(order['totalAmount'] ?? order['total']);
     if (totalAmount == 0.0) {
@@ -705,7 +705,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                         children: [
                           _priceRow("Tạm tính", formatVND(subtotal)),
                           const SizedBox(height: 8),
-                          _priceRow("Phí ship", formatVND(shipping)),
+                          _priceRow("Phí vận chuyển", formatVND(shipping)),
                           const SizedBox(height: 8),
                           _priceRow("Giảm giá", "-${formatVND(discount)}", valueColor: const Color(0xFF10B981)),
                           const Padding(

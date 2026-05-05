@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../widgets/new_arrival_card.dart';
+import '../../../../shared/widgets/large_product_card.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../state/home_cubit.dart';
 import '../state/home_state.dart';
@@ -33,19 +33,22 @@ class NewArrivalsSection extends StatelessWidget {
               }
               return SizedBox(
                 height: 600,
-                child: PageView.builder(
-                  controller: PageController(viewportFraction: 1.0),
-                  clipBehavior: Clip.none,
-                  itemCount: state.newArrivals.length,
-                  itemBuilder: (context, index) {
-                    final product = state.newArrivals[index];
-                    return FractionallySizedBox(
-                      widthFactor: 0.92,
-                      child: Center(
-                        child: NewArrivalsCard(product: product),
-                      ),
-                    );
-                  },
+                child: OverflowBox(
+                  maxWidth: MediaQuery.of(context).size.width,
+                  child: PageView.builder(
+                    controller: PageController(viewportFraction: 1.0),
+                    clipBehavior: Clip.none,
+                    itemCount: state.newArrivals.length,
+                    itemBuilder: (context, index) {
+                      final product = state.newArrivals[index];
+                      return FractionallySizedBox(
+                        widthFactor: 0.92,
+                        child: Center(
+                          child: LargeProductCard(product: product),
+                        ),
+                      );
+                    },
+                  ),
                 ),
               );
             }

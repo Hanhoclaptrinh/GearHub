@@ -79,10 +79,7 @@ class PriceBreakdownSection extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: Color(0xFF64748B),
-            fontSize: 14,
-          ),
+          style: const TextStyle(color: Color(0xFF64748B), fontSize: 14),
         ),
         Text(
           value,

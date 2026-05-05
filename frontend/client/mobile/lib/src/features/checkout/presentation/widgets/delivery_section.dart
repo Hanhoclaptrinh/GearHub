@@ -68,7 +68,11 @@ class DeliverySection extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(LucideIcons.user, size: 16, color: Color(0xFF475569)),
+                        const Icon(
+                          LucideIcons.user,
+                          size: 16,
+                          color: Color(0xFF475569),
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           name,
@@ -83,7 +87,11 @@ class DeliverySection extends StatelessWidget {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        const Icon(LucideIcons.phone, size: 16, color: Color(0xFF475569)),
+                        const Icon(
+                          LucideIcons.phone,
+                          size: 16,
+                          color: Color(0xFF475569),
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           phone,

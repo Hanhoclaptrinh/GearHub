@@ -40,7 +40,11 @@ class CheckoutItemsSection extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(LucideIcons.package, size: 18, color: Color(0xFF475569)),
+                  const Icon(
+                    LucideIcons.package,
+                    size: 18,
+                    color: Color(0xFF475569),
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     "${items.length} sản phẩm",

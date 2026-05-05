@@ -11,7 +11,8 @@ class EditAddressModal extends StatefulWidget {
   final String initialPhone;
   final String initialAddress;
   final bool initialSaveAsDefault;
-  final Function(String name, String phone, String address, bool saveAsDefault) onSave;
+  final Function(String name, String phone, String address, bool saveAsDefault)
+  onSave;
 
   const EditAddressModal({
     super.key,
@@ -39,17 +40,19 @@ class _EditAddressModalState extends State<EditAddressModal> {
     super.initState();
     _nameController = TextEditingController(text: widget.initialName);
     _phoneController = TextEditingController(text: widget.initialPhone);
-    
+
     // Split address on first comma if it exists
     if (widget.initialAddress.contains(',')) {
       final parts = widget.initialAddress.split(',');
       _detailedAddressController = TextEditingController(text: parts[0].trim());
-      _addressController = TextEditingController(text: parts.sublist(1).join(',').trim());
+      _addressController = TextEditingController(
+        text: parts.sublist(1).join(',').trim(),
+      );
     } else {
       _detailedAddressController = TextEditingController();
       _addressController = TextEditingController(text: widget.initialAddress);
     }
-    
+
     _saveAsDefault = widget.initialSaveAsDefault;
   }
 
@@ -74,9 +77,7 @@ class _EditAddressModalState extends State<EditAddressModal> {
           'accept-language': 'vi',
         },
         options: dio_pkg.Options(
-          headers: {
-            'User-Agent': 'GearHub/1.0 (mobile client)',
-          },
+          headers: {'User-Agent': 'GearHub/1.0 (mobile client)'},
         ),
       );
       if (response.statusCode == 200 && response.data != null) {
@@ -98,12 +99,12 @@ class _EditAddressModalState extends State<EditAddressModal> {
           'accept-language': 'vi',
         },
         options: dio_pkg.Options(
-          headers: {
-            'User-Agent': 'GearHub/1.0 (mobile client)',
-          },
+          headers: {'User-Agent': 'GearHub/1.0 (mobile client)'},
         ),
       );
-      if (response.statusCode == 200 && response.data is List && (response.data as List).isNotEmpty) {
+      if (response.statusCode == 200 &&
+          response.data is List &&
+          (response.data as List).isNotEmpty) {
         final first = response.data[0];
         return {
           'lat': double.parse(first['lat']),
@@ -124,7 +125,12 @@ class _EditAddressModalState extends State<EditAddressModal> {
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
           ),
-          padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+          padding: EdgeInsets.fromLTRB(
+            24,
+            20,
+            24,
+            MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -154,9 +160,17 @@ class _EditAddressModalState extends State<EditAddressModal> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildTextField(_nameController, "Tên người nhận", LucideIcons.user),
+                      _buildTextField(
+                        _nameController,
+                        "Tên người nhận",
+                        LucideIcons.user,
+                      ),
                       const SizedBox(height: 12),
-                      _buildTextField(_phoneController, "Số điện thoại", LucideIcons.phone),
+                      _buildTextField(
+                        _phoneController,
+                        "Số điện thoại",
+                        LucideIcons.phone,
+                      ),
                       const SizedBox(height: 12),
                       _buildTextField(
                         _addressController,
@@ -168,7 +182,8 @@ class _EditAddressModalState extends State<EditAddressModal> {
                             final coords = await _forwardGeocode(val.trim());
                             if (coords != null) {
                               _webViewController?.evaluateJavascript(
-                                source: 'window.updatePin(${coords['lat']}, ${coords['lng']});',
+                                source:
+                                    'window.updatePin(${coords['lat']}, ${coords['lng']});',
                               );
                             }
                           }
@@ -176,16 +191,22 @@ class _EditAddressModalState extends State<EditAddressModal> {
                         onChanged: (val) {
                           Timer? addressDebounce;
                           addressDebounce;
-                          addressDebounce = Timer(const Duration(milliseconds: 1000), () async {
-                            if (val.trim().isNotEmpty) {
-                              final coords = await _forwardGeocode(val.trim());
-                              if (coords != null) {
-                                _webViewController?.evaluateJavascript(
-                                  source: 'window.updatePin(${coords['lat']}, ${coords['lng']});',
+                          addressDebounce = Timer(
+                            const Duration(milliseconds: 1000),
+                            () async {
+                              if (val.trim().isNotEmpty) {
+                                final coords = await _forwardGeocode(
+                                  val.trim(),
                                 );
+                                if (coords != null) {
+                                  _webViewController?.evaluateJavascript(
+                                    source:
+                                        'window.updatePin(${coords['lat']}, ${coords['lng']});',
+                                  );
+                                }
                               }
-                            }
-                          });
+                            },
+                          );
                         },
                       ),
                       const SizedBox(height: 12),
@@ -213,11 +234,12 @@ class _EditAddressModalState extends State<EditAddressModal> {
                         ),
                         clipBehavior: Clip.antiAlias,
                         child: InAppWebView(
-                          gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
-                            Factory<OneSequenceGestureRecognizer>(
-                              () => EagerGestureRecognizer(),
-                            ),
-                          },
+                          gestureRecognizers:
+                              <Factory<OneSequenceGestureRecognizer>>{
+                                Factory<OneSequenceGestureRecognizer>(
+                                  () => EagerGestureRecognizer(),
+                                ),
+                              },
                           initialData: InAppWebViewInitialData(
                             data: """
 <!DOCTYPE html>
@@ -277,12 +299,18 @@ class _EditAddressModalState extends State<EditAddressModal> {
                                 final double lat = args[0];
                                 final double lng = args[1];
                                 debounceTimer?.cancel();
-                                debounceTimer = Timer(const Duration(milliseconds: 600), () async {
-                                  final address = await _reverseGeocode(lat, lng);
-                                  setModalState(() {
-                                    _addressController.text = address;
-                                  });
-                                });
+                                debounceTimer = Timer(
+                                  const Duration(milliseconds: 600),
+                                  () async {
+                                    final address = await _reverseGeocode(
+                                      lat,
+                                      lng,
+                                    );
+                                    setModalState(() {
+                                      _addressController.text = address;
+                                    });
+                                  },
+                                );
                               },
                             );
                           },
@@ -322,8 +350,9 @@ class _EditAddressModalState extends State<EditAddressModal> {
                             );
                             return;
                           }
-                          
-                          String finalAddress = _detailedAddressController.text.trim().isNotEmpty
+
+                          String finalAddress =
+                              _detailedAddressController.text.trim().isNotEmpty
                               ? "${_detailedAddressController.text.trim()}, ${_addressController.text.trim()}"
                               : _addressController.text.trim();
 
@@ -342,7 +371,9 @@ class _EditAddressModalState extends State<EditAddressModal> {
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF3B82F6).withValues(alpha: 0.35),
+                                color: const Color(
+                                  0xFF3B82F6,
+                                ).withValues(alpha: 0.35),
                                 blurRadius: 15,
                                 offset: const Offset(0, 8),
                               ),
@@ -392,12 +423,18 @@ class _EditAddressModalState extends State<EditAddressModal> {
         maxLines: maxLines,
         onSubmitted: onSubmitted,
         onChanged: onChanged,
-        textInputAction: onSubmitted != null ? TextInputAction.search : TextInputAction.next,
+        textInputAction: onSubmitted != null
+            ? TextInputAction.search
+            : TextInputAction.next,
         decoration: InputDecoration(
           icon: Icon(icon, size: 20, color: const Color(0xFF94A3B8)),
           suffixIcon: onSubmitted != null
               ? IconButton(
-                  icon: const Icon(LucideIcons.search, size: 18, color: Color(0xFF3B82F6)),
+                  icon: const Icon(
+                    LucideIcons.search,
+                    size: 18,
+                    color: Color(0xFF3B82F6),
+                  ),
                   onPressed: () => onSubmitted(controller.text),
                 )
               : null,

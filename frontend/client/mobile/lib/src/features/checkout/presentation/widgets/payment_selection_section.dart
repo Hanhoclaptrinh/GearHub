@@ -81,7 +81,9 @@ class PaymentSelectionSection extends StatelessWidget {
             Icon(
               icon,
               size: 24,
-              color: isSelected ? const Color(0xFF3B82F6) : const Color(0xFF475569),
+              color: isSelected
+                  ? const Color(0xFF3B82F6)
+                  : const Color(0xFF475569),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -93,7 +95,9 @@ class PaymentSelectionSection extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
-                      color: isSelected ? const Color(0xFF3B82F6) : const Color(0xFF0F172A),
+                      color: isSelected
+                          ? const Color(0xFF3B82F6)
+                          : const Color(0xFF0F172A),
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -110,7 +114,9 @@ class PaymentSelectionSection extends StatelessWidget {
             Icon(
               isSelected ? LucideIcons.circleCheck : LucideIcons.circle,
               size: 20,
-              color: isSelected ? const Color(0xFF10B981) : const Color(0xFFCBD5E1),
+              color: isSelected
+                  ? const Color(0xFF10B981)
+                  : const Color(0xFFCBD5E1),
             ),
           ],
         ),
