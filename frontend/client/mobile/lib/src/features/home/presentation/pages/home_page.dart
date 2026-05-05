@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
-import 'package:mobile/src/features/home/presentation/pages/search_page.dart';
+import 'package:mobile/src/shared/pages/search_page.dart';
 import '../widgets/hero_section.dart';
 import '../widgets/recently_viewed_section.dart';
 import '../widgets/top_categories_section.dart';

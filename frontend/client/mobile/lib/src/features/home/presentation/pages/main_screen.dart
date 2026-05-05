@@ -10,6 +10,8 @@ import 'package:mobile/src/features/cart/presentation/state/cart_state.dart';
 import 'package:mobile/src/features/profile/presentation/pages/user_profile_page.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
+import 'package:mobile/src/features/explore/presentation/pages/explore_page.dart';
+import 'package:mobile/src/features/vault/presentation/pages/vault_page.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -36,58 +38,13 @@ class MainScreenState extends State<MainScreen> {
     super.dispose();
   }
 
-  static Widget _buildPlaceholderPage(String title) {
-    return Container(
-      decoration: const BoxDecoration(color: Color(0xFFF8FAFC)),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Text(
-                title[0],
-                style: const TextStyle(
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF3B82F6),
-                ),
-              ),
-            ),
-            const SizedBox(height: 32),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Coming Soon...',
-              style: TextStyle(color: Colors.black.withValues(alpha: 0.5)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void onItemTapped(int index) {
     if (_selectedIndex == index) return;
     setState(() {
       _selectedIndex = index;
       _isBottomBarVisible = true; // luon hien khi chuyen tab
     });
-    if (index == 1) {
+    if (index == 2) {
       context.read<CartCubit>().loadCart();
     }
     _pageController.animateToPage(
@@ -101,8 +58,9 @@ class MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       const HomePage(),
+      const ExplorePage(),
       CartPage(isNavVisible: _isBottomBarVisible),
-      _buildPlaceholderPage('Wishlist'),
+      const VaultPage(),
       const UserProfilePage(),
     ];
 
@@ -172,7 +130,7 @@ class CustomBottomNavBar extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      margin: EdgeInsets.fromLTRB(24, 0, 24, padding.bottom + 16),
+      margin: EdgeInsets.fromLTRB(12, 0, 12, padding.bottom + 12),
       decoration: BoxDecoration(
         color: colorScheme.surface.withValues(alpha: 0.70),
         borderRadius: BorderRadius.circular(24),
@@ -199,14 +157,10 @@ class CustomBottomNavBar extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildNavItem(context, 0, LucideIcons.house, 'Trang chủ'),
-                _buildNavItem(context, 1, LucideIcons.shoppingCart, 'Giỏ hàng'),
-                _buildNavItem(context, 2, LucideIcons.heart, 'Wishlist'),
-                _buildNavItem(
-                  context,
-                  3,
-                  LucideIcons.userRound,
-                  'Trang cá nhân',
-                ),
+                _buildNavItem(context, 1, LucideIcons.search, 'Cửa hàng'),
+                _buildNavItem(context, 2, LucideIcons.shoppingCart, 'Giỏ hàng'),
+                _buildNavItem(context, 3, LucideIcons.shieldCheck, 'Ưu đãi'),
+                _buildNavItem(context, 4, LucideIcons.userRound, 'Trang cá nhân'),
               ],
             ),
           ),
@@ -232,8 +186,8 @@ class CustomBottomNavBar extends StatelessWidget {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOutCubic,
         padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 16 : 12,
-          vertical: 10,
+          horizontal: isSelected ? 12 : 8,
+          vertical: 8,
         ),
         decoration: BoxDecoration(
           gradient: isSelected
@@ -262,7 +216,7 @@ class CustomBottomNavBar extends StatelessWidget {
                       ? accentColor
                       : colorScheme.onSurface.withValues(alpha: 0.4),
                 ),
-                if (index == 1)
+                if (index == 2)
                   BlocBuilder<CartCubit, CartState>(
                     builder: (context, state) {
                       int count = 0;
@@ -309,7 +263,7 @@ class CustomBottomNavBar extends StatelessWidget {
                         style: TextStyle(
                           color: accentColor,
                           fontWeight: FontWeight.w800,
-                          fontSize: 12,
+                          fontSize: 11,
                           letterSpacing: -0.2,
                         ),
                       ),

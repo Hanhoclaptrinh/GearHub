@@ -35,6 +35,18 @@ class HomeRemoteDatasource {
     }
   }
 
+  Future<List<CategoryModel>> getParentCategories() async {
+    try {
+      final response = await dio.get('/categories');
+      final List data = response.data;
+      return data
+          .map((json) => CategoryModel.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<List<BrandModel>> getTopBrands() async {
     try {
       final response = await dio.get('/brands/top-brands');

@@ -28,6 +28,7 @@ class HomeCubit extends Cubit<HomeState> {
         _repository.getTopBrands(),
         _repository.getTopRatedProducts(limit: 5),
         _repository.getVaultProducts(),
+        _repository.getParentCategories(),
       ]);
 
       emit(
@@ -38,6 +39,7 @@ class HomeCubit extends Cubit<HomeState> {
           topBrands: results[3] as List<BrandEntity>,
           topRatedProducts: results[4] as List<ProductModel>,
           vaultProducts: results[5] as List<ProductModel>,
+          parentCategories: results[6] as List<CategoryEntity>,
         ),
       );
     } catch (e) {

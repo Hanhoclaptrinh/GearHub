@@ -29,6 +29,15 @@ class HomeRepositoryImpl implements HomeRepository {
   }
 
   @override
+  Future<List<CategoryEntity>> getParentCategories() async {
+    try {
+      return await remoteDatasource.getParentCategories();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
   Future<List<BrandEntity>> getTopBrands() async {
     try {
       return await remoteDatasource.getTopBrands();

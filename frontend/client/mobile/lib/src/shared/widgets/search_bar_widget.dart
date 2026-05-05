@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:mobile/src/features/home/presentation/pages/search_page.dart';
+import 'package:mobile/src/shared/pages/search_page.dart';
 
 class SearchBarWidget extends StatelessWidget {
   const SearchBarWidget({super.key});
