@@ -7,6 +7,7 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { ReplyReviewDto } from './dto/reply-review.dto';
+import { UpdateReviewDto } from './dto/update-review.dto';
 
 @Controller('reviews')
 export class ReviewsController {
@@ -28,8 +29,17 @@ export class ReviewsController {
         @Param('productId', ParseUUIDPipe) productId: string,
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
         @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+        @Query('rating') rating?: string,
+        @Query('hasImage') hasImage?: string,
     ) {
-        return this.reviewService.getProductReviews(productId, page, limit);
+        return this.reviewService.getProductReviews(
+            productId, 
+            page, 
+            limit, 
+            false, 
+            rating ? parseInt(rating) : undefined, 
+            hasImage === 'true'
+        );
     }
 
     @Get('product/:productId/summary')
@@ -47,7 +57,36 @@ export class ReviewsController {
         return this.reviewService.replyReview(id, data);
     }
 
-    @Patch(':id/visibility')
+    @Patch(':id')
+    @UseGuards(JwtAuthGuard)
+    async update(
+        @Request() req,
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() data: UpdateReviewDto,
+    ) {
+        return this.reviewService.updateReview(req.user.userId, id, data);
+    }
+
+    @Get('my-reviews')
+    @UseGuards(JwtAuthGuard)
+    getMyReviews(@Request() req) {
+        return this.reviewService.getUserReviews(req.user.userId);
+    }
+
+    @Get('pending')
+    @UseGuards(JwtAuthGuard)
+    getPendingReviews(@Request() req) {
+        return this.reviewService.getPendingReviews(req.user.userId);
+    }
+
+    @Patch('skip/:orderItemId')
+    @UseGuards(JwtAuthGuard)
+    skipReview(
+        @Request() req,
+        @Param('orderItemId', ParseUUIDPipe) orderItemId: string
+    ) {
+        return this.reviewService.skipReview(req.user.userId, orderItemId);
+    }
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
     async toggleVisibility(@Param('id', ParseUUIDPipe) id: string) {

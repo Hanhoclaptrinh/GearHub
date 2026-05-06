@@ -248,9 +248,11 @@ model OrderItem {
   variantName     String  @map("variant_name") @db.VarChar(255)
   quantity        Int
   priceAtPurchase Decimal @map("price_at_purchase") @db.Decimal(15, 2)
+  isReviewedSkipped Boolean @default(false) @map("is_reviewed_skipped")
 
   order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
+  review         Review?
 
   @@index([orderId])
   @@index([productVariantId])
@@ -339,21 +341,23 @@ model Review {
   id                 String  @id @default(uuid()) @db.VarChar(36)
   userId             String  @map("user_id") @db.VarChar(36)
   productId          String  @map("product_id") @db.VarChar(36)
-  orderId            String? @map("order_id") @db.VarChar(36)
+  orderItemId        String? @unique @map("order_item_id") @db.VarChar(36)
   rating             Int     @default(5)
   comment            String? @db.Text
   reply              String? @db.Text // admin phan hoi
-  isVerifiedPurchase Boolean @default(false) @map("is_verified_purchase") // chi cho review khi da mua don hang
+  isVerifiedPurchase Boolean @default(false) @map("is_verified_purchase")
   isHidden           Boolean  @default(false) @map("is_hidden")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
-  assets  ReviewAsset[]
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItem OrderItem?    @relation(fields: [orderItemId], references: [id])
+  assets    ReviewAsset[]
 
-  @@unique([userId, productId]) // moi user chi duoc review 1 san pham 1 lan
+  @@index([userId])
+  @@index([productId])
   @@map("reviews")
 }
 
