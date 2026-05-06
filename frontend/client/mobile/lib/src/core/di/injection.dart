@@ -33,6 +33,10 @@ import 'package:mobile/src/features/wishlist/presentation/state/wishlist_cubit.d
 import 'package:mobile/src/features/explore/data/datasources/explore_remote_datasource.dart';
 import 'package:mobile/src/features/explore/data/repositories/explore_repository_impl.dart';
 import 'package:mobile/src/features/explore/domain/repositories/explore_repository.dart';
+import 'package:mobile/src/features/product_review/data/datasources/review_remote_datasource.dart';
+import 'package:mobile/src/features/product_review/data/repositories/review_repository_impl.dart';
+import 'package:mobile/src/features/product_review/domain/repositories/review_repository.dart';
+import 'package:mobile/src/features/product_review/presentation/state/review_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final getIt = GetIt.instance;
@@ -150,5 +154,19 @@ Future<void> setupDependencies() async {
     () => ExploreRepositoryImpl(
       remoteDatasource: getIt<ExploreRemoteDatasource>(),
     ),
+  );
+
+  // reviews
+  getIt.registerLazySingleton<ReviewRemoteDatasource>(
+    () => ReviewRemoteDatasource(dio: getIt<ApiClient>().dio),
+  );
+  getIt.registerLazySingleton<ReviewRepository>(
+    () => ReviewRepositoryImpl(
+      remoteDatasource: getIt<ReviewRemoteDatasource>(),
+      authRepository: getIt<AuthRepository>(),
+    ),
+  );
+  getIt.registerFactory<ReviewCubit>(
+    () => ReviewCubit(repository: getIt<ReviewRepository>()),
   );
 }

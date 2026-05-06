@@ -75,7 +75,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
               scrolledUnderElevation: 0,
               centerTitle: true,
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF0F172A), size: 18),
+                icon: const Icon(Icons.arrow_back_ios_new_rounded),
                 onPressed: () => Navigator.pop(context),
               ),
               title: const Text(

@@ -22,3 +22,12 @@ String formatCompactNumber(int number) {
   }
   return number.toString();
 }
+
+String formatDate(DateTime date) {
+  final now = DateTime.now();
+  final difference = now.difference(date);
+  if (difference.inDays == 0) return 'Hôm nay';
+  if (difference.inDays == 1) return 'Hôm qua';
+  if (difference.inDays < 7) return '${difference.inDays} ngày trước';
+  return '${date.day}/${date.month}/${date.year}';
+}
