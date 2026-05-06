@@ -11,7 +11,7 @@ import 'package:mobile/src/features/profile/presentation/pages/user_profile_page
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:mobile/src/features/explore/presentation/pages/explore_page.dart';
-import 'package:mobile/src/features/vault/presentation/pages/vault_page.dart';
+import 'package:mobile/src/features/promotions/presentation/pages/promotions_page.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -60,7 +60,7 @@ class MainScreenState extends State<MainScreen> {
       const HomePage(),
       const ExplorePage(),
       CartPage(isNavVisible: _isBottomBarVisible),
-      const VaultPage(),
+      const PromotionsPage(),
       const UserProfilePage(),
     ];
 
@@ -160,7 +160,7 @@ class CustomBottomNavBar extends StatelessWidget {
                 _buildNavItem(context, 1, LucideIcons.search, 'Cửa hàng'),
                 _buildNavItem(context, 2, LucideIcons.shoppingCart, 'Giỏ hàng'),
                 _buildNavItem(context, 3, LucideIcons.shieldCheck, 'Ưu đãi'),
-                _buildNavItem(context, 4, LucideIcons.userRound, 'Trang cá nhân'),
+                _buildNavItem(context, 4, LucideIcons.userRound, 'Hồ sơ'),
               ],
             ),
           ),

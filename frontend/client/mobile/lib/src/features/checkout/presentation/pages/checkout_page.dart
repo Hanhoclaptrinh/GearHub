@@ -100,7 +100,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   double get _shipping => 0.0;
   double get _discount => 0.0;
-  double get _total => _subtotal + _shipping - _discount;
+  double get _vat => _subtotal * 0.1;
+  double get _total => _subtotal + _shipping - _discount + _vat;
 
   @override
   Widget build(BuildContext context) {
@@ -196,6 +197,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                               subtotal: _subtotal,
                               shipping: _shipping,
                               discount: _discount,
+                              vat: _vat,
                               total: _total,
                             ),
                             const SizedBox(height: 140),

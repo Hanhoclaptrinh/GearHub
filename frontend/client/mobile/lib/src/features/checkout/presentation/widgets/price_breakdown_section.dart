@@ -5,6 +5,7 @@ class PriceBreakdownSection extends StatelessWidget {
   final double subtotal;
   final double shipping;
   final double discount;
+  final double vat;
   final double total;
 
   const PriceBreakdownSection({
@@ -12,6 +13,7 @@ class PriceBreakdownSection extends StatelessWidget {
     required this.subtotal,
     required this.shipping,
     required this.discount,
+    required this.vat,
     required this.total,
   });
 
@@ -42,6 +44,8 @@ class PriceBreakdownSection extends StatelessWidget {
             "-${formatVND(discount)}",
             valueColor: const Color(0xFF10B981),
           ),
+          const SizedBox(height: 12),
+          _priceRow("Thuế VAT (10%)", formatVND(vat)),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 20),
             child: Divider(height: 1, color: Color(0xFFF1F5F9)),

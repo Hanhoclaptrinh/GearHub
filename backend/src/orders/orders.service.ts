@@ -57,11 +57,15 @@ export class OrdersService {
                 };
             });
 
+            // tinh thue VAT 10%
+            const vatAmount = totalAmount * 0.1;
+            const finalTotal = totalAmount + vatAmount;
+
             // tao order
             const order = await tx.order.create({
                 data: {
                     userId,
-                    totalAmount,
+                    totalAmount: finalTotal,
                     ...shippingInfor,
                     items: {
                         create: orderItemsData
