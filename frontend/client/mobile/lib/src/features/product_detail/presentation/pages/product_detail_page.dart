@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -241,11 +242,12 @@ class _ProductDetailViewState extends State<ProductDetailView> {
         imageToSave = currentVariant.imageUrl!;
       }
 
+      final attributesJson = jsonEncode(_selectedAttributes);
       final entryToSave =
-          '${product.id}|${product.name}|$priceToSave|$imageToSave';
+          '${product.id}|${product.name}|$priceToSave|$imageToSave|$attributesJson';
 
       currentList.removeWhere(
-        (e) => e.startsWith('${product.id}|${product.name}|'),
+        (e) => e.startsWith('${product.id}|'),
       );
       currentList.insert(0, entryToSave);
 

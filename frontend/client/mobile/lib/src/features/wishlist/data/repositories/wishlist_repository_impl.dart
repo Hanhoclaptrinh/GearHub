@@ -15,4 +15,9 @@ class WishlistRepositoryImpl implements WishlistRepository {
   Future<bool> checkIsFavorite(String productId) async {
     return remoteDatasource.checkIsFavorite(productId);
   }
+
+  @override
+  Future<Map<String, dynamic>> getWishlist({int page = 1, int limit = 20}) async {
+    return remoteDatasource.getWishlist(page: page, limit: limit);
+  }
 }

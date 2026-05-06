@@ -1,11 +1,17 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:mobile/src/core/utils/formatter_utils.dart';
+import 'package:mobile/src/shared/models/product_model.dart';
+import 'package:mobile/src/shared/widgets/small_product_card.dart';
+import 'package:mobile/src/shared/widgets/stock_limit_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/features/product_detail/data/datasources/product_detail_remote_datasource.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/src/features/wishlist/presentation/state/wishlist_cubit.dart';
+import 'package:mobile/src/features/wishlist/presentation/state/wishlist_state.dart';
+import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 
 class RecentlyViewedSection extends StatefulWidget {
   const RecentlyViewedSection({super.key});
@@ -15,7 +21,7 @@ class RecentlyViewedSection extends StatefulWidget {
 }
 
 class _RecentlyViewedSectionState extends State<RecentlyViewedSection> {
-  List<Map<String, String>> _recentProducts = [];
+  List<Map<String, dynamic>> _recentProducts = [];
 
   @override
   void initState() {
@@ -27,16 +33,25 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> {
     try {
       final prefs = getIt<SharedPreferences>();
       final List<String> list = prefs.getStringList('recently_viewed') ?? [];
-      final List<Map<String, String>> parsed = [];
+      final List<Map<String, dynamic>> parsed = [];
 
       for (final e in list) {
         final parts = e.split('|');
         if (parts.length >= 4) {
+          Map<String, String> attributes = {};
+          if (parts.length >= 5) {
+            try {
+              attributes = Map<String, String>.from(jsonDecode(parts[4]));
+            } catch (e) {
+              debugPrint('Error decoding attributes: $e');
+            }
+          }
           parsed.add({
             'id': parts[0],
             'name': parts[1],
             'price': parts[2],
             'image': parts[3],
+            'attributes': attributes,
           });
         }
       }
@@ -101,107 +116,135 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> {
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 230,
+          height: 280,
           child: OverflowBox(
             maxWidth: MediaQuery.of(context).size.width,
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               clipBehavior: Clip.none,
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: _recentProducts.length,
-            itemBuilder: (context, index) {
-              final prod = _recentProducts[index];
-              final double priceVal =
-                  double.tryParse(prod['price'] ?? '0') ?? 0;
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: _recentProducts.length,
+              itemBuilder: (context, index) {
+                final prod = _recentProducts[index];
+                final double priceVal =
+                    double.tryParse(prod['price']?.toString() ?? '0') ?? 0;
+                final attributes =
+                    (prod['attributes'] as Map<dynamic, dynamic>?)
+                        ?.cast<String, String>() ??
+                    {};
 
-              return GestureDetector(
-                onTap: () async {
-                  HapticFeedback.mediumImpact();
-                  try {
-                    final pDetail = await getIt<ProductDetailRemoteDatasource>()
-                        .getProductDetail(prod['id']!);
-                    if (context.mounted) {
-                      Navigator.of(context)
-                          .push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  ProductDetailPage(product: pDetail),
-                            ),
-                          )
-                          .then((_) => _loadRecentlyViewed());
-                    }
-                  } catch (e) {
-                    debugPrint('Error fetching product detail on click: $e');
-                  }
-                },
-                child: Container(
-                  width: 156,
-                  margin: const EdgeInsets.only(right: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        height: 164,
-                        width: 156,
-                        decoration: BoxDecoration(
-                          color: const Color.fromARGB(110, 221, 221, 221),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        clipBehavior: Clip.none,
-                        child: Center(
-                          child:
-                              prod['image'] != null && prod['image']!.isNotEmpty
-                              ? CachedNetworkImage(
-                                  imageUrl: prod['image']!,
-                                  fit: BoxFit.contain,
-                                  height: 130,
-                                  width: 130,
-                                  placeholder: (context, url) =>
-                                      const CircularProgressIndicator(
-                                        strokeWidth: 2,
+                final productModel = ProductModel(
+                  id: prod['id']!,
+                  name: prod['name']!,
+                  price: priceVal,
+                  image: prod['image']!,
+                  tagline: '',
+                  description: '',
+                );
+
+                return Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: BlocBuilder<WishlistCubit, WishlistState>(
+                    builder: (context, state) {
+                      final isFav =
+                          state is WishlistLoaded &&
+                          state.products.any((p) => p.id == productModel.id);
+
+                      return SmallProductCard(
+                        product: productModel,
+                        isFavorite: isFav,
+                        heroTag: 'recent_${productModel.id}_$index',
+                        onTap: () async {
+                          HapticFeedback.mediumImpact();
+                          try {
+                            final pDetail =
+                                await getIt<ProductDetailRemoteDatasource>()
+                                    .getProductDetail(prod['id']!);
+                            if (context.mounted) {
+                              Navigator.of(context)
+                                  .push(
+                                    MaterialPageRoute(
+                                      builder: (_) => ProductDetailPage(
+                                        product: pDetail,
+                                        initialAttributes: attributes,
                                       ),
-                                  errorWidget: (context, url, error) =>
-                                      const Icon(
-                                        Icons.image_not_supported_outlined,
-                                        color: Color(0xFF9CA3AF),
-                                      ),
-                                )
-                              : const Icon(
-                                  Icons.image_not_supported_outlined,
-                                  color: Color(0xFF9CA3AF),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        prod['name'] ?? '',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF0A0A0F),
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        formatVND(priceVal),
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF0A0A0F),
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                    ],
+                                    ),
+                                  )
+                                  .then((_) => _loadRecentlyViewed());
+                            }
+                          } catch (e) {
+                            debugPrint(
+                              'Error fetching product detail on click: $e',
+                            );
+                          }
+                        },
+                        onFavoriteTap: () {
+                          context.read<WishlistCubit>().toggleWishlist(
+                            productModel.id,
+                          );
+                        },
+                        onCartTap: () async {
+                          try {
+                            final pDetail =
+                                await getIt<ProductDetailRemoteDatasource>()
+                                    .getProductDetail(productModel.id);
+                            if (context.mounted) {
+                              if (pDetail.variants.isNotEmpty) {
+                                final targetVariant = pDetail.variants
+                                    .firstWhere((v) {
+                                      if (attributes.isEmpty) return true;
+                                      return attributes.entries.every(
+                                        (entry) =>
+                                            v.attributes[entry.key]
+                                                ?.toString() ==
+                                            entry.value,
+                                      );
+                                    }, orElse: () => pDetail.variants.first);
+
+                                // check stock limit
+                                final cartCubit = context.read<CartCubit>();
+                                final existingItem = cartCubit.state.cart?.items
+                                    .where(
+                                      (i) =>
+                                          i.productVariant.id ==
+                                          targetVariant.id,
+                                    )
+                                    .firstOrNull;
+
+                                final currentQty = existingItem?.quantity ?? 0;
+
+                                if (currentQty + 1 > targetVariant.stock) {
+                                  StockLimitDialog.show(
+                                    context,
+                                    stockCount: targetVariant.stock,
+                                    currentQty: currentQty,
+                                    message:
+                                        'Số lượng sản phẩm trong kho không đủ để thêm vào giỏ hàng.\n\nKho hiện còn ${targetVariant.stock} sản phẩm và bạn đã có $currentQty sản phẩm trong giỏ.',
+                                  );
+                                  return;
+                                }
+
+                                cartCubit.addToCart(targetVariant, pDetail, 1);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Đã thêm vào giỏ hàng'),
+                                    duration: Duration(seconds: 1),
+                                  ),
+                                );
+                              }
+                            }
+                          } catch (e) {
+                            debugPrint('Error adding to cart from recent: $e');
+                          }
+                        },
+                      );
+                    },
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
         ),
       ],
     );

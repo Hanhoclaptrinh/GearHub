@@ -13,16 +13,23 @@ import 'package:mobile/src/features/product_detail/data/datasources/product_deta
 import 'package:mobile/src/features/product_detail/data/repositories/product_detail_repository_impl.dart';
 import 'package:mobile/src/features/product_detail/domain/repositories/product_detail_repository.dart';
 import 'package:mobile/src/features/product_detail/presentation/state/product_detail_cubit.dart';
-import 'package:mobile/src/features/cart/data/datasources/cart_remote_datasource.dart' as mobile_cart_remote;
-import 'package:mobile/src/features/cart/data/datasources/cart_local_datasource.dart' as mobile_cart_local;
-import 'package:mobile/src/features/cart/data/repositories/cart_repository_impl.dart' as mobile_cart_repo_impl;
-import 'package:mobile/src/features/cart/domain/repositories/cart_repository.dart' as mobile_cart_repo;
-import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart' as mobile_cart_cubit;
-import 'package:mobile/src/features/checkout/presentation/state/checkout_cubit.dart' as mobile_checkout_cubit;
+import 'package:mobile/src/features/cart/data/datasources/cart_remote_datasource.dart'
+    as mobile_cart_remote;
+import 'package:mobile/src/features/cart/data/datasources/cart_local_datasource.dart'
+    as mobile_cart_local;
+import 'package:mobile/src/features/cart/data/repositories/cart_repository_impl.dart'
+    as mobile_cart_repo_impl;
+import 'package:mobile/src/features/cart/domain/repositories/cart_repository.dart'
+    as mobile_cart_repo;
+import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart'
+    as mobile_cart_cubit;
+import 'package:mobile/src/features/checkout/presentation/state/checkout_cubit.dart'
+    as mobile_checkout_cubit;
 import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
 import 'package:mobile/src/features/wishlist/data/datasources/wishlist_remote_datasource.dart';
 import 'package:mobile/src/features/wishlist/data/repositories/wishlist_repository_impl.dart';
 import 'package:mobile/src/features/wishlist/domain/repositories/wishlist_repository.dart';
+import 'package:mobile/src/features/wishlist/presentation/state/wishlist_cubit.dart';
 import 'package:mobile/src/features/explore/data/datasources/explore_remote_datasource.dart';
 import 'package:mobile/src/features/explore/data/repositories/explore_repository_impl.dart';
 import 'package:mobile/src/features/explore/domain/repositories/explore_repository.dart';
@@ -34,7 +41,6 @@ Future<void> setupDependencies() async {
   // core
   final sharedPreferences = await SharedPreferences.getInstance();
   getIt.registerLazySingleton<SharedPreferences>(() => sharedPreferences);
-
 
   getIt.registerLazySingleton<SecureStorageService>(
     () => SecureStorageService(),
@@ -85,18 +91,20 @@ Future<void> setupDependencies() async {
   );
 
   getIt.registerFactory<ProductDetailCubit>(
-    () => ProductDetailCubit(
-      repository: getIt<ProductDetailRepository>(),
-    ),
+    () => ProductDetailCubit(repository: getIt<ProductDetailRepository>()),
   );
 
   // cart
   getIt.registerLazySingleton<mobile_cart_remote.CartRemoteDataSource>(
-    () => mobile_cart_remote.CartRemoteDataSourceImpl(apiClient: getIt<ApiClient>()),
+    () => mobile_cart_remote.CartRemoteDataSourceImpl(
+      apiClient: getIt<ApiClient>(),
+    ),
   );
 
   getIt.registerLazySingleton<mobile_cart_local.CartLocalDataSource>(
-    () => mobile_cart_local.CartLocalDataSourceImpl(sharedPreferences: getIt<SharedPreferences>()),
+    () => mobile_cart_local.CartLocalDataSourceImpl(
+      sharedPreferences: getIt<SharedPreferences>(),
+    ),
   );
 
   getIt.registerLazySingleton<mobile_cart_repo.CartRepository>(
@@ -108,7 +116,9 @@ Future<void> setupDependencies() async {
   );
 
   getIt.registerLazySingleton<mobile_cart_cubit.CartCubit>(
-    () => mobile_cart_cubit.CartCubit(repository: getIt<mobile_cart_repo.CartRepository>()),
+    () => mobile_cart_cubit.CartCubit(
+      repository: getIt<mobile_cart_repo.CartRepository>(),
+    ),
   );
 
   getIt.registerFactory<mobile_checkout_cubit.CheckoutCubit>(
@@ -124,7 +134,12 @@ Future<void> setupDependencies() async {
     () => WishlistRemoteDatasource(dio: getIt<ApiClient>().dio),
   );
   getIt.registerLazySingleton<WishlistRepository>(
-    () => WishlistRepositoryImpl(remoteDatasource: getIt<WishlistRemoteDatasource>()),
+    () => WishlistRepositoryImpl(
+      remoteDatasource: getIt<WishlistRemoteDatasource>(),
+    ),
+  );
+  getIt.registerFactory<WishlistCubit>(
+    () => WishlistCubit(repository: getIt<WishlistRepository>()),
   );
 
   // explore
@@ -132,6 +147,8 @@ Future<void> setupDependencies() async {
     () => ExploreRemoteDatasource(dio: getIt<ApiClient>().dio),
   );
   getIt.registerLazySingleton<ExploreRepository>(
-    () => ExploreRepositoryImpl(remoteDatasource: getIt<ExploreRemoteDatasource>()),
+    () => ExploreRepositoryImpl(
+      remoteDatasource: getIt<ExploreRemoteDatasource>(),
+    ),
   );
 }

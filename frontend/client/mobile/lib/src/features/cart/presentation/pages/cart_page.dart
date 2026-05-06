@@ -476,8 +476,12 @@ class _CartPageState extends State<CartPage> {
                           onLongPress: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    ProductDetailPage(product: item.product),
+                                builder: (context) => ProductDetailPage(
+                                  product: item.product,
+                                  initialAttributes: item.productVariant.attributes.map(
+                                    (k, v) => MapEntry(k, v.toString()),
+                                  ),
+                                ),
                               ),
                             );
                           },

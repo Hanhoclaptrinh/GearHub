@@ -8,6 +8,7 @@ import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:mobile/src/features/home/presentation/pages/main_screen.dart';
 
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
+import 'package:mobile/src/features/wishlist/presentation/state/wishlist_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,8 +35,11 @@ class GearHubApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<AuthCubit>(create: (_) => getIt<AuthCubit>()..checkAuthStatus()),
+        BlocProvider<AuthCubit>(
+          create: (_) => getIt<AuthCubit>()..checkAuthStatus(),
+        ),
         BlocProvider<CartCubit>(create: (_) => getIt<CartCubit>()..loadCart()),
+        BlocProvider<WishlistCubit>(create: (_) => getIt<WishlistCubit>()..fetchWishlist()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
