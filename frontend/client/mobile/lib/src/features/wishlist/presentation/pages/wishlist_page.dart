@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/core/di/injection.dart';
+import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
+import 'package:mobile/src/features/product_detail/data/datasources/product_detail_remote_datasource.dart';
+import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 import 'package:mobile/src/features/wishlist/presentation/state/wishlist_cubit.dart';
 import 'package:mobile/src/features/wishlist/presentation/state/wishlist_state.dart';
-import 'package:mobile/src/features/wishlist/presentation/widgets/wishlist_product_card.dart';
 import 'package:mobile/src/shared/widgets/product_card_shimmer.dart';
+import 'package:mobile/src/shared/widgets/small_product_card.dart';
+import 'package:mobile/src/shared/widgets/stock_limit_dialog.dart';
 
 class WishlistPage extends StatefulWidget {
   const WishlistPage({super.key});
@@ -80,19 +86,20 @@ class _WishlistPageState extends State<WishlistPage> {
             }
 
             return RefreshIndicator(
-              onRefresh: () => context.read<WishlistCubit>().fetchWishlist(refresh: true),
+              onRefresh: () =>
+                  context.read<WishlistCubit>().fetchWishlist(refresh: true),
               color: const Color(0xFF3B82F6),
               child: GridView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.all(20),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  childAspectRatio: 0.72,
+                  childAspectRatio: 0.6,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
                 ),
-                itemCount: state.hasReachedMax 
-                    ? state.products.length 
+                itemCount: state.hasReachedMax
+                    ? state.products.length
                     : state.products.length + 1,
                 itemBuilder: (context, index) {
                   if (index >= state.products.length) {
@@ -103,7 +110,81 @@ class _WishlistPageState extends State<WishlistPage> {
                       ),
                     );
                   }
-                  return WishlistProductCard(product: state.products[index]);
+
+                  final productModel = state.products[index];
+
+                  return SmallProductCard(
+                    product: productModel,
+                    isFavorite: true,
+                    heroTag: 'wishlist_${productModel.id}_$index',
+                    onTap: () async {
+                      HapticFeedback.mediumImpact();
+                      try {
+                        final pDetail =
+                            await getIt<ProductDetailRemoteDatasource>()
+                                .getProductDetail(productModel.id);
+                        if (context.mounted) {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ProductDetailPage(
+                                product: pDetail,
+                              ),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        debugPrint('Error fetching product detail: $e');
+                      }
+                    },
+                    onFavoriteTap: () {
+                      context.read<WishlistCubit>().toggleWishlist(
+                        productModel.id,
+                      );
+                    },
+                    onCartTap: () async {
+                      try {
+                        final pDetail =
+                            await getIt<ProductDetailRemoteDatasource>()
+                                .getProductDetail(productModel.id);
+                        if (context.mounted) {
+                          if (pDetail.variants.isNotEmpty) {
+                            final targetVariant = pDetail.variants.first;
+
+                            final cartCubit = context.read<CartCubit>();
+                            final existingItem = cartCubit.state.cart?.items
+                                .where(
+                                  (i) =>
+                                      i.productVariant.id == targetVariant.id,
+                                )
+                                .firstOrNull;
+
+                            final currentQty = existingItem?.quantity ?? 0;
+
+                            if (currentQty + 1 > targetVariant.stock) {
+                              StockLimitDialog.show(
+                                context,
+                                stockCount: targetVariant.stock,
+                                currentQty: currentQty,
+                                message:
+                                    'Số lượng sản phẩm trong kho không đủ để thêm vào giỏ hàng.\n\nKho hiện còn ${targetVariant.stock} sản phẩm và bạn đã có $currentQty sản phẩm trong giỏ.',
+                              );
+                              return;
+                            }
+
+                            cartCubit.addToCart(targetVariant, pDetail, 1);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Đã thêm vào giỏ hàng'),
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        debugPrint('Error adding to cart from wishlist: $e');
+                      }
+                    },
+                  );
                 },
               ),
             );
@@ -120,7 +201,7 @@ class _WishlistPageState extends State<WishlistPage> {
       padding: const EdgeInsets.all(20),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.72,
+        childAspectRatio: 0.6,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),

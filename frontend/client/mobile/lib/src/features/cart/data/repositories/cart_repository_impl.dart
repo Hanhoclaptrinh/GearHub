@@ -24,8 +24,17 @@ class CartRepositoryImpl implements CartRepository {
     try {
       final isLoggedIn = await authRepository.isLoggedIn();
       if (isLoggedIn) {
-        final cart = await remoteDataSource.getCart();
-        return right(cart);
+        try {
+          final cart = await remoteDataSource.getCart();
+          return right(cart);
+        } catch (e) {
+          if (e.toString().contains('401')) {
+            await authRepository.logout();
+            final localCart = await localDataSource.getCart();
+            return right(localCart);
+          }
+          rethrow;
+        }
       } else {
         final cart = await localDataSource.getCart();
         return right(cart);
@@ -40,8 +49,17 @@ class CartRepositoryImpl implements CartRepository {
     try {
       final isLoggedIn = await authRepository.isLoggedIn();
       if (isLoggedIn) {
-        final count = await remoteDataSource.getCartCount();
-        return right(count);
+        try {
+          final count = await remoteDataSource.getCartCount();
+          return right(count);
+        } catch (e) {
+          if (e.toString().contains('401')) {
+            await authRepository.logout();
+            final cart = await localDataSource.getCart();
+            return right(cart.items.length);
+          }
+          rethrow;
+        }
       } else {
         final cart = await localDataSource.getCart();
         return right(cart.items.length);
@@ -57,8 +75,17 @@ class CartRepositoryImpl implements CartRepository {
     try {
       final isLoggedIn = await authRepository.isLoggedIn();
       if (isLoggedIn) {
-        final cart = await remoteDataSource.addToCart(variant.id, quantity);
-        return right(cart);
+        try {
+          final cart = await remoteDataSource.addToCart(variant.id, quantity);
+          return right(cart);
+        } catch (e) {
+          if (e.toString().contains('401')) {
+            await authRepository.logout();
+            final cart = await localDataSource.addToCart(variant, product, quantity);
+            return right(cart);
+          }
+          rethrow;
+        }
       } else {
         final cart = await localDataSource.addToCart(variant, product, quantity);
         return right(cart);
@@ -73,8 +100,17 @@ class CartRepositoryImpl implements CartRepository {
     try {
       final isLoggedIn = await authRepository.isLoggedIn();
       if (isLoggedIn) {
-        final cart = await remoteDataSource.updateQuantity(itemId, quantity);
-        return right(cart);
+        try {
+          final cart = await remoteDataSource.updateQuantity(itemId, quantity);
+          return right(cart);
+        } catch (e) {
+          if (e.toString().contains('401')) {
+            await authRepository.logout();
+            final cart = await localDataSource.updateQuantity(itemId, quantity);
+            return right(cart);
+          }
+          rethrow;
+        }
       } else {
         final cart = await localDataSource.updateQuantity(itemId, quantity);
         return right(cart);

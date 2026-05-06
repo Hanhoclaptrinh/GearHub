@@ -10,7 +10,6 @@ import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:mobile/src/features/profile/presentation/widgets/order_status_card.dart';
 import 'package:mobile/src/features/profile/presentation/widgets/profile_header.dart';
 import 'package:mobile/src/features/profile/presentation/widgets/profile_menu_card.dart';
-import 'package:mobile/src/features/profile/presentation/widgets/profile_stats.dart';
 import 'package:mobile/src/features/profile/presentation/widgets/ultilities_grid.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
 
@@ -67,8 +66,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         children: [
                           ProfileHeader(user: user),
                           if (isLoggedIn) ...[
-                            const SizedBox(height: 24),
-                            const ProfileStats(),
                             const SizedBox(height: 24),
                             const OrderStatusCard(),
                             const SizedBox(height: 24),

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/features/wishlist/presentation/pages/wishlist_page.dart';
+import 'package:mobile/src/features/wishlist/presentation/state/wishlist_cubit.dart';
+import 'package:mobile/src/features/wishlist/presentation/state/wishlist_state.dart';
 
 class UtilitiesGrid extends StatelessWidget {
   const UtilitiesGrid({super.key});
@@ -64,6 +68,47 @@ class UtilitiesGrid extends StatelessWidget {
                 bgColor: Colors.white,
                 textColor: const Color(0xFF0A0A0F),
               ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: BlocBuilder<WishlistCubit, WishlistState>(
+                builder: (context, state) {
+                  final favoriteCount = (state is WishlistLoaded) 
+                      ? state.products.length 
+                      : 0;
+                  
+                  return GestureDetector(
+                    onTap: () {
+                      try {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const WishlistPage(),
+                          ),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Không thể mở danh sách yêu thích')),
+                        );
+                      }
+                    },
+                    child: _buildGridCard(
+                      icon: LucideIcons.heart,
+                      title: 'Yêu thích',
+                      subtitle: '$favoriteCount sản phẩm',
+                      gradient: const [Color(0xFFEC4899), Color(0xFFF43F5E)],
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: SizedBox.shrink(),
             ),
           ],
         ),
