@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/di/injection.dart';
@@ -10,6 +11,15 @@ import '../../../../shared/widgets/product_card.dart';
 import '../../../../shared/widgets/product_card_shimmer.dart';
 import '../../../../shared/widgets/product_filter_drawer.dart';
 
+const _bg = Color(0xFF0A0A10);
+const _surfaceAlt = Color(0xFF1C1C28);
+const _border = Color(0xFF2A2A38);
+const _accent = Color(0xFFF59E0B);
+const _accentSoft = Color(0x18F59E0B);
+const _textHigh = Color(0xFFF1F1F5);
+const _textMid = Color(0xFF9191A8);
+const _textLow = Color(0xFF4A4A62);
+
 class CategoryDetailPage extends StatelessWidget {
   final CategoryEntity category;
 
@@ -18,7 +28,7 @@ class CategoryDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) =>
+      create: (_) =>
           CategoryDetailCubit(repository: getIt<ExploreRepository>())
             ..loadCategoryProducts(category),
       child: const _CategoryDetailView(),
@@ -62,7 +72,7 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
       builder: (context, state) {
         return Scaffold(
           key: _scaffoldKey,
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          backgroundColor: _bg,
           endDrawer: state is CategoryDetailLoaded
               ? ProductFilterDrawer(
                   initialMinPrice: state.minPrice,
@@ -70,10 +80,10 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
                   initialSortBy: state.sortBy,
                   onApply: (min, max, sort) {
                     context.read<CategoryDetailCubit>().applyFilters(
-                          minPrice: min,
-                          maxPrice: max,
-                          sortBy: sort,
-                        );
+                      minPrice: min,
+                      maxPrice: max,
+                      sortBy: sort,
+                    );
                   },
                 )
               : null,
@@ -82,39 +92,55 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
             physics: const BouncingScrollPhysics(),
             slivers: [
               SliverAppBar(
-                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                backgroundColor: _bg,
+                surfaceTintColor: Colors.transparent,
                 floating: true,
-                pinned: true,
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 automaticallyImplyLeading: false,
                 centerTitle: true,
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                  onPressed: () => Navigator.pop(context),
+                systemOverlayStyle: SystemUiOverlayStyle.light,
+                leading: Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: _textMid,
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                  ),
                 ),
                 title: Text(
-                  state is CategoryDetailLoaded ? state.category.title : 'Chi tiết',
+                  state is CategoryDetailLoaded
+                      ? state.category.title
+                      : 'Chi tiết',
                   style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+                    color: _textHigh,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
                   ),
                 ),
                 actions: [
-                  IconButton(
-                    icon: const Icon(LucideIcons.messageCircle, color: Colors.black, size: 22),
-                    onPressed: () {},
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: IconButton(
+                      icon: const Icon(
+                        LucideIcons.messageCircle,
+                        color: _textMid,
+                      ),
+                      onPressed: () {},
+                    ),
                   ),
                 ],
               ),
 
               if (state is CategoryDetailLoading)
                 SliverPadding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
-                      (context, index) => const ProductCardShimmer(),
+                      (_, __) => const ProductCardShimmer(),
                       childCount: 5,
                     ),
                   ),
@@ -122,46 +148,94 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
 
               if (state is CategoryDetailError)
                 SliverFillRemaining(
-                  child: Center(child: Text(state.message)),
-                ),
-
-              if (state is CategoryDetailLoaded) ...[
-                // sub-cate
-                SliverToBoxAdapter(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: _buildSubCategories(context, state),
-                  ),
-                ),
-
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _StickySummaryDelegate(
-                    child: Container(
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Tổng ${state.products.length}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.black,
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
-                            icon: const Icon(LucideIcons.funnel, size: 20),
-                          ),
-                        ],
-                      ),
+                  child: Center(
+                    child: Text(
+                      state.message,
+                      style: const TextStyle(color: _textMid),
                     ),
                   ),
                 ),
 
-                // prod list
+              // sub cate
+              if (state is CategoryDetailLoaded) ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: _buildSubCategories(context, state),
+                  ),
+                ),
+
+                SliverToBoxAdapter(
+                  child: Container(
+                    color: _bg,
+                    padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+                    child: Row(
+                      children: [
+                        RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '${state.products.length}',
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w900,
+                                  color: _textHigh,
+                                ),
+                              ),
+                              const TextSpan(
+                                text: ' sản phẩm',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: _textMid,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            _scaffoldKey.currentState?.openEndDrawer();
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _surfaceAlt,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: _border),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  LucideIcons.settings2,
+                                  size: 14,
+                                  color: _textMid,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Lọc',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: _textMid,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // prods
                 if (state.products.isEmpty && !state.isLoadingMore)
                   SliverFillRemaining(
                     hasScrollBody: false,
@@ -169,19 +243,26 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
                   )
                 else
                   SliverPadding(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
-                        (context, index) {
+                        (_, index) {
                           if (index == state.products.length) {
                             return const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              child: Center(child: CircularProgressIndicator(color: Colors.black)),
+                              padding: EdgeInsets.symmetric(vertical: 24),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 1.5,
+                                  color: _textLow,
+                                ),
+                              ),
                             );
                           }
                           return ProductCard(product: state.products[index]);
                         },
-                        childCount: state.products.length + (state.isLoadingMore ? 1 : 0),
+                        childCount:
+                            state.products.length +
+                            (state.isLoadingMore ? 1 : 0),
                       ),
                     ),
                   ),
@@ -190,70 +271,6 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context, CategoryDetailLoaded state) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Icon(
-              LucideIcons.packageOpen,
-              size: 64,
-              color: Colors.black.withValues(alpha: 0.2),
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Chưa có sản phẩm nào',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Chúng tôi đang cập nhật hàng mới,\nfen quay lại sau nhé!',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.black.withValues(alpha: 0.5),
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 32),
-          if (state.selectedSubCategory != null)
-            ElevatedButton(
-              onPressed: () => context.read<CategoryDetailCubit>().filterBySubCategory(null),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Xem tất cả sản phẩm',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-              ),
-            ),
-        ],
-      ),
     );
   }
 
@@ -271,17 +288,23 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
         itemBuilder: (context, index) {
           final isAll = index == 0;
           final item = isAll ? null : subCates[index - 1];
-          final isSelected = isAll ? state.selectedSubCategory == null : state.selectedSubCategory?.id == item?.id;
+          final isSelected = isAll
+              ? state.selectedSubCategory == null
+              : state.selectedSubCategory?.id == item?.id;
 
           return GestureDetector(
-            onTap: () => context.read<CategoryDetailCubit>().filterBySubCategory(item),
-            child: Container(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              context.read<CategoryDetailCubit>().filterBySubCategory(item);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.transparent : Colors.white,
+                color: isSelected ? _accentSoft : _surfaceAlt,
                 border: Border.all(
-                  color: isSelected ? const Color(0xFF3B82F6) : const Color(0xFFE5E5EA),
-                  width: 1.5,
+                  color: isSelected ? _accent.withValues(alpha: 0.5) : _border,
+                  width: 1,
                 ),
                 borderRadius: BorderRadius.circular(18),
               ),
@@ -289,7 +312,7 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
                 child: Text(
                   isAll ? 'Tất cả' : item!.title,
                   style: TextStyle(
-                    color: isSelected ? const Color(0xFF3B82F6) : const Color(0xFF3C3C43),
+                    color: isSelected ? _accent : _textMid,
                     fontSize: 13,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   ),
@@ -301,22 +324,73 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
       ),
     );
   }
-}
 
-class _StickySummaryDelegate extends SliverPersistentHeaderDelegate {
-  final Widget child;
-  _StickySummaryDelegate({required this.child});
-
-  @override
-  double get minExtent => 50;
-  @override
-  double get maxExtent => 50;
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return child;
+  Widget _buildEmptyState(BuildContext context, CategoryDetailLoaded state) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(28),
+              decoration: BoxDecoration(
+                color: _surfaceAlt,
+                shape: BoxShape.circle,
+                border: Border.all(color: _border),
+              ),
+              child: const Icon(
+                LucideIcons.packageOpen,
+                size: 52,
+                color: _textLow,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Chưa có sản phẩm nào',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: _textHigh,
+                letterSpacing: -0.2,
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Chúng tôi đang cập nhật hàng mới,\nfen quay lại sau nhé!',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: _textMid, height: 1.6),
+            ),
+            if (state.selectedSubCategory != null) ...[
+              const SizedBox(height: 28),
+              GestureDetector(
+                onTap: () => context
+                    .read<CategoryDetailCubit>()
+                    .filterBySubCategory(null),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _accentSoft,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: _accent.withValues(alpha: 0.3)),
+                  ),
+                  child: const Text(
+                    'Xem tất cả sản phẩm',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: _accent,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
-
-  @override
-  bool shouldRebuild(_StickySummaryDelegate oldDelegate) => true;
 }

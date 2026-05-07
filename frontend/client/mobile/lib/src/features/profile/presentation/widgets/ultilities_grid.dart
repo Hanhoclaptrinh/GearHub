@@ -5,6 +5,11 @@ import 'package:mobile/src/features/wishlist/presentation/pages/wishlist_page.da
 import 'package:mobile/src/features/wishlist/presentation/state/wishlist_cubit.dart';
 import 'package:mobile/src/features/wishlist/presentation/state/wishlist_state.dart';
 
+const _surface = Color(0xFF14141E);
+const _border = Color(0xFF2A2A38);
+const _textHigh = Color(0xFFF1F1F5);
+const _textLow = Color(0xFF4A4A62);
+
 class UtilitiesGrid extends StatelessWidget {
   const UtilitiesGrid({super.key});
 
@@ -18,10 +23,10 @@ class UtilitiesGrid extends StatelessWidget {
           child: Text(
             'Tiện ích',
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: FontWeight.w800,
-              color: Color(0xFFB0B0B0),
-              letterSpacing: 1.5,
+              color: _textLow,
+              letterSpacing: 1.2,
             ),
           ),
         ),
@@ -42,7 +47,7 @@ class UtilitiesGrid extends StatelessWidget {
                 icon: LucideIcons.ticket,
                 title: 'Vouchers',
                 subtitle: '3 vouchers có sẵn',
-                gradient: const [Color(0xFF0A0A0F), Color(0xFF2A2A35)],
+                bgColor: _surface,
               ),
             ),
           ],
@@ -55,8 +60,8 @@ class UtilitiesGrid extends StatelessWidget {
                 icon: LucideIcons.shieldCheck,
                 title: 'Bảo hành',
                 subtitle: 'Thiết bị của tôi',
-                bgColor: Colors.white,
-                textColor: const Color(0xFF0A0A0F),
+                bgColor: _surface,
+                textColor: _textHigh,
               ),
             ),
             const SizedBox(width: 16),
@@ -65,8 +70,8 @@ class UtilitiesGrid extends StatelessWidget {
                 icon: LucideIcons.headphones,
                 title: 'Hỗ trợ',
                 subtitle: 'Hỗ trợ 24/7',
-                bgColor: Colors.white,
-                textColor: const Color(0xFF0A0A0F),
+                bgColor: _surface,
+                textColor: _textHigh,
               ),
             ),
           ],
@@ -126,7 +131,7 @@ class UtilitiesGrid extends StatelessWidget {
     bool isPremium = false,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: bgColor,
         gradient: gradient != null
@@ -137,21 +142,7 @@ class UtilitiesGrid extends StatelessWidget {
               )
             : null,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: bgColor == Colors.white
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ]
-            : [
-                BoxShadow(
-                  color: gradient![0].withValues(alpha: 0.3),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
+        border: Border.all(color: _border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,41 +154,42 @@ class UtilitiesGrid extends StatelessWidget {
               if (isPremium)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
+                    horizontal: 8,
+                    vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(6),
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
                     'MỚI',
                     style: TextStyle(
-                      fontSize: 8,
+                      fontSize: 9,
                       fontWeight: FontWeight.w900,
                       color: Colors.white,
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           Text(
             title,
             style: TextStyle(
               fontSize: 15,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
               color: textColor,
-              letterSpacing: -0.3,
+              letterSpacing: -0.2,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             subtitle,
             style: TextStyle(
               fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: textColor.withValues(alpha: 0.6),
+              fontWeight: FontWeight.w600,
+              color: textColor.withValues(alpha: 0.5),
             ),
           ),
         ],

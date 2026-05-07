@@ -126,9 +126,8 @@ class _WishlistPageState extends State<WishlistPage> {
                         if (context.mounted) {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => ProductDetailPage(
-                                product: pDetail,
-                              ),
+                              builder: (_) =>
+                                  ProductDetailPage(product: pDetail),
                             ),
                           );
                         }
@@ -240,10 +239,7 @@ class _WishlistPageState extends State<WishlistPage> {
           const Text(
             'Hãy thêm những sản phẩm bạn yêu thích\nvào danh sách này nhé!',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF6B7280),
-              height: 1.5,
-            ),
+            style: TextStyle(color: Color(0xFF6B7280), height: 1.5),
           ),
         ],
       ),

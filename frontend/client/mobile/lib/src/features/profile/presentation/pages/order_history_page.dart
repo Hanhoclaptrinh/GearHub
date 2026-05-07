@@ -7,6 +7,15 @@ import 'package:mobile/src/core/utils/formatter_utils.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_state.dart';
 
+const _bg = Color(0xFF0A0A10);
+const _surface = Color(0xFF14141E);
+const _surfaceAlt = Color(0xFF1C1C28);
+const _border = Color(0xFF2A2A38);
+const _indigo = Color(0xFF6366F1);
+const _textHigh = Color(0xFFF1F1F5);
+const _textMid = Color(0xFF9191A8);
+const _textLow = Color(0xFF4A4A62);
+
 double _toDouble(dynamic val) {
   if (val == null) return 0.0;
   if (val is num) return val.toDouble();
@@ -38,7 +47,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
   @override
   void initState() {
     super.initState();
-    int initialIndex = _statusTabs.indexWhere((t) => t['status'] == widget.initialStatus);
+    int initialIndex = _statusTabs.indexWhere(
+      (t) => t['status'] == widget.initialStatus,
+    );
     if (initialIndex == -1) initialIndex = 0;
 
     _tabController = TabController(
@@ -67,148 +78,194 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
       create: (context) => getIt<OrdersCubit>()..fetchMyOrders(status: 'ALL'),
       child: Builder(
         builder: (context) {
-          return Scaffold(
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            appBar: AppBar(
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              elevation: 0,
-              scrolledUnderElevation: 0,
-              centerTitle: true,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                onPressed: () => Navigator.pop(context),
-              ),
-              title: const Text(
-                'LỊCH SỬ ĐƠN HÀNG',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF0F172A),
-                  letterSpacing: -0.3,
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: SystemUiOverlayStyle.light,
+            child: Scaffold(
+              backgroundColor: _bg,
+              appBar: AppBar(
+                backgroundColor: _bg,
+                elevation: 0,
+                scrolledUnderElevation: 0,
+                centerTitle: true,
+                leading: IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: _textMid,
+                  ),
+                  onPressed: () => Navigator.pop(context),
                 ),
-              ),
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(48),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: TabBar(
-                    controller: _tabController,
-                    isScrollable: true,
-                    physics: const BouncingScrollPhysics(),
-                    tabAlignment: TabAlignment.start,
-                    indicatorColor: const Color(0xFF3B82F6),
-                    indicatorWeight: 3,
-                    labelColor: const Color(0xFF3B82F6),
-                    unselectedLabelColor: const Color(0xFF64748B),
-                    labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-                    unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                    tabs: _statusTabs.map((t) => Tab(text: t['label'])).toList(),
+                title: const Text(
+                  'Lịch sử đơn hàng',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                    color: _textHigh,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(48),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: _border.withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      isScrollable: true,
+                      physics: const BouncingScrollPhysics(),
+                      tabAlignment: TabAlignment.start,
+                      indicatorColor: _indigo,
+                      indicatorWeight: 3,
+                      dividerColor: Colors.transparent,
+                      labelColor: _indigo,
+                      unselectedLabelColor: _textLow,
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                      tabs: _statusTabs
+                          .map((t) => Tab(text: t['label']))
+                          .toList(),
+                    ),
                   ),
                 ),
               ),
-            ),
-            body: BlocConsumer<OrdersCubit, OrdersState>(
-              listener: (context, state) {
-                if (state is OrderActionSuccess) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: const Color(0xFF10B981),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                } else if (state is OrdersError) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: const Color(0xFFEF4444),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-              },
-              builder: (context, state) {
-                if (state is OrdersLoading) {
-                  return const Center(child: CircularProgressIndicator(color: Color(0xFF3B82F6)));
-                }
+              body: BlocConsumer<OrdersCubit, OrdersState>(
+                listener: (context, state) {
+                  if (state is OrderActionSuccess) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: const Color(0xFF10B981),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  } else if (state is OrdersError) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: const Color(0xFFEF4444),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                },
+                builder: (context, state) {
+                  if (state is OrdersLoading) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: _indigo),
+                    );
+                  }
 
-                if (state is OrdersLoaded) {
-                  final orders = state.orders;
-                  final currentTab = _statusTabs[_tabController.index]['status'];
+                  if (state is OrdersLoaded) {
+                    final orders = state.orders;
+                    final currentTab =
+                        _statusTabs[_tabController.index]['status'];
 
-                  // filter the list on the client side dynamically
-                  final filteredOrders = orders.where((order) {
-                    if (currentTab == 'ALL') return true;
-                    final String status = order['status'] ?? 'PENDING';
-                    if (currentTab == 'PENDING') {
-                      return status == 'PENDING' || status == 'CONFIRMED';
-                    }
-                    return status == currentTab;
-                  }).toList();
+                    // filter the list on the client side dynamically
+                    final filteredOrders = orders.where((order) {
+                      if (currentTab == 'ALL') return true;
+                      final String status = order['status'] ?? 'PENDING';
+                      if (currentTab == 'PENDING') {
+                        return status == 'PENDING' || status == 'CONFIRMED';
+                      }
+                      return status == currentTab;
+                    }).toList();
 
-                  if (filteredOrders.isEmpty) {
-                    return RefreshIndicator(
-                      color: const Color(0xFF3B82F6),
-                      onRefresh: () async {
-                        await context.read<OrdersCubit>().fetchMyOrders(status: 'ALL');
-                      },
-                      child: ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        children: [
-                          SizedBox(height: MediaQuery.of(context).size.height * 0.25),
-                          const Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(LucideIcons.shoppingBag, size: 64, color: Color(0xFFCBD5E1)),
-                                SizedBox(height: 16),
-                                Text(
-                                  'Không có đơn hàng nào',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF475569),
-                                  ),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Đơn hàng của bạn ở mục này sẽ hiển thị tại đây.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Color(0xFF94A3B8),
-                                  ),
-                                ),
-                              ],
+                    if (filteredOrders.isEmpty) {
+                      return RefreshIndicator(
+                        color: _indigo,
+                        backgroundColor: _surface,
+                        onRefresh: () async {
+                          await context.read<OrdersCubit>().fetchMyOrders(
+                            status: 'ALL',
+                          );
+                        },
+                        child: ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: [
+                            SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.25,
                             ),
-                          ),
-                        ],
+                            Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(20),
+                                    decoration: const BoxDecoration(
+                                      color: _surface,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      LucideIcons.shoppingBag,
+                                      size: 40,
+                                      color: _textLow,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  const Text(
+                                    'Trống trải quá fen',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: _textHigh,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Đơn hàng của fen sẽ hiện ở đây khi mua sắm.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: _textLow,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return RefreshIndicator(
+                      color: _indigo,
+                      backgroundColor: _surface,
+                      onRefresh: () async {
+                        await context.read<OrdersCubit>().fetchMyOrders(
+                          status: 'ALL',
+                        );
+                      },
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: filteredOrders.length,
+                        itemBuilder: (context, index) {
+                          final order = filteredOrders[index];
+                          return _buildOrderCard(context, order);
+                        },
                       ),
                     );
                   }
 
-                  return RefreshIndicator(
-                    color: const Color(0xFF3B82F6),
-                    onRefresh: () async {
-                      await context.read<OrdersCubit>().fetchMyOrders(status: 'ALL');
-                    },
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      itemCount: filteredOrders.length,
-                      itemBuilder: (context, index) {
-                        final order = filteredOrders[index];
-                        return _buildOrderCard(context, order);
-                      },
-                    ),
-                  );
-                }
-
-                return const SizedBox.shrink();
-              },
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
           );
-        }
+        },
       ),
     );
   }
@@ -225,22 +282,17 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
       });
     }
     final String createdAt = order['createdAt'] != null
-        ? DateTime.parse(order['createdAt']).toLocal().toString().substring(0, 16)
+        ? DateTime.parse(
+            order['createdAt'],
+          ).toLocal().toString().substring(0, 16)
         : '';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.02),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: _border),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -254,11 +306,12 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Đơn hàng: #${order['id'].toString().substring(0, 8).toUpperCase()}",
+                    "Mã đơn: #${order['id'].toString().substring(0, 8).toUpperCase()}",
                     style: const TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 14,
-                      color: Color(0xFF0F172A),
+                      color: _textHigh,
+                      letterSpacing: -0.2,
                     ),
                   ),
                   _buildStatusBadge(status),
@@ -269,13 +322,13 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                 createdAt,
                 style: const TextStyle(
                   fontSize: 12,
-                  color: Color(0xFF94A3B8),
+                  color: _textLow,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 14),
-                child: Divider(height: 1, color: Color(0xFFF1F5F9)),
+                child: Divider(height: 1, color: _border),
               ),
               if (items.isNotEmpty) ...[
                 Row(
@@ -285,25 +338,30 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                       width: 54,
                       height: 54,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        color: _surfaceAlt,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: _border),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(11),
-                        child: items.first['productVariant']?['imageUrl'] != null
+                        child:
+                            items.first['productVariant']?['imageUrl'] != null
                             ? Image.network(
                                 items.first['productVariant']['imageUrl'],
                                 fit: BoxFit.cover,
-                                errorBuilder: (c, e, s) => const Icon(LucideIcons.package),
+                                errorBuilder: (c, e, s) =>
+                                    const Icon(LucideIcons.package),
                               )
-                            : items.first['productVariant']?['product']?['thumbnailUrl'] != null
-                                ? Image.network(
-                                    items.first['productVariant']['product']['thumbnailUrl'],
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (c, e, s) => const Icon(LucideIcons.package),
-                                  )
-                                : const Icon(LucideIcons.package, color: Color(0xFF64748B)),
+                            : items.first['productVariant']?['product']?['thumbnailUrl'] !=
+                                  null
+                            ? Image.network(
+                                items
+                                    .first['productVariant']['product']['thumbnailUrl'],
+                                fit: BoxFit.cover,
+                                errorBuilder: (c, e, s) =>
+                                    const Icon(LucideIcons.package),
+                              )
+                            : const Icon(LucideIcons.package, color: _textLow),
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -312,13 +370,14 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            items.first['productVariant']?['product']?['name'] ?? 'Sản phẩm GearHub',
+                            items.first['productVariant']?['product']?['name'] ??
+                                'Sản phẩm GearHub',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w800,
                               fontSize: 14,
-                              color: Color(0xFF0F172A),
+                              color: _textHigh,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -327,7 +386,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 12,
-                              color: Color(0xFF64748B),
+                              color: _textLow,
                             ),
                           ),
                           if (items.length > 1) ...[
@@ -336,11 +395,11 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                               "và ${items.length - 1} sản phẩm khác...",
                               style: const TextStyle(
                                 fontSize: 12,
-                                color: Color(0xFF94A3B8),
+                                color: _textLow,
                                 fontStyle: FontStyle.italic,
                               ),
                             ),
-                          ]
+                          ],
                         ],
                       ),
                     ),
@@ -348,7 +407,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                 ),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 14),
-                  child: Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  child: Divider(height: 1, color: _border),
                 ),
               ],
               Row(
@@ -359,7 +418,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                     children: [
                       const Text(
                         "Tổng số tiền",
-                        style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                        style: TextStyle(fontSize: 12, color: _textLow),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -367,8 +426,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
-                          color: Color(0xFF3B82F6),
-                          letterSpacing: -0.5,
+                          color: _indigo,
+                          letterSpacing: -0.2,
                         ),
                       ),
                     ],
@@ -386,8 +445,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                         _buildActionButton(
                           context,
                           'Mua lại',
-                          const Color(0xFF3B82F6),
-                          () => context.read<OrdersCubit>().reOrder(order['id']),
+                          _indigo,
+                          () =>
+                              context.read<OrdersCubit>().reOrder(order['id']),
                         ),
                     ],
                   ),
@@ -401,38 +461,38 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
   }
 
   Widget _buildStatusBadge(String status) {
-    Color bg = const Color(0xFFF1F5F9);
-    Color fg = const Color(0xFF475569);
+    Color bg = _border;
+    Color fg = _textMid;
     String text = status;
 
     switch (status) {
       case 'PENDING':
-        bg = const Color(0xFFFFF7ED);
+        bg = const Color(0xFFEA580C).withValues(alpha: 0.15);
         fg = const Color(0xFFEA580C);
         text = 'Chờ xác nhận';
         break;
       case 'CONFIRMED':
-        bg = const Color(0xFFEFF6FF);
-        fg = const Color(0xFF2563EB);
+        bg = _indigo.withValues(alpha: 0.15);
+        fg = _indigo;
         text = 'Đã xác nhận';
         break;
       case 'PROCESSING':
-        bg = const Color(0xFFF0FDF4);
-        fg = const Color(0xFF16A34A);
+        bg = const Color(0xFF22C55E).withValues(alpha: 0.15);
+        fg = const Color(0xFF22C55E);
         text = 'Đang xử lý';
         break;
       case 'SHIPPING':
-        bg = const Color(0xFFEFF6FF);
-        fg = const Color(0xFF3B82F6);
+        bg = const Color(0xFF06B6D4).withValues(alpha: 0.15);
+        fg = const Color(0xFF06B6D4);
         text = 'Đang giao';
         break;
       case 'DELIVERED':
-        bg = const Color(0xFFF0FDF4);
+        bg = const Color(0xFF10B981).withValues(alpha: 0.15);
         fg = const Color(0xFF10B981);
         text = 'Đã giao';
         break;
       case 'CANCELLED':
-        bg = const Color(0xFFFEF2F2);
+        bg = const Color(0xFFEF4444).withValues(alpha: 0.15);
         fg = const Color(0xFFEF4444);
         text = 'Đã hủy';
         break;
@@ -442,20 +502,22 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: fg.withValues(alpha: 0.3)),
       ),
       child: Text(
         text,
-        style: TextStyle(
-          color: fg,
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-        ),
+        style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w800),
       ),
     );
   }
 
-  Widget _buildActionButton(BuildContext context, String text, Color color, VoidCallback onTap) {
+  Widget _buildActionButton(
+    BuildContext context,
+    String text,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -467,7 +529,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.2), width: 0.8),
+          border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
         ),
         child: Text(
           text,
@@ -485,21 +547,37 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
     showDialog(
       context: context,
       builder: (dCtx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text('Xác nhận', style: TextStyle(fontWeight: FontWeight.w900)),
-        content: const Text('Bạn có chắc chắn muốn hủy đơn hàng này không?'),
+        backgroundColor: _surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28),
+          side: const BorderSide(color: _border),
+        ),
+        title: const Text(
+          'Xác nhận',
+          style: TextStyle(fontWeight: FontWeight.w900, color: _textHigh),
+        ),
+        content: const Text(
+          'Bạn có chắc chắn muốn hủy đơn hàng này không?',
+          style: TextStyle(color: _textMid),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dCtx),
-            child: const Text('Quay lại', style: TextStyle(color: Color(0xFF64748B))),
+            child: const Text('Quay lại', style: TextStyle(color: _textLow)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(dCtx);
               context.read<OrdersCubit>().cancelOrder(orderId);
             },
-            child: const Text('Hủy đơn', style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w800)),
+            child: const Text(
+              'Hủy đơn',
+              style: TextStyle(
+                color: Color(0xFFEF4444),
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
         ],
       ),
@@ -518,9 +596,10 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
     }
     final double shipping = _toDouble(order['shippingFee'] ?? 0.0);
     final double discount = _toDouble(order['discount']);
+    final double vat = subtotal * 0.1;
     double totalAmount = _toDouble(order['totalAmount'] ?? order['total']);
     if (totalAmount == 0.0) {
-      totalAmount = subtotal + shipping - discount;
+      totalAmount = subtotal + vat + shipping - discount;
     }
 
     showModalBottomSheet(
@@ -528,10 +607,10 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
-        height: MediaQuery.of(context).size.height * 0.82,
+        height: MediaQuery.of(context).size.height * 0.85,
         decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          color: _bg,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
         child: Column(
@@ -542,7 +621,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                 width: 40,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
+                  color: _border,
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -554,9 +633,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                 const Text(
                   "Chi tiết đơn hàng",
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.w900,
-                    color: Color(0xFF0F172A),
+                    color: _textHigh,
                   ),
                 ),
                 _buildStatusBadge(order['status'] ?? 'PENDING'),
@@ -573,36 +652,55 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
+                        color: _surface,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        border: Border.all(color: _border),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
                             "Thông tin nhận hàng",
-                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF64748B)),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
+                              color: _textLow,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           Row(
                             children: [
-                              const Icon(LucideIcons.user, size: 16, color: Color(0xFF475569)),
+                              const Icon(
+                                LucideIcons.user,
+                                size: 16,
+                                color: _textMid,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 order['receiverName'] ?? 'Chưa cập nhật',
-                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF0F172A)),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14,
+                                  color: _textHigh,
+                                ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 6),
                           Row(
                             children: [
-                              const Icon(LucideIcons.phone, size: 16, color: Color(0xFF475569)),
+                              const Icon(
+                                LucideIcons.phone,
+                                size: 16,
+                                color: _textMid,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 order['receiverPhone'] ?? 'Chưa cập nhật',
-                                style: const TextStyle(fontSize: 13, color: Color(0xFF475569)),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: _textMid,
+                                ),
                               ),
                             ],
                           ),
@@ -610,12 +708,20 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(LucideIcons.mapPin, size: 16, color: Color(0xFF475569)),
+                              const Icon(
+                                LucideIcons.mapPin,
+                                size: 16,
+                                color: _textMid,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   order['shippingAddress'] ?? 'Chưa cập nhật',
-                                  style: const TextStyle(fontSize: 13, color: Color(0xFF475569), height: 1.4),
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: _textMid,
+                                    height: 1.4,
+                                  ),
                                 ),
                               ),
                             ],
@@ -627,7 +733,11 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                     // list items
                     const Text(
                       "Sản phẩm",
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF0F172A)),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                        color: _textHigh,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     ...items.map((i) {
@@ -640,8 +750,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                               width: 50,
                               height: 50,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF1F5F9),
-                                borderRadius: BorderRadius.circular(10),
+                                color: _surfaceAlt,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: _border),
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
@@ -649,15 +760,18 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                                     ? Image.network(
                                         i['productVariant']['imageUrl'],
                                         fit: BoxFit.cover,
-                                        errorBuilder: (c, e, s) => const Icon(LucideIcons.package),
+                                        errorBuilder: (c, e, s) =>
+                                            const Icon(LucideIcons.package),
                                       )
-                                    : i['productVariant']?['product']?['thumbnailUrl'] != null
-                                        ? Image.network(
-                                            i['productVariant']['product']['thumbnailUrl'],
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (c, e, s) => const Icon(LucideIcons.package),
-                                          )
-                                        : const Icon(LucideIcons.package),
+                                    : i['productVariant']?['product']?['thumbnailUrl'] !=
+                                          null
+                                    ? Image.network(
+                                        i['productVariant']['product']['thumbnailUrl'],
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (c, e, s) =>
+                                            const Icon(LucideIcons.package),
+                                      )
+                                    : const Icon(LucideIcons.package),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -666,28 +780,46 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    i['productVariant']?['product']?['name'] ?? 'Sản phẩm',
+                                    i['productVariant']?['product']?['name'] ??
+                                        'Sản phẩm',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF0F172A)),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 13,
+                                      color: _textHigh,
+                                    ),
                                   ),
                                   const SizedBox(height: 4),
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        formatVND(_toDouble(i['priceAtPurchase'] ?? i['price'])),
-                                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF475569)),
+                                        formatVND(
+                                          _toDouble(
+                                            i['priceAtPurchase'] ?? i['price'],
+                                          ),
+                                        ),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
+                                          color: _textMid,
+                                        ),
                                       ),
                                       Text(
                                         "x${i['quantity']}",
-                                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF64748B)),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 13,
+                                          color: _textLow,
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ],
                               ),
-                            )
+                            ),
                           ],
                         ),
                       );
@@ -697,9 +829,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
+                        color: _surface,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        border: Border.all(color: _border),
                       ),
                       child: Column(
                         children: [
@@ -707,21 +839,36 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                           const SizedBox(height: 8),
                           _priceRow("Phí vận chuyển", formatVND(shipping)),
                           const SizedBox(height: 8),
-                          _priceRow("Giảm giá", "-${formatVND(discount)}", valueColor: const Color(0xFF10B981)),
+                          _priceRow("Thuế VAT (10%)", formatVND(vat)),
+                          const SizedBox(height: 8),
+                          _priceRow(
+                            "Giảm giá",
+                            "-${formatVND(discount)}",
+                            valueColor: const Color(0xFF22C55E),
+                          ),
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 12),
-                            child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+                            child: Divider(height: 1, color: _border),
                           ),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text(
                                 "Tổng cộng",
-                                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF0F172A)),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 14,
+                                  color: _textHigh,
+                                ),
                               ),
                               Text(
                                 formatVND(totalAmount),
-                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFF3B82F6)),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 20,
+                                  color: _indigo,
+                                  letterSpacing: -0.2,
+                                ),
                               ),
                             ],
                           ),
@@ -744,14 +891,18 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
       children: [
         Text(
           label,
-          style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+          style: const TextStyle(
+            color: _textLow,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         Text(
           value,
           style: TextStyle(
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w800,
             fontSize: 13,
-            color: valueColor ?? const Color(0xFF0F172A),
+            color: valueColor ?? _textHigh,
           ),
         ),
       ],

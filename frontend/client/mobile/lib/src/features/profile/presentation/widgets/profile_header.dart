@@ -8,6 +8,16 @@ import 'package:mobile/src/features/profile/presentation/pages/edit_profile_page
 import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_state.dart';
 
+const _surface = Color(0xFF14141E);
+const _border = Color(0xFF2A2A38);
+const _accent = Color(0xFFF59E0B);
+const _textHigh = Color(0xFFF1F1F5);
+const _textLow = Color(0xFF4A4A62);
+
+Color startColor = const Color(0xFF64748B);
+Color endColor = const Color(0xFF94A3B8);
+Color fgColor = const Color(0xFF475569);
+
 double _toDouble(dynamic val) {
   if (val == null) return 0.0;
   if (val is num) return val.toDouble();
@@ -25,24 +35,16 @@ class ProfileHeader extends StatelessWidget {
       onTap: user != null
           ? () {
               Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => EditProfilePage(user: user!),
-                ),
+                MaterialPageRoute(builder: (_) => EditProfilePage(user: user!)),
               );
             }
           : null,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          color: _surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: _border),
         ),
         child: Row(
           children: [
@@ -51,11 +53,14 @@ class ProfileHeader extends StatelessWidget {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                color: const Color(0xFF0A0A0F),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: _accent.withValues(alpha: 0.3),
+                  width: 2,
+                ),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(36),
                 child: user?.avatarUrl?.isNotEmpty == true
                     ? CachedNetworkImage(
                         imageUrl: user!.avatarUrl!,
@@ -79,12 +84,12 @@ class ProfileHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    user?.fullName ?? 'User',
+                    user?.fullName ?? 'Fen GearHub',
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF0A0A0F),
-                      letterSpacing: -0.5,
+                      color: _textHigh,
+                      letterSpacing: -0.2,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -93,8 +98,7 @@ class ProfileHeader extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF6B7280),
-                      letterSpacing: -0.1,
+                      color: _textLow,
                     ),
                   ),
                   if (user != null) ...[
@@ -106,7 +110,9 @@ class ProfileHeader extends StatelessWidget {
                           for (final order in state.orders) {
                             final String s = order['status'] ?? 'PENDING';
                             if (s == 'DELIVERED') {
-                              totalSpent += _toDouble(order['totalAmount'] ?? order['total']);
+                              totalSpent += _toDouble(
+                                order['totalAmount'] ?? order['total'],
+                              );
                             }
                           }
                         }
@@ -114,28 +120,25 @@ class ProfileHeader extends StatelessWidget {
                         if (totalSpent == 0.0) return const SizedBox.shrink();
 
                         String tierName = 'BẠC';
-                        Color startColor = const Color(0xFF64748B);
-                        Color endColor = const Color(0xFF94A3B8);
-                        Color fgColor = const Color(0xFF475569);
                         IconData tierIcon = LucideIcons.shield;
 
                         if (totalSpent >= 150000000.0) {
-                          tierName = 'VIP';
+                          tierName = 'VIP MEMBER';
                           startColor = const Color(0xFFEF4444);
                           endColor = const Color(0xFFEC4899);
-                          fgColor = const Color(0xFF9D174D);
+                          fgColor = Colors.white;
                           tierIcon = LucideIcons.crown;
                         } else if (totalSpent >= 50000000.0) {
                           tierName = 'KIM CƯƠNG';
                           startColor = const Color(0xFF06B6D4);
                           endColor = const Color(0xFF3B82F6);
-                          fgColor = const Color(0xFF1D4ED8);
+                          fgColor = Colors.white;
                           tierIcon = LucideIcons.gem;
                         } else if (totalSpent >= 15000000.0) {
                           tierName = 'VÀNG';
                           startColor = const Color(0xFFF59E0B);
                           endColor = const Color(0xFFFCD34D);
-                          fgColor = const Color(0xFFB45309);
+                          fgColor = Colors.white;
                           tierIcon = LucideIcons.sparkles;
                         }
 
@@ -143,7 +146,8 @@ class ProfileHeader extends StatelessWidget {
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) => MembershipTierPage(totalSpent: totalSpent),
+                                builder: (_) =>
+                                    MembershipTierPage(totalSpent: totalSpent),
                               ),
                             );
                           },
@@ -154,27 +158,30 @@ class ProfileHeader extends StatelessWidget {
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            padding: const EdgeInsets.all(1.5),
+                            padding: const EdgeInsets.all(1),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
                               decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(8.5),
+                                color: _surface,
+                                borderRadius: BorderRadius.circular(11),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(tierIcon, size: 11, color: startColor),
-                                  const SizedBox(width: 4),
+                                  Icon(tierIcon, size: 12, color: startColor),
+                                  const SizedBox(width: 6),
                                   Text(
                                     tierName,
                                     style: TextStyle(
                                       fontSize: 10,
-                                      fontWeight: FontWeight.w800,
-                                      color: fgColor,
-                                      letterSpacing: 0.3,
+                                      fontWeight: FontWeight.w900,
+                                      color: startColor,
+                                      letterSpacing: 0.5,
                                     ),
                                   ),
                                 ],

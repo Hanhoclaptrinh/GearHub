@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/models/product_variant_model.dart';
 import 'package:mobile/src/features/onboarding/presentation/widgets/three_animated_arrow.dart';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/features/cart/domain/entities/cart_item_entity.dart';
 import 'package:mobile/src/features/checkout/presentation/pages/checkout_page.dart';
@@ -16,10 +15,13 @@ import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/shared/widgets/stock_limit_dialog.dart';
 
-const _kSurface = Color(0xFFFFFFFF);
-const _kBorder = Color(0xFFE5E5EA);
-const _kGold = Color(0xFF0A0A0F);
-const _kGoldDim = Color(0xFFF2F2F7);
+const _surface = Color(0xFF14141E);
+const _surfaceAlt = Color(0xFF1C1C28);
+const _border = Color(0xFF2A2A38);
+const _accent = Color(0xFF6366F1);
+const _textHigh = Color(0xFFF1F1F5);
+const _textMid = Color(0xFF9191A8);
+const _textLow = Color(0xFF4A4A62);
 
 class StickyBottomBar extends StatefulWidget {
   final ProductModel product;
@@ -72,12 +74,12 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
             padding: const EdgeInsets.fromLTRB(20, 6, 20, 16),
             child: Container(
               decoration: BoxDecoration(
-                color: _kSurface.withValues(alpha: 0.96),
+                color: _surface.withValues(alpha: 0.96),
                 borderRadius: BorderRadius.circular(36),
-                border: Border.all(color: _kBorder, width: 1),
+                border: Border.all(color: _border, width: 1),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 28,
                     offset: const Offset(0, 10),
                   ),
@@ -114,16 +116,14 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
       isScrollControlled: true,
       builder: (BuildContext context) {
         return Container(
-          padding: const EdgeInsets.all(32),
+          padding: const EdgeInsets.fromLTRB(32, 12, 32, 32),
           decoration: const BoxDecoration(
-            color: Colors.white,
+            color: _surface,
             borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(32),
-              topRight: Radius.circular(32),
+              topLeft: Radius.circular(40),
+              topRight: Radius.circular(40),
             ),
-            border: Border(
-              top: BorderSide(color: Color(0xFFE5E5EA), width: 1),
-            ),
+            border: Border(top: BorderSide(color: _border, width: 1.5)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -132,56 +132,67 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                 width: 48,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: Colors.black12,
+                  color: _border,
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 48),
               Container(
-                height: 64,
-                width: 64,
+                height: 80,
+                width: 80,
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.05),
+                  color: _accent.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
+                  border: Border.all(
+                    color: _accent.withValues(alpha: 0.2),
+                    width: 2,
+                  ),
                 ),
-                child: const Icon(
-                  LucideIcons.lock,
-                  color: Colors.black,
-                  size: 28,
-                ),
+                child: const Icon(LucideIcons.lock, color: _accent, size: 32),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               const Text(
                 'YÊU CẦU ĐĂNG NHẬP',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 10,
                   fontWeight: FontWeight.w800,
-                  color: Colors.black,
-                  letterSpacing: 1.0,
+                  color: _accent,
+                  letterSpacing: 1.5,
                 ),
               ),
               const SizedBox(height: 12),
+              const Text(
+                'TIẾP TỤC TRẢI NGHIỆM',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  color: _textHigh,
+                  letterSpacing: -0.8,
+                ),
+              ),
+              const SizedBox(height: 16),
               const Text(
                 'Vui lòng đăng nhập để tiếp tục thanh toán, lưu giỏ hàng và nhận các ưu đãi thành viên đặc biệt của GearHub.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xFF5C5C6B),
-                  height: 1.5,
+                  fontWeight: FontWeight.w500,
+                  color: _textMid,
+                  height: 1.6,
                 ),
               ),
-              const SizedBox(height: 36),
+              const SizedBox(height: 48),
               SizedBox(
                 width: double.infinity,
-                height: 56,
+                height: 60,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
+                    backgroundColor: _accent,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                   ),
                   onPressed: () {
@@ -194,8 +205,8 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                     'ĐĂNG NHẬP NGAY',
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.0,
                     ),
                   ),
                 ),
@@ -203,12 +214,13 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
-                height: 56,
+                height: 60,
                 child: TextButton(
                   style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF8E8E93),
+                    foregroundColor: _textLow,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(20),
+                      side: const BorderSide(color: _border),
                     ),
                   ),
                   onPressed: () => Navigator.pop(context),
@@ -216,8 +228,8 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                     'ĐỂ SAU',
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.0,
                     ),
                   ),
                 ),
@@ -239,7 +251,8 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
         return;
       }
 
-      final variant = widget.selectedVariant ??
+      final variant =
+          widget.selectedVariant ??
           (widget.product.variants.where((v) => v.isActive).firstOrNull ??
               widget.product.variants.first);
       final item = CartItemEntity(
@@ -263,15 +276,15 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 22),
       decoration: BoxDecoration(
-        color: _kGoldDim,
+        color: _surfaceAlt,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFE5E5EA), width: 1),
+        border: Border.all(color: _border, width: 1),
       ),
       child: const Center(
         child: Text(
           'MUA NGAY',
           style: TextStyle(
-            color: Colors.black,
+            color: _textHigh,
             fontSize: 11,
             fontWeight: FontWeight.w800,
             letterSpacing: 1.1,
@@ -290,7 +303,7 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
       return Container(
         height: 60,
         decoration: BoxDecoration(
-          color: _kGold,
+          color: _accent,
           borderRadius: BorderRadius.circular(28),
         ),
         child: Stack(
@@ -304,7 +317,7 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
               width: _isAdded ? _sliderWidth : _dragPosition + _thumbSz + 8,
               height: 60,
               decoration: BoxDecoration(
-                color: _isAdded ? const Color(0xFF2EA44F) : _kGold,
+                color: _isAdded ? const Color(0xFF10B981) : _accent,
                 borderRadius: BorderRadius.circular(28),
               ),
             ),
@@ -330,9 +343,7 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                       ),
                       if (!_isAdded) ...[
                         const SizedBox(width: 8),
-                        const ThreeAnimatedArrows(
-                          color: Colors.white60,
-                        ),
+                        const ThreeAnimatedArrows(color: Colors.white60),
                       ],
                     ],
                   ),
@@ -402,7 +413,7 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                     width: _thumbSz,
                     height: _thumbSz,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: _surface,
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
@@ -414,7 +425,7 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                     ),
                     child: const Icon(
                       Icons.arrow_forward_ios_rounded,
-                      color: Colors.black,
+                      color: _textHigh,
                       size: 18,
                     ),
                   ),

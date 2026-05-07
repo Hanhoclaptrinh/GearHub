@@ -4,6 +4,11 @@ import 'package:mobile/src/core/utils/formatter_utils.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../pages/product_detail_page.dart';
 
+const _surfaceAlt = Color(0xFF1C1C28);
+const _border     = Color(0xFF2A2A38);
+const _textHigh   = Color(0xFFF1F1F5);
+const _textMid    = Color(0xFF9191A8);
+
 class ProductRecommendationsSection extends StatelessWidget {
   final List<ProductModel> recommendations;
 
@@ -27,8 +32,8 @@ class ProductRecommendationsSection extends StatelessWidget {
               'Có thể bạn cũng thích',
               style: TextStyle(
                 fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: Colors.black,
+                fontWeight: FontWeight.w900,
+                color: _textHigh,
                 letterSpacing: -0.5,
               ),
             ),
@@ -77,9 +82,9 @@ class _RecommendationCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F7),
+                  color: _surfaceAlt,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+                  border: Border.all(color: _border),
                 ),
                 child: Center(
                   child: product.image.startsWith('http')
@@ -100,8 +105,8 @@ class _RecommendationCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
+                fontWeight: FontWeight.w800,
+                color: _textHigh,
                 letterSpacing: -0.2,
               ),
             ),
@@ -111,7 +116,7 @@ class _RecommendationCard extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF8E8E93),
+                color: _textMid,
               ),
             ),
           ],

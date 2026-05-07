@@ -5,6 +5,13 @@ import 'package:mobile/src/core/utils/formatter_utils.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 
+const _surface    = Color(0xFF14141E);
+const _surfaceAlt = Color(0xFF1C1C28);
+const _border     = Color(0xFF2A2A38);
+const _accent     = Color(0xFF6366F1);
+const _textHigh   = Color(0xFFF1F1F5);
+const _textLow    = Color(0xFF4A4A62);
+
 class SearchSuggestionItem extends StatelessWidget {
   final ProductModel product;
 
@@ -24,10 +31,10 @@ class SearchSuggestionItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: _surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: const Color(0xFFE5E7EB).withValues(alpha: 0.6),
+            color: _border,
           ),
         ),
         child: Row(
@@ -36,8 +43,9 @@ class SearchSuggestionItem extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
+                color: _surfaceAlt,
                 borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: _border),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(14),
@@ -46,7 +54,7 @@ class SearchSuggestionItem extends StatelessWidget {
                     : const Icon(
                         LucideIcons.image,
                         size: 20,
-                        color: Color(0xFF9CA3AF),
+                        color: _textLow,
                       ),
               ),
             ),
@@ -62,7 +70,7 @@ class SearchSuggestionItem extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF0A0A0F),
+                      color: _textHigh,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -71,7 +79,7 @@ class SearchSuggestionItem extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w900,
-                      color: Color(0xFFDC2626),
+                      color: _accent,
                     ),
                   ),
                 ],
@@ -80,7 +88,7 @@ class SearchSuggestionItem extends StatelessWidget {
             const Icon(
               LucideIcons.chevronRight,
               size: 16,
-              color: Color(0xFF9CA3AF),
+              color: _textLow,
             ),
           ],
         ),

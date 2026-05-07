@@ -8,6 +8,14 @@ import 'package:mobile/src/core/utils/formatter_utils.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/models/product_variant_model.dart';
 
+const _bg = Color(0xFF0A0A10);
+const _surface = Color(0xFF14141E);
+const _surfaceAlt = Color(0xFF1C1C28);
+const _border = Color(0xFF2A2A38);
+const _accent = Color(0xFF6366F1);
+const _textHigh = Color(0xFFF1F1F5);
+const _textLow = Color(0xFF4A4A62);
+
 class ProductHeroSection extends StatefulWidget {
   final ProductModel product;
   final ProductVariantModel? currentVariant;
@@ -92,84 +100,81 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
 
     return Container(
       width: double.infinity,
-      color: Theme.of(context).scaffoldBackgroundColor,
+      color: _bg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // --- header: brand + name + availability + price ---
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  widget.product.brandName?.toUpperCase() ?? '',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF8E8E93),
-                    letterSpacing: 2.0,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  displayName.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black,
-                    letterSpacing: -0.5,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 12),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      width: 8,
-                      height: 8,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: isOutOfStock
-                            ? const Color(0xFFFF3B30)
-                            : const Color(0xFF34C759),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color:
-                                (isOutOfStock
-                                        ? const Color(0xFFFF3B30)
-                                        : const Color(0xFF34C759))
-                                    .withValues(alpha: 0.3),
-                            blurRadius: 4,
-                            spreadRadius: 1,
-                          ),
-                        ],
+                        color: _surfaceAlt,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: _border),
+                      ),
+                      child: Text(
+                        widget.product.brandName?.toUpperCase() ?? 'GEARHUB',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: _accent,
+                          letterSpacing: 1.5,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      isOutOfStock
-                          ? 'Hết hàng'
-                          : 'Còn hàng - ${currentVariant?.stock} có sẵn',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: isOutOfStock
-                            ? const Color(0xFFFF3B30)
-                            : const Color(0xFF34C759),
-                      ),
+                    _buildAvailabilityBadge(
+                      isOutOfStock,
+                      currentVariant?.stock ?? 0,
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 Text(
-                  formatVND(currentVariant?.price ?? widget.product.price),
+                  displayName.toUpperCase(),
                   style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black,
-                    letterSpacing: -1.0,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                    color: _textHigh,
+                    letterSpacing: -0.8,
+                    height: 1.1,
                   ),
+                ),
+                const SizedBox(height: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'GIÁ HIỆN TẠI',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: _textLow,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      formatVND(currentVariant?.price ?? widget.product.price),
+                      style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w900,
+                        color: _textHigh,
+                        letterSpacing: -1.5,
+                        height: 1.0,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -196,22 +201,35 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                 children: [
                   // indicator
                   if (!widget.is3DMode && galleryUrls.length > 1)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(galleryUrls.length, (i) {
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          margin: const EdgeInsets.symmetric(horizontal: 3),
-                          width: _currentPage == i ? 18 : 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: _currentPage == i
-                                ? Colors.black
-                                : Colors.black.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        );
-                      }),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _surfaceAlt.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _border.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: List.generate(galleryUrls.length, (i) {
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            margin: const EdgeInsets.symmetric(horizontal: 2),
+                            width: _currentPage == i ? 16 : 4,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: _currentPage == i
+                                  ? _accent
+                                  : _textLow.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          );
+                        }),
+                      ),
                     )
                   else
                     const SizedBox.shrink(),
@@ -230,20 +248,13 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: widget.is3DMode ? Colors.black : Colors.white,
+                          color: widget.is3DMode ? _textHigh : _surfaceAlt,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: widget.is3DMode
-                                ? Colors.white24
-                                : const Color(0xFFE5E5EA),
+                                ? Colors.transparent
+                                : _border,
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -253,19 +264,15 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                                   ? LucideIcons.image
                                   : LucideIcons.rotate3d,
                               size: 16,
-                              color: widget.is3DMode
-                                  ? Colors.white
-                                  : Colors.black,
+                              color: widget.is3DMode ? _bg : _textHigh,
                             ),
                             const SizedBox(width: 6),
                             Text(
                               widget.is3DMode ? '2D' : '3D',
                               style: TextStyle(
                                 fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: widget.is3DMode
-                                    ? Colors.white
-                                    : Colors.black,
+                                fontWeight: FontWeight.w800,
+                                color: widget.is3DMode ? _bg : _textHigh,
                               ),
                             ),
                           ],
@@ -284,32 +291,21 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: _surfaceAlt,
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFE5E5EA)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+                          border: Border.all(color: _border),
                         ),
-                        child: Row(
+                        child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              LucideIcons.box,
-                              size: 16,
-                              color: Theme.of(context).primaryColor,
-                            ),
-                            const SizedBox(width: 6),
-                            const Text(
+                            Icon(LucideIcons.box, size: 16, color: _accent),
+                            SizedBox(width: 6),
+                            Text(
                               'AR Mode',
                               style: TextStyle(
                                 fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.black,
+                                fontWeight: FontWeight.w800,
+                                color: _textHigh,
                               ),
                             ),
                           ],
@@ -451,15 +447,67 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
     final glbAsset = widget.product.glbAsset;
     if (glbAsset == null) return const SizedBox.shrink();
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: ModelViewer(
-        src: glbAsset.url,
-        alt: widget.product.name,
-        autoRotate: false,
-        cameraControls: true,
-        disableZoom: false,
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: _border),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32),
+        child: ModelViewer(
+          src: glbAsset.url,
+          alt: widget.product.name,
+          autoRotate: false,
+          cameraControls: true,
+          disableZoom: false,
+          backgroundColor: Colors.transparent,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvailabilityBadge(bool isOutOfStock, int stock) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color:
+            (isOutOfStock ? const Color(0xFFEF4444) : const Color(0xFF10B981))
+                .withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color:
+              (isOutOfStock ? const Color(0xFFEF4444) : const Color(0xFF10B981))
+                  .withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: isOutOfStock
+                  ? const Color(0xFFEF4444)
+                  : const Color(0xFF10B981),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            isOutOfStock ? 'HẾT HÀNG' : 'SẴN HÀNG',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              color: isOutOfStock
+                  ? const Color(0xFFEF4444)
+                  : const Color(0xFF10B981),
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -501,11 +549,12 @@ class _ProductGalleryModalState extends State<_ProductGalleryModal> {
       width: double.infinity,
       height: MediaQuery.of(context).size.height * 0.58,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _surface,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 24,
             spreadRadius: 4,
           ),
@@ -521,11 +570,12 @@ class _ProductGalleryModalState extends State<_ProductGalleryModal> {
               child: Container(
                 width: 36,
                 height: 36,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
+                decoration: BoxDecoration(
+                  color: _surfaceAlt,
                   shape: BoxShape.circle,
+                  border: Border.all(color: _border),
                 ),
-                child: const Icon(LucideIcons.x, color: Colors.black, size: 20),
+                child: const Icon(LucideIcons.x, color: _textHigh, size: 20),
               ),
             ),
           ),
@@ -581,9 +631,7 @@ class _ProductGalleryModalState extends State<_ProductGalleryModal> {
                       width: _currentIndex == index ? 8 : 6,
                       height: _currentIndex == index ? 8 : 6,
                       decoration: BoxDecoration(
-                        color: _currentIndex == index
-                            ? Colors.black
-                            : Colors.black.withValues(alpha: 0.25),
+                        color: _currentIndex == index ? _textHigh : _textLow,
                         shape: BoxShape.circle,
                       ),
                     );

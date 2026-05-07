@@ -2,6 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+const _surface    = Color(0xFF14141E);
+const _surfaceAlt = Color(0xFF1C1C28);
+const _border     = Color(0xFF2A2A38);
+const _accent     = Color(0xFF6366F1);
+const _accentSoft = Color(0x186366F1);
+const _textHigh   = Color(0xFFF1F1F5);
+const _textMid    = Color(0xFF9191A8);
+const _textLow    = Color(0xFF4A4A62);
+
 class SearchHistoryTagsWidget extends StatelessWidget {
   final List<String> searchHistory;
   final List<String> popularKeywords;
@@ -28,21 +37,36 @@ class SearchHistoryTagsWidget extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(LucideIcons.history, size: 16, color: Color(0xFF3B82F6)),
-                  SizedBox(width: 8),
-                  Text(
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: const BoxDecoration(
+                      color: _accentSoft,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(LucideIcons.history, size: 14, color: _accent),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
                     'Lịch sử tìm kiếm',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF0A0A0F)),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      color: _textHigh,
+                      letterSpacing: -0.3,
+                    ),
                   ),
                 ],
               ),
               TextButton(
                 onPressed: onClearAllHistory,
                 style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: const Size(50, 30),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  minimumSize: const Size(50, 32),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
                 child: const Text(
                   'Xóa tất cả',
@@ -55,7 +79,7 @@ class SearchHistoryTagsWidget extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -66,11 +90,11 @@ class SearchHistoryTagsWidget extends StatelessWidget {
                   onSearchKeyword(k);
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: _surfaceAlt,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                    border: Border.all(color: _border),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -79,8 +103,8 @@ class SearchHistoryTagsWidget extends StatelessWidget {
                         k,
                         style: const TextStyle(
                           fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF4B5563),
+                          fontWeight: FontWeight.w700,
+                          color: _textMid,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -89,7 +113,7 @@ class SearchHistoryTagsWidget extends StatelessWidget {
                         child: const Icon(
                           LucideIcons.x,
                           size: 14,
-                          color: Color(0xFF9CA3AF),
+                          color: _textLow,
                         ),
                       ),
                     ],
@@ -98,26 +122,34 @@ class SearchHistoryTagsWidget extends StatelessWidget {
               );
             }).toList(),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 32),
         ],
 
         // rcm keyword/popular
         if (popularKeywords.isNotEmpty) ...[
-          const Row(
+          Row(
             children: [
-              Icon(LucideIcons.search, size: 16, color: Color(0xFF3B82F6)),
-              SizedBox(width: 8),
-              Text(
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(LucideIcons.sparkles, size: 14, color: Colors.orange),
+              ),
+              const SizedBox(width: 10),
+              const Text(
                 'Có phải bạn muốn tìm',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 16,
                   fontWeight: FontWeight.w900,
-                  color: Color(0xFF0A0A0F),
+                  color: _textHigh,
+                  letterSpacing: -0.3,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -128,18 +160,18 @@ class SearchHistoryTagsWidget extends StatelessWidget {
                   onSearchKeyword(k);
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: _surface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                    border: Border.all(color: _border),
                   ),
                   child: Text(
                     k,
                     style: const TextStyle(
                       fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF4B5563),
+                      fontWeight: FontWeight.w700,
+                      color: _textMid,
                     ),
                   ),
                 ),

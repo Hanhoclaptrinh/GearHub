@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+const _surface = Color(0xFF14141E);
+const _border = Color(0xFF2A2A38);
+const _indigo = Color(0xFF6366F1);
+const _textHigh = Color(0xFFF1F1F5);
+const _textLow = Color(0xFF4A4A62);
+
 class ProfileMenuCard extends StatelessWidget {
   final String groupLabel;
   final List<ProfileMenuItem> items;
@@ -22,24 +28,18 @@ class ProfileMenuCard extends StatelessWidget {
           child: Text(
             groupLabel,
             style: const TextStyle(
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: FontWeight.w800,
-              color: Color(0xFFB0B0B0),
-              letterSpacing: 1.5,
+              color: _textLow,
+              letterSpacing: 1.2,
             ),
           ),
         ),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            color: _surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: _border),
           ),
           child: Column(
             children: List.generate(items.length, (index) {
@@ -54,7 +54,7 @@ class ProfileMenuCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Divider(
                         height: 1,
-                        color: const Color(0xFF000000).withValues(alpha: 0.04),
+                        color: _border.withValues(alpha: 0.5),
                       ),
                     ),
                 ],
@@ -84,8 +84,8 @@ class _MenuItemWidget extends StatelessWidget {
               item.title,
               style: const TextStyle(
                 fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF0A0A0F),
+                fontWeight: FontWeight.w600,
+                color: _textHigh,
               ),
             ),
             Transform.scale(
@@ -93,7 +93,7 @@ class _MenuItemWidget extends StatelessWidget {
               child: Switch.adaptive(
                 value: item.toggleValue ?? false,
                 onChanged: item.onToggle,
-                activeTrackColor: const Color(0xFF3B82F6),
+                activeTrackColor: _indigo,
               ),
             ),
           ],
@@ -120,9 +120,9 @@ class _MenuItemWidget extends StatelessWidget {
                   Text(
                     item.title,
                     style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF0A0A0F),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: _textHigh,
                     ),
                   ),
                   if (item.badge != null) ...[
@@ -154,7 +154,7 @@ class _MenuItemWidget extends StatelessWidget {
               const Icon(
                 LucideIcons.chevronRight,
                 size: 16,
-                color: Color(0xFFD1D5DB),
+                color: _textLow,
               ),
             ],
           ),

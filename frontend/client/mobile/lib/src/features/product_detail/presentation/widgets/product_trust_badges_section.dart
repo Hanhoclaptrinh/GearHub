@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+const _surface    = Color(0xFF14141E);
+const _surfaceAlt = Color(0xFF1C1C28);
+const _border     = Color(0xFF2A2A38);
+const _accent     = Color(0xFF6366F1);
+const _textHigh   = Color(0xFFF1F1F5);
+const _textMid    = Color(0xFF9191A8);
+
 class ProductTrustBadgesSection extends StatefulWidget {
   const ProductTrustBadgesSection({super.key});
 
@@ -48,22 +55,23 @@ class _ProductTrustBadgesSectionState extends State<ProductTrustBadgesSection> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Mua ngay tại GearHub,\nnhận thêm nhiều ưu đãi!',
+                  'DỊCH VỤ HẬU MÃI',
                   style: TextStyle(
-                    fontSize: 22,
+                    fontSize: 10,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF0A0A0F),
-                    letterSpacing: -0.5,
-                    height: 1.25,
+                    color: _accent,
+                    letterSpacing: 1.5,
                   ),
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'Nhận thêm nhiều ưu đãi chính hãng',
+                  'ĐẶC QUYỀN TỪ GEARHUB',
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF8A8A9E),
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: _textHigh,
+                    letterSpacing: -0.5,
+                    height: 1.25,
                   ),
                 ),
               ],
@@ -95,19 +103,19 @@ class _ProductTrustBadgesSectionState extends State<ProductTrustBadgesSection> {
                   final b = _badges[index];
                   return Container(
                     width: cardWidth,
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+                    padding: const EdgeInsets.all(28),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      color: _surface,
+                      borderRadius: BorderRadius.circular(32),
                       border: Border.all(
-                        color: const Color(0xFFE5E5EA),
-                        width: 1,
+                        color: _border,
+                        width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
                         ),
                       ],
                     ),
@@ -115,53 +123,62 @@ class _ProductTrustBadgesSectionState extends State<ProductTrustBadgesSection> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          width: 42,
-                          height: 42,
+                          width: 52,
+                          height: 52,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF2F2F7),
-                            borderRadius: BorderRadius.circular(12),
+                            color: _surfaceAlt,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: _border),
                           ),
                           child: Icon(
                             b['icon'] as IconData,
-                            size: 20,
-                            color: const Color(0xFF007AFF),
+                            size: 24,
+                            color: _accent,
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 20),
                         Text(
-                          b['title'] as String,
+                          (b['title'] as String).toUpperCase(),
                           style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF0A0A0F),
-                            letterSpacing: -0.2,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            color: _textHigh,
+                            letterSpacing: 0.5,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         Expanded(
                           child: Text(
                             b['desc'] as String,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: Color(0xFF5C5C6B),
-                              height: 1.3,
+                              color: _textMid.withValues(alpha: 0.8),
+                              height: 1.5,
                             ),
                             maxLines: 5,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        // Learn more
+                        const SizedBox(height: 12),
+                        
                         GestureDetector(
                           onTap: () {},
-                          child: const Text(
-                            'Tìm hiểu thêm',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF0A0A0F),
-                              decoration: TextDecoration.underline,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: _surfaceAlt,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: _border),
+                            ),
+                            child: const Text(
+                              'TÌM HIỂU THÊM',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: _textHigh,
+                                letterSpacing: 0.5,
+                              ),
                             ),
                           ),
                         ),
@@ -181,7 +198,7 @@ class _ProductTrustBadgesSectionState extends State<ProductTrustBadgesSection> {
               width: double.infinity,
               height: 3,
               decoration: BoxDecoration(
-                color: const Color(0xFFE5E5EA),
+                color: _border,
                 borderRadius: BorderRadius.circular(1.5),
               ),
                child: LayoutBuilder(
@@ -197,7 +214,7 @@ class _ProductTrustBadgesSectionState extends State<ProductTrustBadgesSection> {
                           width: thumbWidth,
                           height: 3,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF0A0A0F),
+                            color: _textMid,
                             borderRadius: BorderRadius.circular(1.5),
                           ),
                         ),

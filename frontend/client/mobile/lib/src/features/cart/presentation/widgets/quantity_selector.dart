@@ -104,7 +104,9 @@ class _QuantitySelectorState extends State<QuantitySelector>
           _buildButton(
             icon: LucideIcons.plus,
             onPressed: widget.onIncrement,
-            enabled: widget.maxQuantity == null || widget.quantity < widget.maxQuantity!,
+            enabled:
+                widget.maxQuantity == null ||
+                widget.quantity < widget.maxQuantity!,
           ),
         ],
       ),

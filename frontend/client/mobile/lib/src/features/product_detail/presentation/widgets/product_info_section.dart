@@ -7,6 +7,15 @@ import 'package:mobile/src/shared/models/product_variant_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 
+const _bg         = Color(0xFF0A0A10);
+const _surface    = Color(0xFF14141E);
+const _surfaceAlt = Color(0xFF1C1C28);
+const _border     = Color(0xFF2A2A38);
+const _accent     = Color(0xFF6366F1);
+const _textHigh   = Color(0xFFF1F1F5);
+const _textMid    = Color(0xFF9191A8);
+const _textLow    = Color(0xFF4A4A62);
+
 class ProductInfoSection extends StatefulWidget {
   final ProductModel product;
   final Map<String, String> selectedAttributes;
@@ -134,7 +143,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
   void _showFullSpecs() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: _surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -149,8 +158,8 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                 'Thuộc tính sản phẩm',
                 style: TextStyle(
                   fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.black,
+                  fontWeight: FontWeight.w900,
+                  color: _textHigh,
                   letterSpacing: -0.5,
                 ),
               ),
@@ -172,7 +181,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                                   style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xFF8E8E93),
+                                    color: _textMid,
                                   ),
                                 ),
                               ),
@@ -182,8 +191,8 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                                   e.value,
                                   style: const TextStyle(
                                     fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black,
+                                    fontWeight: FontWeight.w700,
+                                    color: _textHigh,
                                   ),
                                   textAlign: TextAlign.right,
                                 ),
@@ -209,7 +218,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
     final displayKeys = _getDisplayConfigKeys();
 
     return Container(
-      color: Theme.of(context).scaffoldBackgroundColor,
+      color: _bg,
       padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,8 +231,8 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                 'Màu sắc',
                 style: TextStyle(
                   fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.black,
+                  fontWeight: FontWeight.w900,
+                  color: _textHigh,
                   letterSpacing: -0.5,
                 ),
               ),
@@ -263,23 +272,22 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                       widget.onAttributeChanged(colorKey, colorValue);
                     },
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutCubic,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
-                        color: isSelected ? Colors.black : Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        color: isSelected ? _accent : _surfaceAlt,
+                        borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: isSelected
-                              ? Colors.black
-                              : const Color(0xFFE5E5EA),
+                          color: isSelected ? _accent : _border,
                           width: 1.5,
                         ),
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.2),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
+                                  color: _accent.withValues(alpha: 0.4),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
                                 ),
                               ]
                             : [],
@@ -287,23 +295,27 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                       child: Row(
                         children: [
                           Container(
-                            width: 28,
-                            height: 28,
+                            width: 32,
+                            height: 32,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF2F2F7),
+                              color: _surface,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: isSelected
-                                    ? Colors.white24
-                                    : Colors.black.withValues(alpha: 0.05),
+                                color: isSelected ? Colors.white30 : _border,
+                                width: 1.5,
                               ),
-                              image:
-                                  (variant.imageUrl != null ||
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.2),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                              image: (variant.imageUrl != null ||
                                       widget.product.image.isNotEmpty)
                                   ? DecorationImage(
                                       image: CachedNetworkImageProvider(
-                                        variant.imageUrl ??
-                                            widget.product.image,
+                                        variant.imageUrl ?? widget.product.image,
                                       ),
                                       fit: BoxFit.cover,
                                       colorFilter: !anyInStock
@@ -318,23 +330,22 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                             child: !anyInStock
                                 ? Center(
                                     child: Container(
-                                      width: 1.5,
-                                      height: 20,
+                                      width: 2,
+                                      height: 24,
                                       transform: Matrix4.rotationZ(0.785),
-                                      color: isSelected
-                                          ? Colors.white70
-                                          : Colors.black38,
+                                      color: isSelected ? Colors.white70 : _textLow,
                                     ),
                                   )
                                 : null,
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 12),
                           Text(
-                            colorValue,
+                            colorValue.toUpperCase(),
                             style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: isSelected ? Colors.white : Colors.black,
+                              fontSize: 11,
+                              fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                              color: isSelected ? Colors.white : _textMid,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ],
@@ -361,8 +372,8 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                       key,
                       style: const TextStyle(
                         fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.black,
+                        fontWeight: FontWeight.w900,
+                        color: _textHigh,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -389,8 +400,8 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                   'Số lượng',
                   style: TextStyle(
                     fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black,
+                    fontWeight: FontWeight.w900,
+                    color: _textHigh,
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -417,8 +428,8 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                     textAlign: TextAlign.right,
                     style: const TextStyle(
                       fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFFFF3B30),
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFEF4444),
                       height: 1.3,
                     ),
                   ),
@@ -433,53 +444,64 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE5E5EA), width: 1),
+                color: _surface,
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: _border, width: 1.5),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 15,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Center(
-                    child: Text(
-                      'Mô tả sản phẩm',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.black,
-                        letterSpacing: -0.4,
+                  Row(
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: _accent,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'MÔ TẢ SẢN PHẨM',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          color: _textHigh,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   AnimatedCrossFade(
                     firstChild: Text(
                       widget.product.description,
                       maxLines: 4,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
-                        color: Color(0xFF5C5C6B),
-                        height: 1.5,
+                        color: _textMid.withValues(alpha: 0.8),
+                        height: 1.6,
                       ),
                     ),
                     secondChild: Text(
                       widget.product.description,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
-                        color: Color(0xFF5C5C6B),
-                        height: 1.5,
+                        color: _textMid.withValues(alpha: 0.8),
+                        height: 1.6,
                       ),
                     ),
                     crossFadeState: _isDescriptionExpanded
@@ -487,35 +509,45 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                         : CrossFadeState.showFirst,
                     duration: const Duration(milliseconds: 300),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 20),
                   GestureDetector(
                     onTap: () {
                       setState(() {
                         _isDescriptionExpanded = !_isDescriptionExpanded;
                       });
                     },
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _isDescriptionExpanded
-                              ? 'Thu gọn'
-                              : 'Xem thêm chi tiết',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF007AFF),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _surfaceAlt,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: _border),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            (_isDescriptionExpanded
+                                ? 'THU GỌN'
+                                : 'XEM THÊM CHI TIẾT').toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: _textHigh,
+                              letterSpacing: 0.5,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          _isDescriptionExpanded
-                              ? LucideIcons.chevronUp
-                              : LucideIcons.chevronDown,
-                          size: 14,
-                          color: const Color(0xFF007AFF),
-                        ),
-                      ],
+                          const SizedBox(width: 6),
+                          Icon(
+                            _isDescriptionExpanded
+                                ? LucideIcons.chevronUp
+                                : LucideIcons.chevronDown,
+                            size: 14,
+                            color: _textHigh,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -531,8 +563,8 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                 'Thuộc tính chung',
                 style: TextStyle(
                   fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.black,
+                  fontWeight: FontWeight.w900,
+                  color: _textHigh,
                   letterSpacing: -0.5,
                 ),
               ),
@@ -552,15 +584,16 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFE5E5EA)),
+                    color: _surfaceAlt,
+                    border: Border.all(color: _border),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text(
                     'Xem thêm thuộc tính',
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black,
+                      fontWeight: FontWeight.w700,
+                      color: _textHigh,
                     ),
                   ),
                 ),
@@ -603,28 +636,28 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
               child: Opacity(
                 opacity: isDisabled ? 0.35 : (isOutOfStock ? 0.55 : 1.0),
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
+                  duration: const Duration(milliseconds: 300),
                   curve: Curves.easeOutCubic,
                   margin: const EdgeInsets.only(right: 14),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
+                    horizontal: 24,
+                    vertical: 18,
                   ),
                   decoration: BoxDecoration(
-                    color: isSelected ? Colors.black : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    color: isSelected ? _accent : _surfaceAlt,
+                    borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: isSelected
-                          ? Colors.black
+                          ? _accent
                           : isDisabled
-                          ? const Color(0xFFD1D1D6)
-                          : const Color(0xFFE5E5EA),
-                      width: 1,
+                          ? _border.withValues(alpha: 0.5)
+                          : _border,
+                      width: 1.5,
                     ),
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.15),
+                              color: _accent.withValues(alpha: 0.4),
                               blurRadius: 16,
                               offset: const Offset(0, 8),
                             ),
@@ -635,31 +668,32 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        val,
+                        val.toUpperCase(),
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 12,
                           fontWeight: isSelected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
+                              ? FontWeight.w900
+                              : FontWeight.w800,
                           color: isSelected
                               ? Colors.white
-                              : const Color(0xFF3C3C43),
-                          letterSpacing: -0.2,
+                              : _textHigh,
+                          letterSpacing: 0.5,
                           decoration: isOutOfStock
                               ? TextDecoration.lineThrough
                               : null,
                         ),
                       ),
                       if (isOutOfStock) ...[
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Text(
-                          'Hết hàng',
+                          'HẾT HÀNG',
                           style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
                             color: isSelected
-                                ? Colors.white60
-                                : const Color(0xFFFF3B30),
+                                ? Colors.white70
+                                : const Color(0xFFEF4444),
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ],
@@ -691,8 +725,8 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                       entry.key,
                       style: const TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.w400,
-                        color: Color(0xFF8E8E93),
+                        fontWeight: FontWeight.w500,
+                        color: _textMid,
                       ),
                     ),
                   ),
@@ -702,8 +736,8 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                       entry.value,
                       style: const TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
+                        fontWeight: FontWeight.w700,
+                        color: _textHigh,
                       ),
                       textAlign: TextAlign.right,
                     ),
@@ -711,7 +745,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                 ],
               ),
             ),
-            if (!isLast) Container(height: 0.5, color: const Color(0xFFE5E5EA)),
+            if (!isLast) Container(height: 1, color: _border),
           ],
         );
       }).toList(),
@@ -724,8 +758,9 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
       height: 48,
       padding: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF2F2F7),
+        color: _surfaceAlt,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -753,9 +788,9 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                 key: ValueKey<int>(widget.quantity),
                 style: const TextStyle(
                   fontSize: 18,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w900,
                   fontFeatures: [FontFeature.tabularFigures()],
-                  color: Colors.black,
+                  color: _textHigh,
                 ),
               ),
             ),
@@ -798,7 +833,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
         ),
         child: Opacity(
           opacity: disabled ? 0.2 : 1.0,
-          child: Icon(icon, size: 18, color: Colors.black),
+          child: Icon(icon, size: 18, color: _textHigh),
         ),
       ),
     );

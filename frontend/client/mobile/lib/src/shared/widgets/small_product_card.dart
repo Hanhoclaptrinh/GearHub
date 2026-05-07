@@ -113,8 +113,12 @@ class SmallProductCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
-                        isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                        color: isFavorite ? const Color(0xFFFF4D4D) : const Color(0xFF0A0A0F),
+                        isFavorite
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        color: isFavorite
+                            ? const Color(0xFFFF4D4D)
+                            : const Color(0xFF0A0A0F),
                         size: 20,
                       ),
                     ),

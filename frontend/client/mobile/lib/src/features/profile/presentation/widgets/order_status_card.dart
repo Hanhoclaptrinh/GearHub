@@ -9,6 +9,14 @@ import 'package:mobile/src/features/profile/presentation/pages/order_history_pag
 import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_state.dart';
 
+const _surface = Color(0xFF14141E);
+const _surfaceAlt = Color(0xFF1C1C28);
+const _border = Color(0xFF2A2A38);
+const _indigo = Color(0xFF6366F1);
+const _textHigh = Color(0xFFF1F1F5);
+const _textMid = Color(0xFF9191A8);
+const _textLow = Color(0xFF4A4A62);
+
 class OrderStatusCard extends StatelessWidget {
   const OrderStatusCard({super.key});
 
@@ -36,15 +44,9 @@ class OrderStatusCard extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            color: _surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: _border),
           ),
           child: Column(
             children: [
@@ -54,10 +56,10 @@ class OrderStatusCard extends StatelessWidget {
                   const Text(
                     'Đơn hàng của tôi',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF0A0A0F),
-                      letterSpacing: -0.3,
+                      color: _textHigh,
+                      letterSpacing: -0.2,
                     ),
                   ),
                   GestureDetector(
@@ -70,11 +72,11 @@ class OrderStatusCard extends StatelessWidget {
                       );
                     },
                     child: const Text(
-                      'Xem lịch sử mua hàng',
+                      'Xem tất cả',
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF3B82F6),
+                        fontWeight: FontWeight.w700,
+                        color: _indigo,
                       ),
                     ),
                   ),
@@ -184,10 +186,10 @@ class OrderStatusCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: const BoxDecoration(
-                  color: Color(0xFFF5F5F7),
+                  color: _surfaceAlt,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: 24, color: const Color(0xFF4B5563)),
+                child: Icon(icon, size: 22, color: _textMid),
               ),
               if (badgeCount != null && badgeCount != '0')
                 Positioned(
@@ -198,7 +200,7 @@ class OrderStatusCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: const Color(0xFFEF4444),
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+                      border: Border.all(color: _surface, width: 2),
                     ),
                     child: Text(
                       badgeCount,
@@ -217,9 +219,9 @@ class OrderStatusCard extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF6B7280),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: _textLow,
             ),
           ),
         ],

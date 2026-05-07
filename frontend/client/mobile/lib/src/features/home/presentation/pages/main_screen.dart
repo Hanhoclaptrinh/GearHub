@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/features/home/presentation/pages/home_page.dart';
@@ -12,6 +13,12 @@ import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:mobile/src/features/explore/presentation/pages/explore_page.dart';
 import 'package:mobile/src/features/promotions/presentation/pages/promotions_page.dart';
+
+const _surface = Color(0xFF14141E);
+const _border = Color(0xFF2A2A38);
+const _accent = Color(0xFFF59E0B);
+const _accentSoft = Color(0x26F59E0B);
+const _textLow = Color(0xFF4A4A62);
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -101,7 +108,7 @@ class MainScreenState extends State<MainScreen> {
           ),
         ),
         bottomNavigationBar: AnimatedSlide(
-          duration: const Duration(milliseconds: 500),
+          duration: const Duration(milliseconds: 550),
           curve: Curves.easeInOutCubic,
           offset: _isBottomBarVisible ? Offset.zero : const Offset(0, 2),
           child: CustomBottomNavBar(
@@ -124,147 +131,119 @@ class CustomBottomNavBar extends StatelessWidget {
     required this.onItemSelected,
   });
 
+  static const _items = [
+    (icon: LucideIcons.house, label: 'Trang chủ'),
+    (icon: LucideIcons.search, label: 'Cửa hàng'),
+    (icon: LucideIcons.shoppingCart, label: 'Giỏ hàng'),
+    (icon: LucideIcons.shieldCheck, label: 'Ưu đãi'),
+    (icon: LucideIcons.userRound, label: 'Hồ sơ'),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final padding = MediaQuery.of(context).padding;
-    final colorScheme = Theme.of(context).colorScheme;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return Container(
-      margin: EdgeInsets.fromLTRB(12, 0, 12, padding.bottom + 12),
-      decoration: BoxDecoration(
-        color: colorScheme.surface.withValues(alpha: 0.70),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.2),
-          width: 0.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding + 16),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
           child: Container(
-            height: 80,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            height: 72,
+            decoration: BoxDecoration(
+              color: _surface.withValues(alpha: 0.92),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: _border, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 32,
+                  offset: const Offset(0, 12),
+                ),
+                BoxShadow(
+                  color: _accent.withValues(alpha: 0.04),
+                  blurRadius: 24,
+                  offset: const Offset(0, 0),
+                ),
+              ],
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildNavItem(context, 0, LucideIcons.house, 'Trang chủ'),
-                _buildNavItem(context, 1, LucideIcons.search, 'Cửa hàng'),
-                _buildNavItem(context, 2, LucideIcons.shoppingCart, 'Giỏ hàng'),
-                _buildNavItem(context, 3, LucideIcons.shieldCheck, 'Ưu đãi'),
-                _buildNavItem(context, 4, LucideIcons.userRound, 'Hồ sơ'),
-              ],
+              children: List.generate(
+                _items.length,
+                (i) => _NavItem(
+                  index: i,
+                  icon: _items[i].icon,
+                  label: _items[i].label,
+                  isSelected: selectedIndex == i,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    onItemSelected(i);
+                  },
+                ),
+              ),
             ),
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildNavItem(
-    BuildContext context,
-    int index,
-    IconData icon,
-    String label,
-  ) {
-    final isSelected = selectedIndex == index;
-    final colorScheme = Theme.of(context).colorScheme;
-    final accentColor = colorScheme.primary;
+class _NavItem extends StatelessWidget {
+  final int index;
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
 
+  const _NavItem({
+    required this.index,
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => onItemSelected(index),
+      onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 320),
         curve: Curves.easeInOutCubic,
         padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 12 : 8,
-          vertical: 8,
+          horizontal: isSelected ? 16 : 10,
+          vertical: 10,
         ),
         decoration: BoxDecoration(
-          gradient: isSelected
-              ? LinearGradient(
-                  colors: [
-                    accentColor.withValues(alpha: 0.15),
-                    accentColor.withValues(alpha: 0.05),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
-          color: isSelected ? null : Colors.transparent,
+          color: isSelected ? _accentSoft : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
+          border: isSelected
+              ? Border.all(color: _accent.withValues(alpha: 0.25), width: 1)
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(
-                  icon,
-                  size: 24,
-                  color: isSelected
-                      ? accentColor
-                      : colorScheme.onSurface.withValues(alpha: 0.4),
-                ),
-                if (index == 2)
-                  BlocBuilder<CartCubit, CartState>(
-                    builder: (context, state) {
-                      int count = 0;
-                      if (state.cart != null) {
-                        count = state.cart!.items.length;
-                      }
-                      if (count == 0) return const SizedBox.shrink();
-                      return Positioned(
-                        top: -5,
-                        right: -5,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFFF4D4D),
-                            shape: BoxShape.circle,
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
-                          ),
-                          child: Text(
-                            '$count',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-              ],
-            ),
+            _buildIcon(),
+
+            // animated label
             AnimatedSize(
-              duration: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 320),
               curve: Curves.easeInOutCubic,
               child: isSelected
                   ? Padding(
                       padding: const EdgeInsets.only(left: 8),
                       child: Text(
                         label,
-                        style: TextStyle(
-                          color: accentColor,
+                        style: const TextStyle(
+                          color: _accent,
                           fontWeight: FontWeight.w800,
-                          fontSize: 11,
-                          letterSpacing: -0.2,
+                          fontSize: 12,
+                          letterSpacing: 0.1,
                         ),
                       ),
                     )
@@ -273,6 +252,52 @@ class CustomBottomNavBar extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildIcon() {
+    // them so luong item trong card cho badge
+    if (index != 2) {
+      return Icon(icon, size: 22, color: isSelected ? _accent : _textLow);
+    }
+
+    return BlocBuilder<CartCubit, CartState>(
+      builder: (context, state) {
+        final count = state.cart?.items.length ?? 0;
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Icon(icon, size: 22, color: isSelected ? _accent : _textLow),
+            if (count > 0)
+              Positioned(
+                top: -6,
+                right: -6,
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFEF4444),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    count > 99 ? '99+' : '$count',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      height: 1,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

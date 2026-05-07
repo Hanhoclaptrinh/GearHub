@@ -269,9 +269,7 @@ class _CartItemCardState extends State<CartItemCard>
                 curve: Curves.easeOutCubic,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFFF9FAFB)
-                      : Colors.white,
+                  color: isSelected ? const Color(0xFFF9FAFB) : Colors.white,
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
@@ -290,9 +288,7 @@ class _CartItemCardState extends State<CartItemCard>
                       height: 14,
                       margin: const EdgeInsets.only(top: 4, right: 12),
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? Colors.black
-                            : Colors.transparent,
+                        color: isSelected ? Colors.black : Colors.transparent,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isSelected
@@ -364,8 +360,9 @@ class _CartItemCardState extends State<CartItemCard>
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color:
-                                          Colors.black.withValues(alpha: 0.04),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.04,
+                                      ),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Row(
@@ -374,8 +371,9 @@ class _CartItemCardState extends State<CartItemCard>
                                         Text(
                                           'Đổi',
                                           style: TextStyle(
-                                            color: Colors.black
-                                                .withValues(alpha: 0.7),
+                                            color: Colors.black.withValues(
+                                              alpha: 0.7,
+                                            ),
                                             fontSize: 12,
                                             fontWeight: FontWeight.w600,
                                           ),
@@ -384,8 +382,9 @@ class _CartItemCardState extends State<CartItemCard>
                                         Icon(
                                           LucideIcons.chevronDown,
                                           size: 13,
-                                          color: Colors.black
-                                              .withValues(alpha: 0.7),
+                                          color: Colors.black.withValues(
+                                            alpha: 0.7,
+                                          ),
                                         ),
                                       ],
                                     ),

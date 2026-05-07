@@ -7,6 +7,11 @@ import '../pages/product_reviews_page.dart';
 import 'package:mobile/src/features/product_review/presentation/state/review_cubit.dart';
 import 'package:mobile/src/features/product_review/presentation/state/review_state.dart';
 
+const _surface = Color(0xFF14141E);
+const _border = Color(0xFF2A2A38);
+const _textHigh = Color(0xFFF1F1F5);
+const _textMid = Color(0xFF9191A8);
+
 class ProductReviewsPreviewSection extends StatelessWidget {
   final ProductModel product;
 
@@ -14,8 +19,6 @@ class ProductReviewsPreviewSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return BlocProvider(
       create: (context) => getIt<ReviewCubit>()..loadReviews(product.id),
       child: BlocBuilder<ReviewCubit, ReviewState>(
@@ -41,8 +44,8 @@ class ProductReviewsPreviewSection extends StatelessWidget {
                             'Đánh giá',
                             style: TextStyle(
                               fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.black,
+                              fontWeight: FontWeight.w900,
+                              color: _textHigh,
                               letterSpacing: -0.5,
                             ),
                           ),
@@ -57,10 +60,10 @@ class ProductReviewsPreviewSection extends StatelessWidget {
                                 const SizedBox(width: 4),
                                 Text(
                                   '${product.averageRating} (${product.reviewCount} đánh giá)',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w700,
+                                    color: _textMid,
                                   ),
                                 ),
                               ],
@@ -77,21 +80,21 @@ class ProductReviewsPreviewSection extends StatelessWidget {
                               ),
                             );
                           },
-                          child: Row(
+                          child: const Row(
                             children: [
                               Text(
                                 'Tất cả',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey.shade700,
+                                  fontWeight: FontWeight.w700,
+                                  color: _textMid,
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: 8),
                               Icon(
                                 Icons.arrow_forward_ios_rounded,
                                 size: 10,
-                                color: Colors.grey.shade700,
+                                color: _textMid,
                               ),
                             ],
                           ),
@@ -102,16 +105,14 @@ class ProductReviewsPreviewSection extends StatelessWidget {
                   if (hasReviews)
                     _buildReviewCards(state.reviews.take(3).toList())
                   else ...[
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0, bottom: 20.0),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8.0, bottom: 20.0),
                       child: Text(
                         'Chưa có đánh giá nào cho sản phẩm này.',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
-                          color: colorScheme.onSurfaceVariant.withValues(
-                            alpha: 0.6,
-                          ),
+                          color: _textMid,
                         ),
                       ),
                     ),
@@ -166,12 +167,9 @@ class _ReviewCard extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: _surface,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: Colors.black.withValues(alpha: 0.05),
-              width: 1,
-            ),
+            border: Border.all(color: _border, width: 1),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,8 +188,8 @@ class _ReviewCard extends StatelessWidget {
                     userName,
                     style: const TextStyle(
                       fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF8E8E93),
+                      fontWeight: FontWeight.w700,
+                      color: _textMid,
                     ),
                   ),
                 ],
@@ -203,7 +201,7 @@ class _ReviewCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
-                    color: Colors.black,
+                    color: _textHigh,
                     height: 1.5,
                   ),
                 ),

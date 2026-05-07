@@ -2,23 +2,23 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lottie/lottie.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
+import 'package:mobile/src/features/auth/presentation/pages/login_page.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
+import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_state.dart';
 import 'package:mobile/src/features/cart/domain/entities/cart_item_entity.dart';
+import 'package:mobile/src/features/cart/presentation/widgets/cart_extra_views.dart';
+import 'package:mobile/src/features/cart/presentation/widgets/cart_item_card.dart';
+import 'package:mobile/src/features/checkout/presentation/pages/checkout_page.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/styles/app_colors.dart';
 import 'package:mobile/src/features/home/presentation/pages/main_screen.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
-import 'package:lottie/lottie.dart';
-import '../widgets/cart_item_card.dart';
-import '../widgets/cart_extra_views.dart';
 import 'package:mobile/src/shared/widgets/large_product_card.dart';
-import 'package:mobile/src/features/checkout/presentation/pages/checkout_page.dart';
-import 'package:mobile/src/features/auth/presentation/pages/login_page.dart';
-import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 
 class CartPage extends StatefulWidget {
   final bool isNavVisible;
@@ -44,7 +44,8 @@ class _CartPageState extends State<CartPage> {
       name: 'Leather Case',
       tagline: 'Premium Grade Leather',
       price: 59,
-      image: 'https://cdn.shopify.com/s/files/1/0384/6721/files/856504011970_C_iPhone_de13076c-73cb-4577-8ae4-4f8c322185dd.jpg?v=1758564505&width=2800&height=2800&crop=center',
+      image:
+          'https://cdn.shopify.com/s/files/1/0384/6721/files/856504011970_C_iPhone_de13076c-73cb-4577-8ae4-4f8c322185dd.jpg?v=1758564505&width=2800&height=2800&crop=center',
       description: "test",
     ),
     const ProductModel(
@@ -52,7 +53,8 @@ class _CartPageState extends State<CartPage> {
       name: 'Screen Protector',
       tagline: 'Tempered Glass',
       price: 19,
-      image: 'https://tse3.mm.bing.net/th/id/OIP.bhLhE--GloVMYckJl6LnZQHaHk?rs=1&pid=ImgDetMain&o=7&rm=3',
+      image:
+          'https://tse3.mm.bing.net/th/id/OIP.bhLhE--GloVMYckJl6LnZQHaHk?rs=1&pid=ImgDetMain&o=7&rm=3',
       description: "test",
     ),
   ];
@@ -478,9 +480,10 @@ class _CartPageState extends State<CartPage> {
                               MaterialPageRoute(
                                 builder: (context) => ProductDetailPage(
                                   product: item.product,
-                                  initialAttributes: item.productVariant.attributes.map(
-                                    (k, v) => MapEntry(k, v.toString()),
-                                  ),
+                                  initialAttributes: item
+                                      .productVariant
+                                      .attributes
+                                      .map((k, v) => MapEntry(k, v.toString())),
                                 ),
                               ),
                             );
@@ -538,7 +541,7 @@ class _CartPageState extends State<CartPage> {
         'Giỏ hàng',
         style: TextStyle(
           fontWeight: FontWeight.w900,
-          fontSize: 22,
+          fontSize: 24,
           letterSpacing: -0.5,
         ),
       ),
@@ -556,7 +559,7 @@ class _CartPageState extends State<CartPage> {
       title: Text(
         'Giỏ hàng',
         style: TextStyle(
-          fontSize: 22,
+          fontSize: 24,
           fontWeight: FontWeight.w900,
           color: Theme.of(context).colorScheme.onSurface,
           letterSpacing: -0.5,

@@ -109,7 +109,7 @@ class _HomePageState extends State<HomePage>
           style: const TextStyle(
             color: Color(0xFF0A0A0F),
             fontWeight: FontWeight.w900,
-            fontSize: 22,
+            fontSize: 24,
             letterSpacing: -0.5,
           ),
         ),

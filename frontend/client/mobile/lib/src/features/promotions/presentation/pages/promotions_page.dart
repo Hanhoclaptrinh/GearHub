@@ -2,13 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+const _bg = Color(0xFF0A0A10);
+const _surface = Color(0xFF14141E);
+const _surfaceAlt = Color(0xFF1C1C28);
+const _border = Color(0xFF2A2A38);
+const _indigo = Color(0xFF6366F1);
+const _accent = Color(0xFFF59E0B);
+const _textHigh = Color(0xFFF1F1F5);
+const _textLow = Color(0xFF4A4A62);
+
 class PromotionsPage extends StatelessWidget {
   const PromotionsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
+      backgroundColor: _bg,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
@@ -54,7 +63,7 @@ class PromotionsPage extends StatelessWidget {
 
   Widget _buildAppBar() {
     return SliverAppBar(
-      backgroundColor: const Color(0xFF0A0A0F),
+      backgroundColor: _bg,
       floating: true,
       elevation: 0,
       scrolledUnderElevation: 0,
@@ -64,7 +73,7 @@ class PromotionsPage extends StatelessWidget {
         style: TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.w900,
-          color: Colors.white,
+          color: _textHigh,
           letterSpacing: -0.5,
         ),
       ),
@@ -87,12 +96,9 @@ class PromotionsPage extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1E1E2E), Color(0xFF0A0A0F)],
+          colors: [_surfaceAlt, _bg],
         ),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        border: Border.all(color: _border, width: 1),
       ),
       child: Stack(
         children: [
@@ -129,7 +135,7 @@ class PromotionsPage extends StatelessWidget {
                         const Text(
                           'PLATINUM ELITE',
                           style: TextStyle(
-                            color: Color(0xFFD4A843),
+                            color: _accent,
                             fontSize: 20,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 0.5,
@@ -144,10 +150,10 @@ class PromotionsPage extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
+                    const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           '2,850',
                           style: TextStyle(
                             color: Colors.white,
@@ -157,10 +163,7 @@ class PromotionsPage extends StatelessWidget {
                         ),
                         Text(
                           'Điểm GearPoints',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.5),
-                            fontSize: 12,
-                          ),
+                          style: TextStyle(color: _textLow, fontSize: 12),
                         ),
                       ],
                     ),
@@ -170,14 +173,16 @@ class PromotionsPage extends StatelessWidget {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
+                        color: _indigo.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white12),
+                        border: Border.all(
+                          color: _indigo.withValues(alpha: 0.2),
+                        ),
                       ),
                       child: const Text(
                         'ĐỔI QUÀ',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: _indigo,
                           fontSize: 11,
                           fontWeight: FontWeight.w900,
                         ),
@@ -200,7 +205,7 @@ class PromotionsPage extends StatelessWidget {
         Text(
           title,
           style: const TextStyle(
-            color: Colors.white,
+            color: _textHigh,
             fontSize: 14,
             fontWeight: FontWeight.w900,
             letterSpacing: 1.0,
@@ -209,7 +214,7 @@ class PromotionsPage extends StatelessWidget {
         Text(
           action,
           style: const TextStyle(
-            color: Color(0xFF3B82F6),
+            color: _indigo,
             fontSize: 12,
             fontWeight: FontWeight.w700,
           ),
@@ -228,9 +233,9 @@ class PromotionsPage extends StatelessWidget {
     return Container(
       height: 100,
       decoration: BoxDecoration(
-        color: const Color(0xFF16161E),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        color: _surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _border),
       ),
       child: Row(
         children: [
@@ -255,7 +260,7 @@ class PromotionsPage extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: _textHigh,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -265,10 +270,7 @@ class PromotionsPage extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     'Mã: $code • $expiry',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.4),
-                      fontSize: 11,
-                    ),
+                    style: const TextStyle(color: _textLow, fontSize: 11),
                   ),
                 ],
               ),
@@ -284,13 +286,13 @@ class PromotionsPage extends StatelessWidget {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: _indigo,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Text(
                   'LƯU',
                   style: TextStyle(
-                    color: Colors.black,
+                    color: Colors.white,
                     fontSize: 10,
                     fontWeight: FontWeight.w900,
                   ),

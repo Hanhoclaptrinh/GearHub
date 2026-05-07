@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
+const _surface = Color(0xFF14141E);
+const _border = Color(0xFF2A2A38);
+const _accent = Color(0xFF6366F1);
+const _textHigh = Color(0xFFF1F1F5);
+const _textMid = Color(0xFF9191A8);
+
 class StockLimitDialog extends StatelessWidget {
   final int stockCount;
   final int currentQty;
@@ -33,75 +39,96 @@ class StockLimitDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: Colors.white,
+      backgroundColor: _surface,
+      elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: const BorderSide(
-          color: Color(0xFFE5E5EA),
-          width: 1,
-        ),
+        borderRadius: BorderRadius.circular(32),
+        side: const BorderSide(color: _border, width: 1.5),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(32),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 40,
+              spreadRadius: 10,
+            ),
+          ],
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 56,
-              height: 56,
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(
-                color: const Color(0xFFFF3B30).withValues(alpha: 0.12),
+                color: const Color(0xFFEF4444).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.2),
+                  width: 2,
+                ),
               ),
               child: Lottie.asset(
                 'assets/animations/warning.json',
                 repeat: false,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             const Text(
-              'Vượt quá giới hạn',
+              'GIỚI HẠN TỒN KHO',
               style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: Colors.black,
-                letterSpacing: -0.4,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFFEF4444),
+                letterSpacing: 1.5,
               ),
             ),
             const SizedBox(height: 12),
+            const Text(
+              'VƯỢT QUÁ SỐ LƯỢNG',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: _textHigh,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 16),
             Text(
               message ??
                   'Số lượng sản phẩm trong kho không đủ.\n\nKho hiện còn $stockCount sản phẩm và bạn đã có $currentQty sản phẩm trong giỏ.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w400,
-                color: Color(0xFF5C5C6B),
-                height: 1.45,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: _textMid.withValues(alpha: 0.8),
+                height: 1.5,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
+              height: 56,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
+                  backgroundColor: _accent,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 14,
-                  ),
                 ),
                 onPressed: () => Navigator.pop(context),
                 child: const Text(
                   'ĐÃ HIỂU',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
+                    letterSpacing: 1.0,
                   ),
                 ),
               ),

@@ -435,13 +435,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
               Navigator.pop(dialogContext);
               HapticFeedback.heavyImpact();
               context.read<CheckoutCubit>().placeOrder(
-                    receiverName: _nameController.text,
-                    receiverPhone: _phoneController.text,
-                    shippingAddress: _addressController.text,
-                    note: _noteController.text,
-                    paymentMethod: _selectedPaymentMethod,
-                    items: widget.args.items,
-                  );
+                receiverName: _nameController.text,
+                receiverPhone: _phoneController.text,
+                shippingAddress: _addressController.text,
+                note: _noteController.text,
+                paymentMethod: _selectedPaymentMethod,
+                items: widget.args.items,
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).primaryColor,
@@ -454,10 +454,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ),
             child: const Text(
               "Xác nhận",
-              style: TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: 15,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
             ),
           ),
         ],

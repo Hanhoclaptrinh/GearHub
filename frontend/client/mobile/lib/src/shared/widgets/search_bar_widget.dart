@@ -13,9 +13,9 @@ class SearchBarWidget extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const SearchPage()),
-        );
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const SearchPage()));
       },
       behavior: HitTestBehavior.opaque,
       child: Container(
@@ -30,20 +30,16 @@ class SearchBarWidget extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(
-              LucideIcons.search,
-              size: 20,
-              color: colorScheme.onSurface.withValues(alpha: 0.4),
-            ),
+            const Icon(LucideIcons.search, size: 20),
             const SizedBox(width: 14),
-            Expanded(
+            const Expanded(
               child: Text(
                 'Tìm kiếm sản phẩm, thương hiệu...',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
-                  color: colorScheme.onSurface.withValues(alpha: 0.4),
                   letterSpacing: -0.2,
+                  color: Color(0xFFF1F1F5),
                 ),
               ),
             ),

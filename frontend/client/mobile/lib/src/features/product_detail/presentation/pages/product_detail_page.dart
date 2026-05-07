@@ -17,6 +17,11 @@ import '../state/product_detail_cubit.dart';
 import '../state/product_detail_state.dart';
 import 'product_ar_view_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
+
+const _bg = Color(0xFF0A0A10);
+const _accent = Color(0xFF6366F1);
+const _textMid = Color(0xFF9191A8);
 
 class ProductDetailPage extends StatelessWidget {
   final ProductModel product;
@@ -246,9 +251,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
       final entryToSave =
           '${product.id}|${product.name}|$priceToSave|$imageToSave|$attributesJson';
 
-      currentList.removeWhere(
-        (e) => e.startsWith('${product.id}|'),
-      );
+      currentList.removeWhere((e) => e.startsWith('${product.id}|'));
       currentList.insert(0, entryToSave);
 
       if (currentList.length > 5) {
@@ -315,125 +318,144 @@ class _ProductDetailViewState extends State<ProductDetailView> {
         final currentVariant = _getCurrentVariant(currentProduct);
         final maxQty = currentVariant?.stock ?? 0;
 
-        return Scaffold(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          body: Stack(
-            children: [
-              CustomScrollView(
-                controller: _scrollController,
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  SliverAppBar(
-                    expandedHeight: 0,
-                    floating: true,
-                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                    elevation: 0,
-                    scrolledUnderElevation: 0,
-                    leading: IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back_ios_rounded,
-                        color: Colors.black,
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    actions: [
-                      IconButton(
-                        icon: const Icon(LucideIcons.box, color: Colors.black),
-                        onPressed: () => _navigateToAR(currentProduct),
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          LucideIcons.messageCircle,
-                          color: Colors.black,
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle.light,
+          child: Scaffold(
+            backgroundColor: _bg,
+            body: Stack(
+              children: [
+                CustomScrollView(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    SliverAppBar(
+                      expandedHeight: 0,
+                      floating: true,
+                      backgroundColor: _bg,
+                      elevation: 0,
+                      scrolledUnderElevation: 0,
+                      centerTitle: true,
+                      leading: Padding(
+                        padding: const EdgeInsets.only(left: 12),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            color: _textMid,
+                          ),
+                          onPressed: () => Navigator.pop(context),
                         ),
-                        onPressed: () {},
                       ),
-                    ],
-                  ),
-                  SliverToBoxAdapter(
-                    child: ProductHeroSection(
-                      product: currentProduct,
-                      currentVariant: currentVariant,
-                      selectedAttributes: _selectedAttributes,
-                      is3DMode: _is3DMode,
-                      onAttributeChanged: (key, value) =>
-                          _onAttributeChanged(key, value, currentProduct),
-                      on3DToggle: () => setState(() => _is3DMode = !_is3DMode),
-                      onARPressed: () => _navigateToAR(currentProduct),
+                      actions: [
+                        Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          child: IconButton(
+                            icon: const Icon(
+                              LucideIcons.box,
+                              color: _textMid
+                            ),
+                            onPressed: () => _navigateToAR(currentProduct),
+                          ),
+                        ),
+                        Container(
+                          margin: const EdgeInsets.only(right: 16),
+                          child: IconButton(
+                            icon: const Icon(
+                              LucideIcons.messageCircle,
+                              color: _textMid
+                            ),
+                            onPressed: () {},
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: ProductInfoSection(
-                      product: currentProduct,
-                      selectedAttributes: _selectedAttributes,
-                      quantity: _quantity,
-                      maxQuantity: maxQty,
-                      onAttributeChanged: (key, value) =>
-                          _onAttributeChanged(key, value, currentProduct),
-                      isComboAvailable: (key, value) =>
-                          isComboAvailable(key, value, currentProduct),
-                      isValueInStock: (key, value) =>
-                          isValueInStock(key, value, currentProduct),
-                      onIncrement: () {
-                        if (_quantity < maxQty) {
-                          setState(() => _quantity++);
-                        }
-                      },
-                      onDecrement: () {
-                        if (_quantity > 1) {
-                          setState(() => _quantity--);
-                        }
-                      },
-                      onLongPressIncrement: () => _startTimer(() {
-                        if (_quantity < maxQty) {
-                          setState(() => _quantity++);
-                        }
-                      }),
-                      onLongPressDecrement: () => _startTimer(() {
-                        if (_quantity > 1) {
-                          setState(() => _quantity--);
-                        }
-                      }),
-                      onLongPressEnd: () => _timer?.cancel(),
+                    SliverToBoxAdapter(
+                      child: ProductHeroSection(
+                        product: currentProduct,
+                        currentVariant: currentVariant,
+                        selectedAttributes: _selectedAttributes,
+                        is3DMode: _is3DMode,
+                        onAttributeChanged: (key, value) =>
+                            _onAttributeChanged(key, value, currentProduct),
+                        on3DToggle: () =>
+                            setState(() => _is3DMode = !_is3DMode),
+                        onARPressed: () => _navigateToAR(currentProduct),
+                      ),
                     ),
-                  ),
-                  const SliverToBoxAdapter(child: ProductTrustBadgesSection()),
-                  SliverToBoxAdapter(
-                    child: ProductReviewsPreviewSection(
-                      product: currentProduct,
+                    SliverToBoxAdapter(
+                      child: ProductInfoSection(
+                        product: currentProduct,
+                        selectedAttributes: _selectedAttributes,
+                        quantity: _quantity,
+                        maxQuantity: maxQty,
+                        onAttributeChanged: (key, value) =>
+                            _onAttributeChanged(key, value, currentProduct),
+                        isComboAvailable: (key, value) =>
+                            isComboAvailable(key, value, currentProduct),
+                        isValueInStock: (key, value) =>
+                            isValueInStock(key, value, currentProduct),
+                        onIncrement: () {
+                          if (_quantity < maxQty) {
+                            setState(() => _quantity++);
+                          }
+                        },
+                        onDecrement: () {
+                          if (_quantity > 1) {
+                            setState(() => _quantity--);
+                          }
+                        },
+                        onLongPressIncrement: () => _startTimer(() {
+                          if (_quantity < maxQty) {
+                            setState(() => _quantity++);
+                          }
+                        }),
+                        onLongPressDecrement: () => _startTimer(() {
+                          if (_quantity > 1) {
+                            setState(() => _quantity--);
+                          }
+                        }),
+                        onLongPressEnd: () => _timer?.cancel(),
+                      ),
                     ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: ProductRecommendationsSection(
-                      recommendations: relatedProducts,
+                    const SliverToBoxAdapter(
+                      child: ProductTrustBadgesSection(),
                     ),
-                  ),
-                  const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
-                ],
-              ),
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: StickyBottomBar(
-                  product: currentProduct,
-                  selectedVariant: currentVariant,
-                  quantity: _quantity,
-                  isVisible: _showBottomBar,
+                    SliverToBoxAdapter(
+                      child: ProductReviewsPreviewSection(
+                        product: currentProduct,
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: ProductRecommendationsSection(
+                        recommendations: relatedProducts,
+                      ),
+                    ),
+                    const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
+                  ],
                 ),
-              ),
-              if (state is ProductDetailLoading)
-                const Positioned(
-                  top: 0,
+                Positioned(
+                  bottom: 0,
                   left: 0,
                   right: 0,
-                  child: LinearProgressIndicator(
-                    backgroundColor: Colors.transparent,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                    minHeight: 2,
+                  child: StickyBottomBar(
+                    product: currentProduct,
+                    selectedVariant: currentVariant,
+                    quantity: _quantity,
+                    isVisible: _showBottomBar,
                   ),
                 ),
-            ],
+                if (state is ProductDetailLoading)
+                  const Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: LinearProgressIndicator(
+                      backgroundColor: Colors.transparent,
+                      valueColor: AlwaysStoppedAnimation<Color>(_accent),
+                      minHeight: 2,
+                    ),
+                  ),
+              ],
+            ),
           ),
         );
       },
