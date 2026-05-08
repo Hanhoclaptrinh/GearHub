@@ -434,8 +434,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
                     boxShadow: [
                       BoxShadow(
                         color: _accent.withValues(alpha: 0.3),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
+                        blurRadius: 5,
                       ),
                     ],
                   ),

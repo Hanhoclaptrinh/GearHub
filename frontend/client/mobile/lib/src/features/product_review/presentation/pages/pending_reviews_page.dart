@@ -18,7 +18,6 @@ const _surfaceAlt = Color(0xFF1C1C28);
 const _border = Color(0xFF2A2A38);
 const _accent = Color(0xFFF59E0B);
 const _accentSoft = Color(0x26F59E0B);
-const _indigo = Color(0xFF6366F1);
 const _textHigh = Color(0xFFF1F1F5);
 const _textMid = Color(0xFF9191A8);
 const _textLow = Color(0xFF4A4A62);
@@ -365,7 +364,7 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
                               }
                             },
                             style: FilledButton.styleFrom(
-                              backgroundColor: _indigo,
+                              backgroundColor: _accent,
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
@@ -376,7 +375,7 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                                color: Colors.black,
                               ),
                             ),
                           ),

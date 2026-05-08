@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+const _textHigh = Color(0xFFF1F1F5);
+const _textMid = Color(0xFF9191A8);
 
 class ShopReplyWidget extends StatefulWidget {
   final String reply;
@@ -25,16 +27,16 @@ class _ShopReplyWidgetState extends State<ShopReplyWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              Icon(LucideIcons.reply, size: 14, color: colorScheme.onSurface),
-              const SizedBox(width: 8),
+              Icon(LucideIcons.reply, size: 14, color: _textMid),
+              SizedBox(width: 8),
               Text(
                 'Phản hồi từ GearHub',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: colorScheme.onSurface,
+                  color: _textHigh,
                 ),
               ),
             ],
@@ -44,11 +46,7 @@ class _ShopReplyWidgetState extends State<ShopReplyWidget> {
             widget.reply,
             maxLines: _isExpanded ? null : 2,
             overflow: _isExpanded ? null : TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 14,
-              color: colorScheme.onSurfaceVariant,
-              height: 1.4,
-            ),
+            style: const TextStyle(fontSize: 14, color: _textMid, height: 1.4),
           ),
           if (widget.reply.length > 100) ...[
             const SizedBox(height: 4),
@@ -66,7 +64,9 @@ class _ShopReplyWidgetState extends State<ShopReplyWidget> {
                     ),
                   ),
                   Icon(
-                    _isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                    _isExpanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
                     size: 16,
                     color: colorScheme.primary,
                   ),

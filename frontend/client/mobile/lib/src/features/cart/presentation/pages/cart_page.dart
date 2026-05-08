@@ -639,7 +639,7 @@ class _CartPageState extends State<CartPage> {
             color: _textMid,
             size: 24,
           ),
-          onPressed: () {},
+          onPressed: (){},
         ),
         const SizedBox(width: 8),
       ],
@@ -719,8 +719,7 @@ class _CartPageState extends State<CartPage> {
                     ? [
                         BoxShadow(
                           color: _accent.withValues(alpha: 0.25),
-                          blurRadius: 14,
-                          offset: const Offset(0, 4),
+                          blurRadius: 5,
                         ),
                       ]
                     : [],
