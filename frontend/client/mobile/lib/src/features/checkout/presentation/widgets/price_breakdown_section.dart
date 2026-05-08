@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
 
+const _surface  = Color(0xFF14141E);
+const _border   = Color(0xFF2A2A38);
+const _accent   = Color(0xFFF59E0B);
+const _textHigh = Color(0xFFF1F1F5);
+const _textMid  = Color(0xFF9191A8);
+const _green    = Color(0xFF34D399);
+
 class PriceBreakdownSection extends StatelessWidget {
   final double subtotal;
   final double shipping;
@@ -20,35 +27,30 @@ class PriceBreakdownSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: _border, width: 0.5),
       ),
       child: Column(
         children: [
           _priceRow("Tạm tính", formatVND(subtotal)),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           _priceRow("Phí vận chuyển", formatVND(shipping)),
-          const SizedBox(height: 12),
-          _priceRow(
-            "Giảm giá",
-            "-${formatVND(discount)}",
-            valueColor: const Color(0xFF10B981),
-          ),
-          const SizedBox(height: 12),
+          if (discount > 0) ...[
+            const SizedBox(height: 14),
+            _priceRow(
+              "Giảm giá",
+              "-${formatVND(discount)}",
+              valueColor: _green,
+            ),
+          ],
+          const SizedBox(height: 14),
           _priceRow("Thuế VAT (10%)", formatVND(vat)),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
-            child: Divider(height: 1, color: Color(0xFFF1F5F9)),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            child: Container(height: 1, color: _border),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -57,8 +59,8 @@ class PriceBreakdownSection extends StatelessWidget {
                 "Tổng số tiền",
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  color: Color(0xFF475569),
+                  fontSize: 15,
+                  color: _textMid,
                 ),
               ),
               Text(
@@ -66,8 +68,8 @@ class PriceBreakdownSection extends StatelessWidget {
                 style: const TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 22,
-                  color: Color(0xFF3B82F6),
-                  letterSpacing: -1,
+                  color: _accent,
+                  letterSpacing: -0.5,
                 ),
               ),
             ],
@@ -83,14 +85,14 @@ class PriceBreakdownSection extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(color: Color(0xFF64748B), fontSize: 14),
+          style: const TextStyle(color: _textMid, fontSize: 14),
         ),
         Text(
           value,
           style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 15,
-            color: valueColor ?? const Color(0xFF0F172A),
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: valueColor ?? _textHigh,
           ),
         ),
       ],

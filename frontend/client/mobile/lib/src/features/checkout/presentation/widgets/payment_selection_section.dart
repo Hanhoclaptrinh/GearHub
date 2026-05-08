@@ -1,5 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+const _surface    = Color(0xFF14141E);
+const _surfaceAlt = Color(0xFF1C1C28);
+const _border     = Color(0xFF2A2A38);
+const _indigo     = Color(0xFF6366F1);
+const _indigoSoft = Color(0x1A6366F1);
+const _textHigh   = Color(0xFFF1F1F5);
+const _textMid    = Color(0xFF9191A8);
 
 class PaymentSelectionSection extends StatelessWidget {
   final String selectedMethod;
@@ -21,43 +30,22 @@ class PaymentSelectionSection extends StatelessWidget {
           style: TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: 16,
-            color: Color(0xFF0F172A),
+            color: _textHigh,
           ),
         ),
         const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFF1F5F9)),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF0F172A).withValues(alpha: 0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              _buildPaymentOption(
-                id: "COD",
-                title: "Thanh toán khi nhận hàng",
-                subtitle: "COD (Cash On Delivery)",
-                icon: LucideIcons.banknote,
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Divider(height: 1, color: Color(0xFFF1F5F9)),
-              ),
-              _buildPaymentOption(
-                id: "PAYMENT_GATEWAY",
-                title: "Cổng thanh toán online",
-                subtitle: "VNPay Online Payment Gateway",
-                icon: LucideIcons.creditCard,
-              ),
-            ],
-          ),
+        _buildPaymentOption(
+          id: "COD",
+          title: "Thanh toán khi nhận hàng",
+          subtitle: "COD (Cash On Delivery)",
+          icon: LucideIcons.banknote,
+        ),
+        const SizedBox(height: 10),
+        _buildPaymentOption(
+          id: "PAYMENT_GATEWAY",
+          title: "Cổng thanh toán online",
+          subtitle: "VNPay Online Payment Gateway",
+          icon: LucideIcons.creditCard,
         ),
       ],
     );
@@ -71,21 +59,41 @@ class PaymentSelectionSection extends StatelessWidget {
   }) {
     final bool isSelected = selectedMethod == id;
 
-    return InkWell(
-      onTap: () => onMethodChanged(id),
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.all(20),
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onMethodChanged(id);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: isSelected ? _indigoSoft : _surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isSelected
+                ? _indigo.withValues(alpha: 0.5)
+                : _border,
+            width: isSelected ? 1.5 : 0.5,
+          ),
+        ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              size: 24,
-              color: isSelected
-                  ? const Color(0xFF3B82F6)
-                  : const Color(0xFF475569),
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: isSelected ? _indigo.withValues(alpha: 0.15) : _surfaceAlt,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                icon,
+                size: 22,
+                color: isSelected ? _indigo : _textMid,
+              ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,10 +102,8 @@ class PaymentSelectionSection extends StatelessWidget {
                     title,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: isSelected
-                          ? const Color(0xFF3B82F6)
-                          : const Color(0xFF0F172A),
+                      fontSize: 14,
+                      color: isSelected ? _textHigh : _textMid,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -105,18 +111,27 @@ class PaymentSelectionSection extends StatelessWidget {
                     subtitle,
                     style: const TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF64748B),
+                      color: _textMid,
                     ),
                   ),
                 ],
               ),
             ),
-            Icon(
-              isSelected ? LucideIcons.circleCheck : LucideIcons.circle,
-              size: 20,
-              color: isSelected
-                  ? const Color(0xFF10B981)
-                  : const Color(0xFFCBD5E1),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected ? _indigo : Colors.transparent,
+                border: Border.all(
+                  color: isSelected ? _indigo : _border,
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? const Icon(Icons.check, size: 14, color: Colors.white)
+                  : null,
             ),
           ],
         ),

@@ -3,6 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+const _surface = Color(0xFF14141E);
+const _border = Color(0xFF2A2A38);
+const _accent = Color(0xFFF59E0B);
+const _textHigh = Color(0xFFF1F1F5);
+const _textMid = Color(0xFF9191A8);
+
 class CheckoutSummary extends StatelessWidget {
   final double subtotal;
   final double shipping;
@@ -24,27 +30,23 @@ class CheckoutSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final padding = MediaQuery.of(context).padding;
-    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       decoration: BoxDecoration(
-        color: colorScheme.surface.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.2),
-          width: 0.5,
-        ),
+        color: _surface.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: _border, width: 0.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withValues(alpha: 0.4),
             blurRadius: 30,
             offset: const Offset(0, 10),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(28),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Padding(
@@ -52,52 +54,45 @@ class CheckoutSummary extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildSummaryRow(
-                  label: 'Subtotal',
-                  amount: subtotal,
-                  isLight: true,
-                ),
+                _buildSummaryRow(label: 'Tạm tính', amount: subtotal),
                 const SizedBox(height: 12),
-                _buildSummaryRow(
-                  label: 'Shipping',
-                  amount: shipping,
-                  isLight: true,
-                ),
+                _buildSummaryRow(label: 'Phí vận chuyển', amount: shipping),
                 if (discount > 0) ...[
                   const SizedBox(height: 12),
                   _buildSummaryRow(
-                    label: 'Discount',
+                    label: 'Giảm giá',
                     amount: -discount,
-                    isLight: true,
-                    amountColor: Colors.greenAccent.shade700,
+                    amountColor: const Color(0xFF34D399),
                   ),
                 ],
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Divider(height: 1, thickness: 0.5),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  child: Container(height: 1, color: _border),
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      'Total Amount',
+                      'Tổng cộng',
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: _textMid,
                       ),
                     ),
                     Text(
-                      '\$${total.toStringAsFixed(0)}',
+                      '${total.toStringAsFixed(0)} ₫',
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
+                        color: _accent,
                         letterSpacing: -0.5,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
-                _buildCheckoutButton(context),
+                _buildCheckoutButton(),
                 SizedBox(height: padding.bottom > 0 ? padding.bottom - 16 : 0),
               ],
             ),
@@ -110,7 +105,6 @@ class CheckoutSummary extends StatelessWidget {
   Widget _buildSummaryRow({
     required String label,
     required double amount,
-    bool isLight = false,
     Color? amountColor,
   }) {
     return Row(
@@ -118,91 +112,74 @@ class CheckoutSummary extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 14,
-            fontWeight: isLight ? FontWeight.w400 : FontWeight.w500,
-            color: isLight ? Colors.black.withValues(alpha: 0.4) : null,
+            fontWeight: FontWeight.w400,
+            color: _textMid,
           ),
         ),
         Text(
           amount >= 0
-              ? '\$${amount.toStringAsFixed(0)}'
-              : '-\$${(-amount).toStringAsFixed(0)}',
+              ? '${amount.toStringAsFixed(0)} ₫'
+              : '-${(-amount).toStringAsFixed(0)} ₫',
           style: TextStyle(
             fontSize: 14,
-            fontWeight: isLight ? FontWeight.w500 : FontWeight.bold,
-            color:
-                amountColor ??
-                (isLight ? Colors.black.withValues(alpha: 0.6) : null),
+            fontWeight: FontWeight.w600,
+            color: amountColor ?? _textHigh,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildCheckoutButton(BuildContext context) {
-    const navyDark = Color(0xFF0F172A);
-    const navyLight = Color(0xFF1E293B);
-
-    return Container(
-      width: double.infinity,
-      height: 64,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [navyDark, navyLight],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  Widget _buildCheckoutButton() {
+    return GestureDetector(
+      onTap: isLoading
+          ? null
+          : () {
+              HapticFeedback.mediumImpact();
+              onCheckout();
+            },
+      child: Container(
+        width: double.infinity,
+        height: 56,
+        decoration: BoxDecoration(
+          color: _accent,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: _accent.withValues(alpha: 0.3),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: navyDark.withValues(alpha: 0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: isLoading
-              ? null
-              : () {
-                  HapticFeedback.mediumImpact();
-                  onCheckout();
-                },
-          borderRadius: BorderRadius.circular(20),
-          child: Center(
-            child: isLoading
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'CHECKOUT',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Icon(
-                        LucideIcons.arrowRight,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ],
+        child: Center(
+          child: isLoading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: Colors.black,
                   ),
-          ),
+                )
+              : const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'THANH TOÁN',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Icon(LucideIcons.arrowRight, color: Colors.black, size: 18),
+                  ],
+                ),
         ),
       ),
     );

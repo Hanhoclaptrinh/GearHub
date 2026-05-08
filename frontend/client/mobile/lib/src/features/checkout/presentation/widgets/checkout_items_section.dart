@@ -3,6 +3,14 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
 import 'package:mobile/src/features/cart/domain/entities/cart_item_entity.dart';
 
+const _surface = Color(0xFF14141E);
+const _surfaceAlt = Color(0xFF1C1C28);
+const _border = Color(0xFF2A2A38);
+const _accent = Color(0xFFF59E0B);
+const _textHigh = Color(0xFFF1F1F5);
+const _textMid = Color(0xFF9191A8);
+const _textLow = Color(0xFF4A4A62);
+
 class CheckoutItemsSection extends StatelessWidget {
   final List<CartItemEntity> items;
 
@@ -13,54 +21,52 @@ class CheckoutItemsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Tổng quan đơn hàng",
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 16,
-            color: Color(0xFF0F172A),
-          ),
+        Row(
+          children: [
+            const Text(
+              "Tổng quan đơn hàng",
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+                color: _textHigh,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(
+                color: _accent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '${items.length}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: _accent,
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: _surface,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFF1F5F9)),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF0F172A).withValues(alpha: 0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            border: Border.all(color: _border, width: 0.5),
           ),
           child: Column(
             children: [
-              Row(
-                children: [
-                  const Icon(
-                    LucideIcons.package,
-                    size: 18,
-                    color: Color(0xFF475569),
+              for (int i = 0; i < items.length; i++) ...[
+                _buildSummaryItem(items[i]),
+                if (i < items.length - 1)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Container(height: 1, color: _border),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    "${items.length} sản phẩm",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                ],
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Divider(height: 1, color: Color(0xFFF1F5F9)),
-              ),
-              ...items.map((item) => _buildSummaryItem(item)),
+              ],
             ],
           ),
         ),
@@ -69,88 +75,79 @@ class CheckoutItemsSection extends StatelessWidget {
   }
 
   Widget _buildSummaryItem(CartItemEntity item) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(9),
-              child: item.productVariant.imageUrl != null
-                  ? Image.network(
-                      item.productVariant.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => const Icon(
-                        LucideIcons.image,
-                        color: Color(0xFF94A3B8),
-                        size: 20,
-                      ),
-                    )
-                  : const Icon(
-                      LucideIcons.package,
-                      color: Color(0xFF94A3B8),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: _surfaceAlt,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: _border, width: 0.5),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(13),
+            child: item.productVariant.imageUrl != null
+                ? Image.network(
+                    item.productVariant.imageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      LucideIcons.image,
+                      color: _textLow,
                       size: 20,
                     ),
-            ),
+                  )
+                : const Icon(LucideIcons.package, color: _textLow, size: 20),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.product.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                    color: Color(0xFF0F172A),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.product.name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: _textHigh,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  item.productVariant.name,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      formatVND(item.productVariant.price),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 13,
-                        color: Color(0xFF0F172A),
-                      ),
-                    ),
-                    Text(
-                      "x${item.quantity}",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                item.productVariant.name,
+                style: const TextStyle(fontSize: 11, color: _textLow),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              formatVND(item.productVariant.price),
+              style: const TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+                color: _accent,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              "x${item.quantity}",
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: _textMid,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

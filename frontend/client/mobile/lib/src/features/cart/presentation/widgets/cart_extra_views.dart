@@ -1,53 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+const _surface = Color(0xFF14141E);
+const _border = Color(0xFF2A2A38);
+const _accent = Color(0xFFF59E0B);
+const _accentSoft = Color(0x26F59E0B);
+const _textHigh = Color(0xFFF1F1F5);
+const _textMid = Color(0xFF9191A8);
+const _textLow = Color(0xFF4A4A62);
+
 class PromoSection extends StatelessWidget {
   const PromoSection({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: _surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.2),
-          width: 0.5,
-        ),
+        border: Border.all(color: _border, width: 0.5),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: _accentSoft,
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(
-              LucideIcons.ticket,
-              color: colorScheme.primary,
-              size: 20,
+            child: const Icon(LucideIcons.ticket, color: _accent, size: 20),
+          ),
+          const SizedBox(width: 14),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Áp dụng vouchers',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: _textHigh,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Mở khóa giảm giá đặc biệt',
+                  style: TextStyle(color: _textMid, fontSize: 12),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 16),
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Áp dụng vouchers',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-              Text(
-                'Mở khóa giảm giá đặc biệt',
-                style: TextStyle(color: Colors.black45, fontSize: 12),
-              ),
-            ],
-          ),
-          const Spacer(),
-          const Icon(LucideIcons.chevronRight, color: Colors.black26, size: 20),
+          const Icon(LucideIcons.chevronRight, color: _textLow, size: 18),
         ],
       ),
     );
@@ -61,97 +66,88 @@ class EmptyCartView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(40),
+        padding: const EdgeInsets.all(48),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 200,
-              height: 200,
+              width: 140,
+              height: 140,
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+                color: _accentSoft,
                 shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFFF1F5F9),
-                    colorScheme.primary.withValues(alpha: 0.05),
-                  ],
+                border: Border.all(
+                  color: _accent.withValues(alpha: 0.15),
+                  width: 1,
                 ),
               ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Icon(
-                    LucideIcons.shoppingCart,
-                    size: 80,
-                    color: colorScheme.primary.withValues(alpha: 0.1),
-                  ),
-                  const Positioned(
-                    top: 50,
-                    right: 40,
-                    child: Icon(
-                      LucideIcons.sparkles,
-                      color: Color(0xFF00B4D8),
-                      size: 24,
-                    ),
-                  ),
-                ],
+              child: const Icon(
+                LucideIcons.shoppingCart,
+                size: 56,
+                color: _accent,
               ),
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 36),
             const Text(
-              'Your Cart is Empty',
+              'GIỎ HÀNG RỖNG',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 22,
                 fontWeight: FontWeight.w900,
-                letterSpacing: -0.5,
+                color: _textHigh,
+                letterSpacing: 1.5,
               ),
             ),
             const SizedBox(height: 12),
             const Text(
-              'Looking for premium gear? Find something you love and it will appear here.',
+              'Chưa có sản phẩm nào trong giỏ hàng.\nHãy khám phá ngay!',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.black54,
-                fontSize: 15,
-                height: 1.5,
-              ),
+              style: TextStyle(color: _textMid, fontSize: 14, height: 1.6),
             ),
             const SizedBox(height: 40),
-            _buildActionButton(context),
+            GestureDetector(
+              onTap: onStartShopping,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: _accent,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _accent.withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      LucideIcons.shoppingBag,
+                      color: Colors.black,
+                      size: 18,
+                    ),
+                    SizedBox(width: 10),
+                    Text(
+                      "BẮT ĐẦU MUA SẮM",
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildActionButton(BuildContext context) {
-    const navyDark = Color(0xFF0F172A);
-
-    return ElevatedButton(
-      onPressed: onStartShopping,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: navyDark,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        elevation: 10,
-        shadowColor: navyDark.withValues(alpha: 0.3),
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(LucideIcons.shoppingBag, size: 20),
-          SizedBox(width: 12),
-          Text(
-            'START SHOPPING',
-            style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5),
-          ),
-        ],
       ),
     );
   }

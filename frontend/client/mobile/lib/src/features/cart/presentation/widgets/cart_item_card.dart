@@ -8,6 +8,19 @@ import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 import 'package:mobile/src/shared/widgets/stock_limit_dialog.dart';
 import 'quantity_selector.dart';
 
+const _bg = Color(0xFF0A0A10);
+const _surface = Color(0xFF14141E);
+const _surfaceAlt = Color(0xFF1C1C28);
+const _border = Color(0xFF2A2A38);
+const _accent = Color(0xFFF59E0B);
+const _indigo = Color(0xFF6366F1);
+const _indigoSoft = Color(0x1A6366F1);
+const _pink = Color(0xFFFF6B8A);
+const _pinkSoft = Color(0x1FFF6B8A);
+const _textHigh = Color(0xFFF1F1F5);
+const _textMid = Color(0xFF9191A8);
+const _textLow = Color(0xFF4A4A62);
+
 class CartItemCard extends StatefulWidget {
   final CartItemEntity item;
   final VoidCallback onIncrement;
@@ -37,7 +50,7 @@ class _CartItemCardState extends State<CartItemCard>
   late AnimationController _dragController;
   late Animation<Offset> _contentAnimation;
   double _dragExtent = 0;
-  static const double _maxDragExtent = 180;
+  static const double _maxDragExtent = 160;
 
   @override
   void initState() {
@@ -67,7 +80,6 @@ class _CartItemCardState extends State<CartItemCard>
     if (_dragExtent < -_maxDragExtent * 1.2) {
       _dragExtent = -_maxDragExtent * 1.2;
     }
-
     _dragController.value = _dragExtent.abs() / _maxDragExtent;
   }
 
@@ -104,19 +116,33 @@ class _CartItemCardState extends State<CartItemCard>
       isScrollControlled: true,
       builder: (BuildContext sheetContext) {
         return Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: const BoxDecoration(
+            color: _bg,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border(top: BorderSide(color: _border, width: 0.5)),
           ),
-          padding: const EdgeInsets.only(top: 24, bottom: 32),
+          padding: const EdgeInsets.only(top: 20, bottom: 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: _border,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 20),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
                   'Chọn phân loại hàng',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: _textHigh,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -130,29 +156,7 @@ class _CartItemCardState extends State<CartItemCard>
                         variant.id == widget.item.productVariant.id;
                     final variantName = _getVariantComboName(variant);
 
-                    return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 8,
-                      ),
-                      title: Text(
-                        variantName.isEmpty ? 'Mặc định' : variantName,
-                        style: TextStyle(
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: isSelected
-                              ? Theme.of(context).colorScheme.primary
-                              : null,
-                        ),
-                      ),
-                      subtitle: Text(formatVND(variant.price)),
-                      trailing: isSelected
-                          ? Icon(
-                              Icons.check_circle,
-                              color: Theme.of(context).colorScheme.primary,
-                            )
-                          : null,
+                    return GestureDetector(
                       onTap: () {
                         if (!isSelected) {
                           final cartState = context.read<CartCubit>().state;
@@ -187,6 +191,62 @@ class _CartItemCardState extends State<CartItemCard>
                         }
                         Navigator.pop(sheetContext);
                       },
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 4,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected ? _indigoSoft : _surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected
+                                ? _indigo.withValues(alpha: 0.4)
+                                : _border,
+                            width: isSelected ? 1 : 0.5,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    variantName.isEmpty
+                                        ? 'Mặc định'
+                                        : variantName,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14,
+                                      color: isSelected ? _textHigh : _textMid,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    formatVND(variant.price),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: isSelected ? _accent : _textLow,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isSelected)
+                              const Icon(
+                                LucideIcons.circleCheck,
+                                color: _indigo,
+                                size: 22,
+                              ),
+                          ],
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -200,7 +260,6 @@ class _CartItemCardState extends State<CartItemCard>
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final isSelected = widget.item.isSelected;
     final productName = widget.item.product.baseName;
     final productPrice = widget.item.productVariant.price;
@@ -208,24 +267,23 @@ class _CartItemCardState extends State<CartItemCard>
         widget.item.productVariant.imageUrl ?? widget.item.product.image;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: const EdgeInsets.only(bottom: 16),
       child: Stack(
         clipBehavior: Clip.antiAlias,
         children: [
           Positioned.fill(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(22),
               child: Container(
-                decoration: BoxDecoration(
-                  color: colorScheme.surface.withValues(alpha: 0.5),
-                ),
+                color: _surfaceAlt,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     _buildActionButton(
                       icon: LucideIcons.sparkles,
-                      label: 'Similar',
-                      color: colorScheme.primary,
+                      label: 'Tương tự',
+                      color: _indigo,
+                      bgColor: _indigoSoft,
                       onTap: () {
                         _close();
                         widget.onViewSimilar();
@@ -233,8 +291,9 @@ class _CartItemCardState extends State<CartItemCard>
                     ),
                     _buildActionButton(
                       icon: LucideIcons.trash2,
-                      label: 'Delete',
-                      color: const Color(0xFFFF4D4D),
+                      label: 'Xóa',
+                      color: _pink,
+                      bgColor: _pinkSoft,
                       onTap: () {
                         _close();
                         widget.onDelete();
@@ -245,6 +304,7 @@ class _CartItemCardState extends State<CartItemCard>
               ),
             ),
           ),
+
           AnimatedBuilder(
             animation: _contentAnimation,
             builder: (context, child) {
@@ -265,39 +325,53 @@ class _CartItemCardState extends State<CartItemCard>
                 widget.onToggleSelected();
               },
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 400),
+                duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFFF9FAFB) : Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  color: _surface,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: isSelected
+                        ? _accent.withValues(alpha: 0.4)
+                        : _border,
+                    width: isSelected ? 1.5 : 0.5,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: _accent.withValues(alpha: 0.08),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : [],
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
-                      width: 14,
-                      height: 14,
-                      margin: const EdgeInsets.only(top: 4, right: 12),
+                      width: 22,
+                      height: 22,
+                      margin: const EdgeInsets.only(top: 2, right: 12),
                       decoration: BoxDecoration(
-                        color: isSelected ? Colors.black : Colors.transparent,
+                        color: isSelected ? _accent : Colors.transparent,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: isSelected
-                              ? Colors.black
-                              : const Color(0xFFC7C7CC),
+                          color: isSelected ? _accent : _textLow,
                           width: 2,
                         ),
                       ),
+                      child: isSelected
+                          ? const Icon(
+                              Icons.check,
+                              size: 13,
+                              color: Colors.black,
+                            )
+                          : null,
                     ),
+
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -309,9 +383,10 @@ class _CartItemCardState extends State<CartItemCard>
                                 child: Text(
                                   productName,
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                    color: Colors.black,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                    color: _textHigh,
+                                    height: 1.3,
                                   ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
@@ -321,14 +396,15 @@ class _CartItemCardState extends State<CartItemCard>
                               Text(
                                 formatVND(productPrice),
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w800,
                                   fontSize: 15,
-                                  color: Color(0xFF0061FE),
+                                  color: _accent,
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 8),
+
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -341,10 +417,10 @@ class _CartItemCardState extends State<CartItemCard>
                                       : _getVariantComboName(
                                           widget.item.productVariant,
                                         ),
-                                  style: TextStyle(
-                                    color: Colors.black.withValues(alpha: 0.6),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w400,
+                                  style: const TextStyle(
+                                    color: _textMid,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -356,35 +432,33 @@ class _CartItemCardState extends State<CartItemCard>
                                       _showVariantSelectionSheet(context),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
+                                      horizontal: 10,
+                                      vertical: 5,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.04,
+                                      color: _surfaceAlt,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: _border,
+                                        width: 0.5,
                                       ),
-                                      borderRadius: BorderRadius.circular(12),
                                     ),
-                                    child: Row(
+                                    child: const Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(
                                           'Đổi',
                                           style: TextStyle(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.7,
-                                            ),
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
+                                            color: _textMid,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
                                           ),
                                         ),
-                                        const SizedBox(width: 2),
+                                        SizedBox(width: 2),
                                         Icon(
                                           LucideIcons.chevronDown,
-                                          size: 13,
-                                          color: Colors.black.withValues(
-                                            alpha: 0.7,
-                                          ),
+                                          size: 12,
+                                          color: _textMid,
                                         ),
                                       ],
                                     ),
@@ -392,19 +466,26 @@ class _CartItemCardState extends State<CartItemCard>
                                 ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 14),
+
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               SizedBox(
-                                width: 100,
-                                height: 100,
+                                width: 90,
+                                height: 90,
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(16),
-                                  child: Hero(
-                                    tag: 'product_${widget.item.product.id}',
-                                    child: _buildProductImage(productImage),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: _surfaceAlt,
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Hero(
+                                      tag: 'product_${widget.item.product.id}',
+                                      child: _buildProductImage(productImage),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -430,11 +511,14 @@ class _CartItemCardState extends State<CartItemCard>
   }
 
   Widget _buildProductImage(String url) {
-    if (url.isEmpty) {
-      return const SizedBox();
-    }
+    if (url.isEmpty) return const SizedBox();
     if (url.startsWith('http')) {
-      return Image.network(url, fit: BoxFit.contain);
+      return Image.network(
+        url,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) =>
+            const Icon(LucideIcons.image, color: _textLow, size: 28),
+      );
     }
     return Image.asset(url, fit: BoxFit.contain);
   }
@@ -443,29 +527,30 @@ class _CartItemCardState extends State<CartItemCard>
     required IconData icon,
     required String label,
     required Color color,
+    required Color bgColor,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 85,
+        width: 75,
         height: double.infinity,
-        margin: const EdgeInsets.only(left: 6),
+        margin: const EdgeInsets.only(left: 4),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(20),
+          color: bgColor,
+          borderRadius: BorderRadius.circular(18),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 4),
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 6),
             Text(
               label,
               style: TextStyle(
                 color: color,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ],

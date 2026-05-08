@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+const _surface = Color(0xFF14141E);
+const _border = Color(0xFF2A2A38);
+const _accent = Color(0xFFF59E0B);
+const _indigo = Color(0xFF6366F1);
+const _textHigh = Color(0xFFF1F1F5);
+const _textMid = Color(0xFF9191A8);
+const _textLow = Color(0xFF4A4A62);
+
 class DeliverySection extends StatelessWidget {
   final String name;
   final String phone;
@@ -30,17 +38,31 @@ class DeliverySection extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 16,
-                color: Color(0xFF0F172A),
+                color: _textHigh,
               ),
             ),
-            TextButton(
-              onPressed: onEdit,
-              child: Text(
-                hasInfo ? "Chỉnh sửa" : "Thêm thông tin",
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                  color: Color(0xFF3B82F6),
+            GestureDetector(
+              onTap: onEdit,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: _accent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _accent.withValues(alpha: 0.25),
+                    width: 0.5,
+                  ),
+                ),
+                child: Text(
+                  hasInfo ? "Chỉnh sửa" : "Thêm địa chỉ",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    color: _accent,
+                  ),
                 ),
               ),
             ),
@@ -49,18 +71,11 @@ class DeliverySection extends StatelessWidget {
         const SizedBox(height: 12),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: _surface,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFF1F5F9)),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF0F172A).withValues(alpha: 0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            border: Border.all(color: _border, width: 0.5),
           ),
           child: hasInfo
               ? Column(
@@ -68,43 +83,33 @@ class DeliverySection extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(
-                          LucideIcons.user,
-                          size: 16,
-                          color: Color(0xFF475569),
-                        ),
-                        const SizedBox(width: 8),
+                        const Icon(LucideIcons.user, size: 16, color: _textMid),
+                        const SizedBox(width: 10),
                         Text(
                           name,
                           style: const TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 15,
-                            color: Color(0xFF0F172A),
+                            color: _textHigh,
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(
-                          LucideIcons.phone,
-                          size: 16,
-                          color: Color(0xFF475569),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          phone,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF475569),
+                        if (phone.isNotEmpty) ...[
+                          const SizedBox(width: 12),
+                          Container(width: 1, height: 14, color: _border),
+                          const SizedBox(width: 12),
+                          Text(
+                            phone,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: _textMid,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Divider(height: 1, color: Color(0xFFF1F5F9)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Container(height: 1, color: _border),
                     ),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,16 +117,16 @@ class DeliverySection extends StatelessWidget {
                         const Icon(
                           LucideIcons.mapPin,
                           size: 16,
-                          color: Color(0xFF3B82F6),
+                          color: _indigo,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             address,
                             style: const TextStyle(
                               fontSize: 14,
-                              color: Color(0xFF475569),
-                              height: 1.4,
+                              color: _textMid,
+                              height: 1.5,
                             ),
                           ),
                         ),
@@ -131,14 +136,25 @@ class DeliverySection extends StatelessWidget {
                 )
               : const Center(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Text(
-                      "Vui lòng nhấn 'Thêm thông tin' để nhập địa chỉ.",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Column(
+                      children: [
+                        Icon(LucideIcons.mapPin, size: 28, color: _textLow),
+                        SizedBox(height: 10),
+                        Text(
+                          "Chưa có địa chỉ giao hàng",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: _textMid,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          "Nhấn 'Thêm địa chỉ' để bắt đầu",
+                          style: TextStyle(fontSize: 12, color: _textLow),
+                        ),
+                      ],
                     ),
                   ),
                 ),
