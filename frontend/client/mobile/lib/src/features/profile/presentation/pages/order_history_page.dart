@@ -7,7 +7,7 @@ import 'package:mobile/src/core/utils/formatter_utils.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_state.dart';
 
-const _bg = Color(0xFF0A0A10);
+const _bg = Color(0xFF07070A);
 const _surface = Color(0xFF14141E);
 const _surfaceAlt = Color(0xFF1C1C28);
 const _border = Color(0xFF2A2A38);
@@ -89,8 +89,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                 centerTitle: true,
                 leading: IconButton(
                   icon: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: _textMid,
+                    Icons.arrow_back_rounded,
+                    color: Colors.white,
+                    size: 22,
                   ),
                   onPressed: () => Navigator.pop(context),
                 ),
@@ -426,7 +427,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
-                          color: _indigo,
+                          color: _textHigh,
                           letterSpacing: -0.2,
                         ),
                       ),

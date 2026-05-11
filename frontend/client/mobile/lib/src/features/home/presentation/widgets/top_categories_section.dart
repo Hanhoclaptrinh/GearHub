@@ -53,9 +53,9 @@ class _CategoryPromoRowState extends State<_CategoryPromoRow>
   bool get wantKeepAlive => true;
 
   final List<Color> _categoryColors = [
-    const Color.fromARGB(255, 204, 188, 164),
-    const Color.fromARGB(255, 204, 231, 232),
-    const Color.fromARGB(255, 204, 186, 186),
+    const Color(0xFF14141E),
+    const Color(0xFF1A1A24),
+    const Color(0xFF181822),
   ];
 
   @override
@@ -84,7 +84,8 @@ class _CategoryPromoRowState extends State<_CategoryPromoRow>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    if (widget.category.description == null || widget.category.description!.isEmpty) {
+    if (widget.category.description == null ||
+        widget.category.description!.isEmpty) {
       return const SizedBox.shrink();
     }
     final bgColor = _categoryColors[widget.index % _categoryColors.length];
@@ -107,13 +108,16 @@ class _CategoryPromoRowState extends State<_CategoryPromoRow>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                headerText,
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF0A0A0F),
-                  letterSpacing: -0.6,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  headerText,
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: -0.6,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -122,6 +126,7 @@ class _CategoryPromoRowState extends State<_CategoryPromoRow>
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
                   itemCount: products.length,
                   itemBuilder: (context, idx) {
                     final p = products[idx];
@@ -196,7 +201,7 @@ class _CategoryProductCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
-                    color: Color(0xFF0A0A0F),
+                    color: Colors.white,
                     letterSpacing: -0.8,
                     height: 1.15,
                   ),
@@ -210,7 +215,7 @@ class _CategoryProductCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF3B82F6),
+                    color: Color(0xFFFDE047),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -227,14 +232,14 @@ class _CategoryProductCard extends StatelessWidget {
                     width: 100,
                     padding: const EdgeInsets.symmetric(vertical: 11),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0A0A0F),
+                      color: const Color(0xFFFDE047),
                       borderRadius: BorderRadius.circular(24),
                     ),
                     child: const Center(
                       child: Text(
                         'Mua',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: Color(0xFF0A0A0F),
                           fontSize: 14,
                           fontWeight: FontWeight.w900,
                         ),

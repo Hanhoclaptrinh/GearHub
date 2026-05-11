@@ -6,6 +6,8 @@ class BrandModel extends BrandEntity {
     required super.name,
     super.slug,
     required super.logoUrl,
+    super.quote,
+    super.philosophy,
   });
 
   factory BrandModel.fromJson(Map<String, dynamic> json) {
@@ -14,6 +16,8 @@ class BrandModel extends BrandEntity {
       name: json['name'] as String? ?? 'Unknown',
       slug: json['slug'] as String?,
       logoUrl: json['logoUrl'] as String? ?? json['logo_url'] as String? ?? '',
+      quote: json['quote'] as String?,
+      philosophy: json['philosophy'] as String?,
     );
   }
 }

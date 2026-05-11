@@ -76,9 +76,11 @@ model Brand {
   slug     String  @unique @db.VarChar(100)
   logoUrl  String? @map("logo_url") @db.VarChar(255)
   isActive Boolean @default(true) @map("is_active")
-  score    Float   @default(0)
+  score        Float     @default(0)
   isFeatured   Boolean   @default(false) @map("is_featured")
   lastScoredAt DateTime? @map("last_scored_at")
+  quote        String?   @db.VarChar(255)
+  philosophy   String?   @db.Text
 
   products Product[]
 

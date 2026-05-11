@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
 
-const _bg = Color(0xFF0A0A10);
+const _bg = Color(0xFF07070A);
 const _surface = Color(0xFF14141E);
 const _surfaceAlt = Color(0xFF1C1C28);
 const _border = Color(0xFF2A2A38);
@@ -48,7 +48,7 @@ class MembershipTierPage extends StatelessWidget {
       nextTier = 'KIM CƯƠNG';
       nextTarget = 50000000.0;
       progress = (totalSpent - 15000000.0) / (50000000.0 - 15000000.0);
-      startColor = const Color(0xFFF59E0B);
+      startColor = const Color(0xFFFFCC00);
       endColor = const Color(0xFFFCD34D);
       tierIcon = LucideIcons.sparkles;
     }
@@ -66,8 +66,9 @@ class MembershipTierPage extends StatelessWidget {
           centerTitle: true,
           leading: IconButton(
             icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: _textMid,
+              Icons.arrow_back_rounded,
+              color: Colors.white,
+              size: 22,
             ),
             onPressed: () => Navigator.pop(context),
           ),
@@ -235,7 +236,7 @@ class MembershipTierPage extends StatelessWidget {
                 'HẠNG VÀNG',
                 '15,000,000 đ - 50,000,000 đ',
                 'Tích lũy 1% giá trị đơn hàng.',
-                const Color(0xFFF59E0B),
+                const Color(0xFFFFCC00),
                 LucideIcons.sparkles,
               ),
               const SizedBox(height: 12),

@@ -5,7 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 const _surface = Color(0xFF14141E);
 const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFF59E0B);
+const _accent = Color(0xFFFFCC00);
 const _textHigh = Color(0xFFF1F1F5);
 const _textMid = Color(0xFF9191A8);
 

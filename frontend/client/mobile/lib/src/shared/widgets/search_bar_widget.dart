@@ -49,11 +49,7 @@ class SearchBarWidget extends StatelessWidget {
                 color: colorScheme.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(
-                LucideIcons.camera,
-                size: 16,
-                color: colorScheme.primary,
-              ),
+              child: const Icon(LucideIcons.camera, size: 16),
             ),
           ],
         ),

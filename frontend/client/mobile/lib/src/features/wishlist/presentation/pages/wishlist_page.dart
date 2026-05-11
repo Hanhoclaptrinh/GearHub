@@ -3,19 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/di/injection.dart';
-import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 import 'package:mobile/src/features/product_detail/data/datasources/product_detail_remote_datasource.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 import 'package:mobile/src/features/wishlist/presentation/state/wishlist_cubit.dart';
 import 'package:mobile/src/features/wishlist/presentation/state/wishlist_state.dart';
-import 'package:mobile/src/shared/widgets/product_card_shimmer.dart';
 import 'package:mobile/src/shared/widgets/small_product_card.dart';
-import 'package:mobile/src/shared/widgets/stock_limit_dialog.dart';
+import 'package:mobile/src/shared/widgets/small_product_card_shimmer.dart';
 
-const _bg = Color(0xFF0A0A10);
-const _surface = Color(0xFF14141E);
-const _accent = Color(0xFFF59E0B);
-const _accentSoft = Color(0x26F59E0B);
+const _bg = Color(0xFF07070A);
+const _accent = Color(0xFFFFCC00);
 const _pink = Color(0xFFFF6B8A);
 const _pinkSoft = Color(0x1FFF6B8A);
 const _textHigh = Color(0xFFF1F1F5);
@@ -85,8 +81,9 @@ class _WishlistPageState extends State<WishlistPage>
                 leading: GestureDetector(
                   onTap: () => Navigator.pop(context),
                   child: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: _textMid,
+                    Icons.arrow_back_rounded,
+                    color: Colors.white,
+                    size: 22,
                   ),
                 ),
                 titleSpacing: 4,
@@ -110,7 +107,7 @@ class _WishlistPageState extends State<WishlistPage>
                   padding: const EdgeInsets.all(16),
                   sliver: SliverGrid(
                     delegate: SliverChildBuilderDelegate(
-                      (_, __) => const ProductCardShimmer(),
+                      (_, __) => const SmallProductCardShimmer(),
                       childCount: 6,
                     ),
                     gridDelegate:
@@ -133,7 +130,6 @@ class _WishlistPageState extends State<WishlistPage>
                 )
               else if (state is WishlistLoaded && state.products.isEmpty)
                 SliverFillRemaining(child: _buildEmpty())
-                
               else if (state is WishlistLoaded) ...[
                 SliverToBoxAdapter(
                   child: Padding(
@@ -181,7 +177,6 @@ class _WishlistPageState extends State<WishlistPage>
                         final productModel = state.products[index];
                         return SmallProductCard(
                           product: productModel,
-                          isFavorite: true,
                           heroTag: 'wishlist_${productModel.id}_$index',
                           onTap: () async {
                             HapticFeedback.mediumImpact();
@@ -199,45 +194,6 @@ class _WishlistPageState extends State<WishlistPage>
                               }
                             } catch (e) {
                               debugPrint('Error fetching product detail: $e');
-                            }
-                          },
-                          onFavoriteTap: () => context
-                              .read<WishlistCubit>()
-                              .toggleWishlist(productModel.id),
-                          onCartTap: () async {
-                            try {
-                              final pDetail =
-                                  await getIt<ProductDetailRemoteDatasource>()
-                                      .getProductDetail(productModel.id);
-                              if (context.mounted &&
-                                  pDetail.variants.isNotEmpty) {
-                                final targetVariant = pDetail.variants.first;
-                                final cartCubit = context.read<CartCubit>();
-                                final existingItem = cartCubit.state.cart?.items
-                                    .where(
-                                      (i) =>
-                                          i.productVariant.id ==
-                                          targetVariant.id,
-                                    )
-                                    .firstOrNull;
-                                final currentQty = existingItem?.quantity ?? 0;
-                                if (currentQty + 1 > targetVariant.stock) {
-                                  StockLimitDialog.show(
-                                    context,
-                                    stockCount: targetVariant.stock,
-                                    currentQty: currentQty,
-                                    message:
-                                        'Số lượng sản phẩm trong kho không đủ để thêm vào giỏ hàng.\n\nKho hiện còn ${targetVariant.stock} sản phẩm và bạn đã có $currentQty sản phẩm trong giỏ.',
-                                  );
-                                  return;
-                                }
-                                cartCubit.addToCart(targetVariant, pDetail, 1);
-                                _showAddedToCartToast(context);
-                              }
-                            } catch (e) {
-                              debugPrint(
-                                'Error adding to cart from wishlist: $e',
-                              );
                             }
                           },
                         );
@@ -260,63 +216,6 @@ class _WishlistPageState extends State<WishlistPage>
             ],
           );
         },
-      ),
-    );
-  }
-
-  void _showAddedToCartToast(BuildContext context) {
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        padding: EdgeInsets.zero,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        duration: const Duration(seconds: 2),
-        content: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: _surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: _accent.withValues(alpha: 0.35),
-              width: 0.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: const BoxDecoration(
-                  color: _accentSoft,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  LucideIcons.shoppingCart,
-                  color: _accent,
-                  size: 14,
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Text(
-                'Đã thêm vào giỏ hàng',
-                style: TextStyle(
-                  color: _textHigh,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

@@ -34,7 +34,13 @@ export class BrandsService {
     }
 
     return this.prisma.brand.create({
-      data: { name: data.name, slug: slug, logoUrl: finalLogoUrl },
+      data: {
+        name: data.name,
+        slug: slug,
+        logoUrl: finalLogoUrl,
+        quote: data.quote,
+        philosophy: data.philosophy,
+      },
     });
   }
 
@@ -46,6 +52,8 @@ export class BrandsService {
         slug: true,
         logoUrl: true,
         isActive: true,
+        quote: true,
+        philosophy: true,
         _count: { select: { products: true } }
       },
       orderBy: { name: 'asc' }
@@ -67,7 +75,9 @@ export class BrandsService {
         id: true,
         name: true,
         slug: true,
-        logoUrl: true
+        logoUrl: true,
+        quote: true,
+        philosophy: true,
       }
     });
   }

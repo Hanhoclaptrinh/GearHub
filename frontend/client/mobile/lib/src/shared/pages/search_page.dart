@@ -12,7 +12,7 @@ import 'package:mobile/src/features/home/presentation/widgets/search_product_gri
 import 'package:mobile/src/shared/widgets/product_filter_drawer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const _bg = Color(0xFF0A0A10);
+const _bg = Color(0xFF07070A);
 const _surfaceAlt = Color(0xFF1C1C28);
 const _border = Color(0xFF2A2A38);
 const _accent = Color(0xFF6366F1);
@@ -266,8 +266,9 @@ class _SearchPageState extends State<SearchPage> {
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: _textMid,
+                      Icons.arrow_back_rounded,
+                      color: Colors.white,
+                      size: 22,
                     ),
                   ),
                   const SizedBox(width: 12),

@@ -3,12 +3,12 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/widgets/product_card.dart';
 
-const _bg         = Color(0xFF0A0A10);
+const _bg = Color(0xFF07070A);
 const _surfaceAlt = Color(0xFF1C1C28);
-const _border     = Color(0xFF2A2A38);
-const _textHigh   = Color(0xFFF1F1F5);
-const _textMid    = Color(0xFF9191A8);
-const _textLow    = Color(0xFF4A4A62);
+const _border = Color(0xFF2A2A38);
+const _textHigh = Color(0xFFF1F1F5);
+const _textMid = Color(0xFF9191A8);
+const _textLow = Color(0xFF4A4A62);
 
 class SearchProductGrid extends StatelessWidget {
   final List<ProductModel> searchResults;
@@ -29,9 +29,7 @@ class SearchProductGrid extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           decoration: const BoxDecoration(
             color: _bg,
-            border: Border(
-              bottom: BorderSide(color: _border, width: 0.5),
-            ),
+            border: Border(bottom: BorderSide(color: _border, width: 0.5)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -106,12 +104,20 @@ class SearchProductGrid extends StatelessWidget {
                           shape: BoxShape.circle,
                           border: Border.all(color: _border),
                         ),
-                        child: const Icon(LucideIcons.packageSearch, size: 48, color: _textLow),
+                        child: const Icon(
+                          LucideIcons.packageSearch,
+                          size: 48,
+                          color: _textLow,
+                        ),
                       ),
                       const SizedBox(height: 20),
                       const Text(
                         'Không tìm thấy sản phẩm nào.',
-                        style: TextStyle(color: _textMid, fontSize: 14, fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          color: _textMid,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),

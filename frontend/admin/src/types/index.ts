@@ -50,6 +50,8 @@ export interface Brand {
   slug: string;
   description?: string;
   logoUrl?: string;
+  quote?: string;
+  philosophy?: string;
   isActive: boolean;
   _count?: {
     products: number;

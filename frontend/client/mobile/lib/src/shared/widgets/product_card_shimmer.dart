@@ -80,15 +80,18 @@ class ProductCardShimmer extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Row(
-              children: List.generate(3, (index) => Container(
-                width: 60,
-                height: 32,
-                margin: const EdgeInsets.only(right: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
+              children: List.generate(
+                3,
+                (index) => Container(
+                  width: 60,
+                  height: 32,
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-              )),
+              ),
             ),
             const SizedBox(height: 14),
             Container(

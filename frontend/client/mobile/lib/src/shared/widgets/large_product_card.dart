@@ -2,13 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lottie/lottie.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/models/product_variant_model.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 import 'package:mobile/src/features/home/presentation/state/home_cubit.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
+import 'package:mobile/src/shared/widgets/color_bubble_selector.dart';
+
+const _surface = Color(0xFF14141E);
+const _border = Color(0xFF2A2A38);
+const _accent = Color(0xFFFDE047);
+const _textHigh = Colors.white;
+const _textMid = Color(0xFF94A3B8);
 
 class LargeProductCard extends StatefulWidget {
   final ProductModel product;
@@ -86,93 +92,23 @@ class _LargeProductCardState extends State<LargeProductCard> {
   }
 
   Widget _buildColorBubbles(String key, List<String> values) {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 6,
-      runSpacing: 6,
-      children: values.map((val) {
-        final isSelected = _selectedAttributes[key] == val;
-
-        final variant = widget.product.variants.firstWhere(
-          (v) => v.isActive && v.attributes[key]?.toString() == val,
-          orElse: () => widget.product.variants.first,
-        );
-
-        final anyInStock = widget.product.variants.any(
-          (v) =>
-              v.isActive && v.attributes[key]?.toString() == val && v.stock > 0,
-        );
-
-        return GestureDetector(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            setState(() {
-              _selectedAttributes[key] = val;
-            });
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: isSelected ? Colors.black : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isSelected ? Colors.black : const Color(0xFFE5E5EA),
-                width: 1.5,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF2F2F7),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isSelected ? Colors.white24 : Colors.black12,
-                    ),
-                    image:
-                        (variant.imageUrl != null ||
-                            widget.product.image.isNotEmpty)
-                        ? DecorationImage(
-                            image: CachedNetworkImageProvider(
-                              variant.imageUrl ?? widget.product.image,
-                            ),
-                            fit: BoxFit.cover,
-                            colorFilter: !anyInStock
-                                ? const ColorFilter.mode(
-                                    Colors.grey,
-                                    BlendMode.saturation,
-                                  )
-                                : null,
-                          )
-                        : null,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  val,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: isSelected ? Colors.white : Colors.black,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
+    return ColorBubbleSelector(
+      product: widget.product,
+      attributeKey: key,
+      selectedValue: _selectedAttributes[key],
+      onSelected: (val) {
+        setState(() {
+          _selectedAttributes[key] = val;
+        });
+      },
     );
   }
 
   Widget _buildChipRow(String key, List<String> values) {
     return Wrap(
       alignment: WrapAlignment.center,
-      spacing: 6,
-      runSpacing: 6,
+      spacing: 8,
+      runSpacing: 8,
       children: values.map((val) {
         final isSelected = _selectedAttributes[key] == val;
         return GestureDetector(
@@ -183,22 +119,23 @@ class _LargeProductCardState extends State<LargeProductCard> {
             });
           },
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: isSelected ? Colors.black : Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              color: isSelected ? _accent : _surface,
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isSelected ? Colors.black : const Color(0xFFE5E5EA),
-                width: 1.5,
+                color: isSelected ? _accent : _border,
+                width: 1.2,
               ),
             ),
             child: Text(
               val,
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
-                color: isSelected ? Colors.white : const Color(0xFF4B5563),
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                color: isSelected ? Colors.black : _textMid,
+                letterSpacing: 0.5,
               ),
             ),
           ),
@@ -237,17 +174,18 @@ class _LargeProductCardState extends State<LargeProductCard> {
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 226, 227, 230),
-          borderRadius: BorderRadius.circular(16),
+          color: _surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: _border, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(28),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -264,33 +202,33 @@ class _LargeProductCardState extends State<LargeProductCard> {
                       height: 32,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.black12,
+                        color: _accent,
                       ),
                     ),
                     errorWidget: (context, url, error) => const Icon(
                       Icons.image_not_supported_outlined,
-                      color: Color(0xFF9CA3AF),
+                      color: _textMid,
                       size: 64,
                     ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             Text(
-              widget.product.baseName,
+              widget.product.baseName.toUpperCase(),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 22,
+                fontSize: 18,
                 fontWeight: FontWeight.w900,
-                color: Color(0xFF0A0A0F),
-                letterSpacing: -0.6,
+                color: _textHigh,
+                letterSpacing: 0.5,
                 height: 1.15,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             // build cau hinh bien the
             ...options.entries.map((entry) {
               final k = entry.key;
@@ -298,26 +236,26 @@ class _LargeProductCardState extends State<LargeProductCard> {
               if (k.toLowerCase().contains('color') ||
                   k.toLowerCase().contains('màu')) {
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 22),
+                  padding: const EdgeInsets.only(bottom: 24),
                   child: _buildColorBubbles(k, vals),
                 );
               }
               return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: 16),
                 child: _buildChipRow(k, vals),
               );
             }),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Text(
               formatVND(priceToDisplay),
               style: const TextStyle(
-                fontSize: 20,
+                fontSize: 22,
                 fontWeight: FontWeight.w900,
-                color: Color(0xFF0A0A0F),
+                color: _accent,
                 letterSpacing: -0.5,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             GestureDetector(
               onTap: () {
                 final variant = _getCurrentVariant();
@@ -333,119 +271,36 @@ class _LargeProductCardState extends State<LargeProductCard> {
                   }
 
                   if (existingQty + 1 > variant.stock) {
-                    showDialog(
-                      context: context,
-                      barrierDismissible: true,
-                      builder: (context) {
-                        return Dialog(
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            side: const BorderSide(
-                              color: Color(0xFFE5E5EA),
-                              width: 1,
-                            ),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 56,
-                                  height: 56,
-                                  decoration: BoxDecoration(
-                                    color: const Color(
-                                      0xFFFF3B30,
-                                    ).withValues(alpha: 0.12),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Lottie.asset(
-                                    'assets/animations/warning.json',
-                                    repeat: false,
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
-                                const Text(
-                                  'Vượt quá giới hạn',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.black,
-                                    letterSpacing: -0.4,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Số lượng sản phẩm trong kho không đủ để thêm vào giỏ hàng.\n\nKho hiện còn ${variant.stock} sản phẩm và bạn đã có $existingQty sản phẩm trong giỏ.',
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w400,
-                                    color: Color(0xFF5C5C6B),
-                                    height: 1.45,
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.black,
-                                      foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      elevation: 0,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 14,
-                                      ),
-                                    ),
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text(
-                                      'ĐÃ HIỂU',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    );
+                    _showLimitDialog(context, variant.stock, existingQty);
                     return;
                   }
 
                   cartCubit.addToCart(variant, widget.product, 1);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Đã thêm ${widget.product.baseName} vào giỏ hàng thành công!',
-                      ),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  HapticFeedback.heavyImpact();
                 }
               },
               child: Container(
                 width: double.infinity,
-                height: 52,
+                height: 56,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0A0A0F),
-                  borderRadius: BorderRadius.circular(26),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: const Center(
                   child: Text(
-                    'Thêm vào giỏ hàng',
+                    'THÊM VÀO GIỎ HÀNG',
                     style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
+                      color: Colors.black,
+                      fontSize: 12,
                       fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
                     ),
                   ),
                 ),
@@ -454,6 +309,38 @@ class _LargeProductCardState extends State<LargeProductCard> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showLimitDialog(BuildContext context, int stock, int existing) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: _surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: const BorderSide(color: _border, width: 0.5),
+          ),
+          title: const Text(
+            'Giới hạn kho',
+            style: TextStyle(fontWeight: FontWeight.w800, color: _textHigh),
+          ),
+          content: Text(
+            'Kho hiện còn $stock sản phẩm và bạn đã có $existing trong giỏ hàng.',
+            style: const TextStyle(color: _textMid, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'Đã hiểu',
+                style: TextStyle(color: _accent, fontWeight: FontWeight.w800),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

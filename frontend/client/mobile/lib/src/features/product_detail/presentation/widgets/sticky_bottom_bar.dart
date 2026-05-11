@@ -9,10 +9,9 @@ import 'package:mobile/src/features/cart/domain/entities/cart_item_entity.dart';
 import 'package:mobile/src/features/checkout/presentation/pages/checkout_page.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_state.dart';
-import 'package:mobile/src/features/auth/presentation/pages/login_page.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/shared/widgets/auth_required_modal.dart';
 import 'package:mobile/src/shared/widgets/stock_limit_dialog.dart';
 
 const _surface = Color(0xFF14141E);
@@ -20,8 +19,6 @@ const _surfaceAlt = Color(0xFF1C1C28);
 const _border = Color(0xFF2A2A38);
 const _accent = Color(0xFF6366F1);
 const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
-const _textLow = Color(0xFF4A4A62);
 
 class StickyBottomBar extends StatefulWidget {
   final ProductModel product;
@@ -108,146 +105,12 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
     );
   }
 
-  // order btn
-  void _showAuthRequiredBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (BuildContext context) {
-        return Container(
-          padding: const EdgeInsets.fromLTRB(32, 12, 32, 32),
-          decoration: const BoxDecoration(
-            color: _surface,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(40),
-              topRight: Radius.circular(40),
-            ),
-            border: Border(top: BorderSide(color: _border, width: 1.5)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 48,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: _border,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              const SizedBox(height: 48),
-              Container(
-                height: 80,
-                width: 80,
-                decoration: BoxDecoration(
-                  color: _accent.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _accent.withValues(alpha: 0.2),
-                    width: 2,
-                  ),
-                ),
-                child: const Icon(LucideIcons.lock, color: _accent, size: 32),
-              ),
-              const SizedBox(height: 32),
-              const Text(
-                'YÊU CẦU ĐĂNG NHẬP',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: _accent,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'TIẾP TỤC TRẢI NGHIỆM',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  color: _textHigh,
-                  letterSpacing: -0.8,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Vui lòng đăng nhập để tiếp tục thanh toán, lưu giỏ hàng và nhận các ưu đãi thành viên đặc biệt của GearHub.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: _textMid,
-                  height: 1.6,
-                ),
-              ),
-              const SizedBox(height: 48),
-              SizedBox(
-                width: double.infinity,
-                height: 60,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _accent,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const LoginPage()),
-                    );
-                  },
-                  child: const Text(
-                    'ĐĂNG NHẬP NGAY',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                height: 60,
-                child: TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor: _textLow,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: const BorderSide(color: _border),
-                    ),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    'ĐỂ SAU',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildOrderBtn() => GestureDetector(
     onTap: () {
       HapticFeedback.lightImpact();
       final authState = context.read<AuthCubit>().state;
       if (authState is! AuthAuthenticated) {
-        _showAuthRequiredBottomSheet(context);
+        AuthRequiredModal.show(context);
         return;
       }
 

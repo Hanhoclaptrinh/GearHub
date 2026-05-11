@@ -6,7 +6,7 @@ import 'package:mobile/src/features/cart/domain/entities/cart_item_entity.dart';
 const _surface = Color(0xFF14141E);
 const _surfaceAlt = Color(0xFF1C1C28);
 const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFF59E0B);
+const _accent = Color(0xFFFDE047);
 const _textHigh = Color(0xFFF1F1F5);
 const _textMid = Color(0xFF9191A8);
 const _textLow = Color(0xFF4A4A62);
@@ -21,33 +21,13 @@ class CheckoutItemsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Text(
-              "Tổng quan đơn hàng",
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 16,
-                color: _textHigh,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(
-                color: _accent.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '${items.length}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: _accent,
-                ),
-              ),
-            ),
-          ],
+        const Text(
+          "Tổng quan đơn hàng",
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 16,
+            color: _textHigh,
+          ),
         ),
         const SizedBox(height: 12),
         Container(

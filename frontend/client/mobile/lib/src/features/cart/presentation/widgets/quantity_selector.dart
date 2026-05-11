@@ -5,10 +5,10 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 const _surfaceAlt = Color(0xFF1C1C28);
 const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFF59E0B);
-const _accentSoft = Color(0x26F59E0B);
-const _textHigh = Color(0xFFF1F1F5);
-const _textLow = Color(0xFF4A4A62);
+const _accent = Color(0xFFFDE047);
+const _accentSoft = Color(0x1AFDE047);
+const _textHigh = Colors.white;
+const _textLow = Color(0xFF475569);
 
 class QuantitySelector extends StatefulWidget {
   final int quantity;

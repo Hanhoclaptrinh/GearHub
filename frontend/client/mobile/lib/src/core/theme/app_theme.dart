@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // static const Color background = Color(0xFF0A0A10);
+  // static const Color background = Color(0xFF07070A);
   // static const Color surface = Color(0xFF14141E);
   // static const Color primaryText = Color(0xFFF1F1F5);
   // static const Color secondaryText = Color(0xFF9191A8);
@@ -30,7 +30,7 @@ class AppTheme {
         onSurface: primaryText,
         surfaceContainerHigh: Color(0xFF1C1C28),
         outlineVariant: Color(0xFF2A2A38),
-        secondary: Color(0xFFF59E0B),
+        secondary: Color(0xFFFFCC00),
       ),
       textTheme: textTheme.apply(
         bodyColor: primaryText,

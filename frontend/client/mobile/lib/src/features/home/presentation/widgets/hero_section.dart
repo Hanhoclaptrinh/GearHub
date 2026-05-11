@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/core/di/injection.dart';
+import 'package:mobile/src/core/utils/hero_banners_utils.dart';
 import 'package:mobile/src/features/home/domain/entities/hero_product_entity.dart';
 import 'package:mobile/src/features/product_detail/data/datasources/product_detail_remote_datasource.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
@@ -23,32 +24,10 @@ class _HeroSectionState extends State<HeroSection> {
   double _progress = 0.0;
   static const int kLoopRange = 10000;
 
-  // mockup data
-  final List<Map<String, String>> _fallbackBanners = [
-    {
-      'title': 'Tiêu chuẩn\nđỉnh cao',
-      'subtitle': 'Nhận ngay ưu đãi màn hình 2026 độc quyền',
-      'image':
-          'https://res.cloudinary.com/dxgts0irt/image/upload/v1777626771/gearhub/media/file_uilydh.png',
-    },
-    {
-      'title': 'Mượt mà\ntừng pixel',
-      'subtitle': 'Trải nghiệm tần số quét siêu cao',
-      'image':
-          'https://res.cloudinary.com/dxgts0irt/image/upload/v1777626766/gearhub/media/file_ocxpbw.png',
-    },
-    {
-      'title': 'Khẳng định\nbản lĩnh',
-      'subtitle': 'Laptop gaming cấu hình tối thượng',
-      'image':
-          'https://res.cloudinary.com/dxgts0irt/image/upload/v1777624711/gearhub/media/file_ftwxso.png',
-    },
-  ];
-
   @override
   void initState() {
     super.initState();
-    final initialSlides = _fallbackBanners.length;
+    final initialSlides = HeroBannerUtils.fallbackBanners.length;
     _pageController = PageController(initialPage: initialSlides * 1000);
     _startTimer();
   }
@@ -88,9 +67,9 @@ class _HeroSectionState extends State<HeroSection> {
         if (state is HomeLoading || state is HomeInitial) {
           return Container(
             height: 540,
-            color: Colors.white,
+            color: Colors.black,
             child: const Center(
-              child: CircularProgressIndicator(color: Color(0xFF3B82F6)),
+              child: CircularProgressIndicator(color: Color(0xFFFDE047)),
             ),
           );
         }
@@ -98,7 +77,7 @@ class _HeroSectionState extends State<HeroSection> {
         if (state is HomeError) {
           return Container(
             height: 540,
-            color: Colors.white,
+            color: Colors.black,
             child: Center(
               child: Text(
                 'Lỗi: ${state.message}',
@@ -109,7 +88,17 @@ class _HeroSectionState extends State<HeroSection> {
         }
 
         final featured = (state as HomeLoaded).featuredProducts;
-        final totalSlides = _fallbackBanners.length + featured.length;
+
+        // dung featured prd - fallback
+        final combinedSlides = <dynamic>[...featured];
+        if (combinedSlides.length < 5) {
+          final remaining = 5 - combinedSlides.length;
+          combinedSlides.addAll(
+            HeroBannerUtils.fallbackBanners.take(remaining),
+          );
+        }
+        final finalSlides = combinedSlides.take(5).toList();
+        final totalSlides = finalSlides.length;
 
         return Stack(
           children: [
@@ -125,24 +114,33 @@ class _HeroSectionState extends State<HeroSection> {
                     });
                   }
                   HapticFeedback.lightImpact();
-                  _startTimer(); // reset timer neu swipe thu cong
+                  _startTimer();
                 },
                 itemBuilder: (context, index) {
                   if (totalSlides == 0) return const SizedBox.shrink();
                   final actualIndex = index % totalSlides;
+                  final item = finalSlides[actualIndex];
 
-                  if (actualIndex < _fallbackBanners.length) {
-                    return _buildBannerHeroSlide(
-                      context,
-                      _fallbackBanners[actualIndex],
-                    );
-                  } else {
-                    final featuredIndex = actualIndex - _fallbackBanners.length;
-                    return _buildProductHeroSlide(
-                      context,
-                      featured[featuredIndex],
-                    );
-                  }
+                  return AnimatedBuilder(
+                    animation: _pageController,
+                    builder: (context, child) {
+                      double pageOffset = 0;
+                      if (_pageController.position.haveDimensions) {
+                        pageOffset =
+                            index.toDouble() - (_pageController.page ?? 0);
+                      }
+
+                      if (item is Map<String, String>) {
+                        return _buildBannerHeroSlide(context, item, pageOffset);
+                      } else {
+                        return _buildProductHeroSlide(
+                          context,
+                          item as HeroProductEntity,
+                          pageOffset,
+                        );
+                      }
+                    },
+                  );
                 },
               ),
             ),
@@ -156,7 +154,10 @@ class _HeroSectionState extends State<HeroSection> {
   Widget _buildProductHeroSlide(
     BuildContext context,
     HeroProductEntity product,
+    double offset,
   ) {
+    final width = MediaQuery.of(context).size.width;
+
     return GestureDetector(
       onTap: () async {
         HapticFeedback.mediumImpact();
@@ -175,13 +176,17 @@ class _HeroSectionState extends State<HeroSection> {
         }
       },
       child: Container(
-        decoration: const BoxDecoration(color: Colors.white),
+        decoration: const BoxDecoration(color: Colors.black),
         child: Stack(
+          clipBehavior: Clip.none,
           children: [
+            // parallax background
             Positioned.fill(
+              left: offset * width * 0.4,
+              right: -offset * width * 0.4,
               child: product.image.isNotEmpty
                   ? Image.network(product.image, fit: BoxFit.cover)
-                  : Container(color: const Color(0xFFF3F4F6)),
+                  : Container(color: const Color(0xFF1A1A1A)),
             ),
             Positioned.fill(
               child: Container(
@@ -205,43 +210,62 @@ class _HeroSectionState extends State<HeroSection> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    product.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: -0.8,
+                  // text parallax
+                  Transform.translate(
+                    offset: Offset(-offset * width * 0.2, 0),
+                    child: Opacity(
+                      opacity: (1 - offset.abs()).clamp(0, 1),
+                      child: Text(
+                        product.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: -0.8,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Text(
-                    product.tagline,
-                    maxLines: 2,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white.withValues(alpha: 0.8),
+                  Transform.translate(
+                    offset: Offset(-offset * width * 0.15, 0),
+                    child: Opacity(
+                      opacity: (1 - offset.abs()).clamp(0, 1),
+                      child: Text(
+                        product.tagline,
+                        maxLines: 2,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white.withValues(alpha: 0.8),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      'Xem chi tiết',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0A0A0F),
+                  Transform.translate(
+                    offset: Offset(-offset * width * 0.1, 0),
+                    child: Opacity(
+                      opacity: (1 - offset.abs()).clamp(0, 1),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFDE047),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'Xem chi tiết',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF0A0A0F),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -257,17 +281,23 @@ class _HeroSectionState extends State<HeroSection> {
   Widget _buildBannerHeroSlide(
     BuildContext context,
     Map<String, String> banner,
+    double offset,
   ) {
+    final width = MediaQuery.of(context).size.width;
+
     return Container(
-      decoration: const BoxDecoration(color: Colors.white),
+      decoration: const BoxDecoration(color: Colors.black),
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
           Positioned.fill(
+            left: offset * width * 0.4,
+            right: -offset * width * 0.4,
             child: Image.network(
               banner['image']!,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) =>
-                  Container(color: const Color(0xFFF3F4F6)),
+                  Container(color: const Color(0xFF1A1A1A)),
             ),
           ),
           Positioned.fill(
@@ -292,43 +322,61 @@ class _HeroSectionState extends State<HeroSection> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  banner['title']!,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 34,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: -0.8,
+                Transform.translate(
+                  offset: Offset(-offset * width * 0.25, 0),
+                  child: Opacity(
+                    opacity: (1 - offset.abs()).clamp(0, 1),
+                    child: Text(
+                      banner['title']!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 34,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: -0.8,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  banner['subtitle']!,
-                  maxLines: 2,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white.withValues(alpha: 0.8),
+                Transform.translate(
+                  offset: Offset(-offset * width * 0.15, 0),
+                  child: Opacity(
+                    opacity: (1 - offset.abs()).clamp(0, 1),
+                    child: Text(
+                      banner['subtitle']!,
+                      maxLines: 2,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: 0.8),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'Tìm hiểu thêm',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF0A0A0F),
+                Transform.translate(
+                  offset: Offset(-offset * width * 0.08, 0),
+                  child: Opacity(
+                    opacity: (1 - offset.abs()).clamp(0, 1),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'Tìm hiểu thêm',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF0A0A0F),
+                        ),
+                      ),
                     ),
                   ),
                 ),

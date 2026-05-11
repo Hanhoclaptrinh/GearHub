@@ -1,89 +1,107 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/shared/widgets/glassmorphic_header.dart';
 
-const _bg = Color(0xFF0A0A10);
+const _bg = Color(0xFF07070A);
 const _surface = Color(0xFF14141E);
 const _surfaceAlt = Color(0xFF1C1C28);
 const _border = Color(0xFF2A2A38);
 const _indigo = Color(0xFF6366F1);
-const _accent = Color(0xFFF59E0B);
+const _accent = Color(0xFFFFCC00);
 const _textHigh = Color(0xFFF1F1F5);
 const _textLow = Color(0xFF4A4A62);
 
-class PromotionsPage extends StatelessWidget {
+class PromotionsPage extends StatefulWidget {
   const PromotionsPage({super.key});
+
+  @override
+  State<PromotionsPage> createState() => _PromotionsPageState();
+}
+
+class _PromotionsPageState extends State<PromotionsPage> {
+  final ScrollController _scrollController = ScrollController();
+  double _scrollOffset = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      if (mounted) {
+        setState(() {
+          _scrollOffset = _scrollController.offset;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bg,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          _buildAppBar(),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildVIPCard(),
-                  const SizedBox(height: 32),
-                  _buildSectionHeader('ƯU ĐÃI ĐỘC QUYỀN', 'Xem tất cả'),
-                  const SizedBox(height: 16),
-                  _buildPromoCard(
-                    title: 'Giảm 500k cho đơn từ 10tr',
-                    code: 'GEARHUB500',
-                    expiry: 'Còn 2 ngày',
-                    icon: LucideIcons.cpu,
-                    color: const Color(0xFF3B82F6),
+      body: Stack(
+        children: [
+          CustomScrollView(
+            controller: _scrollController,
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildVIPCard(),
+                      const SizedBox(height: 32),
+                      _buildSectionHeader('ƯU ĐÃI ĐỘC QUYỀN', 'Xem tất cả'),
+                      const SizedBox(height: 16),
+                      _buildPromoCard(
+                        title: 'Giảm 500k cho đơn từ 10tr',
+                        code: 'GEARHUB500',
+                        expiry: 'Còn 2 ngày',
+                        icon: LucideIcons.cpu,
+                        color: const Color(0xFF3B82F6),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildPromoCard(
+                        title: 'Miễn phí vận chuyển toàn quốc',
+                        code: 'FREESHIP',
+                        expiry: 'Hết hạn hôm nay',
+                        icon: LucideIcons.truck,
+                        color: const Color(0xFF10B981),
+                      ),
+                      const SizedBox(height: 32),
+                      _buildSectionHeader('SĂN DEAL CHỚP NHOÁNG', '02:14:55'),
+                      const SizedBox(height: 16),
+                      _buildFlashDealCard(),
+                      const SizedBox(height: 100),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  _buildPromoCard(
-                    title: 'Miễn phí vận chuyển toàn quốc',
-                    code: 'FREESHIP',
-                    expiry: 'Hết hạn hôm nay',
-                    icon: LucideIcons.truck,
-                    color: const Color(0xFF10B981),
-                  ),
-                  const SizedBox(height: 32),
-                  _buildSectionHeader('SĂN DEAL CHỚP NHOÁNG', '02:14:55'),
-                  const SizedBox(height: 16),
-                  _buildFlashDealCard(),
-                  const SizedBox(height: 100),
-                ],
+                ),
               ),
-            ),
+            ],
+          ),
+          GlassmorphicHeader(
+            scrollOffset: _scrollOffset,
+            title: 'Ưu đãi',
+            isTransparentAtTop: false,
+            actions: [
+              HeaderIconButton(
+                icon: LucideIcons.bell,
+                onTap: () {
+                },
+              ),
+            ],
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildAppBar() {
-    return SliverAppBar(
-      backgroundColor: _bg,
-      floating: true,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      centerTitle: false,
-      title: const Text(
-        'Ưu đãi',
-        style: TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.w900,
-          color: _textHigh,
-          letterSpacing: -0.5,
-        ),
-      ),
-      actions: [
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(LucideIcons.bell, color: Colors.white),
-        ),
-        const SizedBox(width: 8),
-      ],
     );
   }
 

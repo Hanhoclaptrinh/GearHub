@@ -19,18 +19,19 @@ class TopRatedSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4),
+              padding: EdgeInsets.symmetric(horizontal: 24),
               child: Text(
                 'Sản phẩm dẫn đầu',
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w900,
-                  color: Color(0xFF0A0A0F),
+                  color: Colors.white,
                   letterSpacing: -0.5,
                 ),
               ),
             ),
             GridView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

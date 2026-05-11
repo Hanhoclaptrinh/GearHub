@@ -9,11 +9,12 @@ import 'package:mobile/src/features/product_review/presentation/state/review_cub
 import 'package:mobile/src/features/product_review/presentation/state/review_state.dart';
 import '../../../../core/di/injection.dart';
 
-const _bg = Color(0xFF0A0A10);
+const _bg = Color(0xFF07070A);
 const _surface = Color(0xFF14141E);
 const _surfaceAlt = Color(0xFF1C1C28);
 const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFF59E0B);
+const _accent = Color(0xFFFDE047);
+const starColor = Color(0xFFFFCC00);
 const _accentSoft = Color(0x26F59E0B);
 const _indigo = Color(0xFF6366F1);
 const _indigoSoft = Color(0x1A6366F1);
@@ -349,15 +350,13 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       child: Icon(
-                        filled
-                            ? Icons.star_rounded
-                            : Icons.star_outline_rounded,
+                        filled ? Icons.star : Icons.star_outline,
                         size: 44,
-                        color: filled ? _accent : _textLow,
+                        color: filled ? starColor : _textLow,
                         shadows: filled
                             ? [
                                 Shadow(
-                                  color: _accent.withValues(alpha: 0.5),
+                                  color: starColor.withValues(alpha: 0.5),
                                   blurRadius: 12,
                                 ),
                               ]
@@ -383,7 +382,7 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: _accentSoft,
+                  color: starColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -391,7 +390,7 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: _accent,
+                    color: starColor,
                     letterSpacing: 0.3,
                   ),
                 ),
@@ -628,7 +627,7 @@ class _WriteReviewPageState extends State<WriteReviewPage>
         child: ElevatedButton(
           onPressed: canSubmit ? () => _submitReview(context) : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: canSubmit ? _accent : _surfaceAlt,
+            backgroundColor: canSubmit ? Colors.white : _surfaceAlt,
             foregroundColor: canSubmit ? Colors.black : _textLow,
             disabledBackgroundColor: _surfaceAlt,
             disabledForegroundColor: _textLow,
@@ -637,7 +636,7 @@ class _WriteReviewPageState extends State<WriteReviewPage>
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(18),
             ),
-            shadowColor: _accent.withValues(alpha: 0.4),
+            shadowColor: Colors.white.withValues(alpha: 0.4),
           ),
           child: isSubmitting
               ? const SizedBox(
@@ -651,12 +650,6 @@ class _WriteReviewPageState extends State<WriteReviewPage>
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      LucideIcons.send,
-                      size: 17,
-                      color: canSubmit ? Colors.black : _textLow,
-                    ),
-                    const SizedBox(width: 10),
                     Text(
                       canSubmit ? 'Gửi đánh giá' : 'Chọn số sao trước nhé',
                       style: TextStyle(

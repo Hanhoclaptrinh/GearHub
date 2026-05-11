@@ -4,31 +4,31 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lottie/lottie.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
-import 'package:mobile/src/features/auth/presentation/pages/login_page.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_state.dart';
 import 'package:mobile/src/features/cart/domain/entities/cart_item_entity.dart';
-import 'package:mobile/src/features/cart/presentation/widgets/cart_extra_views.dart';
 import 'package:mobile/src/features/cart/presentation/widgets/cart_item_card.dart';
 import 'package:mobile/src/features/checkout/presentation/pages/checkout_page.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/features/home/presentation/pages/main_screen.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 import 'package:mobile/src/shared/widgets/large_product_card.dart';
+import 'package:mobile/src/shared/widgets/auth_required_modal.dart';
+import 'package:mobile/src/shared/widgets/glassmorphic_header.dart';
 
-const _bg = Color(0xFF0A0A10);
+const _bg = Color(0xFF07070A);
 const _surface = Color(0xFF14141E);
 const _surfaceAlt = Color(0xFF1C1C28);
 const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFF59E0B);
-const _accentSoft = Color(0x26F59E0B);
-const _pink = Color(0xFFFF6B8A);
-const _pinkSoft = Color(0x1FFF6B8A);
-const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
-const _textLow = Color(0xFF4A4A62);
+const _accent = Color(0xFFFDE047);
+const _accentSoft = Color(0x1AFDE047);
+const _pink = Color(0xFFFF4D4D);
+const _pinkSoft = Color(0x1AFF4D4D);
+const _textHigh = Colors.white;
+const _textMid = Color(0xFF94A3B8);
+const _textLow = Color(0xFF475569);
 
 class CartPage extends StatefulWidget {
   final bool isNavVisible;
@@ -39,6 +39,9 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
+  final ScrollController _scrollController = ScrollController();
+  double _scrollOffset = 0.0;
+
   final List<ProductModel> _recommendations = [
     const ProductModel(
       id: 'r1',
@@ -74,133 +77,10 @@ class _CartPageState extends State<CartPage> {
     HapticFeedback.mediumImpact();
   }
 
-  void _showAuthRequiredBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (BuildContext context) {
-        return Container(
-          padding: const EdgeInsets.all(32),
-          decoration: const BoxDecoration(
-            color: _bg,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(32),
-              topRight: Radius.circular(32),
-            ),
-            border: Border(top: BorderSide(color: _border, width: 0.5)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: _border,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              const SizedBox(height: 32),
-              Container(
-                height: 64,
-                width: 64,
-                decoration: const BoxDecoration(
-                  color: _accentSoft,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(LucideIcons.lock, color: _accent, size: 28),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'YÊU CẦU ĐĂNG NHẬP',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: _textHigh,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Vui lòng đăng nhập để tiếp tục thanh toán, lưu giỏ hàng và nhận các ưu đãi thành viên đặc biệt.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: _textMid,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 32),
-              GestureDetector(
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(
-                    context,
-                  ).push(MaterialPageRoute(builder: (_) => const LoginPage()));
-                },
-                child: Container(
-                  width: double.infinity,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: _accent,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _accent.withValues(alpha: 0.3),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'ĐĂNG NHẬP NGAY',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor: _textLow,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    'ĐỂ SAU',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   void _navigateToCheckout(List<CartItemEntity> selectedItems) {
     final authState = context.read<AuthCubit>().state;
     if (authState is! AuthAuthenticated) {
-      _showAuthRequiredBottomSheet(context);
+      AuthRequiredModal.show(context);
       return;
     }
 
@@ -216,11 +96,24 @@ class _CartPageState extends State<CartPage> {
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(() {
+      if (mounted) {
+        setState(() {
+          _scrollOffset = _scrollController.offset;
+        });
+      }
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<CartCubit>().loadCart();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -239,47 +132,59 @@ class _CartPageState extends State<CartPage> {
         if (state is CartError) {
           return Scaffold(
             backgroundColor: _bg,
-            appBar: _buildSimpleAppBar(),
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(LucideIcons.triangleAlert, size: 48, color: _pink),
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Text(
-                      state.message,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: _textMid, fontSize: 14),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  GestureDetector(
-                    onTap: () => context.read<CartCubit>().loadCart(),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
+            body: Stack(
+              children: [
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        LucideIcons.triangleAlert,
+                        size: 48,
+                        color: _pink,
                       ),
-                      decoration: BoxDecoration(
-                        color: _accentSoft,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: _accent.withValues(alpha: 0.3),
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        child: Text(
+                          state.message,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: _textMid, fontSize: 14),
                         ),
                       ),
-                      child: const Text(
-                        'Thử lại',
-                        style: TextStyle(
-                          color: _accent,
-                          fontWeight: FontWeight.w700,
+                      const SizedBox(height: 24),
+                      GestureDetector(
+                        onTap: () => context.read<CartCubit>().loadCart(),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _accentSoft,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: _accent.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: const Text(
+                            'Thử lại',
+                            style: TextStyle(
+                              color: _accent,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                const GlassmorphicHeader(
+                  scrollOffset: 0,
+                  title: 'Lỗi',
+                  isTransparentAtTop: false,
+                ),
+              ],
             ),
           );
         }
@@ -302,49 +207,58 @@ class _CartPageState extends State<CartPage> {
         if (items.isEmpty) {
           return Scaffold(
             backgroundColor: _bg,
-            appBar: _buildSimpleAppBar(),
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Lottie.asset(
-                      'assets/animations/emptycart.json',
-                      height: 200,
-                      repeat: true,
-                      errorBuilder: (context, error, stackTrace) => const Icon(
-                        LucideIcons.shoppingCart,
-                        size: 80,
-                        color: _textLow,
-                      ),
+            body: Stack(
+              children: [
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Lottie.asset(
+                          'assets/animations/emptycart.json',
+                          height: 200,
+                          repeat: true,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(
+                                LucideIcons.shoppingCart,
+                                size: 80,
+                                color: _textLow,
+                              ),
+                        ),
+                        const SizedBox(height: 32),
+                        const Text(
+                          "GIỎ HÀNG RỖNG",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            color: _textHigh,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          "Chưa có sản phẩm nào trong giỏ hàng.\nHãy khám phá ngay!",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: _textMid,
+                            height: 1.6,
+                          ),
+                        ),
+                        const SizedBox(height: 40),
+                        _buildEmptyStateButton(context),
+                      ],
                     ),
-                    const SizedBox(height: 32),
-                    const Text(
-                      "GIỎ HÀNG RỖNG",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: _textHigh,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      "Chưa có sản phẩm nào trong giỏ hàng.\nHãy khám phá ngay!",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: _textMid,
-                        height: 1.6,
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                    _buildEmptyStateButton(context),
-                  ],
+                  ),
                 ),
-              ),
+                const GlassmorphicHeader(
+                  scrollOffset: 0,
+                  title: 'Giỏ hàng',
+                  isTransparentAtTop: false,
+                ),
+              ],
             ),
           );
         }
@@ -355,10 +269,10 @@ class _CartPageState extends State<CartPage> {
           body: Stack(
             children: [
               CustomScrollView(
+                controller: _scrollController,
                 physics: const BouncingScrollPhysics(),
                 slivers: [
-                  _buildSliverAppBar(),
-
+                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
@@ -383,47 +297,68 @@ class _CartPageState extends State<CartPage> {
                                     !allSelected,
                                   );
                                 },
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    AnimatedContainer(
-                                      duration: const Duration(
-                                        milliseconds: 300,
-                                      ),
-                                      width: 20,
-                                      height: 20,
-                                      decoration: BoxDecoration(
-                                        color: allSelected
-                                            ? _accent
-                                            : Colors.transparent,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 300),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: allSelected
+                                        ? _accent.withValues(alpha: 0.08)
+                                        : _surface,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: allSelected
+                                          ? _accent.withValues(alpha: 0.4)
+                                          : _border,
+                                      width: 1.2,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      AnimatedContainer(
+                                        duration: const Duration(
+                                          milliseconds: 300,
+                                        ),
+                                        width: 18,
+                                        height: 18,
+                                        decoration: BoxDecoration(
                                           color: allSelected
                                               ? _accent
-                                              : _textLow,
-                                          width: 2,
+                                              : Colors.transparent,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: allSelected
+                                                ? _accent
+                                                : _textLow,
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                        child: allSelected
+                                            ? const Icon(
+                                                Icons.check,
+                                                size: 11,
+                                                color: Colors.black,
+                                              )
+                                            : null,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        (allSelected
+                                            ? 'Bỏ chọn tất cả'
+                                            : 'Chọn tất cả'),
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                          color: allSelected
+                                              ? _textHigh
+                                              : _textMid,
                                         ),
                                       ),
-                                      child: allSelected
-                                          ? const Icon(
-                                              Icons.check,
-                                              size: 12,
-                                              color: Colors.black,
-                                            )
-                                          : null,
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Text(
-                                      allSelected
-                                          ? 'Bỏ chọn tất cả'
-                                          : 'Chọn tất cả',
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: _textMid,
-                                      ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                               if (state.cart != null &&
@@ -435,27 +370,31 @@ class _CartPageState extends State<CartPage> {
                                   },
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
+                                      horizontal: 16,
+                                      vertical: 10,
                                     ),
                                     decoration: BoxDecoration(
                                       color: _pinkSoft,
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: _pink.withValues(alpha: 0.3),
+                                        width: 1.5,
+                                      ),
                                     ),
                                     child: const Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(
                                           LucideIcons.trash2,
-                                          size: 13,
+                                          size: 14,
                                           color: _pink,
                                         ),
-                                        SizedBox(width: 6),
+                                        SizedBox(width: 8),
                                         Text(
                                           'Xóa tất cả',
                                           style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w900,
                                             color: _pink,
                                           ),
                                         ),
@@ -521,7 +460,18 @@ class _CartPageState extends State<CartPage> {
                   const SliverToBoxAdapter(child: SizedBox(height: 180)),
                 ],
               ),
-
+              GlassmorphicHeader(
+                scrollOffset: _scrollOffset,
+                title: 'Giỏ hàng',
+                isTransparentAtTop: false,
+                actions: [
+                  HeaderIconButton(
+                    icon: LucideIcons.messageCircle,
+                    onTap: () {
+                    },
+                  ),
+                ],
+              ),
               // floating checkout bar
               Builder(
                 builder: (context) {
@@ -597,55 +547,6 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-  PreferredSizeWidget _buildSimpleAppBar() {
-    return AppBar(
-      elevation: 0,
-      centerTitle: true,
-      backgroundColor: _bg,
-      title: const Text(
-        'Giỏ hàng',
-        style: TextStyle(
-          fontWeight: FontWeight.w900,
-          fontSize: 22,
-          color: _textHigh,
-          letterSpacing: -0.5,
-        ),
-      ),
-      iconTheme: const IconThemeData(color: _textMid),
-    );
-  }
-
-  Widget _buildSliverAppBar() {
-    return SliverAppBar(
-      floating: true,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      backgroundColor: _bg,
-      automaticallyImplyLeading: false,
-      titleSpacing: 20,
-      title: const Text(
-        'Giỏ hàng',
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.w900,
-          color: _textHigh,
-          letterSpacing: -0.5,
-        ),
-      ),
-      actions: [
-        IconButton(
-          icon: const Icon(
-            LucideIcons.messageCircle,
-            color: _textMid,
-            size: 24,
-          ),
-          onPressed: (){},
-        ),
-        const SizedBox(width: 8),
-      ],
-    );
-  }
-
   Widget _buildAnchoredCheckoutBar(
     bool hasSelection,
     double total,
@@ -653,49 +554,56 @@ class _CartPageState extends State<CartPage> {
   ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: _surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _border, width: 0.5),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.08),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 24,
-            offset: const Offset(0, -4),
+            blurRadius: 40,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Tổng cộng',
-                style: TextStyle(
-                  color: _textMid,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Flexible(
-                child: Text(
-                  hasSelection ? formatVND(total) : '0 ₫',
-                  style: const TextStyle(
-                    color: _accent,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Tổng cộng',
+                  style: TextStyle(
+                    color: _textMid,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
                   ),
-                  textAlign: TextAlign.right,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    hasSelection ? formatVND(total) : '0 ₫',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(width: 16),
           GestureDetector(
             onTap: hasSelection
                 ? () {
@@ -706,33 +614,19 @@ class _CartPageState extends State<CartPage> {
                   }
                 : null,
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              width: double.infinity,
-              height: 52,
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
               decoration: BoxDecoration(
                 color: hasSelection ? _accent : _surfaceAlt,
                 borderRadius: BorderRadius.circular(18),
-                border: hasSelection
-                    ? null
-                    : Border.all(color: _border, width: 0.5),
-                boxShadow: hasSelection
-                    ? [
-                        BoxShadow(
-                          color: _accent.withValues(alpha: 0.25),
-                          blurRadius: 5,
-                        ),
-                      ]
-                    : [],
               ),
-              child: Center(
-                child: Text(
-                  'THANH TOÁN',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
-                    color: hasSelection ? Colors.black : _textLow,
-                  ),
+              child: Text(
+                'THANH TOÁN',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
+                  color: hasSelection ? Colors.black : _textLow,
                 ),
               ),
             ),
@@ -747,31 +641,34 @@ class _CartPageState extends State<CartPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 28, 20, 16),
-            child: Center(
-              child: Text(
-                'CÓ THỂ BẠN CŨNG THÍCH',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: _textMid,
-                  letterSpacing: 2,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
+            child: Row(
+              children: [
+                Container(width: 32, height: 1.5, color: _accent),
+                const SizedBox(width: 12),
+                const Text(
+                  'KHÁM PHÁ THÊM',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: _textHigh,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
           SizedBox(
-            height: 600,
+            height: 620,
             child: PageView.builder(
-              controller: PageController(viewportFraction: 1.0),
+              controller: PageController(viewportFraction: 0.94),
               clipBehavior: Clip.none,
               itemCount: _recommendations.length,
               itemBuilder: (context, index) {
                 final product = _recommendations[index];
-                return FractionallySizedBox(
-                  widthFactor: 0.92,
-                  child: Center(child: LargeProductCard(product: product)),
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: LargeProductCard(product: product),
                 );
               },
             ),
@@ -784,40 +681,86 @@ class _CartPageState extends State<CartPage> {
   Widget _buildEmptyStateButton(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        final mainScreen = context.findAncestorStateOfType<MainScreenState>();
-        if (mainScreen != null) {
-          mainScreen.onItemTapped(0);
-        }
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const MainScreen()),
+        );
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 18),
         decoration: BoxDecoration(
-          color: _accent,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: _accent.withValues(alpha: 0.3),
+              color: Colors.white.withValues(alpha: 0.1),
               blurRadius: 20,
-              offset: const Offset(0, 8),
+              offset: const Offset(0, 10),
             ),
           ],
         ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(LucideIcons.shoppingBag, color: Colors.black, size: 18),
-            SizedBox(width: 10),
-            Text(
-              "BẮT ĐẦU MUA SẮM",
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.w900,
-                fontSize: 13,
-                letterSpacing: 1,
-              ),
-            ),
-          ],
+        child: const Text(
+          "TIẾP TỤC MUA SẮM",
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+            color: Colors.black,
+            letterSpacing: 1,
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class PromoSection extends StatelessWidget {
+  const PromoSection({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _border, width: 1),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: _accent.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              LucideIcons.ticketPercent,
+              color: _accent,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Mã giảm giá',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: _textHigh,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Chọn hoặc nhập mã khuyến mãi',
+                  style: TextStyle(fontSize: 13, color: _textMid),
+                ),
+              ],
+            ),
+          ),
+          const Icon(LucideIcons.chevronRight, color: _textLow, size: 20),
+        ],
       ),
     );
   }

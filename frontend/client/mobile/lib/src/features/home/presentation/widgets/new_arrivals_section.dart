@@ -13,13 +13,13 @@ class NewArrivalsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 4),
+          padding: EdgeInsets.symmetric(horizontal: 24),
           child: Text(
             'Đón đầu kỷ nguyên công nghệ mới',
             style: TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF0A0A0F),
+              color: Colors.white,
               letterSpacing: -0.5,
             ),
           ),

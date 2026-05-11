@@ -10,13 +10,12 @@ import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-const _bg         = Color(0xFF0A0A10);
-const _surface    = Color(0xFF14141E);
-const _border     = Color(0xFF2A2A38);
-const _accent     = Color(0xFFF59E0B);
-const _textHigh   = Color(0xFFF1F1F5);
-const _textMid    = Color(0xFF9191A8);
-const _textLow    = Color(0xFF4A4A62);
+const _bg = Color(0xFF07070A);
+const _surface = Color(0xFF14141E);
+const _border = Color(0xFF2A2A38);
+const _accent = Color(0xFFFFCC00);
+const _textHigh = Color(0xFFF1F1F5);
+const _textLow = Color(0xFF4A4A62);
 
 class EditProfilePage extends StatefulWidget {
   final UserEntity user;
@@ -81,11 +80,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     HapticFeedback.heavyImpact();
     context.read<AuthCubit>().updateProfile(
-          fullName: name,
-          phone: phone.isNotEmpty ? phone : null,
-          address: address.isNotEmpty ? address : null,
-          filePath: _pickedImage?.path,
-        );
+      fullName: name,
+      phone: phone.isNotEmpty ? phone : null,
+      address: address.isNotEmpty ? address : null,
+      filePath: _pickedImage?.path,
+    );
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -95,7 +94,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
           message,
           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
         ),
-        backgroundColor: isError ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+        backgroundColor: isError
+            ? const Color(0xFFEF4444)
+            : const Color(0xFF10B981),
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(20),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -183,7 +184,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
       scrolledUnderElevation: 0,
       centerTitle: true,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _textMid),
+        icon: const Icon(
+          Icons.arrow_back_rounded,
+          color: Colors.white,
+          size: 22,
+        ),
         onPressed: () => Navigator.pop(context),
       ),
       title: const Text(
@@ -212,7 +217,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: _accent.withValues(alpha: 0.2), width: 1.5),
+              border: Border.all(
+                color: _accent.withValues(alpha: 0.2),
+                width: 1.5,
+              ),
             ),
             child: Container(
               width: 120,
@@ -225,7 +233,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     color: _accent.withValues(alpha: 0.1),
                     blurRadius: 30,
                     spreadRadius: 5,
-                  )
+                  ),
                 ],
               ),
               child: ClipRRect(
@@ -233,15 +241,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 child: _pickedImage != null
                     ? Image.file(_pickedImage!, fit: BoxFit.cover)
                     : (widget.user.avatarUrl?.isNotEmpty == true
-                        ? CachedNetworkImage(
-                            imageUrl: widget.user.avatarUrl!,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => const Center(
-                              child: CircularProgressIndicator(color: _accent, strokeWidth: 1.5),
-                            ),
-                            errorWidget: (context, url, error) => _buildInitialAvatar(),
-                          )
-                        : _buildInitialAvatar()),
+                          ? CachedNetworkImage(
+                              imageUrl: widget.user.avatarUrl!,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => const Center(
+                                child: CircularProgressIndicator(
+                                  color: _accent,
+                                  strokeWidth: 1.5,
+                                ),
+                              ),
+                              errorWidget: (context, url, error) =>
+                                  _buildInitialAvatar(),
+                            )
+                          : _buildInitialAvatar()),
               ),
             ),
           ),
@@ -261,10 +273,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.3),
                       blurRadius: 10,
-                    )
+                    ),
                   ],
                 ),
-                child: const Icon(LucideIcons.camera, color: Colors.black, size: 18),
+                child: const Icon(
+                  LucideIcons.camera,
+                  color: Colors.black,
+                  size: 18,
+                ),
               ),
             ),
           ),
@@ -330,9 +346,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 fontWeight: FontWeight.w500,
                 color: _textLow,
               ),
-              prefixIcon: Icon(icon, color: _accent.withValues(alpha: 0.6), size: 18),
+              prefixIcon: Icon(
+                icon,
+                color: _accent.withValues(alpha: 0.6),
+                size: 18,
+              ),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 18,
+              ),
             ),
           ),
         ),
@@ -349,7 +372,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
-            padding: EdgeInsets.fromLTRB(24, 20, 24, 20 + MediaQuery.of(context).padding.bottom),
+            padding: EdgeInsets.fromLTRB(
+              24,
+              20,
+              24,
+              20 + MediaQuery.of(context).padding.bottom,
+            ),
             decoration: BoxDecoration(
               color: _bg.withValues(alpha: 0.8),
               border: const Border(top: BorderSide(color: _border, width: 0.5)),
@@ -369,7 +397,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         BoxShadow(
                           color: _accent.withValues(alpha: 0.3),
                           blurRadius: 5,
-                        )
+                        ),
                       ],
                     ),
                     child: Center(

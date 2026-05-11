@@ -7,14 +7,14 @@ import 'package:mobile/src/shared/models/product_variant_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 
-const _bg         = Color(0xFF0A0A10);
-const _surface    = Color(0xFF14141E);
+const _bg = Color(0xFF07070A);
+const _surface = Color(0xFF14141E);
 const _surfaceAlt = Color(0xFF1C1C28);
-const _border     = Color(0xFF2A2A38);
-const _accent     = Color(0xFF6366F1);
-const _textHigh   = Color(0xFFF1F1F5);
-const _textMid    = Color(0xFF9191A8);
-const _textLow    = Color(0xFF4A4A62);
+const _border = Color(0xFF2A2A38);
+const _accent = Color(0xFF6366F1);
+const _textHigh = Color(0xFFF1F1F5);
+const _textMid = Color(0xFF9191A8);
+const _textLow = Color(0xFF4A4A62);
 
 class ProductInfoSection extends StatefulWidget {
   final ProductModel product;
@@ -311,11 +311,13 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                                   offset: const Offset(0, 2),
                                 ),
                               ],
-                              image: (variant.imageUrl != null ||
+                              image:
+                                  (variant.imageUrl != null ||
                                       widget.product.image.isNotEmpty)
                                   ? DecorationImage(
                                       image: CachedNetworkImageProvider(
-                                        variant.imageUrl ?? widget.product.image,
+                                        variant.imageUrl ??
+                                            widget.product.image,
                                       ),
                                       fit: BoxFit.cover,
                                       colorFilter: !anyInStock
@@ -333,7 +335,9 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                                       width: 2,
                                       height: 24,
                                       transform: Matrix4.rotationZ(0.785),
-                                      color: isSelected ? Colors.white70 : _textLow,
+                                      color: isSelected
+                                          ? Colors.white70
+                                          : _textLow,
                                     ),
                                   )
                                 : null,
@@ -343,7 +347,9 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                             colorValue.toUpperCase(),
                             style: TextStyle(
                               fontSize: 11,
-                              fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                              fontWeight: isSelected
+                                  ? FontWeight.w900
+                                  : FontWeight.w700,
                               color: isSelected ? Colors.white : _textMid,
                               letterSpacing: 0.5,
                             ),
@@ -529,8 +535,9 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                         children: [
                           Text(
                             (_isDescriptionExpanded
-                                ? 'THU GỌN'
-                                : 'XEM THÊM CHI TIẾT').toUpperCase(),
+                                    ? 'THU GỌN'
+                                    : 'XEM THÊM CHI TIẾT')
+                                .toUpperCase(),
                             style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
@@ -674,9 +681,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                           fontWeight: isSelected
                               ? FontWeight.w900
                               : FontWeight.w800,
-                          color: isSelected
-                              ? Colors.white
-                              : _textHigh,
+                          color: isSelected ? Colors.white : _textHigh,
                           letterSpacing: 0.5,
                           decoration: isOutOfStock
                               ? TextDecoration.lineThrough

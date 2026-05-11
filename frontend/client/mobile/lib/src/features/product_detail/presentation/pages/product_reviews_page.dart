@@ -10,16 +10,16 @@ import 'package:mobile/src/features/product_review/presentation/state/review_sta
 import 'package:mobile/src/features/product_review/presentation/widgets/shop_reply_widget.dart';
 import '../../../../core/di/injection.dart';
 
-const _bg         = Color(0xFF0A0A10);
-const _surface    = Color(0xFF14141E);
+const _bg = Color(0xFF07070A);
+const _surface = Color(0xFF14141E);
 const _surfaceAlt = Color(0xFF1C1C28);
-const _border     = Color(0xFF2A2A38);
-const _accent     = Color(0xFFF59E0B);
+const _border = Color(0xFF2A2A38);
+const _accent = Color(0xFFFFCC00);
 const _accentSoft = Color(0x26F59E0B);
-const _indigo     = Color(0xFF6366F1);
-const _textHigh   = Color(0xFFF1F1F5);
-const _textMid    = Color(0xFF9191A8);
-const _textLow    = Color(0xFF4A4A62);
+const _textHigh = Color(0xFFF1F1F5);
+const _textMid = Color(0xFF9191A8);
+const _textLow = Color(0xFF4A4A62);
+const _starColor = Color(0xFFFFCC00);
 
 class ProductReviewsPage extends StatefulWidget {
   final String productId;
@@ -46,16 +46,26 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
               builder: (context, state) {
                 if (state is ReviewLoading) {
                   return const Center(
-                    child: CircularProgressIndicator(color: _accent, strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      color: _accent,
+                      strokeWidth: 2,
+                    ),
                   );
                 } else if (state is ReviewError) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(LucideIcons.circleAlert, color: Colors.red, size: 48),
+                        const Icon(
+                          LucideIcons.circleAlert,
+                          color: Colors.red,
+                          size: 48,
+                        ),
                         const SizedBox(height: 16),
-                        Text(state.message, style: const TextStyle(color: _textMid)),
+                        Text(
+                          state.message,
+                          style: const TextStyle(color: _textMid),
+                        ),
                       ],
                     ),
                   );
@@ -97,11 +107,17 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                                   ),
                                   const SizedBox(width: 8),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: _surfaceAlt,
                                       borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: _border, width: 0.5),
+                                      border: Border.all(
+                                        color: _border,
+                                        width: 0.5,
+                                      ),
                                     ),
                                     child: Text(
                                       '$filteredTotal',
@@ -121,12 +137,19 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                                   child: Center(
                                     child: Column(
                                       children: [
-                                        Icon(LucideIcons.messageSquareDashed, size: 48, color: _textLow),
+                                        Icon(
+                                          LucideIcons.messageSquareDashed,
+                                          size: 48,
+                                          color: _textLow,
+                                        ),
                                         SizedBox(height: 16),
                                         Text(
                                           'Chưa có đánh giá nào phù hợp bộ lọc này.',
                                           textAlign: TextAlign.center,
-                                          style: TextStyle(color: _textLow, fontSize: 14),
+                                          style: TextStyle(
+                                            color: _textLow,
+                                            fontSize: 14,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -160,7 +183,11 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
       centerTitle: true,
       leading: GestureDetector(
         onTap: () => Navigator.pop(context),
-        child: const Icon(Icons.arrow_back_ios_new_rounded, color: _textMid),
+        child: const Icon(
+          Icons.arrow_back_rounded,
+          color: Colors.white,
+          size: 22,
+        ),
       ),
       title: const Text(
         'Đánh giá sản phẩm',
@@ -259,25 +286,12 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
             color: isSelected ? _accent : _border,
             width: isSelected ? 1.5 : 0.5,
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: _accent.withValues(alpha: 0.25),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  )
-                ]
-              : [],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(
-                icon,
-                size: 14,
-                color: isSelected ? Colors.black : _textLow,
-              ),
+              Icon(icon, size: 14, color: isSelected ? Colors.black : _textLow),
               const SizedBox(width: 6),
             ],
             Text(
@@ -294,10 +308,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
     );
   }
 
-  Widget _buildRatingSummary(
-    double avgRating,
-    Map<String, dynamic> summary,
-  ) {
+  Widget _buildRatingSummary(double avgRating, Map<String, dynamic> summary) {
     final total = (summary['total'] ?? 0) as int;
 
     double getPct(int star) {
@@ -317,7 +328,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
             color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 20,
             offset: const Offset(0, 8),
-          )
+          ),
         ],
       ),
       child: Row(
@@ -343,7 +354,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                   return Icon(
                     index < avgRating.floor() ? Icons.star : Icons.star_outline,
                     size: 16,
-                    color: index < avgRating.floor() ? _accent : _textLow,
+                    color: index < avgRating.floor() ? _starColor : _textLow,
                   );
                 }),
               ),
@@ -405,14 +416,16 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                 widthFactor: pct,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: stars >= 4 ? _accent : _textLow,
+                    color: stars >= 4 ? _starColor : _textLow,
                     borderRadius: BorderRadius.circular(10),
-                    boxShadow: stars >= 4 ? [
-                      BoxShadow(
-                        color: _accent.withValues(alpha: 0.3),
-                        blurRadius: 4,
-                      )
-                    ] : [],
+                    boxShadow: stars >= 4
+                        ? [
+                            BoxShadow(
+                              color: _starColor.withValues(alpha: 0.3),
+                              blurRadius: 4,
+                            ),
+                          ]
+                        : [],
                   ),
                 ),
               ),
@@ -439,7 +452,10 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                     height: 44,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: _accent.withValues(alpha: 0.2), width: 1.5),
+                      border: Border.all(
+                        color: _accent.withValues(alpha: 0.2),
+                        width: 1.5,
+                      ),
                     ),
                     child: CircleAvatar(
                       backgroundColor: _surfaceAlt,
@@ -479,7 +495,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                               const Icon(
                                 Icons.verified_rounded,
                                 size: 16,
-                                color: _indigo,
+                                color: Color(0xFF0077DE),
                               ),
                             ],
                           ],
@@ -499,7 +515,10 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                   ),
                   // stars
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: _accentSoft,
                       borderRadius: BorderRadius.circular(10),
@@ -507,7 +526,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.star, size: 14, color: _accent),
+                        const Icon(Icons.star, size: 14, color: _starColor),
                         const SizedBox(width: 4),
                         Text(
                           '${review.rating}',
@@ -522,13 +541,17 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // variant tag
-              if (review.variantName != null && review.variantName!.isNotEmpty) ...[
+              if (review.variantName != null &&
+                  review.variantName!.isNotEmpty) ...[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: _surfaceAlt,
                     borderRadius: BorderRadius.circular(10),
@@ -557,7 +580,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                   ),
                 ),
               ],
-              
+
               if (review.images.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 SizedBox(
@@ -575,20 +598,22 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                           width: 90,
                           height: 90,
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(color: _surfaceAlt),
-                          errorWidget: (context, url, error) => const Icon(LucideIcons.imageOff),
+                          placeholder: (context, url) =>
+                              Container(color: _surfaceAlt),
+                          errorWidget: (context, url, error) =>
+                              const Icon(LucideIcons.imageOff),
                         ),
                       );
                     },
                   ),
                 ),
               ],
-              
+
               if (review.reply != null && review.reply!.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 ShopReplyWidget(reply: review.reply!),
               ],
-              
+
               const SizedBox(height: 24),
               Container(height: 1, color: _border.withValues(alpha: 0.5)),
             ],

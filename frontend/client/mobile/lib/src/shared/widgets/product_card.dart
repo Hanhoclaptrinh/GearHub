@@ -10,15 +10,16 @@ import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:mobile/src/features/wishlist/domain/repositories/wishlist_repository.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
+import 'package:mobile/src/shared/widgets/auth_required_modal.dart';
+import 'package:mobile/src/shared/widgets/color_bubble_selector.dart';
 
-const _surface    = Color(0xFF14141E);
+const _surface = Color(0xFF14141E);
 const _surfaceAlt = Color(0xFF1C1C28);
-const _border     = Color(0xFF2A2A38);
-const _accent     = Color(0xFFF59E0B);
-const _textHigh   = Color(0xFFF1F1F5);
-const _textMid    = Color(0xFF9191A8);
-const _textLow    = Color(0xFF4A4A62);
-const _tagBg      = Color(0xFF22222E);
+const _border = Color(0xFF2A2A38);
+const _accent = Color(0xFFFFCC00);
+const _textHigh = Color(0xFFF1F1F5);
+const _textLow = Color(0xFF4A4A62);
+const _starColor = Color(0xFFFFCC00);
 
 class ProductCard extends StatefulWidget {
   final ProductModel product;
@@ -65,10 +66,7 @@ class _ProductCardState extends State<ProductCard>
   Future<void> _toggleWishlist() async {
     final authState = context.read<AuthCubit>().state;
     if (authState is! AuthAuthenticated) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Vui lòng đăng nhập để lưu vào yêu thích')),
-      );
+      AuthRequiredModal.show(context);
       return;
     }
     HapticFeedback.lightImpact();
@@ -91,11 +89,8 @@ class _ProductCardState extends State<ProductCard>
 
   @override
   Widget build(BuildContext context) {
-    final colorKey    = _getColorKey(widget.product);
-    final uniqueColors = colorKey.isNotEmpty
-        ? _getUniqueValues(widget.product, colorKey)
-        : <String>[];
-    final otherSpecs  = _getOtherSpecs(widget.product, colorKey);
+    final colorKey = _getColorKey(widget.product);
+    final otherSpecs = _getOtherSpecs(widget.product, colorKey);
 
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -139,8 +134,7 @@ class _ProductCardState extends State<ProductCard>
                     // rating row
                     Row(
                       children: [
-                        const Icon(Icons.star_rounded,
-                            color: _accent, size: 15),
+                        const Icon(Icons.star, color: _starColor, size: 15),
                         const SizedBox(width: 4),
                         Text(
                           '${widget.product.averageRating}',
@@ -153,10 +147,7 @@ class _ProductCardState extends State<ProductCard>
                         const SizedBox(width: 4),
                         Text(
                           '(${widget.product.reviewCount})',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: _textLow,
-                          ),
+                          style: const TextStyle(fontSize: 12, color: _textLow),
                         ),
                       ],
                     ),
@@ -174,19 +165,18 @@ class _ProductCardState extends State<ProductCard>
                     ),
                     const SizedBox(height: 16),
 
-                    // color chips
-                    if (uniqueColors.isNotEmpty)
-                      Wrap(
+                    // color bubbles
+                    if (colorKey.isNotEmpty)
+                      ColorBubbleSelector(
+                        product: widget.product,
+                        attributeKey: colorKey,
+                        bubbleSize: 30,
                         spacing: 6,
-                        runSpacing: 6,
-                        children: uniqueColors
-                            .take(4)
-                            .map((c) => _ColorChip(label: c))
-                            .toList(),
+                        isReadOnly: true,
                       ),
 
-                    if (uniqueColors.isNotEmpty && otherSpecs.isNotEmpty)
-                      const SizedBox(height: 10),
+                    if (colorKey.isNotEmpty && otherSpecs.isNotEmpty)
+                      const SizedBox(height: 12),
 
                     // other specs
                     if (otherSpecs.isNotEmpty)
@@ -260,8 +250,11 @@ class _ProductCardState extends State<ProductCard>
                       ),
                       errorWidget: (_, __, ___) => const SizedBox(
                         height: 110,
-                        child: Icon(LucideIcons.package,
-                            size: 36, color: _textLow),
+                        child: Icon(
+                          LucideIcons.package,
+                          size: 36,
+                          color: _textLow,
+                        ),
                       ),
                     ),
                   ],
@@ -276,26 +269,12 @@ class _ProductCardState extends State<ProductCard>
 
   String _getColorKey(ProductModel product) {
     if (product.attributeConfig.isNotEmpty) {
-      return product.attributeConfig.firstWhere(
-        (k) {
-          final l = k.toLowerCase();
-          return l.contains('color') ||
-              l.contains('màu') ||
-              l.contains('mau');
-        },
-        orElse: () => '',
-      );
+      return product.attributeConfig.firstWhere((k) {
+        final l = k.toLowerCase();
+        return l.contains('color') || l.contains('màu') || l.contains('mau');
+      }, orElse: () => '');
     }
     return '';
-  }
-
-  List<String> _getUniqueValues(ProductModel product, String key) {
-    return product.variants
-        .where((v) => v.isActive)
-        .map((v) => v.attributes[key]?.toString())
-        .whereType<String>()
-        .toSet()
-        .toList();
   }
 
   List<String> _getOtherSpecs(ProductModel product, String colorKey) {
@@ -307,30 +286,5 @@ class _ProductCardState extends State<ProductCard>
       });
     }
     return specs.toList();
-  }
-}
-
-class _ColorChip extends StatelessWidget {
-  final String label;
-  const _ColorChip({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: _tagBg,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _border),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: _textMid,
-        ),
-      ),
-    );
   }
 }

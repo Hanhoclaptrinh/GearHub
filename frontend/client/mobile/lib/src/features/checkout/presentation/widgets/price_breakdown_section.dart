@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
 
-const _surface  = Color(0xFF14141E);
-const _border   = Color(0xFF2A2A38);
-const _accent   = Color(0xFFF59E0B);
+const _surface = Color(0xFF14141E);
+const _border = Color(0xFF2A2A38);
+const _accent = Color(0xFFFDE047);
 const _textHigh = Color(0xFFF1F1F5);
-const _textMid  = Color(0xFF9191A8);
-const _green    = Color(0xFF34D399);
+const _textMid = Color(0xFF9191A8);
+const _green = Color(0xFF34D399);
 
 class PriceBreakdownSection extends StatelessWidget {
   final double subtotal;
@@ -83,10 +83,7 @@ class PriceBreakdownSection extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: const TextStyle(color: _textMid, fontSize: 14),
-        ),
+        Text(label, style: const TextStyle(color: _textMid, fontSize: 14)),
         Text(
           value,
           style: TextStyle(

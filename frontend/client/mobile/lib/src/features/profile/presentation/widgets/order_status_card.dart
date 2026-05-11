@@ -9,19 +9,14 @@ import 'package:mobile/src/features/profile/presentation/pages/order_history_pag
 import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_state.dart';
 
-const _surface = Color(0xFF14141E);
-const _surfaceAlt = Color(0xFF1C1C28);
-const _border = Color(0xFF2A2A38);
-const _indigo = Color(0xFF6366F1);
-const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
-const _textLow = Color(0xFF4A4A62);
-
 class OrderStatusCard extends StatelessWidget {
   const OrderStatusCard({super.key});
 
   @override
   Widget build(BuildContext context) {
+    const textHigh = Color(0xFFF1F1F5);
+    const textLow = Color(0xFF9191A8);
+
     return BlocBuilder<OrdersCubit, OrdersState>(
       builder: (context, state) {
         int pendingCount = 0;
@@ -42,11 +37,15 @@ class OrderStatusCard extends StatelessWidget {
         }
 
         return Container(
-          padding: const EdgeInsets.all(20),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
           decoration: BoxDecoration(
-            color: _surface,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: _border),
+            color: Colors.white.withValues(alpha: 0.02),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.05),
+              width: 0.8,
+            ),
           ),
           child: Column(
             children: [
@@ -54,12 +53,12 @@ class OrderStatusCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Đơn hàng của tôi',
+                    'QUẢN LÝ ĐƠN HÀNG',
                     style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: _textHigh,
-                      letterSpacing: -0.2,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      color: textHigh,
+                      letterSpacing: 1.5,
                     ),
                   ),
                   GestureDetector(
@@ -71,13 +70,10 @@ class OrderStatusCard extends StatelessWidget {
                         ),
                       );
                     },
-                    child: const Text(
-                      'Xem tất cả',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: _indigo,
-                      ),
+                    child: const Icon(
+                      LucideIcons.chevronRight,
+                      size: 14,
+                      color: textLow,
                     ),
                   ),
                 ],
@@ -86,51 +82,44 @@ class OrderStatusCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildStatusItem(
+                  _buildHubItem(
                     context,
                     LucideIcons.wallet,
-                    'Chờ xác nhận',
+                    'XÁC NHẬN',
                     'PENDING',
-                    badgeCount: pendingCount > 0
-                        ? pendingCount.toString()
-                        : null,
+                    pendingCount,
                   ),
-                  _buildStatusItem(
+                  _buildHubItem(
                     context,
                     LucideIcons.package,
-                    'Chờ xử lý',
+                    'XỬ LÝ',
                     'PROCESSING',
-                    badgeCount: processingCount > 0
-                        ? processingCount.toString()
-                        : null,
+                    processingCount,
                   ),
-                  _buildStatusItem(
+                  _buildHubItem(
                     context,
                     LucideIcons.truck,
-                    'Chờ giao hàng',
+                    'GIAO HÀNG',
                     'SHIPPING',
-                    badgeCount: shippingCount > 0
-                        ? shippingCount.toString()
-                        : null,
+                    shippingCount,
                   ),
+
                   BlocProvider(
                     create: (context) =>
                         getIt<ReviewCubit>()..loadPendingReviews(),
                     child: BlocBuilder<ReviewCubit, ReviewState>(
                       builder: (context, state) {
-                        String? pendingCount;
+                        int reviewCount = 0;
                         if (state is PendingReviewsLoaded) {
-                          pendingCount = state.pendingReviews.isNotEmpty
-                              ? state.pendingReviews.length.toString()
-                              : null;
+                          reviewCount = state.pendingReviews.length;
                         }
 
-                        return _buildStatusItem(
+                        return _buildHubItem(
                           context,
                           LucideIcons.star,
-                          'Đánh giá',
-                          'PENDING_REVIEWS',
-                          badgeCount: pendingCount,
+                          'ĐÁNH GIÁ',
+                          'REVIEWS',
+                          reviewCount,
                           onTap: () {
                             Navigator.of(context)
                                 .push(
@@ -139,7 +128,6 @@ class OrderStatusCard extends StatelessWidget {
                                   ),
                                 )
                                 .then((_) {
-                                  // reload count sau khi quay lai
                                   if (context.mounted) {
                                     context
                                         .read<ReviewCubit>()
@@ -160,14 +148,16 @@ class OrderStatusCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusItem(
+  Widget _buildHubItem(
     BuildContext context,
     IconData icon,
     String label,
-    String status, {
-    String? badgeCount,
+    String status,
+    int count, {
     VoidCallback? onTap,
   }) {
+    const accent = Color(0xFF3B82F6);
+
     return GestureDetector(
       onTap:
           onTap ??
@@ -178,53 +168,67 @@ class OrderStatusCard extends StatelessWidget {
               ),
             );
           },
-      child: Column(
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: const BoxDecoration(
-                  color: _surfaceAlt,
-                  shape: BoxShape.circle,
+      child: Container(
+        color: Colors.transparent,
+        child: Column(
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 22,
+                  color: count > 0
+                      ? Colors.white
+                      : Colors.white.withValues(alpha: 0.15),
                 ),
-                child: Icon(icon, size: 22, color: _textMid),
-              ),
-              if (badgeCount != null && badgeCount != '0')
-                Positioned(
-                  top: -4,
-                  right: -4,
-                  child: Container(
-                    padding: const EdgeInsets.all(5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEF4444),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: _surface, width: 2),
-                    ),
-                    child: Text(
-                      badgeCount,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        height: 1,
+                if (count > 0)
+                  Positioned(
+                    top: -6,
+                    right: -10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: accent,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: accent.withValues(alpha: 0.3),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        count.toString(),
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          height: 1,
+                        ),
                       ),
                     ),
                   ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: _textLow,
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 10),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                color: count > 0
+                    ? Colors.white.withValues(alpha: 0.6)
+                    : Colors.white.withValues(alpha: 0.15),
+                letterSpacing: 0.8,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

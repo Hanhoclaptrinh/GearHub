@@ -3,8 +3,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 const _surface = Color(0xFF14141E);
 const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFF59E0B);
-const _indigo = Color(0xFF6366F1);
+const _accent = Color(0xFFFDE047);
 const _textHigh = Color(0xFFF1F1F5);
 const _textMid = Color(0xFF9191A8);
 const _textLow = Color(0xFF4A4A62);
@@ -117,7 +116,7 @@ class DeliverySection extends StatelessWidget {
                         const Icon(
                           LucideIcons.mapPin,
                           size: 16,
-                          color: _indigo,
+                          color: Color(0xFF0077ED),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -136,7 +135,7 @@ class DeliverySection extends StatelessWidget {
                 )
               : const Center(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: EdgeInsets.symmetric(vertical: 16),
                     child: Column(
                       children: [
                         Icon(LucideIcons.mapPin, size: 28, color: _textLow),

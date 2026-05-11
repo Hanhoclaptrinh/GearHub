@@ -16,6 +16,8 @@ class ProductModel {
   final Map<String, dynamic>? vaultSpecs;
   final Map<String, dynamic>? commonSpecs;
   final String? brandName;
+  final String? categoryId;
+  final String? categoryName;
   final List<ProductVariantModel> variants;
   final List<ProductAssetModel> assets;
   final List<String> attributeConfig;
@@ -35,6 +37,8 @@ class ProductModel {
     this.vaultSpecs,
     this.commonSpecs,
     this.brandName,
+    this.categoryId,
+    this.categoryName,
     this.variants = const [],
     this.assets = const [],
     this.attributeConfig = const [],
@@ -135,16 +139,18 @@ class ProductModel {
     Map<String, dynamic>? vaultSpecs,
     Map<String, dynamic>? commonSpecs,
     String? brandName,
+    String? categoryId,
+    String? categoryName,
     List<ProductVariantModel>? variants,
     List<ProductAssetModel>? assets,
     List<String>? attributeConfig,
   }) {
     return ProductModel(
       id: id ?? this.id,
-      name: name ?? this.baseName,
+      name: name ?? baseName,
       tagline: tagline ?? this.tagline,
-      price: price ?? this.basePrice,
-      image: image ?? this.baseImage,
+      price: price ?? basePrice,
+      image: image ?? baseImage,
       tag: tag ?? this.tag,
       viewsCount: viewsCount ?? this.viewsCount,
       soldCount: soldCount ?? this.soldCount,
@@ -154,6 +160,8 @@ class ProductModel {
       vaultSpecs: vaultSpecs ?? this.vaultSpecs,
       commonSpecs: commonSpecs ?? this.commonSpecs,
       brandName: brandName ?? this.brandName,
+      categoryId: categoryId ?? this.categoryId,
+      categoryName: categoryName ?? this.categoryName,
       variants: variants ?? this.variants,
       assets: assets ?? this.assets,
       attributeConfig: attributeConfig ?? this.attributeConfig,
@@ -214,6 +222,13 @@ class ProductModel {
       vaultSpecs: json['vaultSpecs'] != null ? Map<String, dynamic>.from(json['vaultSpecs']) : null,
       commonSpecs: commonSpecs,
       brandName: json['brand']?['name'] as String?,
+      categoryId: json['category']?['parent'] != null
+          ? json['category']!['parent']['id'] as String?
+          : json['category']?['id'] as String?,
+      categoryName: json['category']?['parent'] != null
+          ? json['category']!['parent']['name'] as String?
+          : (json['category']?['title'] as String? ??
+              json['category']?['name'] as String?),
       variants: variants,
       assets: assets,
       attributeConfig: attributeConfig,

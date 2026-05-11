@@ -3,11 +3,11 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 const _surface = Color(0xFF14141E);
 const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFF59E0B);
-const _accentSoft = Color(0x26F59E0B);
-const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
-const _textLow = Color(0xFF4A4A62);
+const _accent = Color(0xFFFDE047);
+const _accentSoft = Color(0x1AFDE047);
+const _textHigh = Colors.white;
+const _textMid = Color(0xFF94A3B8);
+const _textLow = Color(0xFF475569);
 
 class PromoSection extends StatelessWidget {
   const PromoSection({super.key});
@@ -114,12 +114,12 @@ class EmptyCartView extends StatelessWidget {
                   vertical: 16,
                 ),
                 decoration: BoxDecoration(
-                  color: _accent,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: _accent.withValues(alpha: 0.3),
-                      blurRadius: 20,
+                      color: Colors.white.withValues(alpha: 0.1),
+                      blurRadius: 24,
                       offset: const Offset(0, 8),
                     ),
                   ],

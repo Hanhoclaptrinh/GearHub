@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:mobile/src/shared/pages/search_page.dart';
+import 'package:mobile/src/shared/widgets/glassmorphic_header.dart';
 import '../widgets/hero_section.dart';
 import '../widgets/recently_viewed_section.dart';
 import '../widgets/top_categories_section.dart';
@@ -14,6 +16,10 @@ import '../widgets/top_rated_section.dart';
 import '../widgets/vault_section.dart';
 import '../widgets/top_brands_section.dart';
 import '../state/home_cubit.dart';
+
+const _bg = Color(0xFF07070A);
+const _accent = Color(0xFFFDE047);
+const _textMid = Color(0xFF9191A8);
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,6 +30,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage>
     with AutomaticKeepAliveClientMixin {
+  final ScrollController _scrollController = ScrollController();
+  double _scrollOffset = 0.0;
   bool _showTrangChu = false;
   Timer? _titleTimer;
 
@@ -33,6 +41,12 @@ class _HomePageState extends State<HomePage>
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(() {
+      setState(() {
+        _scrollOffset = _scrollController.offset;
+      });
+    });
+
     _titleTimer = Timer(const Duration(seconds: 3), () {
       if (mounted) {
         setState(() {
@@ -44,6 +58,7 @@ class _HomePageState extends State<HomePage>
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _titleTimer?.cancel();
     super.dispose();
   }
@@ -51,96 +66,85 @@ class _HomePageState extends State<HomePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final colorScheme = Theme.of(context).colorScheme;
+    final topPadding = MediaQuery.of(context).padding.top;
 
     return BlocProvider(
       create: (context) => getIt<HomeCubit>()..loadHomeData(),
-      child: Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            _buildSliverAppBar(context, colorScheme),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              sliver: SliverToBoxAdapter(child: _buildGreetingSection()),
-            ),
-            const SliverToBoxAdapter(child: HeroSection()),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 32, 16, 32),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  const RecentlyViewedSection(),
-                  const SizedBox(height: 32),
-                  const TopCategoriesSection(),
-                  const SizedBox(height: 32),
-                  const NewArrivalsSection(),
-                  const SizedBox(height: 32),
-                  const TopBrandsSection(),
-                  const SizedBox(height: 32),
-                  const TopRatedSection(),
-                  const SizedBox(height: 32),
-                  const VaultSection(),
-                  const SizedBox(height: 32),
-                ]),
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+        ),
+        child: Scaffold(
+          backgroundColor: _bg,
+          body: Stack(
+            children: [
+              CustomScrollView(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  const SliverToBoxAdapter(
+                    child: HeroSection(),
+                  ),
+                  
+                  SliverToBoxAdapter(
+                    child: _buildGreetingSection(),
+                  ),
+
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(0, 16, 0, 60),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        const RecentlyViewedSection(),
+                        const SizedBox(height: 32),
+                        const TopCategoriesSection(),
+                        const SizedBox(height: 32),
+                        const NewArrivalsSection(),
+                        const SizedBox(height: 32),
+                        const TopBrandsSection(),
+                        const SizedBox(height: 32),
+                        const TopRatedSection(),
+                        const SizedBox(height: 32),
+                        const VaultSection(),
+                        const SizedBox(height: 32),
+                      ]),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+
+              _buildDockedHeader(topPadding),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildSliverAppBar(BuildContext context, ColorScheme colorScheme) {
-    return SliverAppBar(
-      floating: true,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      automaticallyImplyLeading: false,
-      title: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 500),
-        transitionBuilder: (child, animation) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        child: Text(
-          _showTrangChu ? 'Trang chủ' : 'GearHub',
-          key: ValueKey<bool>(_showTrangChu),
-          style: const TextStyle(
-            color: Color(0xFF0A0A0F),
-            fontWeight: FontWeight.w900,
-            fontSize: 24,
-            letterSpacing: -0.5,
-          ),
-        ),
-      ),
+  Widget _buildDockedHeader(double topPadding) {
+    return GlassmorphicHeader(
+      scrollOffset: _scrollOffset,
+      title: _showTrangChu ? 'Trang chủ' : 'GEARHUB',
       actions: [
-        IconButton(
-          onPressed: () {
-            Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const SearchPage()));
+        HeaderIconButton(
+          icon: LucideIcons.search,
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SearchPage()),
+            );
           },
-          icon: const Icon(
-            LucideIcons.search,
-            size: 24,
-            color: Color(0xFF0A0A0F),
-          ),
         ),
-        IconButton(
-          onPressed: () {
-            // Chat/message action
+        HeaderIconButton(
+          icon: LucideIcons.bell,
+          onTap: () {
           },
-          icon: const Icon(
-            LucideIcons.messageCircle,
-            size: 24,
-            color: Color(0xFF0A0A0F),
-          ),
         ),
-        const SizedBox(width: 8),
       ],
     );
   }
+
+
 
   Widget _buildGreetingSection() {
     final hour = DateTime.now().hour;
@@ -157,22 +161,65 @@ class _HomePageState extends State<HomePage>
 
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, state) {
-        String name = 'bạn';
+        String name = 'Bạn';
         if (state is AuthAuthenticated) {
-          name = state.user.fullName ?? 'bạn';
+          name = state.user.fullName ?? 'Bạn';
         }
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black,
+                _bg,
+              ],
+            ),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: _accent,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    greeting.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: _textMid,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               Text(
-                '$greeting $name',
+                name,
                 style: const TextStyle(
-                  fontSize: 26,
+                  fontSize: 34,
                   fontWeight: FontWeight.w900,
-                  color: Color(0xFF0A0A0F),
-                  letterSpacing: -0.8,
+                  color: Colors.white,
+                  letterSpacing: -1,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Khám phá bộ sưu tập đẳng cấp mới nhất hôm nay.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: _textMid,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],

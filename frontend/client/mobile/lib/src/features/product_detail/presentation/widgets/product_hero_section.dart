@@ -8,7 +8,7 @@ import 'package:mobile/src/core/utils/formatter_utils.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/models/product_variant_model.dart';
 
-const _bg = Color(0xFF0A0A10);
+const _bg = Color(0xFF07070A);
 const _surface = Color(0xFF14141E);
 const _surfaceAlt = Color(0xFF1C1C28);
 const _border = Color(0xFF2A2A38);

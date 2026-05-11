@@ -7,17 +7,43 @@ import 'package:mobile/src/features/home/presentation/state/home_cubit.dart';
 import 'package:mobile/src/features/home/presentation/state/home_state.dart';
 import 'package:mobile/src/features/home/domain/entities/category_entity.dart';
 import 'package:mobile/src/shared/widgets/search_bar_widget.dart';
+import 'package:mobile/src/shared/widgets/glassmorphic_header.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'category_detail_page.dart';
 
-const _bg = Color(0xFF0A0A10);
+const _bg = Color(0xFF07070A);
 const _indigo = Color(0xFF6366F1);
 const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
 const _textLow = Color(0xFF4A4A62);
 
-class ExplorePage extends StatelessWidget {
+class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});
+
+  @override
+  State<ExplorePage> createState() => _ExplorePageState();
+}
+
+class _ExplorePageState extends State<ExplorePage> {
+  final ScrollController _scrollController = ScrollController();
+  double _scrollOffset = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      if (mounted) {
+        setState(() {
+          _scrollOffset = _scrollController.offset;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,80 +53,67 @@ class ExplorePage extends StatelessWidget {
         value: SystemUiOverlayStyle.light,
         child: Scaffold(
           backgroundColor: _bg,
-          body: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverAppBar(
-                floating: true,
-                elevation: 0,
-                scrolledUnderElevation: 0,
-                backgroundColor: _bg,
-                automaticallyImplyLeading: false,
-                centerTitle: false,
-                title: const Padding(
-                  padding: EdgeInsets.only(left: 4),
-                  child: Text(
-                    'Khám phá',
-                    style: TextStyle(
-                      color: _textHigh,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 24,
-                      letterSpacing: -0.5,
-                    ),
+          body: Stack(
+            children: [
+              CustomScrollView(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  const SliverToBoxAdapter(child: SizedBox(height: 80)),
+                  const SliverPadding(
+                    padding: EdgeInsets.fromLTRB(16, 12, 16, 24),
+                    sliver: SliverToBoxAdapter(child: SearchBarWidget()),
                   ),
-                ),
-                actions: [
-                  IconButton(
-                    icon: const Icon(
-                      LucideIcons.messageCircle,
-                      color: _textMid,
-                      size: 24,
-                    ),
-                    onPressed: () {},
+                  BlocBuilder<HomeCubit, HomeState>(
+                    builder: (context, state) {
+                      if (state is HomeLoaded) {
+                        return SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          sliver: SliverGrid(
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  mainAxisSpacing: 12,
+                                  crossAxisSpacing: 12,
+                                  childAspectRatio: 0.9,
+                                ),
+                            delegate: SliverChildBuilderDelegate((context, index) {
+                              final category = state.parentCategories[index];
+                              return _CategoryCard(category: category);
+                            }, childCount: state.parentCategories.length),
+                          ),
+                        );
+                      }
+                      if (state is HomeLoading) {
+                        return const SliverFillRemaining(
+                          child: Center(
+                            child: CircularProgressIndicator(color: _indigo),
+                          ),
+                        );
+                      }
+                      if (state is HomeError) {
+                        return SliverFillRemaining(
+                          child: Center(child: Text(state.message)),
+                        );
+                      }
+                      return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    },
                   ),
-                  const SizedBox(width: 8),
+                  const SliverToBoxAdapter(child: SizedBox(height: 120)),
                 ],
               ),
-              const SliverPadding(
-                padding: EdgeInsets.fromLTRB(16, 12, 16, 24),
-                sliver: SliverToBoxAdapter(child: SearchBarWidget()),
+              GlassmorphicHeader(
+                scrollOffset: _scrollOffset,
+                title: 'Khám phá',
+                isTransparentAtTop: false,
+                actions: [
+                  HeaderIconButton(
+                    icon: LucideIcons.messageCircle,
+                    onTap: () {
+                    },
+                  ),
+                ],
               ),
-              BlocBuilder<HomeCubit, HomeState>(
-                builder: (context, state) {
-                  if (state is HomeLoaded) {
-                    return SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      sliver: SliverGrid(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 12,
-                              crossAxisSpacing: 12,
-                              childAspectRatio: 0.9,
-                            ),
-                        delegate: SliverChildBuilderDelegate((context, index) {
-                          final category = state.parentCategories[index];
-                          return _CategoryCard(category: category);
-                        }, childCount: state.parentCategories.length),
-                      ),
-                    );
-                  }
-                  if (state is HomeLoading) {
-                    return const SliverFillRemaining(
-                      child: Center(
-                        child: CircularProgressIndicator(color: _indigo),
-                      ),
-                    );
-                  }
-                  if (state is HomeError) {
-                    return SliverFillRemaining(
-                      child: Center(child: Text(state.message)),
-                    );
-                  }
-                  return const SliverToBoxAdapter(child: SizedBox.shrink());
-                },
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 120)),
             ],
           ),
         ),

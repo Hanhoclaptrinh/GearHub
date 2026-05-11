@@ -897,7 +897,7 @@ export class ProductsService {
                 where: whereCondition,
                 include: {
                     brand: { select: { name: true, logoUrl: true } },
-                    category: { select: { name: true } },
+                    category: { include: { parent: { select: { id: true, name: true } } } },
                     variants: {
                         where: showInactiveOnly ? { isActive: false } : (showActiveOnly ? { isActive: true } : undefined),
                         orderBy: { price: "asc" },
@@ -932,7 +932,7 @@ export class ProductsService {
             where: isUuid ? { id: idOrSlug } : { slug: idOrSlug },
             include: {
                 brand: { select: { name: true, logoUrl: true } },
-                category: { select: { name: true } },
+                category: { include: { parent: { select: { id: true, name: true } } } },
                 variants: {
                     orderBy: { price: "asc" },
                     include: { assets: true }

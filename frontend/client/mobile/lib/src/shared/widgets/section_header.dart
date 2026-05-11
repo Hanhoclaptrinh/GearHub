@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class SectionHeader extends StatelessWidget {
-  final String index; // Thêm số thứ tự: 01, 02...
+  final String index;
   final String title;
   final String? actionText;
   final VoidCallback? onActionTap;
@@ -19,7 +19,7 @@ class SectionHeader extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -49,20 +49,27 @@ class HeroCard extends StatelessWidget {
           final state = context.read<HomeCubit>().state;
           ProductModel? fullProduct;
           if (state is HomeLoaded) {
-            fullProduct = state.newArrivals.where((p) => p.id == product.id).firstOrNull ??
-                state.vaultProducts.where((p) => p.id == product.id).firstOrNull;
+            fullProduct =
+                state.newArrivals
+                    .where((p) => p.id == product.id)
+                    .firstOrNull ??
+                state.vaultProducts
+                    .where((p) => p.id == product.id)
+                    .firstOrNull;
           }
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => ProductDetailPage(
-                product: fullProduct ?? ProductModel(
-                  id: product.id,
-                  name: product.name,
-                  tagline: product.tagline,
-                  price: 0,
-                  image: product.image,
-                  description: product.description,
-                ),
+                product:
+                    fullProduct ??
+                    ProductModel(
+                      id: product.id,
+                      name: product.name,
+                      tagline: product.tagline,
+                      price: 0,
+                      image: product.image,
+                      description: product.description,
+                    ),
               ),
             ),
           );

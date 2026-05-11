@@ -11,5 +11,14 @@ export class CreateBrandDto {
     logoUrl?: string;
 
     @IsOptional()
+    @IsString()
+    @MaxLength(255, { message: 'Quote tối đa 255 ký tự' })
+    quote?: string;
+
+    @IsOptional()
+    @IsString()
+    philosophy?: string;
+
+    @IsOptional()
     file?: any;
 }

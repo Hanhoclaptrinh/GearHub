@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { brandService } from '../../services/brand.service';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { Textarea } from '../../components/ui/Textarea';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
@@ -309,6 +310,8 @@ interface ModalProps {
 
 const BrandFormModal: React.FC<ModalProps> = ({ brand, onClose, onSave, isSaving }) => {
   const [name, setName] = useState(brand?.name || '');
+  const [quote, setQuote] = useState(brand?.quote || '');
+  const [philosophy, setPhilosophy] = useState(brand?.philosophy || '');
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(brand?.logoUrl || null);
 
@@ -324,7 +327,8 @@ const BrandFormModal: React.FC<ModalProps> = ({ brand, onClose, onSave, isSaving
     e.preventDefault();
     const fd = new FormData();
     fd.append('name', name);
-    // Removed Slug & Description as they are handled/not-present in backend Brand DTO
+    fd.append('quote', quote);
+    fd.append('philosophy', philosophy);
     if (file) fd.append('file', file);
     onSave(fd);
   };
@@ -359,6 +363,12 @@ const BrandFormModal: React.FC<ModalProps> = ({ brand, onClose, onSave, isSaving
           <div className="space-y-4">
             <Input label="Tên thương hiệu" placeholder="Ví dụ: Logitech, Samsung..." value={name} onChange={(e) => setName(e.target.value)} required
               className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner font-black text-lg"
+            />
+            <Input label="Câu Quote thương hiệu" placeholder="Ví dụ: For Gamers. By Gamers." value={quote} onChange={(e) => setQuote(e.target.value)}
+              className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner font-black text-lg"
+            />
+            <Textarea label="Triết lý thương hiệu" placeholder="Kể câu chuyện về thương hiệu của bạn..." value={philosophy} onChange={(e) => setPhilosophy(e.target.value)}
+              className="rounded-2xl bg-slate-50 border-none shadow-inner font-bold"
             />
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">*Slug và Metadata sẽ được khởi tạo tự động</p>
           </div>

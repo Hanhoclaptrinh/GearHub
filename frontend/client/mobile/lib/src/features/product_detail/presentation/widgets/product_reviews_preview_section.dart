@@ -11,6 +11,7 @@ const _surface = Color(0xFF14141E);
 const _border = Color(0xFF2A2A38);
 const _textHigh = Color(0xFFF1F1F5);
 const _textMid = Color(0xFF9191A8);
+const _starColor = Color(0xFFFFCC00);
 
 class ProductReviewsPreviewSection extends StatelessWidget {
   final ProductModel product;
@@ -55,7 +56,7 @@ class ProductReviewsPreviewSection extends StatelessWidget {
                                 const Icon(
                                   Icons.star,
                                   size: 14,
-                                  color: Colors.amber,
+                                  color: _starColor,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
@@ -180,7 +181,7 @@ class _ReviewCard extends StatelessWidget {
                     return Icon(
                       index < rating ? Icons.star : Icons.star_outline,
                       size: 16,
-                      color: Colors.amber,
+                      color: _starColor,
                     );
                   }),
                   const Spacer(),

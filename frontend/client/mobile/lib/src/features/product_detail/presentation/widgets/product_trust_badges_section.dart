@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-const _surface    = Color(0xFF14141E);
+const _surface = Color(0xFF14141E);
 const _surfaceAlt = Color(0xFF1C1C28);
-const _border     = Color(0xFF2A2A38);
-const _accent     = Color(0xFF6366F1);
-const _textHigh   = Color(0xFFF1F1F5);
-const _textMid    = Color(0xFF9191A8);
+const _border = Color(0xFF2A2A38);
+const _accent = Color(0xFF6366F1);
+const _textHigh = Color(0xFFF1F1F5);
+const _textMid = Color(0xFF9191A8);
 
 class ProductTrustBadgesSection extends StatefulWidget {
   const ProductTrustBadgesSection({super.key});
@@ -107,10 +107,7 @@ class _ProductTrustBadgesSectionState extends State<ProductTrustBadgesSection> {
                     decoration: BoxDecoration(
                       color: _surface,
                       borderRadius: BorderRadius.circular(32),
-                      border: Border.all(
-                        color: _border,
-                        width: 1.5,
-                      ),
+                      border: Border.all(color: _border, width: 1.5),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.2),
@@ -161,11 +158,14 @@ class _ProductTrustBadgesSectionState extends State<ProductTrustBadgesSection> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        
+
                         GestureDetector(
                           onTap: () {},
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
                             decoration: BoxDecoration(
                               color: _surfaceAlt,
                               borderRadius: BorderRadius.circular(12),
@@ -201,7 +201,7 @@ class _ProductTrustBadgesSectionState extends State<ProductTrustBadgesSection> {
                 color: _border,
                 borderRadius: BorderRadius.circular(1.5),
               ),
-               child: LayoutBuilder(
+              child: LayoutBuilder(
                 builder: (context, constraints) {
                   final trackWidth = constraints.maxWidth;
                   final thumbWidth = trackWidth * 0.4;

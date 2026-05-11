@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-const _surface    = Color(0xFF14141E);
+const _surface = Color(0xFF14141E);
 const _surfaceAlt = Color(0xFF1C1C28);
-const _border     = Color(0xFF2A2A38);
-const _accent     = Color(0xFF6366F1);
+const _border = Color(0xFF2A2A38);
+const _accent = Color(0xFF6366F1);
 const _accentSoft = Color(0x186366F1);
-const _textHigh   = Color(0xFFF1F1F5);
-const _textMid    = Color(0xFF9191A8);
-const _textLow    = Color(0xFF4A4A62);
+const _textHigh = Color(0xFFF1F1F5);
+const _textMid = Color(0xFF9191A8);
+const _textLow = Color(0xFF4A4A62);
 
 class SearchHistoryTagsWidget extends StatelessWidget {
   final List<String> searchHistory;
@@ -45,7 +45,11 @@ class SearchHistoryTagsWidget extends StatelessWidget {
                       color: _accentSoft,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(LucideIcons.history, size: 14, color: _accent),
+                    child: const Icon(
+                      LucideIcons.history,
+                      size: 14,
+                      color: _accent,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   const Text(
@@ -90,7 +94,10 @@ class SearchHistoryTagsWidget extends StatelessWidget {
                   onSearchKeyword(k);
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: _surfaceAlt,
                     borderRadius: BorderRadius.circular(16),
@@ -135,7 +142,11 @@ class SearchHistoryTagsWidget extends StatelessWidget {
                   color: Colors.orange.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(LucideIcons.sparkles, size: 14, color: Colors.orange),
+                child: const Icon(
+                  LucideIcons.sparkles,
+                  size: 14,
+                  color: Colors.orange,
+                ),
               ),
               const SizedBox(width: 10),
               const Text(
@@ -160,7 +171,10 @@ class SearchHistoryTagsWidget extends StatelessWidget {
                   onSearchKeyword(k);
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: _surface,
                     borderRadius: BorderRadius.circular(16),

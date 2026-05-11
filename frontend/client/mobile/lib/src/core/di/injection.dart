@@ -8,7 +8,9 @@ import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/home/data/datasources/home_remote_datasource.dart';
 import 'package:mobile/src/features/home/data/repositories/home_repository_impl.dart';
 import 'package:mobile/src/features/home/domain/repositories/home_repository.dart';
+import 'package:mobile/src/features/home/domain/entities/brand_entity.dart';
 import 'package:mobile/src/features/home/presentation/state/home_cubit.dart';
+import 'package:mobile/src/features/home/presentation/state/brand_products_cubit.dart';
 import 'package:mobile/src/features/product_detail/data/datasources/product_detail_remote_datasource.dart';
 import 'package:mobile/src/features/product_detail/data/repositories/product_detail_repository_impl.dart';
 import 'package:mobile/src/features/product_detail/domain/repositories/product_detail_repository.dart';
@@ -168,5 +170,9 @@ Future<void> setupDependencies() async {
   );
   getIt.registerFactory<ReviewCubit>(
     () => ReviewCubit(repository: getIt<ReviewRepository>()),
+  );
+
+  getIt.registerFactoryParam<BrandProductsCubit, BrandEntity, void>(
+    (brand, _) => BrandProductsCubit(getIt<ExploreRepository>(), brand),
   );
 }

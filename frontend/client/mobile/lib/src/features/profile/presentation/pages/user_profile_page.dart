@@ -13,14 +13,6 @@ import 'package:mobile/src/features/profile/presentation/widgets/profile_menu_ca
 import 'package:mobile/src/features/profile/presentation/widgets/ultilities_grid.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
 
-const _bg = Color(0xFF0A0A10);
-const _surface = Color(0xFF14141E);
-const _border = Color(0xFF2A2A38);
-const _indigo = Color(0xFF6366F1);
-const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
-const _textLow = Color(0xFF4A4A62);
-
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
 
@@ -29,67 +21,71 @@ class UserProfilePage extends StatefulWidget {
 }
 
 class _UserProfilePageState extends State<UserProfilePage> {
-  bool _isDarkMode = false;
+  bool _isDarkMode = true;
 
   @override
   Widget build(BuildContext context) {
+    const bg = Color(0xFF07070A);
+    const textMid = Color(0xFF9191A8);
+
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: _bg,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          );
+          _showErrorSnackBar(context, state.message);
         }
       },
       child: BlocProvider(
         create: (context) => getIt<OrdersCubit>()..fetchMyOrders(status: 'ALL'),
         child: AnnotatedRegion<SystemUiOverlayStyle>(
-          value: SystemUiOverlayStyle.light.copyWith(
-            statusBarColor: Colors.transparent,
-            statusBarIconBrightness: Brightness.light,
-          ),
+          value: SystemUiOverlayStyle.light,
           child: Scaffold(
-            backgroundColor: _bg,
+            backgroundColor: bg,
             body: BlocBuilder<AuthCubit, AuthState>(
               builder: (context, state) {
                 final user = state is AuthAuthenticated ? state.user : null;
                 final isLoggedIn = state is AuthAuthenticated;
 
                 return RefreshIndicator(
-                  color: _indigo,
-                  backgroundColor: _surface,
+                  color: const Color(0xFF3B82F6),
+                  backgroundColor: const Color(0xFF0F0F1A),
                   onRefresh: () async {
                     if (isLoggedIn) {
-                      await context.read<OrdersCubit>().fetchMyOrders(status: 'ALL');
+                      await context.read<OrdersCubit>().fetchMyOrders(
+                        status: 'ALL',
+                      );
                     }
                   },
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                        child: Column(
-                          children: [
-                            ProfileHeader(user: user),
+                  child: CustomScrollView(
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: SafeArea(
+                          bottom: false,
+                          child: Column(children: [ProfileHeader(user: user)]),
+                        ),
+                      ),
+
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                        ),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate([
                             if (isLoggedIn) ...[
-                              const SizedBox(height: 24),
                               const OrderStatusCard(),
-                              const SizedBox(height: 24),
+                              const SizedBox(height: 32),
                               const UtilitiesGrid(),
                             ] else ...[
-                              const SizedBox(height: 48),
+                              const SizedBox(height: 24),
                               _buildLoginCTA(context),
                             ],
+
                             const SizedBox(height: 24),
+
                             ProfileMenuCard(
-                              groupLabel: 'Tùy chỉnh',
+                              groupLabel: 'CÀI ĐẶT HỆ THỐNG',
                               items: [
                                 ProfileMenuItem(
                                   title: 'Chế độ tối',
@@ -103,12 +99,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                 ),
                                 if (isLoggedIn) ...[
                                   ProfileMenuItem(
-                                    title: 'Danh sách địa chỉ',
+                                    title: 'Sổ địa chỉ',
                                     icon: LucideIcons.mapPin,
                                     onTap: () {},
                                   ),
                                   ProfileMenuItem(
-                                    title: 'Phương thức thanh toán',
+                                    title: 'Thanh toán',
                                     icon: LucideIcons.creditCard,
                                     onTap: () {},
                                   ),
@@ -116,13 +112,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
                               ],
                             ),
                             const SizedBox(height: 32),
-                            if (isLoggedIn) _buildLogoutButton(),
-                            const SizedBox(height: 24),
-                            _buildFooter(),
-                          ],
+
+                            if (isLoggedIn) _buildLogoutButton(context),
+
+                            const SizedBox(height: 40),
+                            _buildFooter(textMid),
+                            const SizedBox(height: 32),
+                          ]),
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 );
               },
@@ -133,27 +132,24 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
-  Widget _buildLogoutButton() {
+  Widget _buildLogoutButton(BuildContext context) {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, state) {
         final isLoading = state is AuthLoading;
 
         return GestureDetector(
-          onTap: isLoading
-              ? null
-              : () {
-                  HapticFeedback.mediumImpact();
-                  _showLogoutConfirmation(context);
-                },
+          onTap: isLoading ? null : () => _showLogoutConfirmation(context),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 18),
+            padding: const EdgeInsets.symmetric(
+              vertical: 18,
+            ),
             decoration: BoxDecoration(
-              color: _surface,
-              borderRadius: BorderRadius.circular(20),
+              color: Colors.white.withValues(alpha: 0.02),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: const Color(0xFFFF4D4D).withValues(alpha: 0.2),
-                width: 1.5,
+                color: const Color(0xFFFF4D4D).withValues(alpha: 0.1),
+                width: 0.8,
               ),
             ),
             alignment: Alignment.center,
@@ -163,18 +159,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     width: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Color(0xFFFF4D4D),
-                      ),
+                      color: Color(0xFFFF4D4D),
                     ),
                   )
                 : const Text(
-                    'Đăng xuất',
+                    'ĐĂNG XUẤT',
                     style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
                       color: Color(0xFFFF4D4D),
-                      letterSpacing: -0.2,
+                      letterSpacing: 2,
                     ),
                   ),
           ),
@@ -187,37 +181,44 @@ class _UserProfilePageState extends State<UserProfilePage> {
     return Container(
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: _border),
+        color: Colors.white.withValues(alpha: 0.02),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.05),
+          width: 0.8,
+        ),
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Color(0xFF1C1C28),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.03),
               shape: BoxShape.circle,
             ),
-            child: const Icon(LucideIcons.userRound, size: 40, color: _textLow),
+            child: const Icon(
+              LucideIcons.userRound,
+              size: 32,
+              color: Color(0xFF4A4A62),
+            ),
           ),
           const SizedBox(height: 20),
           const Text(
-            'Mở khóa đặc quyền',
+            'MỞ KHÓA ĐẶC QUYỀN',
             style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: _textHigh,
-              letterSpacing: -0.2,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              letterSpacing: 1.5,
             ),
           ),
           const SizedBox(height: 10),
           const Text(
-            'Đăng nhập để theo dõi đơn hàng, quản lý\ntài khoản và nhận ưu đãi riêng fen nhé!',
+            'Đăng nhập để trải nghiệm hệ sinh thái GearHub Premium fen nhé!',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 14,
-              color: _textLow,
+              fontSize: 13,
+              color: Color(0xFF9191A8),
               height: 1.5,
             ),
           ),
@@ -225,48 +226,55 @@ class _UserProfilePageState extends State<UserProfilePage> {
           Row(
             children: [
               Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    HapticFeedback.mediumImpact();
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const LoginPage()),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _indigo,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
+                child: GestureDetector(
+                  onTap: () => Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => const LoginPage())),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3B82F6),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Đăng nhập',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      'ĐĂNG NHẬP',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                        color: Colors.white,
+                        letterSpacing: 1,
+                      ),
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 14),
               Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    HapticFeedback.mediumImpact();
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const RegisterPage()),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: _textHigh,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    side: const BorderSide(color: _border),
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const RegisterPage()),
                   ),
-                  child: const Text(
-                    'Đăng ký',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.03),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        width: 0.8,
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      'ĐĂNG KÝ',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                        color: Colors.white,
+                        letterSpacing: 1,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -281,32 +289,29 @@ class _UserProfilePageState extends State<UserProfilePage> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: _surface,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(28),
-          side: const BorderSide(color: _border),
-        ),
+        backgroundColor: const Color(0xFF0F0F1A),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text(
-          'Đăng xuất',
+          'ĐĂNG XUẤT',
           style: TextStyle(
             fontWeight: FontWeight.w900,
-            fontSize: 20,
-            color: _textHigh,
+            fontSize: 16,
+            color: Colors.white,
+            letterSpacing: 1.5,
           ),
         ),
         content: const Text(
-          'Xác nhận đăng xuất khỏi GearHub?',
-          style: TextStyle(color: _textMid, fontSize: 15),
+          'Xác nhận kết thúc phiên đăng nhập của fen?',
+          style: TextStyle(color: Color(0xFF9191A8), fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text(
-              'Hủy',
+              'HỦY',
               style: TextStyle(
                 color: Color(0xFF6B7280),
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -316,10 +321,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
               context.read<AuthCubit>().logout();
             },
             child: const Text(
-              'Đăng xuất',
+              'ĐĂNG XUẤT',
               style: TextStyle(
                 color: Color(0xFFFF4D4D),
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w900,
               ),
             ),
           ),
@@ -328,19 +333,40 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
-  Widget _buildFooter() {
-    return const Column(
+  Widget _buildFooter(Color textMid) {
+    return Column(
       children: [
-        Text(
-          'GearHub Premium v1.0.0',
+        const Text(
+          'GEARHUB PREMIUM',
           style: TextStyle(
-            fontSize: 10,
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+            letterSpacing: 3,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'VERSION 2.0.0 "PRESTIGE"',
+          style: TextStyle(
+            fontSize: 8,
             fontWeight: FontWeight.w700,
-            color: _textLow,
-            letterSpacing: 1.0,
+            color: textMid.withValues(alpha: 0.4),
+            letterSpacing: 1.5,
           ),
         ),
       ],
+    );
+  }
+
+  void _showErrorSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFFFF4D4D),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
     );
   }
 }

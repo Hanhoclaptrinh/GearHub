@@ -19,9 +19,8 @@ import 'product_ar_view_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 
-const _bg = Color(0xFF0A0A10);
+const _bg = Color(0xFF07070A);
 const _accent = Color(0xFF6366F1);
-const _textMid = Color(0xFF9191A8);
 
 class ProductDetailPage extends StatelessWidget {
   final ProductModel product;
@@ -339,32 +338,21 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                         padding: const EdgeInsets.only(left: 12),
                         child: IconButton(
                           icon: const Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            color: _textMid,
+                            Icons.arrow_back_rounded,
+                            color: Colors.white,
+                            size: 22,
                           ),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ),
                       actions: [
-                        Container(
-                          margin: const EdgeInsets.only(right: 8),
-                          child: IconButton(
-                            icon: const Icon(
-                              LucideIcons.box,
-                              color: _textMid
-                            ),
-                            onPressed: () => _navigateToAR(currentProduct),
+                        IconButton(
+                          icon: const Icon(
+                            LucideIcons.box,
+                            color: Colors.white,
+                            size: 22,
                           ),
-                        ),
-                        Container(
-                          margin: const EdgeInsets.only(right: 16),
-                          child: IconButton(
-                            icon: const Icon(
-                              LucideIcons.messageCircle,
-                              color: _textMid
-                            ),
-                            onPressed: () {},
-                          ),
+                          onPressed: () => _navigateToAR(currentProduct),
                         ),
                       ],
                     ),

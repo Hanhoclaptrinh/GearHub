@@ -54,16 +54,20 @@ class _AuthTextFieldState extends State<AuthTextField> {
                     color: hasError
                         ? const Color(0xFFFF4D4D)
                         : _isFocused
-                            ? const Color(0xFF0A0A0F)
-                            : const Color(0xFFE5E7EB),
+                        ? const Color(0xFF0A0A0F)
+                        : const Color(0xFFE5E7EB),
                     width: (_isFocused || hasError) ? 1.5 : 1,
                   ),
                   boxShadow: _isFocused
                       ? [
                           BoxShadow(
                             color: hasError
-                                ? const Color(0xFFFF4D4D).withValues(alpha: 0.06)
-                                : const Color(0xFF0A0A0F).withValues(alpha: 0.06),
+                                ? const Color(
+                                    0xFFFF4D4D,
+                                  ).withValues(alpha: 0.06)
+                                : const Color(
+                                    0xFF0A0A0F,
+                                  ).withValues(alpha: 0.06),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -91,8 +95,8 @@ class _AuthTextFieldState extends State<AuthTextField> {
                       color: hasError
                           ? const Color(0xFFFF4D4D)
                           : _isFocused
-                              ? const Color(0xFF0A0A0F)
-                              : const Color(0xFF9CA3AF),
+                          ? const Color(0xFF0A0A0F)
+                          : const Color(0xFF9CA3AF),
                       letterSpacing: -0.1,
                     ),
                     floatingLabelStyle: TextStyle(
@@ -109,8 +113,8 @@ class _AuthTextFieldState extends State<AuthTextField> {
                             color: hasError
                                 ? const Color(0xFFFF4D4D)
                                 : _isFocused
-                                    ? const Color(0xFF0A0A0F)
-                                    : const Color(0xFFB0B0B0),
+                                ? const Color(0xFF0A0A0F)
+                                : const Color(0xFFB0B0B0),
                           )
                         : null,
                     suffixIcon: widget.isPassword

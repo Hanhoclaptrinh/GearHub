@@ -1,8 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mobile/src/features/home/domain/entities/brand_entity.dart';
+import 'package:mobile/src/features/home/presentation/pages/brand_detail_page.dart';
 import '../state/home_cubit.dart';
 import '../state/home_state.dart';
 
@@ -21,23 +23,24 @@ class TopBrandsSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4),
+                padding: EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
                   'Thương hiệu hàng đầu',
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
-                    color: Color(0xFF0A0A0F),
+                    color: Colors.white,
                     letterSpacing: -0.5,
                   ),
                 ),
               ),
               const SizedBox(height: 20),
               SizedBox(
-                height: 125,
+                height: 155,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
                   clipBehavior: Clip.none,
                   itemCount: brands.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 16),
@@ -76,8 +79,11 @@ class _BrandCardState extends State<_BrandCard>
       onTapCancel: () => setState(() => _isPressed = false),
       onTap: () {
         HapticFeedback.lightImpact();
-        // chuyen den trang loc theo thuong hieu
-        print('clicked ${widget.brand.name}');
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => BrandDetailPage(brand: widget.brand),
+          ),
+        );
       },
       child: AnimatedScale(
         scale: _isPressed ? 0.94 : 1.0,
@@ -85,53 +91,72 @@ class _BrandCardState extends State<_BrandCard>
         child: Column(
           children: [
             Container(
-              width: 86,
-              height: 86,
+              width: 92,
+              height: 92,
               decoration: BoxDecoration(
-                color: const Color.fromARGB(240, 245, 246, 248),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white, width: 1.5),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  width: 1.2,
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
+                    color: Colors.black.withValues(alpha: 0.5),
+                    blurRadius: 25,
+                    offset: const Offset(0, 12),
                   ),
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: widget.brand.logoUrl.isEmpty
-                      ? _buildErrorLogo(colorScheme)
-                      : SvgPicture.network(
-                          widget.brand.logoUrl,
-                          fit: BoxFit.contain,
-                          placeholderBuilder: (_) => const Center(
-                            child: SizedBox(
-                              width: 12,
-                              height: 12,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 1.5,
-                                color: Colors.black,
+                borderRadius: BorderRadius.circular(28),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                  child: Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withValues(alpha: 0.12),
+                          Colors.white.withValues(alpha: 0.04),
+                        ],
+                      ),
+                    ),
+                    child: widget.brand.logoUrl.isEmpty
+                        ? _buildErrorLogo(colorScheme)
+                        : SvgPicture.network(
+                            widget.brand.logoUrl,
+                            fit: BoxFit.contain,
+                            colorFilter: const ColorFilter.mode(
+                              Colors.white,
+                              BlendMode.srcIn,
+                            ),
+                            placeholderBuilder: (_) => const Center(
+                              child: SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 1.5,
+                                  color: Colors.white24,
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 10),
             Text(
-              widget.brand.name,
+              widget.brand.name.toUpperCase(),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF0A0A0F),
-                letterSpacing: -0.2,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF94A3B8),
+                letterSpacing: 1.2,
               ),
             ),
           ],

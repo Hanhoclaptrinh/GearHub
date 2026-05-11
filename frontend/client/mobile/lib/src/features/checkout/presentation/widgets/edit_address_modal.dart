@@ -7,11 +7,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-const _bg = Color(0xFF0A0A10);
+const _bg = Color(0xFF07070A);
 const _surface = Color(0xFF14141E);
 const _surfaceAlt = Color(0xFF1C1C28);
 const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFF59E0B);
+const _accent = Color(0xFFFDE047);
 const _textHigh = Color(0xFFF1F1F5);
 const _textMid = Color(0xFF9191A8);
 const _textLow = Color(0xFF4A4A62);
@@ -173,8 +173,9 @@ class _EditAddressPageState extends State<EditAddressPage> {
                 leading: GestureDetector(
                   onTap: () => Navigator.pop(context),
                   child: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: _textMid,
+                    Icons.arrow_back_rounded,
+                    color: Colors.white,
+                    size: 22,
                   ),
                 ),
                 centerTitle: true,

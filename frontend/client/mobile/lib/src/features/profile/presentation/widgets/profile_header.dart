@@ -8,195 +8,184 @@ import 'package:mobile/src/features/profile/presentation/pages/edit_profile_page
 import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_state.dart';
 
-const _surface = Color(0xFF14141E);
-const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFF59E0B);
-const _textHigh = Color(0xFFF1F1F5);
-const _textLow = Color(0xFF4A4A62);
-
-Color startColor = const Color(0xFF64748B);
-Color endColor = const Color(0xFF94A3B8);
-Color fgColor = const Color(0xFF475569);
-
-double _toDouble(dynamic val) {
-  if (val == null) return 0.0;
-  if (val is num) return val.toDouble();
-  if (val is String) return double.tryParse(val) ?? 0.0;
-  return 0.0;
-}
-
 class ProfileHeader extends StatelessWidget {
   final UserEntity? user;
   const ProfileHeader({super.key, this.user});
 
+  double _toDouble(dynamic val) {
+    if (val == null) return 0.0;
+    if (val is num) return val.toDouble();
+    if (val is String) return double.tryParse(val) ?? 0.0;
+    return 0.0;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: user != null
-          ? () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => EditProfilePage(user: user!)),
-              );
-            }
-          : null,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: _surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: _border),
-        ),
-        child: Row(
-          children: [
-            // avatar
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: _accent.withValues(alpha: 0.3),
-                  width: 2,
+    const textLow = Color(0xFF9191A8);
+    const accent = Color(0xFF3B82F6);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.only(top: 12, bottom: 20),
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: user != null
+                ? () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => EditProfilePage(user: user!),
+                      ),
+                    );
+                  }
+                : null,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: accent.withValues(alpha: 0.1),
+                        blurRadius: 25,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(36),
-                child: user?.avatarUrl?.isNotEmpty == true
-                    ? CachedNetworkImage(
-                        imageUrl: user!.avatarUrl!,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => const Center(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white24,
+                Container(
+                  width: 90,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: accent.withValues(alpha: 0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(3.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.05),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(40),
+                        child: user?.avatarUrl?.isNotEmpty == true
+                            ? CachedNetworkImage(
+                                imageUrl: user!.avatarUrl!,
+                                fit: BoxFit.cover,
+                                errorWidget: (_, __, ___) =>
+                                    _buildInitialAvatar(),
+                              )
+                            : _buildInitialAvatar(),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            (user?.fullName ?? 'KHÁCH HÀNG').toUpperCase(),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 6),
+
+          if (user != null) ...[
+            BlocBuilder<OrdersCubit, OrdersState>(
+              builder: (context, state) {
+                double totalSpent = 0.0;
+                if (state is OrdersLoaded) {
+                  for (final order in state.orders) {
+                    if (order['status'] == 'DELIVERED') {
+                      totalSpent += _toDouble(
+                        order['totalAmount'] ?? order['total'],
+                      );
+                    }
+                  }
+                }
+
+                String tierName = 'STANDARD';
+                Color tierColor = const Color(0xFF94A3B8);
+                IconData tierIcon = LucideIcons.shield;
+
+                if (totalSpent >= 150000000.0) {
+                  tierName = 'VIP PRESTIGE';
+                  tierColor = const Color(0xFFEF4444);
+                  tierIcon = LucideIcons.crown;
+                } else if (totalSpent >= 50000000.0) {
+                  tierName = 'DIAMOND ELITE';
+                  tierColor = const Color(0xFF06B6D4);
+                  tierIcon = LucideIcons.gem;
+                } else if (totalSpent >= 15000000.0) {
+                  tierName = 'GOLD MEMBER';
+                  tierColor = const Color(0xFFFFCC00);
+                  tierIcon = LucideIcons.sparkles;
+                }
+
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            MembershipTierPage(totalSpent: totalSpent),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: tierColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: tierColor.withValues(alpha: 0.15),
+                        width: 0.6,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(tierIcon, size: 10, color: tierColor),
+                        const SizedBox(width: 6),
+                        Text(
+                          tierName,
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            color: tierColor,
+                            letterSpacing: 0.8,
                           ),
                         ),
-                        errorWidget: (context, url, error) =>
-                            _buildInitialAvatar(),
-                      )
-                    : _buildInitialAvatar(),
-              ),
-            ),
-            const SizedBox(width: 16),
-            // name & subtitle
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user?.fullName ?? 'Fen GearHub',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: _textHigh,
-                      letterSpacing: -0.2,
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    user?.email ?? 'Tham gia GearHub ngay hôm nay',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: _textLow,
-                    ),
-                  ),
-                  if (user != null) ...[
-                    const SizedBox(height: 10),
-                    BlocBuilder<OrdersCubit, OrdersState>(
-                      builder: (context, state) {
-                        double totalSpent = 0.0;
-                        if (state is OrdersLoaded) {
-                          for (final order in state.orders) {
-                            final String s = order['status'] ?? 'PENDING';
-                            if (s == 'DELIVERED') {
-                              totalSpent += _toDouble(
-                                order['totalAmount'] ?? order['total'],
-                              );
-                            }
-                          }
-                        }
-
-                        if (totalSpent == 0.0) return const SizedBox.shrink();
-
-                        String tierName = 'BẠC';
-                        IconData tierIcon = LucideIcons.shield;
-
-                        if (totalSpent >= 150000000.0) {
-                          tierName = 'VIP MEMBER';
-                          startColor = const Color(0xFFEF4444);
-                          endColor = const Color(0xFFEC4899);
-                          fgColor = Colors.white;
-                          tierIcon = LucideIcons.crown;
-                        } else if (totalSpent >= 50000000.0) {
-                          tierName = 'KIM CƯƠNG';
-                          startColor = const Color(0xFF06B6D4);
-                          endColor = const Color(0xFF3B82F6);
-                          fgColor = Colors.white;
-                          tierIcon = LucideIcons.gem;
-                        } else if (totalSpent >= 15000000.0) {
-                          tierName = 'VÀNG';
-                          startColor = const Color(0xFFF59E0B);
-                          endColor = const Color(0xFFFCD34D);
-                          fgColor = Colors.white;
-                          tierIcon = LucideIcons.sparkles;
-                        }
-
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    MembershipTierPage(totalSpent: totalSpent),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [startColor, endColor],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.all(1),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _surface,
-                                borderRadius: BorderRadius.circular(11),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(tierIcon, size: 12, color: startColor),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    tierName,
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w900,
-                                      color: startColor,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ],
+                );
+              },
+            ),
+          ] else
+            const Text(
+              'Tham gia GearHub ngay hôm nay',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: textLow,
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -211,7 +200,6 @@ class ProfileHeader extends StatelessWidget {
           fontSize: 28,
           fontWeight: FontWeight.w900,
           color: Colors.white,
-          letterSpacing: -1,
         ),
       ),
     );

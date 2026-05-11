@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/widgets/small_product_card.dart';
-import 'package:mobile/src/shared/widgets/stock_limit_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/features/product_detail/data/datasources/product_detail_remote_datasource.dart';
@@ -11,7 +10,6 @@ import 'package:mobile/src/features/product_detail/presentation/pages/product_de
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/features/wishlist/presentation/state/wishlist_cubit.dart';
 import 'package:mobile/src/features/wishlist/presentation/state/wishlist_state.dart';
-import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 
 class RecentlyViewedSection extends StatefulWidget {
   const RecentlyViewedSection({super.key});
@@ -85,34 +83,37 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Đã xem gần đây',
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w900,
-                color: Color(0xFF0A0A0F),
-                letterSpacing: -0.5,
-              ),
-            ),
-            GestureDetector(
-              onTap: () {
-                HapticFeedback.mediumImpact();
-                _clearAll();
-              },
-              child: const Text(
-                'Xóa tất cả',
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Đã xem gần đây',
                 style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF6B7280),
-                  decoration: TextDecoration.underline,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: -0.5,
                 ),
               ),
-            ),
-          ],
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  _clearAll();
+                },
+                child: const Text(
+                  'Xóa tất cả',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF6B7280),
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         SizedBox(
@@ -120,7 +121,7 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> {
           child: OverflowBox(
             maxWidth: MediaQuery.of(context).size.width,
             child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               clipBehavior: Clip.none,
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
@@ -147,13 +148,9 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> {
                   padding: const EdgeInsets.only(right: 12),
                   child: BlocBuilder<WishlistCubit, WishlistState>(
                     builder: (context, state) {
-                      final isFav =
-                          state is WishlistLoaded &&
-                          state.products.any((p) => p.id == productModel.id);
 
                       return SmallProductCard(
                         product: productModel,
-                        isFavorite: isFav,
                         heroTag: 'recent_${productModel.id}_$index',
                         onTap: () async {
                           HapticFeedback.mediumImpact();
@@ -177,65 +174,6 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> {
                             debugPrint(
                               'Error fetching product detail on click: $e',
                             );
-                          }
-                        },
-                        onFavoriteTap: () {
-                          context.read<WishlistCubit>().toggleWishlist(
-                            productModel.id,
-                          );
-                        },
-                        onCartTap: () async {
-                          try {
-                            final pDetail =
-                                await getIt<ProductDetailRemoteDatasource>()
-                                    .getProductDetail(productModel.id);
-                            if (context.mounted) {
-                              if (pDetail.variants.isNotEmpty) {
-                                final targetVariant = pDetail.variants
-                                    .firstWhere((v) {
-                                      if (attributes.isEmpty) return true;
-                                      return attributes.entries.every(
-                                        (entry) =>
-                                            v.attributes[entry.key]
-                                                ?.toString() ==
-                                            entry.value,
-                                      );
-                                    }, orElse: () => pDetail.variants.first);
-
-                                // check stock limit
-                                final cartCubit = context.read<CartCubit>();
-                                final existingItem = cartCubit.state.cart?.items
-                                    .where(
-                                      (i) =>
-                                          i.productVariant.id ==
-                                          targetVariant.id,
-                                    )
-                                    .firstOrNull;
-
-                                final currentQty = existingItem?.quantity ?? 0;
-
-                                if (currentQty + 1 > targetVariant.stock) {
-                                  StockLimitDialog.show(
-                                    context,
-                                    stockCount: targetVariant.stock,
-                                    currentQty: currentQty,
-                                    message:
-                                        'Số lượng sản phẩm trong kho không đủ để thêm vào giỏ hàng.\n\nKho hiện còn ${targetVariant.stock} sản phẩm và bạn đã có $currentQty sản phẩm trong giỏ.',
-                                  );
-                                  return;
-                                }
-
-                                cartCubit.addToCart(targetVariant, pDetail, 1);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Đã thêm vào giỏ hàng'),
-                                    duration: Duration(seconds: 1),
-                                  ),
-                                );
-                              }
-                            }
-                          } catch (e) {
-                            debugPrint('Error adding to cart from recent: $e');
                           }
                         },
                       );

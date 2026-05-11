@@ -12,12 +12,12 @@ import '../state/review_cubit.dart';
 import '../state/review_state.dart';
 import '../widgets/shop_reply_widget.dart';
 
-const _bg = Color(0xFF0A0A10);
+const _bg = Color(0xFF07070A);
 const _surface = Color(0xFF14141E);
 const _surfaceAlt = Color(0xFF1C1C28);
 const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFF59E0B);
-const _accentSoft = Color(0x26F59E0B);
+const _accent = Color(0xFFFDE047);
+const _starColor = Color(0xFFFFCC00);
 const _textHigh = Color(0xFFF1F1F5);
 const _textMid = Color(0xFF9191A8);
 const _textLow = Color(0xFF4A4A62);
@@ -115,14 +115,8 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
                     child: TabBarView(
                       controller: _tabController,
                       children: [
-                        _buildPendingTab(
-                          context,
-                          state.pendingReviews,
-                        ),
-                        _buildCompletedTab(
-                          context,
-                          state.completedReviews,
-                        ),
+                        _buildPendingTab(context, state.pendingReviews),
+                        _buildCompletedTab(context, state.completedReviews),
                       ],
                     ),
                   ),
@@ -136,10 +130,7 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
     );
   }
 
-  Widget _buildHeader(
-    BuildContext context,
-    MyReviewsState state,
-  ) {
+  Widget _buildHeader(BuildContext context, MyReviewsState state) {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, authState) {
         if (authState is AuthAuthenticated) {
@@ -158,7 +149,10 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
                   Container(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: _accent.withValues(alpha: 0.3), width: 2),
+                      border: Border.all(
+                        color: _accent.withValues(alpha: 0.3),
+                        width: 2,
+                      ),
                     ),
                     child: CircleAvatar(
                       radius: 30,
@@ -202,20 +196,23 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: _accentSoft,
+                                color: _starColor.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(LucideIcons.star,
-                                      size: 12, color: _accent),
+                                  const Icon(
+                                    Icons.star_outline,
+                                    size: 12,
+                                    color: _starColor,
+                                  ),
                                   const SizedBox(width: 6),
                                   Text(
                                     '${state.completedReviews.length} Đánh giá',
                                     style: const TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
-                                      color: _accent,
+                                      color: _starColor,
                                     ),
                                   ),
                                 ],
@@ -270,8 +267,7 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
                   width: 84,
                   height: 84,
                   fit: BoxFit.cover,
-                  placeholder: (context, url) =>
-                      Container(color: _surfaceAlt),
+                  placeholder: (context, url) => Container(color: _surfaceAlt),
                   errorWidget: (context, url, error) =>
                       Container(color: _surfaceAlt),
                 ),
@@ -335,7 +331,7 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
                               ),
                             ),
                             child: const Text(
-                              'Bỏ qua',
+                              'BỎ QUA',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -346,8 +342,8 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: FilledButton(
-                            onPressed: () async {
+                          child: GestureDetector(
+                            onTap: () async {
                               final result = await Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -363,19 +359,20 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
                                 context.read<ReviewCubit>().loadMyReviewsData();
                               }
                             },
-                            style: FilledButton.styleFrom(
-                              backgroundColor: _accent,
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(14),
                               ),
-                            ),
-                            child: const Text(
-                              'Đánh giá',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.black,
+                              alignment: Alignment.center,
+                              child: const Text(
+                                'ĐÁNH GIÁ',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.black,
+                                ),
                               ),
                             ),
                           ),
@@ -392,10 +389,7 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
     );
   }
 
-  Widget _buildCompletedTab(
-    BuildContext context,
-    List<dynamic> reviews,
-  ) {
+  Widget _buildCompletedTab(BuildContext context, List<dynamic> reviews) {
     if (reviews.isEmpty) {
       return _buildEmptyState(
         icon: LucideIcons.messageSquare,
@@ -407,10 +401,8 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
     return ListView.separated(
       padding: const EdgeInsets.all(20),
       itemCount: reviews.length,
-      separatorBuilder: (_, __) => Divider(
-        height: 48,
-        color: _border.withValues(alpha: 0.5),
-      ),
+      separatorBuilder: (_, __) =>
+          Divider(height: 48, color: _border.withValues(alpha: 0.5)),
       itemBuilder: (context, index) {
         final review = reviews[index];
         return Column(
@@ -499,11 +491,9 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
                   children: List.generate(
                     5,
                     (starIdx) => Icon(
-                      starIdx < review.rating ? Icons.star_rounded : Icons.star_outline_rounded,
+                      starIdx < review.rating ? Icons.star : Icons.star_outline,
                       size: 16,
-                      color: starIdx < review.rating
-                          ? _accent
-                          : _textLow,
+                      color: starIdx < review.rating ? _starColor : _textLow,
                     ),
                   ),
                 ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 const _textHigh = Color(0xFFF1F1F5);
 const _textMid = Color(0xFF9191A8);
 
@@ -57,10 +58,10 @@ class _ShopReplyWidgetState extends State<ShopReplyWidget> {
                 children: [
                   Text(
                     _isExpanded ? 'Thu gọn' : 'Xem thêm',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: colorScheme.primary,
+                      color: Color(0xFF0077DE),
                     ),
                   ),
                   Icon(

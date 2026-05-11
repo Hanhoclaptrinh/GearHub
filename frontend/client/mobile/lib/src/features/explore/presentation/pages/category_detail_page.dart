@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/features/explore/domain/repositories/explore_repository.dart';
+import 'package:mobile/src/shared/widgets/glassmorphic_header.dart';
 import '../../../home/domain/entities/category_entity.dart';
 import '../state/category_detail_cubit.dart';
 import '../state/category_detail_state.dart';
@@ -11,10 +12,10 @@ import '../../../../shared/widgets/product_card.dart';
 import '../../../../shared/widgets/product_card_shimmer.dart';
 import '../../../../shared/widgets/product_filter_drawer.dart';
 
-const _bg = Color(0xFF0A0A10);
+const _bg = Color(0xFF07070A);
 const _surfaceAlt = Color(0xFF1C1C28);
 const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFF59E0B);
+const _accent = Color(0xFFFFCC00);
 const _accentSoft = Color(0x18F59E0B);
 const _textHigh = Color(0xFFF1F1F5);
 const _textMid = Color(0xFF9191A8);
@@ -46,6 +47,7 @@ class _CategoryDetailView extends StatefulWidget {
 class _CategoryDetailViewState extends State<_CategoryDetailView> {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  double _scrollOffset = 0.0;
 
   @override
   void initState() {
@@ -54,6 +56,11 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
   }
 
   void _onScroll() {
+    if (mounted) {
+      setState(() {
+        _scrollOffset = _scrollController.offset;
+      });
+    }
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       context.read<CategoryDetailCubit>().loadMore();
@@ -87,186 +94,157 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
                   },
                 )
               : null,
-          body: CustomScrollView(
-            controller: _scrollController,
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverAppBar(
-                backgroundColor: _bg,
-                surfaceTintColor: Colors.transparent,
-                floating: true,
-                elevation: 0,
-                scrolledUnderElevation: 0,
-                automaticallyImplyLeading: false,
-                centerTitle: true,
-                systemOverlayStyle: SystemUiOverlayStyle.light,
-                leading: Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: _textMid,
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ),
-                title: Text(
-                  state is CategoryDetailLoaded
-                      ? state.category.title
-                      : 'Chi tiết',
-                  style: const TextStyle(
-                    color: _textHigh,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-                actions: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: IconButton(
-                      icon: const Icon(
-                        LucideIcons.messageCircle,
-                        color: _textMid,
+          body: Stack(
+            children: [
+              CustomScrollView(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                  if (state is CategoryDetailLoading)
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (_, __) => const ProductCardShimmer(),
+                          childCount: 5,
+                        ),
                       ),
-                      onPressed: () {},
                     ),
-                  ),
+
+                  if (state is CategoryDetailError)
+                    SliverFillRemaining(
+                      child: Center(
+                        child: Text(
+                          state.message,
+                          style: const TextStyle(color: _textMid),
+                        ),
+                      ),
+                    ),
+
+                  // sub cate
+                  if (state is CategoryDetailLoaded) ...[
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: _buildSubCategories(context, state),
+                      ),
+                    ),
+
+                    SliverToBoxAdapter(
+                      child: Container(
+                        color: _bg,
+                        padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+                        child: Row(
+                          children: [
+                            RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: '${state.products.length}',
+                                    style: const TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w900,
+                                      color: _textHigh,
+                                    ),
+                                  ),
+                                  const TextSpan(
+                                    text: ' sản phẩm',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: _textMid,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Spacer(),
+                            GestureDetector(
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                _scaffoldKey.currentState?.openEndDrawer();
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _surfaceAlt,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: _border),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      LucideIcons.settings2,
+                                      size: 14,
+                                      color: _textMid,
+                                    ),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'Lọc',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: _textMid,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // prods
+                    if (state.products.isEmpty && !state.isLoadingMore)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: _buildEmptyState(context, state),
+                      )
+                    else
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (_, index) {
+                              if (index == state.products.length) {
+                                return const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 24),
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 1.5,
+                                      color: _textLow,
+                                    ),
+                                  ),
+                                );
+                              }
+                              return ProductCard(
+                                product: state.products[index],
+                              );
+                            },
+                            childCount:
+                                state.products.length +
+                                (state.isLoadingMore ? 1 : 0),
+                          ),
+                        ),
+                      ),
+                  ],
                 ],
               ),
-
-              if (state is CategoryDetailLoading)
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (_, __) => const ProductCardShimmer(),
-                      childCount: 5,
-                    ),
-                  ),
-                ),
-
-              if (state is CategoryDetailError)
-                SliverFillRemaining(
-                  child: Center(
-                    child: Text(
-                      state.message,
-                      style: const TextStyle(color: _textMid),
-                    ),
-                  ),
-                ),
-
-              // sub cate
-              if (state is CategoryDetailLoaded) ...[
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: _buildSubCategories(context, state),
-                  ),
-                ),
-
-                SliverToBoxAdapter(
-                  child: Container(
-                    color: _bg,
-                    padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
-                    child: Row(
-                      children: [
-                        RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: '${state.products.length}',
-                                style: const TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w900,
-                                  color: _textHigh,
-                                ),
-                              ),
-                              const TextSpan(
-                                text: ' sản phẩm',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: _textMid,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Spacer(),
-                        GestureDetector(
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            _scaffoldKey.currentState?.openEndDrawer();
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _surfaceAlt,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: _border),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  LucideIcons.settings2,
-                                  size: 14,
-                                  color: _textMid,
-                                ),
-                                SizedBox(width: 6),
-                                Text(
-                                  'Lọc',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: _textMid,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // prods
-                if (state.products.isEmpty && !state.isLoadingMore)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: _buildEmptyState(context, state),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (_, index) {
-                          if (index == state.products.length) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 24),
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 1.5,
-                                  color: _textLow,
-                                ),
-                              ),
-                            );
-                          }
-                          return ProductCard(product: state.products[index]);
-                        },
-                        childCount:
-                            state.products.length +
-                            (state.isLoadingMore ? 1 : 0),
-                      ),
-                    ),
-                  ),
-              ],
+              GlassmorphicHeader(
+                scrollOffset: _scrollOffset,
+                title: state is CategoryDetailLoaded
+                    ? state.category.title
+                    : '...',
+                onBack: () => Navigator.pop(context),
+                isTransparentAtTop: false,
+              ),
             ],
           ),
         );
@@ -278,13 +256,13 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
     final subCates = state.category.children;
 
     return SizedBox(
-      height: 36,
+      height: 38,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
         physics: const BouncingScrollPhysics(),
         itemCount: subCates.length + 1,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final isAll = index == 0;
           final item = isAll ? null : subCates[index - 1];
@@ -298,23 +276,27 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
               context.read<CategoryDetailCubit>().filterBySubCategory(item);
             },
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              duration: const Duration(milliseconds: 300),
+              padding: const EdgeInsets.symmetric(horizontal: 18),
               decoration: BoxDecoration(
-                color: isSelected ? _accentSoft : _surfaceAlt,
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.transparent,
                 border: Border.all(
-                  color: isSelected ? _accent.withValues(alpha: 0.5) : _border,
+                  color: isSelected
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : Colors.white.withValues(alpha: 0.05),
                   width: 1,
                 ),
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(20),
               ),
               child: Center(
                 child: Text(
                   isAll ? 'Tất cả' : item!.title,
                   style: TextStyle(
-                    color: isSelected ? _accent : _textMid,
+                    color: isSelected ? Colors.white : _textMid,
                     fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
                   ),
                 ),
               ),

@@ -2,12 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-const _surface = Color(0xFF14141E);
-const _border = Color(0xFF2A2A38);
-const _indigo = Color(0xFF6366F1);
-const _textHigh = Color(0xFFF1F1F5);
-const _textLow = Color(0xFF4A4A62);
-
 class ProfileMenuCard extends StatelessWidget {
   final String groupLabel;
   final List<ProfileMenuItem> items;
@@ -28,18 +22,21 @@ class ProfileMenuCard extends StatelessWidget {
           child: Text(
             groupLabel,
             style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              color: _textLow,
-              letterSpacing: 1.2,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF9191A8),
+              letterSpacing: 2,
             ),
           ),
         ),
         Container(
           decoration: BoxDecoration(
-            color: _surface,
+            color: Colors.white.withValues(alpha: 0.02),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: _border),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.05),
+              width: 0.8,
+            ),
           ),
           child: Column(
             children: List.generate(items.length, (index) {
@@ -51,10 +48,10 @@ class ProfileMenuCard extends StatelessWidget {
                   _MenuItemWidget(item: item),
                   if (!isLast)
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Divider(
                         height: 1,
-                        color: _border.withValues(alpha: 0.5),
+                        color: Colors.white.withValues(alpha: 0.03),
                       ),
                     ),
                 ],
@@ -74,26 +71,38 @@ class _MenuItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const textHigh = Colors.white;
+    const textLow = Color(0xFF9191A8);
+    const accent = Color(0xFF3B82F6);
+
     if (item.isToggle) {
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              item.title,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: _textHigh,
-              ),
+            Row(
+              children: [
+                if (item.icon != null) ...[
+                  Icon(item.icon, size: 20, color: textLow),
+                  const SizedBox(width: 16),
+                ],
+                Text(
+                  item.title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: textHigh,
+                  ),
+                ),
+              ],
             ),
             Transform.scale(
               scale: 0.8,
               child: Switch.adaptive(
                 value: item.toggleValue ?? false,
                 onChanged: item.onToggle,
-                activeTrackColor: _indigo,
+                activeTrackColor: accent,
               ),
             ),
           ],
@@ -105,45 +114,47 @@ class _MenuItemWidget extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          HapticFeedback.selectionClick();
+          HapticFeedback.lightImpact();
           item.onTap?.call();
         },
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (item.icon != null) ...[
+                    Icon(item.icon, size: 20, color: textLow),
+                    const SizedBox(width: 16),
+                  ],
                   Text(
                     item.title,
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: _textHigh,
+                      color: textHigh,
                     ),
                   ),
                   if (item.badge != null) ...[
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
+                        horizontal: 8,
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
-                        ),
+                        color: accent.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         item.badge!,
                         style: const TextStyle(
-                          fontSize: 8,
+                          fontSize: 9,
                           fontWeight: FontWeight.w900,
-                          color: Colors.white,
+                          color: accent,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -154,7 +165,7 @@ class _MenuItemWidget extends StatelessWidget {
               const Icon(
                 LucideIcons.chevronRight,
                 size: 16,
-                color: _textLow,
+                color: Color(0xFF4A4A62),
               ),
             ],
           ),

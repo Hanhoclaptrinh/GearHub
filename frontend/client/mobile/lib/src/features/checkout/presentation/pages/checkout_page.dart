@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,10 +18,10 @@ import 'package:mobile/src/features/checkout/presentation/widgets/edit_address_m
 import 'vnpay_payment_page.dart';
 import 'package:mobile/src/features/profile/presentation/pages/order_history_page.dart';
 
-const _bg = Color(0xFF0A0A10);
+const _bg = Color(0xFF07070A);
 const _surface = Color(0xFF14141E);
 const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFF59E0B);
+const _accent = Color(0xFFFDE047);
 const _pink = Color(0xFFFF6B8A);
 const _textHigh = Color(0xFFF1F1F5);
 const _textMid = Color(0xFF9191A8);
@@ -235,15 +234,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
       elevation: 0,
       scrolledUnderElevation: 0,
       backgroundColor: _bg,
-      flexibleSpace: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(color: Colors.transparent),
-        ),
-      ),
       leading: GestureDetector(
         onTap: () => Navigator.pop(context),
-        child: const Icon(Icons.arrow_back_ios_new_rounded, color: _textMid),
+        child: const Icon(
+          Icons.arrow_back_rounded,
+          color: Colors.white,
+          size: 22,
+        ),
       ),
       title: const Text(
         "Thanh toán",
@@ -331,7 +328,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
-                    color: _accent,
+                    color: _textHigh,
                   ),
                 ),
               ],
@@ -384,7 +381,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                               color: Colors.black,
                               fontWeight: FontWeight.w900,
                               fontSize: 14,
-                              letterSpacing: 1.5,
                             ),
                           ),
                   ),

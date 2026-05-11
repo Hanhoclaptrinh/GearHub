@@ -82,9 +82,12 @@ class TopRatedPremiumCard extends StatelessWidget {
       onTap: () => _push(context, product),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color.fromARGB(240, 245, 246, 248),
+          color: const Color(0xFF14141E),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white, width: 1.5),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.08),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.03),
@@ -129,7 +132,7 @@ class TopRatedPremiumCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF0A0A0F),
+                        color: Color(0xFFF1F1F5),
                         height: 1.25,
                         letterSpacing: -0.2,
                       ),
@@ -161,7 +164,7 @@ class TopRatedPremiumCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
-                        color: Color(0xFF0A0A0F),
+                        color: Color(0xFFFDE047), // Gold accent
                         letterSpacing: -0.3,
                       ),
                     ),
