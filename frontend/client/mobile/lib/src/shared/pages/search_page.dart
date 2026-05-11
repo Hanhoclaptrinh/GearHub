@@ -6,11 +6,16 @@ import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/features/explore/domain/repositories/explore_repository.dart';
 import 'package:mobile/src/features/home/data/datasources/home_remote_datasource.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
+import 'package:mobile/src/features/home/data/models/category_model.dart';
 import 'package:mobile/src/features/home/presentation/widgets/search_history_tags_widget.dart';
 import 'package:mobile/src/features/home/presentation/widgets/search_suggestion_item.dart';
 import 'package:mobile/src/features/home/presentation/widgets/search_product_grid.dart';
 import 'package:mobile/src/shared/widgets/product_filter_drawer.dart';
+import 'package:mobile/src/shared/widgets/voice_search_modal.dart';
+import 'package:mobile/src/shared/widgets/image_search_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 const _bg = Color(0xFF07070A);
 const _surfaceAlt = Color(0xFF1C1C28);
@@ -37,6 +42,14 @@ class _SearchPageState extends State<SearchPage> {
   bool _isFullSearchMode = false;
   List<ProductModel> _searchResults = [];
 
+  // Category matching
+  List<CategoryModel> _allCategories = [];
+  List<CategoryModel> _matchedCategories = [];
+
+  // Advanced search state
+  File? _selectedImage;
+  bool _isAnalyzingImage = false;
+
   // filtering/sorting state
   String _sortBy = ''; // 'price_asc' | 'price_desc'
   double? _minPrice;
@@ -53,6 +66,19 @@ class _SearchPageState extends State<SearchPage> {
     super.initState();
     _loadSearchHistory();
     _loadPopularKeywords();
+    _loadAllCategories();
+  }
+
+  void _loadAllCategories() async {
+    try {
+      final datasource = getIt<HomeRemoteDatasource>();
+      final categories = await datasource.getParentCategories();
+      setState(() {
+        _allCategories = categories;
+      });
+    } catch (e) {
+      debugPrint('[Search] Error loading categories: $e');
+    }
   }
 
   @override
@@ -160,7 +186,20 @@ class _SearchPageState extends State<SearchPage> {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 300), () {
       _fetchSuggestions(val.trim());
+      _matchCategories(val.trim());
     });
+  }
+
+  void _matchCategories(String query) {
+    if (query.isEmpty) {
+      setState(() => _matchedCategories = []);
+      return;
+    }
+    final matches = _allCategories
+        .where((c) => c.title.toLowerCase().contains(query.toLowerCase()))
+        .take(3)
+        .toList();
+    setState(() => _matchedCategories = matches);
   }
 
   Future<void> _fetchSuggestions(String query) async {
@@ -234,6 +273,56 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
+  void _openVoiceSearch() {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: 'VoiceSearch',
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, anim1, anim2) => VoiceSearchModal(
+        onResult: (text) {
+          Navigator.pop(context);
+          _executeFullSearch(keyword: text);
+        },
+      ),
+      transitionBuilder: (context, anim1, anim2, child) {
+        return FadeTransition(
+          opacity: anim1,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+              CurvedAnimation(parent: anim1, curve: Curves.easeOut),
+            ),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openImageSearch() async {
+    final picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image != null) {
+      setState(() {
+        _selectedImage = File(image.path);
+        _isAnalyzingImage = true;
+      });
+
+      // Gia lap thoi gian phan tich anh
+      await Future.delayed(const Duration(seconds: 3));
+
+      if (mounted) {
+        setState(() {
+          _isAnalyzingImage = false;
+        });
+
+        // Mo phong tim kiem: Tim kiem cac san pham thuoc hang 'Apple' hoac 'Sony'
+        _executeFullSearch(keyword: 'Apple');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -293,8 +382,11 @@ class _SearchPageState extends State<SearchPage> {
                             size: 18,
                             color: _textMid,
                           ),
-                          suffixIcon: _controller.text.isNotEmpty
-                              ? GestureDetector(
+                          suffixIcon: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_controller.text.isNotEmpty)
+                                GestureDetector(
                                   onTap: () {
                                     _controller.clear();
                                     _onSearchChanged('');
@@ -305,7 +397,28 @@ class _SearchPageState extends State<SearchPage> {
                                     color: _textMid,
                                   ),
                                 )
-                              : null,
+                              else ...[
+                                GestureDetector(
+                                  onTap: _openVoiceSearch,
+                                  child: const Icon(
+                                    LucideIcons.mic,
+                                    size: 18,
+                                    color: _textMid,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                GestureDetector(
+                                  onTap: _openImageSearch,
+                                  child: const Icon(
+                                    LucideIcons.camera,
+                                    size: 18,
+                                    color: _textMid,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                              ],
+                            ],
+                          ),
                           hintText: 'Tìm kiếm sản phẩm...',
                           hintStyle: const TextStyle(
                             fontSize: 14,
@@ -325,14 +438,26 @@ class _SearchPageState extends State<SearchPage> {
             ),
           ),
         ),
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: _accent))
-            : _isFullSearchMode
-            ? SearchProductGrid(
-                searchResults: _searchResults,
-                onShowFilters: () => _scaffoldKey.currentState?.openEndDrawer(),
-              )
-            : _buildSearchSuggestions(),
+        body: Stack(
+          children: [
+            _isLoading
+                ? const Center(child: CircularProgressIndicator(color: _accent))
+                : _isFullSearchMode
+                ? SearchProductGrid(
+                    searchResults: _searchResults,
+                    currentSortBy: _sortBy,
+                    onSortChanged: (sort) {
+                      setState(() => _sortBy = sort);
+                      _executeFullSearch();
+                    },
+                    onShowFilters: () =>
+                        _scaffoldKey.currentState?.openEndDrawer(),
+                  )
+                : _buildSearchSuggestions(),
+            if (_isAnalyzingImage && _selectedImage != null)
+              ImageSearchOverlay(imageFile: _selectedImage!),
+          ],
+        ),
       ),
     );
   }
@@ -382,7 +507,52 @@ class _SearchPageState extends State<SearchPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
+              if (_matchedCategories.isNotEmpty) ...[
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: _matchedCategories.map((c) {
+                    return GestureDetector(
+                      onTap: () => _executeFullSearch(keyword: c.title),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _accentSoft,
+                          borderRadius: BorderRadius.circular(100),
+                          border: Border.all(
+                            color: _accent.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              LucideIcons.layoutGrid,
+                              size: 14,
+                              color: _accent,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              c.title,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: _accent,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 24),
+              ],
+              const SizedBox(height: 4),
               if (_suggestions.isEmpty)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 40),

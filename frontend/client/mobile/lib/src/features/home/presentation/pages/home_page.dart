@@ -84,13 +84,9 @@ class _HomePageState extends State<HomePage>
                 controller: _scrollController,
                 physics: const BouncingScrollPhysics(),
                 slivers: [
-                  const SliverToBoxAdapter(
-                    child: HeroSection(),
-                  ),
-                  
-                  SliverToBoxAdapter(
-                    child: _buildGreetingSection(),
-                  ),
+                  const SliverToBoxAdapter(child: HeroSection()),
+
+                  SliverToBoxAdapter(child: _buildGreetingSection()),
 
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(0, 16, 0, 60),
@@ -130,21 +126,15 @@ class _HomePageState extends State<HomePage>
         HeaderIconButton(
           icon: LucideIcons.search,
           onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SearchPage()),
-            );
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const SearchPage()));
           },
         ),
-        HeaderIconButton(
-          icon: LucideIcons.bell,
-          onTap: () {
-          },
-        ),
+        HeaderIconButton(icon: LucideIcons.bell, onTap: () {}),
       ],
     );
   }
-
-
 
   Widget _buildGreetingSection() {
     final hour = DateTime.now().hour;
@@ -172,10 +162,7 @@ class _HomePageState extends State<HomePage>
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Colors.black,
-                _bg,
-              ],
+              colors: [Colors.black, _bg],
             ),
           ),
           child: Column(

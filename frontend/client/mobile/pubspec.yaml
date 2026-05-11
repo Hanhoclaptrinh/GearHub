@@ -29,7 +29,7 @@ dependencies:
   go_router: ^13.2.0
 
   # --- Local Storage ---
-  flutter_secure_storage: ^9.0.0
+  flutter_secure_storage: ^10.1.0
   shared_preferences: ^2.2.2
 
   # --- UI Utils ---
@@ -44,6 +44,7 @@ dependencies:
   lottie: ^3.3.3
   flutter_staggered_grid_view: ^0.7.0
   image_picker: ^1.1.2
+  speech_to_text: ^7.3.0
 
   # --- AR Plugin ---
   ar_flutter_plugin_2: ^0.0.3

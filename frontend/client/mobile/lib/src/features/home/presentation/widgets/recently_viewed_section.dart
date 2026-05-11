@@ -148,7 +148,6 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> {
                   padding: const EdgeInsets.only(right: 12),
                   child: BlocBuilder<WishlistCubit, WishlistState>(
                     builder: (context, state) {
-
                       return SmallProductCard(
                         product: productModel,
                         heroTag: 'recent_${productModel.id}_$index',
