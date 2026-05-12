@@ -5,6 +5,7 @@ class HeroProductModel extends HeroProductEntity {
   const HeroProductModel({
     required super.id,
     required super.name,
+    required super.baseName,
     required super.tagline,
     required super.image,
     required super.description,
@@ -15,7 +16,8 @@ class HeroProductModel extends HeroProductEntity {
     final String description = json['description'] ?? '';
     final String? apiTagline = json['tagline'];
 
-    String name = json['name'] as String? ?? '';
+    final String baseName = json['name'] as String? ?? '';
+    String name = baseName;
     String image = json['thumbnailUrl'] as String? ?? '';
 
     if (json['variants'] != null && (json['variants'] as List).isNotEmpty) {
@@ -57,6 +59,7 @@ class HeroProductModel extends HeroProductEntity {
     return HeroProductModel(
       id: json['id'],
       name: name,
+      baseName: baseName,
       tagline: (apiTagline != null && apiTagline.isNotEmpty)
           ? apiTagline
           : _extractFirstSentence(description),
@@ -69,6 +72,7 @@ class HeroProductModel extends HeroProductEntity {
     return HeroProductModel(
       id: id,
       name: name,
+      baseName: baseName,
       tagline: tagline,
       image: image,
       description: description,

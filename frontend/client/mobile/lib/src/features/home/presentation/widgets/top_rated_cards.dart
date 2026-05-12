@@ -164,7 +164,7 @@ class TopRatedPremiumCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
-                        color: Color(0xFFFDE047), // Gold accent
+                        color: Color(0xFFFDE047),
                         letterSpacing: -0.3,
                       ),
                     ),

@@ -42,11 +42,11 @@ class _SearchPageState extends State<SearchPage> {
   bool _isFullSearchMode = false;
   List<ProductModel> _searchResults = [];
 
-  // Category matching
+  // category matching
   List<CategoryModel> _allCategories = [];
   List<CategoryModel> _matchedCategories = [];
 
-  // Advanced search state
+  // image & voice search state
   File? _selectedImage;
   bool _isAnalyzingImage = false;
 
@@ -289,9 +289,10 @@ class _SearchPageState extends State<SearchPage> {
         return FadeTransition(
           opacity: anim1,
           child: ScaleTransition(
-            scale: Tween<double>(begin: 0.8, end: 1.0).animate(
-              CurvedAnimation(parent: anim1, curve: Curves.easeOut),
-            ),
+            scale: Tween<double>(
+              begin: 0.8,
+              end: 1.0,
+            ).animate(CurvedAnimation(parent: anim1, curve: Curves.easeOut)),
             child: child,
           ),
         );
@@ -309,7 +310,9 @@ class _SearchPageState extends State<SearchPage> {
         _isAnalyzingImage = true;
       });
 
-      // Gia lap thoi gian phan tich anh
+      // gia lap thoi gian phan tich anh
+      // thuc te train model nhan dien hinh anh hoac dung pre-train models
+      // search by vector
       await Future.delayed(const Duration(seconds: 3));
 
       if (mounted) {
@@ -317,7 +320,7 @@ class _SearchPageState extends State<SearchPage> {
           _isAnalyzingImage = false;
         });
 
-        // Mo phong tim kiem: Tim kiem cac san pham thuoc hang 'Apple' hoac 'Sony'
+        // mo phong tim kiem: tim kiem cac san pham thuoc hang 'Apple' hoac 'Sony'
         _executeFullSearch(keyword: 'Apple');
       }
     }

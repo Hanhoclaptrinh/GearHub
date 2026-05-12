@@ -98,19 +98,17 @@ class _VoiceSearchModalState extends State<VoiceSearchModal>
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // Blur background
+          // blur bgr
           Positioned.fill(
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-              child: Container(color: Colors.black.withOpacity(0.2)),
+              child: Container(color: Colors.black.withValues(alpha: 0.2)),
             ),
           ),
 
-          // Content
           SafeArea(
             child: Column(
               children: [
-                // Top header
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
@@ -137,10 +135,8 @@ class _VoiceSearchModalState extends State<VoiceSearchModal>
                     ],
                   ),
                 ),
-
                 const Spacer(),
 
-                // Recognized text
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 40),
                   child: AnimatedDefaultTextStyle(
@@ -176,10 +172,9 @@ class _VoiceSearchModalState extends State<VoiceSearchModal>
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-
                 const Spacer(flex: 2),
 
-                // Siri-like animation at bottom - Fixed positioning
+                // voice recognition animation
                 SizedBox(
                   width: double.infinity,
                   height: 140,

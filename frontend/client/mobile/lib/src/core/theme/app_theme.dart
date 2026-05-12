@@ -2,17 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // static const Color background = Color(0xFF07070A);
-  // static const Color surface = Color(0xFF14141E);
-  // static const Color primaryText = Color(0xFFF1F1F5);
-  // static const Color secondaryText = Color(0xFF9191A8);
-  // static const Color accent = Color(0xFF6366F1);
-
-  static const Color background = Color(0xFFF8FAFC);
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color primaryText = Color(0xFF0F172A);
-  static const Color secondaryText = Color(0xFF475569);
-  static const Color accent = Color(0xFF3B82F6);
+  static const Color background = Color(0xFF07070A);
+  static const Color surface = Color(0xFF14141E);
+  static const Color primaryText = Color(0xFFF1F1F5);
+  static const Color secondaryText = Color(0xFF9191A8);
+  static const Color accent = Color(0xFF6366F1);
 
   static ThemeData theme(BuildContext context) {
     final baseTheme = ThemeData.dark();
