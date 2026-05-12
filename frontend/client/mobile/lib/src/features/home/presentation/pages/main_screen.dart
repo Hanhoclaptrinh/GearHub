@@ -14,8 +14,6 @@ import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:mobile/src/features/explore/presentation/pages/explore_page.dart';
 import 'package:mobile/src/features/promotions/presentation/pages/promotions_page.dart';
 
-const _surface = Color(0xFF14141E);
-
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -47,12 +45,13 @@ class MainScreenState extends State<MainScreen> {
       _selectedIndex = index;
       _isBottomBarVisible = true;
     });
-    if (index == 4) {
+    if (index == 2) {
+      // cart page is at index 2
       context.read<CartCubit>().loadCart();
     }
     _pageController.animateToPage(
       index,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 600),
       curve: Curves.easeOutQuart,
     );
   }
@@ -62,9 +61,9 @@ class MainScreenState extends State<MainScreen> {
     final List<Widget> pages = [
       const HomePage(),
       const ExplorePage(),
+      CartPage(isNavVisible: _isBottomBarVisible),
       const PromotionsPage(),
       const UserProfilePage(),
-      CartPage(isNavVisible: _isBottomBarVisible),
     ];
 
     return BlocListener<AuthCubit, AuthState>(
@@ -101,7 +100,7 @@ class MainScreenState extends State<MainScreen> {
           ),
         ),
         bottomNavigationBar: AnimatedSlide(
-          duration: const Duration(milliseconds: 600),
+          duration: const Duration(milliseconds: 700),
           curve: Curves.easeOutQuart,
           offset: _isBottomBarVisible ? Offset.zero : const Offset(0, 1.5),
           child: CustomBottomNavBar(
@@ -124,173 +123,104 @@ class CustomBottomNavBar extends StatelessWidget {
     required this.onItemSelected,
   });
 
-  static const _mainItems = [
-    (icon: LucideIcons.house, label: 'Home'),
-    (icon: LucideIcons.search, label: 'Explore'),
-    (icon: LucideIcons.shieldCheck, label: 'Offers'),
-    (icon: LucideIcons.userRound, label: 'Profile'),
+  static const _items = [
+    (icon: LucideIcons.house, label: 'Trang chủ'),
+    (icon: LucideIcons.search, label: 'Shop'),
+    (icon: LucideIcons.shoppingCart, label: 'Giỏ hàng'),
+    (icon: LucideIcons.shieldCheck, label: 'Ưu đãi'),
+    (icon: LucideIcons.userRound, label: 'Tôi'),
   ];
 
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final isCartSelected = selectedIndex == 4;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding + 12),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 4,
-            child: _GlassContainer(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(
-                  _mainItems.length,
-                  (i) => _NavItem(
-                    index: i,
-                    icon: _mainItems[i].icon,
-                    label: _mainItems[i].label,
-                    isSelected: selectedIndex == i,
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      onItemSelected(i);
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          _GlassContainer(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            borderRadius: BorderRadius.circular(34),
-            child: _NavItem(
-              index: 4,
-              icon: LucideIcons.shoppingCart,
-              label: 'Cart',
-              isSelected: isCartSelected,
-              isCart: true,
-              onTap: () {
-                HapticFeedback.mediumImpact();
-                onItemSelected(4);
-              },
-            ),
-          ),
-        ],
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.transparent,
+            const Color(0xFF050505).withValues(alpha: 0.72),
+            const Color(0xFF050505),
+          ],
+          stops: const [0.0, 0.35, 1.0],
+        ),
       ),
-    );
-  }
-}
-
-class _GlassContainer extends StatelessWidget {
-  final Widget child;
-  final EdgeInsetsGeometry? padding;
-  final BorderRadius? borderRadius;
-
-  const _GlassContainer({required this.child, this.padding, this.borderRadius});
-
-  @override
-  Widget build(BuildContext context) {
-    final radius = borderRadius ?? BorderRadius.circular(32);
-    return ClipRRect(
-      borderRadius: radius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          height: 68,
-          padding: padding ?? const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            color: _surface.withValues(alpha: 0.85),
-            borderRadius: radius,
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
+      padding: EdgeInsets.fromLTRB(28, 8, 28, bottomPadding + 14),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: List.generate(
+          _items.length,
+          (i) => _ArchitecturalNavItem(
+            index: i,
+            icon: _items[i].icon,
+            label: _items[i].label,
+            isSelected: selectedIndex == i,
+            isVault: i == 2,
+            onTap: () => onItemSelected(i),
           ),
-          child: child,
         ),
       ),
     );
   }
 }
 
-class _NavItem extends StatelessWidget {
+class _ArchitecturalNavItem extends StatelessWidget {
   final int index;
   final IconData icon;
   final String label;
   final bool isSelected;
+  final bool isVault;
   final VoidCallback onTap;
-  final bool isCart;
 
-  const _NavItem({
+  const _ArchitecturalNavItem({
     required this.index,
     required this.icon,
     required this.label,
     required this.isSelected,
     required this.onTap,
-    this.isCart = false,
+    this.isVault = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 400),
+        duration: const Duration(milliseconds: 500),
         curve: Curves.easeOutQuart,
-        padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 18 : 12,
-          vertical: 10,
-        ),
-        child: Row(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildIcon(),
-            if (isSelected && !isCart)
-              Flexible(
-                child: AnimatedSize(
-                  duration: const Duration(milliseconds: 400),
-                  curve: Curves.easeOutQuart,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: Text(
-                      label,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                        letterSpacing: -0.2,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.clip,
-                    ),
-                  ),
-                ),
-              ),
+            _buildIconLayer(),
+            const SizedBox(height: 8),
+            _buildLabelLayer(),
+            const SizedBox(height: 4),
+            _buildIndicatorLayer(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildIcon() {
+  Widget _buildIconLayer() {
     Widget iconWidget = Icon(
       icon,
-      size: 22,
-      color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.4),
+      size: 20,
+      color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.22),
     );
 
-    if (!isCart) return iconWidget;
+    if (!isVault) return iconWidget;
 
+    // cart badge
     return BlocBuilder<CartCubit, CartState>(
       builder: (context, state) {
         final count = state.cart?.items.length ?? 0;
@@ -300,40 +230,48 @@ class _NavItem extends StatelessWidget {
             iconWidget,
             if (count > 0)
               Positioned(
-                top: -8,
-                right: -8,
+                top: -2,
+                right: -4,
                 child: Container(
-                  padding: const EdgeInsets.all(4),
-                  constraints: const BoxConstraints(
-                    minWidth: 18,
-                    minHeight: 18,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE11D48),
+                  width: 4,
+                  height: 4,
+                  decoration: const BoxDecoration(
+                    color: Colors.white70,
                     shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFE11D48).withValues(alpha: 0.4),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    count > 99 ? '99+' : '$count',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                      height: 1,
-                    ),
-                    textAlign: TextAlign.center,
                   ),
                 ),
               ),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildLabelLayer() {
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 400),
+      opacity: isSelected ? 0.5 : 0.0,
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 7,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 3,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIndicatorLayer() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 600),
+      width: isSelected ? 3 : 0,
+      height: 3,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+      ),
     );
   }
 }

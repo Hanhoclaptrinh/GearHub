@@ -49,6 +49,14 @@ class AppColors {
   static const Color indicatorActive = Color(0xCCFFFFFF);
   static const Color indicatorBg = Color(0x26FFFFFF);
 
+  // ── card & brand extension ──
+  static const Color cardSurface = Color(0xFF0E0E18);
+  static const Color cardBorder = Color(0xFF1E1E2E);
+  static const Color brandYellow = Color(0xFFFDE047);
+  static const Color brandBlue = Color(0xFF3B82F6);
+  static const Color textSlate = Color(0xFF8892A4);
+  static const Color textDim = Color(0xFF4A5263);
+
   static const LinearGradient luxuryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,

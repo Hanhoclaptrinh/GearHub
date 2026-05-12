@@ -124,6 +124,22 @@ class ProductModel {
     return sorted.map((a) => a.url).toList();
   }
 
+  double get minPrice {
+    if (variants.isEmpty) return basePrice;
+    final active = variants.where((v) => v.isActive).toList();
+    if (active.isEmpty) return basePrice;
+    return active.map((v) => v.price).reduce((a, b) => a < b ? a : b);
+  }
+
+  double get maxPrice {
+    if (variants.isEmpty) return basePrice;
+    final active = variants.where((v) => v.isActive).toList();
+    if (active.isEmpty) return basePrice;
+    return active.map((v) => v.price).reduce((a, b) => a > b ? a : b);
+  }
+
+  bool get hasPriceRange => minPrice != maxPrice;
+
   ProductModel copyWith({
     String? id,
     String? name,
