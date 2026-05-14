@@ -298,11 +298,16 @@ model Transaction {
 
 // ====================== CHAT & AI ======================
 model ChatRoom {
-  id        String     @id @default(uuid()) @db.VarChar(36)
-  userId    String     @map("user_id") @db.VarChar(36)
-  staffId   String?    @map("staff_id") @db.VarChar(36)
-  status    RoomStatus @default(OPEN)
-  createdAt DateTime   @default(now()) @map("created_at")
+  id                 String     @id @default(uuid()) @db.VarChar(36)
+  userId             String     @map("user_id") @db.VarChar(36)
+  staffId            String?    @map("staff_id") @db.VarChar(36)
+  status             RoomStatus @default(BOT_ONLY)
+  lastMessageAt      DateTime?  @map("last_message_at")
+  lastMessageContent String?    @map("last_message_content") @db.Text
+  unreadCount        Int        @default(0) @map("unread_count")
+  metadata           Json?
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
 
   user      User       @relation("UserChatRooms", fields: [userId], references: [id])
   staff     User?      @relation("StaffChatRooms", fields: [staffId], references: [id])
@@ -430,7 +435,9 @@ enum TransactionStatus {
 }
 
 enum RoomStatus {
-  OPEN
+  BOT_ONLY
+  NEED_HUMAN
+  STAFF_ACTIVE
   CLOSED
 }
 
