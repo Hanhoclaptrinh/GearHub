@@ -50,7 +50,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               backgroundColor: const Color(0xFF10B981),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
           );
@@ -59,54 +59,69 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),
-              backgroundColor: Colors.redAccent,
+              backgroundColor: const Color(0xFFFF4D4D),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
           );
         }
       },
       child: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.dark,
+        value: SystemUiOverlayStyle.light,
         child: Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: const Color(0xFF07070A),
           body: SafeArea(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 28),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 48),
-                      // heading
-                      const Text(
-                        'Đặt lại mật khẩu',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF111827),
-                          letterSpacing: -1.2,
+                      const SizedBox(height: 12),
+                      GestureDetector(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.of(context).pop();
+                        },
+
+                        child: const Icon(
+                          Icons.arrow_back_rounded,
+                          color: Colors.white,
+                          size: 18,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 48),
+
+                      const Text(
+                        'THIẾT LẬP\nMẬT KHẨU MỚI',
+                        style: TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: -1.5,
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       Text(
-                        'Vui lòng tạo mật khẩu mới mạnh hơn để bảo vệ tài khoản của bạn.',
+                        'Vui lòng tạo mật khẩu mới mạnh hơn để bảo vệ tài khoản của bạn khỏi mọi rủi ro.',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w400,
-                          color: Colors.grey[500],
-                          height: 1.5,
+                          color: Colors.white.withValues(alpha: 0.5),
+                          height: 1.6,
+                          letterSpacing: 0.1,
                         ),
                       ),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 48),
 
                       AuthTextField(
-                        label: 'Mật khẩu mới',
+                        label: 'MẬT KHẨU MỚI',
                         controller: _passwordController,
                         isPassword: true,
                         prefixIcon: LucideIcons.lock,
@@ -120,9 +135,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
                       AuthTextField(
-                        label: 'Xác nhận mật khẩu',
+                        label: 'XÁC NHẬN MẬT KHẨU',
                         controller: _confirmPasswordController,
                         isPassword: true,
                         prefixIcon: LucideIcons.shieldCheck,
@@ -136,12 +151,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 48),
 
                       BlocBuilder<AuthCubit, AuthState>(
                         builder: (context, state) {
                           return AuthPrimaryButton(
-                            label: 'Đặt lại mật khẩu',
+                            label: 'CẬP NHẬT MẬT KHẨU',
                             isLoading: state is AuthLoading,
                             onTap: _handleReset,
                           );

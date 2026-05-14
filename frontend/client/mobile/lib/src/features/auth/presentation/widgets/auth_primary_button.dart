@@ -33,7 +33,7 @@ class _AuthPrimaryButtonState extends State<AuthPrimaryButton>
     );
     _scaleAnimation = Tween<double>(
       begin: 1.0,
-      end: 0.96,
+      end: 0.97,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
@@ -45,7 +45,8 @@ class _AuthPrimaryButtonState extends State<AuthPrimaryButton>
 
   @override
   Widget build(BuildContext context) {
-    final btnColor = widget.color ?? const Color(0xFF0077ED);
+    final btnColor = widget.color ?? const Color(0xFFFDE047);
+    final textColor = btnColor == const Color(0xFFFDE047) ? Colors.black : Colors.white;
 
     return GestureDetector(
       onTapDown: (_) => _controller.forward(),
@@ -62,35 +63,35 @@ class _AuthPrimaryButtonState extends State<AuthPrimaryButton>
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 18),
+          padding: const EdgeInsets.symmetric(vertical: 20),
           decoration: BoxDecoration(
             color: btnColor,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: btnColor.withValues(alpha: 0.3),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
+                color: btnColor.withValues(alpha: 0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
           child: Center(
             child: widget.isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 22,
                     height: 22,
                     child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: Colors.white,
+                      strokeWidth: 3,
+                      color: textColor,
                     ),
                   )
                 : Text(
-                    widget.label,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: -0.2,
+                    widget.label.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      color: textColor,
+                      letterSpacing: 1.5,
                     ),
                   ),
           ),
@@ -99,3 +100,4 @@ class _AuthPrimaryButtonState extends State<AuthPrimaryButton>
     );
   }
 }
+

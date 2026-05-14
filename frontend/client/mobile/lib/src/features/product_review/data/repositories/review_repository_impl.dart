@@ -112,7 +112,7 @@ class ReviewRepositoryImpl implements ReviewRepository {
   }
 
   @override
-  Future<Either<Failure, Map<String, int>>> getReviewSummary(
+  Future<Either<Failure, Map<String, dynamic>>> getReviewSummary(
     String productId,
   ) async {
     try {

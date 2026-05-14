@@ -8,17 +8,10 @@ import 'package:mobile/src/core/utils/formatter_utils.dart';
 import 'package:mobile/src/features/product_review/presentation/state/review_cubit.dart';
 import 'package:mobile/src/features/product_review/presentation/state/review_state.dart';
 import 'package:mobile/src/features/product_review/presentation/widgets/shop_reply_widget.dart';
+import 'package:mobile/src/shared/widgets/glassmorphic_header.dart';
 import '../../../../core/di/injection.dart';
 
 const _bg = Color(0xFF07070A);
-const _surface = Color(0xFF14141E);
-const _surfaceAlt = Color(0xFF1C1C28);
-const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFFFCC00);
-const _accentSoft = Color(0x26F59E0B);
-const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
-const _textLow = Color(0xFF4A4A62);
 const _starColor = Color(0xFFFFCC00);
 
 class ProductReviewsPage extends StatefulWidget {
@@ -31,8 +24,27 @@ class ProductReviewsPage extends StatefulWidget {
 }
 
 class _ProductReviewsPageState extends State<ProductReviewsPage> {
+  late final ScrollController _scrollController;
+  double _scrollOffset = 0;
   int? _selectedRating;
   bool _hasImage = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController()
+      ..addListener(() {
+        setState(() {
+          _scrollOffset = _scrollController.offset;
+        });
+      });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,31 +54,15 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
         backgroundColor: _bg,
         body: Stack(
           children: [
+            _buildImmersiveBackground(),
+
             BlocBuilder<ReviewCubit, ReviewState>(
               builder: (context, state) {
                 if (state is ReviewLoading) {
                   return const Center(
                     child: CircularProgressIndicator(
-                      color: _accent,
+                      color: _starColor,
                       strokeWidth: 2,
-                    ),
-                  );
-                } else if (state is ReviewError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          LucideIcons.circleAlert,
-                          color: Colors.red,
-                          size: 48,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          state.message,
-                          style: const TextStyle(color: _textMid),
-                        ),
-                      ],
                     ),
                   );
                 } else if (state is ReviewLoaded) {
@@ -77,90 +73,73 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                       ? (summary['average'] as num? ?? 0).toDouble()
                       : 0.0;
 
-                  return CustomScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    slivers: [
-                      _buildSliverAppBar(),
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 12),
-                              _buildRatingSummary(avgRating, summary),
-                              const SizedBox(height: 28),
-                              const _SectionLabel(text: "BỘ LỌC ĐÁNH GIÁ"),
-                              const SizedBox(height: 16),
-                              _buildFilterChips(context),
-                              const SizedBox(height: 32),
-                              Row(
-                                children: [
-                                  const Text(
-                                    'Tất cả đánh giá',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w900,
-                                      color: _textHigh,
-                                      letterSpacing: -0.5,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _surfaceAlt,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: _border,
-                                        width: 0.5,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      '$filteredTotal',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w800,
-                                        color: _textMid,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                  return Stack(
+                    children: [
+                      CustomScrollView(
+                        controller: _scrollController,
+                        physics: const BouncingScrollPhysics(),
+                        slivers: [
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: 100),
+                          ),
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
                               ),
-                              const SizedBox(height: 20),
-                              if (reviews.isEmpty)
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 80),
-                                  child: Center(
-                                    child: Column(
-                                      children: [
-                                        Icon(
-                                          LucideIcons.messageSquareDashed,
-                                          size: 48,
-                                          color: _textLow,
-                                        ),
-                                        SizedBox(height: 16),
-                                        Text(
-                                          'Chưa có đánh giá nào phù hợp bộ lọc này.',
-                                          textAlign: TextAlign.center,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 24),
+                                  _buildRatingSummary(avgRating, summary),
+                                  const SizedBox(height: 48),
+                                  _buildFilterSection(context),
+                                  const SizedBox(height: 40),
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.baseline,
+                                    textBaseline: TextBaseline.alphabetic,
+                                    children: [
+                                      const Flexible(
+                                        child: Text(
+                                          'ĐÁNH GIÁ TỪ CỘNG ĐỒNG',
                                           style: TextStyle(
-                                            color: _textLow,
-                                            fontSize: 14,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                            color: Colors.white,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        '$filteredTotal KẾT QUẢ',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white.withValues(
+                                            alpha: 0.3,
                                           ),
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
-                                )
-                              else
-                                _buildReviewList(reviews),
-                              const SizedBox(height: 50),
-                            ],
+                                  const SizedBox(height: 24),
+                                  if (reviews.isEmpty)
+                                    _buildEmptyState()
+                                  else
+                                    _buildReviewList(reviews),
+                                  const SizedBox(height: 100),
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
+                      ),
+                      GlassmorphicHeader(
+                        scrollOffset: _scrollOffset,
+                        title: 'Góc nhìn từ người dùng',
+                        onBack: () => Navigator.pop(context),
                       ),
                     ],
                   );
@@ -174,212 +153,109 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
     );
   }
 
-  Widget _buildSliverAppBar() {
-    return SliverAppBar(
-      pinned: true,
-      backgroundColor: _bg,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      centerTitle: true,
-      leading: GestureDetector(
-        onTap: () => Navigator.pop(context),
-        child: const Icon(
-          Icons.arrow_back_rounded,
-          color: Colors.white,
-          size: 22,
-        ),
-      ),
-      title: const Text(
-        'Đánh giá sản phẩm',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w900,
-          color: _textHigh,
-          letterSpacing: 0.5,
-        ),
-      ),
-      flexibleSpace: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(color: Colors.transparent),
+  Widget _buildImmersiveBackground() {
+    return Positioned.fill(
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(0, -0.6),
+            radius: 1.5,
+            colors: [ Color(0xFF1A1A25), _bg],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildFilterChips(BuildContext context) {
-    return SizedBox(
-      height: 42,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none,
-        children: [
-          _customChip(
-            label: 'Tất cả',
-            isSelected: _selectedRating == null && !_hasImage,
-            onTap: () {
-              HapticFeedback.lightImpact();
-              setState(() {
-                _selectedRating = null;
-                _hasImage = false;
-              });
-              context.read<ReviewCubit>().loadReviews(widget.productId);
-            },
-          ),
-          ...List.generate(5, (index) {
-            final star = 5 - index;
-            return _customChip(
-              label: '$star sao',
-              icon: Icons.star,
-              isSelected: _selectedRating == star,
-              onTap: () {
-                HapticFeedback.lightImpact();
-                setState(() {
-                  _selectedRating = star;
-                  _hasImage = false;
-                });
-                context.read<ReviewCubit>().loadReviews(
-                  widget.productId,
-                  rating: star,
-                );
-              },
-            );
-          }),
-          _customChip(
-            label: 'Có hình ảnh',
-            icon: LucideIcons.image,
-            isSelected: _hasImage,
-            onTap: () {
-              HapticFeedback.lightImpact();
-              setState(() {
-                _hasImage = true;
-                _selectedRating = null;
-              });
-              context.read<ReviewCubit>().loadReviews(
-                widget.productId,
-                hasImage: true,
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _customChip({
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-    IconData? icon,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-        margin: const EdgeInsets.only(right: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? _accent : _surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected ? _accent : _border,
-            width: isSelected ? 1.5 : 0.5,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 14, color: isSelected ? Colors.black : _textLow),
-              const SizedBox(width: 6),
-            ],
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
-                color: isSelected ? Colors.black : _textMid,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
+  // bang avg rating
   Widget _buildRatingSummary(double avgRating, Map<String, dynamic> summary) {
-    final total = (summary['total'] ?? 0) as int;
+    final total = (summary['total'] as num? ?? 0).toInt();
 
+    // tinh phan tram cho thanh rating
     double getPct(int star) {
       if (total == 0) return 0.0;
-      final count = (summary['$star'] ?? 0) as int;
+      final count = (summary['$star'] as num? ?? 0).toInt();
       return count / total;
     }
 
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: _border, width: 0.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // large score
-          Column(
-            children: [
-              Text(
-                avgRating.toStringAsFixed(1),
-                style: const TextStyle(
-                  fontSize: 56,
-                  fontWeight: FontWeight.w900,
-                  height: 1.0,
-                  color: _textHigh,
-                  letterSpacing: -2,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(5, (index) {
-                  return Icon(
-                    index < avgRating.floor() ? Icons.star : Icons.star_outline,
-                    size: 16,
-                    color: index < avgRating.floor() ? _starColor : _textLow,
-                  );
-                }),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '$total đánh giá',
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: _textLow,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 32),
-          // progress bars
           Expanded(
+            flex: 4,
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildStarRow(5, getPct(5)),
-                _buildStarRow(4, getPct(4)),
-                _buildStarRow(3, getPct(3)),
-                _buildStarRow(2, getPct(2)),
-                _buildStarRow(1, getPct(1)),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        avgRating.toStringAsFixed(1),
+                        style: const TextStyle(
+                          fontSize: 56,
+                          fontWeight: FontWeight.w300,
+                          color: Colors.white,
+                          height: 1,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '/ 5.0',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white.withValues(alpha: 0.2),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: List.generate(5, (index) {
+                    final fill = (avgRating - index).clamp(0.0, 1.0);
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Icon(
+                        fill > 0.5 ? Icons.star : Icons.star_outline,
+                        size: 14,
+                        color: fill > 0.5
+                            ? _starColor
+                            : Colors.white.withValues(alpha: 0.05),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '${formatCompactNumber(total)} BÀI ĐÁNH GIÁ',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white.withValues(alpha: 0.3),
+                  ),
+                ),
               ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            flex: 5,
+            child: Column(
+              children: List.generate(5, (index) {
+                final star = 5 - index;
+                return _buildStarProgress(star, getPct(star));
+              }),
             ),
           ),
         ],
@@ -387,42 +263,41 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
     );
   }
 
-  Widget _buildStarRow(int stars, double pct) {
+  Widget _buildStarProgress(int stars, double pct) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3.5),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          SizedBox(
-            width: 12,
-            child: Text(
-              '$stars',
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                color: _textLow,
-              ),
+          Text(
+            '$stars',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              color: Colors.white.withValues(alpha: 0.3),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
             child: Container(
-              height: 5,
+              height: 2,
               decoration: BoxDecoration(
-                color: _surfaceAlt,
-                borderRadius: BorderRadius.circular(10),
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(1),
               ),
               child: FractionallySizedBox(
                 alignment: Alignment.centerLeft,
                 widthFactor: pct,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: stars >= 4 ? _starColor : _textLow,
-                    borderRadius: BorderRadius.circular(10),
+                    color: stars >= 4
+                        ? _starColor
+                        : Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(1),
                     boxShadow: stars >= 4
                         ? [
                             BoxShadow(
                               color: _starColor.withValues(alpha: 0.3),
-                              blurRadius: 4,
+                              blurRadius: 8,
                             ),
                           ]
                         : [],
@@ -436,29 +311,155 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
     );
   }
 
+  Widget _buildFilterSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'BỘ LỌC ĐÁNH GIÁ',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          height: 40,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            children: [
+              _customChip(
+                label: 'TẤT CẢ',
+                isSelected: _selectedRating == null && !_hasImage,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() {
+                    _selectedRating = null;
+                    _hasImage = false;
+                  });
+                  context.read<ReviewCubit>().loadReviews(widget.productId);
+                },
+              ),
+              ...List.generate(5, (index) {
+                final star = 5 - index;
+                return _customChip(
+                  label: '$star SAO',
+                  icon: Icons.star_outline,
+                  isSelected: _selectedRating == star,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() {
+                      _selectedRating = star;
+                      _hasImage = false;
+                    });
+                    context.read<ReviewCubit>().loadReviews(
+                      widget.productId,
+                      rating: star,
+                    );
+                  },
+                );
+              }),
+              _customChip(
+                label: 'CÓ HÌNH ẢNH',
+                icon: LucideIcons.image,
+                isSelected: _hasImage,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() {
+                    _hasImage = true;
+                    _selectedRating = null;
+                  });
+                  context.read<ReviewCubit>().loadReviews(
+                    widget.productId,
+                    hasImage: true,
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _customChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    IconData? icon,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Colors.white
+              : Colors.white.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(
+            color: isSelected
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.07),
+          ),
+        ),
+        child: Row(
+          children: [
+            if (icon != null) ...[
+              Icon(
+                icon,
+                size: 12,
+                color: isSelected
+                    ? Colors.black
+                    : Colors.white.withValues(alpha: 0.4),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                color: isSelected ? Colors.black : Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildReviewList(List<dynamic> reviews) {
     return Column(
       children: reviews.map((review) {
         return Container(
-          margin: const EdgeInsets.only(bottom: 24),
+          padding: const EdgeInsets.symmetric(vertical: 32),
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+            ),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  // avt
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 48,
+                    height: 48,
+                    padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: _accent.withValues(alpha: 0.2),
-                        width: 1.5,
+                        color: _starColor.withValues(alpha: 0.3),
                       ),
                     ),
                     child: CircleAvatar(
-                      backgroundColor: _surfaceAlt,
+                      backgroundColor: const Color(0xFF1A1A25),
                       backgroundImage: review.userAvatar != null
                           ? CachedNetworkImageProvider(review.userAvatar!)
                           : null,
@@ -466,74 +467,61 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                           ? Text(
                               review.userName.substring(0, 1).toUpperCase(),
                               style: const TextStyle(
-                                fontSize: 14,
+                                fontSize: 16,
                                 fontWeight: FontWeight.w900,
-                                color: _accent,
+                                color: _starColor,
                               ),
                             )
                           : null,
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // name & badge
-                        Row(
-                          children: [
-                            Text(
-                              review.userName,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                                color: _textHigh,
-                              ),
-                            ),
-                            if (review.isVerifiedPurchase) ...[
-                              const SizedBox(width: 6),
-                              const Icon(
-                                Icons.verified_rounded,
-                                size: 16,
-                                color: Color(0xFF0077DE),
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        // date of review
                         Text(
-                          formatDate(review.createdAt),
+                          review.userName.toUpperCase(),
                           style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: _textLow,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          formatDate(review.createdAt).toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white.withValues(alpha: 0.3),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  // stars
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+                      horizontal: 10,
+                      vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: _accentSoft,
-                      borderRadius: BorderRadius.circular(10),
+                      color: _starColor.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: _starColor.withValues(alpha: 0.1),
+                      ),
                     ),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.star, size: 14, color: _starColor),
-                        const SizedBox(width: 4),
+                        const Icon(Icons.star, size: 12, color: _starColor),
+                        const SizedBox(width: 6),
                         Text(
                           '${review.rating}',
                           style: const TextStyle(
-                            color: _accent,
+                            color: _starColor,
                             fontWeight: FontWeight.w900,
-                            fontSize: 12,
+                            fontSize: 13,
                           ),
                         ),
                       ],
@@ -541,116 +529,84 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                   ),
                 ],
               ),
-
-              const SizedBox(height: 16),
-
-              // variant tag
-              if (review.variantName != null &&
-                  review.variantName!.isNotEmpty) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _surfaceAlt,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: _border, width: 0.5),
-                  ),
+              const SizedBox(height: 20),
+              if (review.variantName != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
-                    "${review.variantName!}",
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: _textMid,
+                    "${review.variantName!.toUpperCase()}",
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: _starColor.withValues(alpha: 0.5),
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-              ],
-
-              if (review.comment != null && review.comment!.isNotEmpty) ...[
+              if (review.comment != null)
                 Text(
                   review.comment!,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: _textMid,
-                    height: 1.6,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w300,
+                    color: Colors.white.withValues(alpha: 0.7),
+                    height: 1.8,
                   ),
                 ),
-              ],
-
               if (review.images.isNotEmpty) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 SizedBox(
-                  height: 90,
+                  height: 100,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
                     itemCount: review.images.length,
-                    separatorBuilder: (context, _) => const SizedBox(width: 10),
-                    itemBuilder: (context, imgIdx) {
-                      return ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: CachedNetworkImage(
-                          imageUrl: review.images[imgIdx],
-                          width: 90,
-                          height: 90,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) =>
-                              Container(color: _surfaceAlt),
-                          errorWidget: (context, url, error) =>
-                              const Icon(LucideIcons.imageOff),
-                        ),
-                      );
-                    },
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (context, idx) => ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: CachedNetworkImage(
+                        imageUrl: review.images[idx],
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
                 ),
               ],
-
-              if (review.reply != null && review.reply!.isNotEmpty) ...[
-                const SizedBox(height: 16),
+              if (review.reply != null) ...[
+                const SizedBox(height: 24),
                 ShopReplyWidget(reply: review.reply!),
               ],
-
-              const SizedBox(height: 24),
-              Container(height: 1, color: _border.withValues(alpha: 0.5)),
             ],
           ),
         );
       }).toList(),
     );
   }
-}
 
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  const _SectionLabel({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 3,
-          height: 14,
-          decoration: BoxDecoration(
-            color: _accent,
-            borderRadius: BorderRadius.circular(2),
-          ),
+  Widget _buildEmptyState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 100),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(
+              LucideIcons.messageSquareDashed,
+              size: 48,
+              color: Colors.white.withValues(alpha: 0.1),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'CHƯA CÓ DỮ LIỆU TRẢI NGHIỆM',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.2),
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        Text(
-          text,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            color: _textLow,
-            letterSpacing: 1.5,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

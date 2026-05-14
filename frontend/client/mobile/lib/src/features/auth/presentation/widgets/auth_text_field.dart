@@ -48,27 +48,23 @@ class _AuthTextFieldState extends State<AuthTextField> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  color: const Color(0xFF14141E),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: hasError
                         ? const Color(0xFFFF4D4D)
                         : _isFocused
-                        ? const Color(0xFF0A0A0F)
-                        : const Color(0xFFE5E7EB),
+                            ? const Color(0xFFFDE047)
+                            : Colors.white.withValues(alpha: 0.08),
                     width: (_isFocused || hasError) ? 1.5 : 1,
                   ),
                   boxShadow: _isFocused
                       ? [
                           BoxShadow(
                             color: hasError
-                                ? const Color(
-                                    0xFFFF4D4D,
-                                  ).withValues(alpha: 0.06)
-                                : const Color(
-                                    0xFF0A0A0F,
-                                  ).withValues(alpha: 0.06),
-                            blurRadius: 12,
+                                ? const Color(0xFFFF4D4D).withValues(alpha: 0.1)
+                                : const Color(0xFFFDE047).withValues(alpha: 0.1),
+                            blurRadius: 20,
                             offset: const Offset(0, 4),
                           ),
                         ]
@@ -81,11 +77,12 @@ class _AuthTextFieldState extends State<AuthTextField> {
                   onChanged: (value) {
                     state.didChange(value);
                   },
+                  cursorColor: const Color(0xFFFDE047),
                   style: const TextStyle(
                     fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF0A0A0F),
-                    letterSpacing: -0.2,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    letterSpacing: 0.2,
                   ),
                   decoration: InputDecoration(
                     labelText: widget.label,
@@ -95,26 +92,27 @@ class _AuthTextFieldState extends State<AuthTextField> {
                       color: hasError
                           ? const Color(0xFFFF4D4D)
                           : _isFocused
-                          ? const Color(0xFF0A0A0F)
-                          : const Color(0xFF9CA3AF),
-                      letterSpacing: -0.1,
+                              ? const Color(0xFFFDE047)
+                              : Colors.white.withValues(alpha: 0.4),
+                      letterSpacing: 0.1,
                     ),
                     floatingLabelStyle: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
                       color: hasError
                           ? const Color(0xFFFF4D4D)
-                          : const Color(0xFF0A0A0F),
+                          : const Color(0xFFFDE047),
+                      letterSpacing: 0.5,
                     ),
                     prefixIcon: widget.prefixIcon != null
                         ? Icon(
                             widget.prefixIcon,
-                            size: 20,
+                            size: 18,
                             color: hasError
                                 ? const Color(0xFFFF4D4D)
                                 : _isFocused
-                                ? const Color(0xFF0A0A0F)
-                                : const Color(0xFFB0B0B0),
+                                    ? const Color(0xFFFDE047)
+                                    : Colors.white.withValues(alpha: 0.3),
                           )
                         : null,
                     suffixIcon: widget.isPassword
@@ -125,17 +123,17 @@ class _AuthTextFieldState extends State<AuthTextField> {
                               _obscureText
                                   ? LucideIcons.eyeOff
                                   : LucideIcons.eye,
-                              size: 20,
+                              size: 18,
                               color: hasError
                                   ? const Color(0xFFFF4D4D)
-                                  : const Color(0xFF9CA3AF),
+                                  : Colors.white.withValues(alpha: 0.3),
                             ),
                           )
                         : null,
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 18,
+                      horizontal: 24,
+                      vertical: 20,
                     ),
                   ),
                 ),
@@ -148,8 +146,9 @@ class _AuthTextFieldState extends State<AuthTextField> {
                   state.errorText!,
                   style: const TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                     color: Color(0xFFFF4D4D),
+                    letterSpacing: 0.3,
                   ),
                 ),
               ),
@@ -159,3 +158,4 @@ class _AuthTextFieldState extends State<AuthTextField> {
     );
   }
 }
+

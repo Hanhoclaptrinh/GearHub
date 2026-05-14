@@ -1,20 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
-import 'package:mobile/src/shared/models/product_variant_model.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
-
-const _bg = Color(0xFF07070A);
-const _surface = Color(0xFF14141E);
-const _surfaceAlt = Color(0xFF1C1C28);
-const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFF6366F1);
-const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
-const _textLow = Color(0xFF4A4A62);
 
 class ProductInfoSection extends StatefulWidget {
   final ProductModel product;
@@ -52,25 +42,461 @@ class ProductInfoSection extends StatefulWidget {
 
 class _ProductInfoSectionState extends State<ProductInfoSection> {
   bool _isDescriptionExpanded = false;
+  bool _isSpecsExpanded = false;
 
-  // color
-  String _getColorKey() {
-    if (widget.product.attributeConfig.isNotEmpty) {
-      return widget.product.attributeConfig.firstWhere((k) {
-        final lower = k.toLowerCase();
-        return lower.contains('color') ||
-            lower.contains('màu') ||
-            lower.contains('mau');
-      }, orElse: () => '');
-    }
-    return '';
+  @override
+  Widget build(BuildContext context) {
+    final colorKey = _getColorKey();
+    final List<String> uniqueColors = colorKey.isNotEmpty
+        ? _getUniqueValues(colorKey).cast<String>().toList()
+        : <String>[];
+    final otherConfigKeys = widget.product.attributeConfig
+        .where((k) => k != colorKey)
+        .toList();
+
+    return Container(
+      color: Colors.transparent,
+      padding: const EdgeInsets.only(top: 40, bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (colorKey.isNotEmpty) ...[
+            _buildSectionHeader("Màu sắc"),
+            const SizedBox(height: 16),
+            _buildColorSelector(colorKey, uniqueColors),
+            const SizedBox(height: 40),
+          ],
+
+          if (otherConfigKeys.isNotEmpty) ...[
+            ...otherConfigKeys.map((key) {
+              final values = _getUniqueValues(key);
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHeader(key),
+                  const SizedBox(height: 16),
+                  _buildPillSelector(key, values),
+                  const SizedBox(height: 40),
+                ],
+              );
+            }),
+          ],
+
+          // qty config
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Số lượng",
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                _buildQuantityControl(),
+              ],
+            ),
+          ),
+          const SizedBox(height: 48),
+          // specs config
+          if (widget.product.commonSpecs != null &&
+              widget.product.commonSpecs!.isNotEmpty) ...[
+            _buildSectionHeader("THÔNG SỐ KỸ THUẬT"),
+            const SizedBox(height: 24),
+            _buildSpecsTable(widget.product.commonSpecs!),
+            const SizedBox(height: 48),
+          ],
+          // desc config
+          _buildSectionHeader("MÔ TẢ SẢN PHẨM"),
+          const SizedBox(height: 16),
+          _buildEditorialDescription(),
+        ],
+      ),
+    );
   }
 
-  List<String> _getDisplayConfigKeys() {
-    final colorKey = _getColorKey();
-    return widget.product.attributeConfig
-        .where((key) => key != colorKey)
-        .toList();
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColorSelector(String key, List<String> values) {
+    final selectedVal = widget.selectedAttributes[key] ?? "";
+
+    return SizedBox(
+      height: 75,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: values.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 16),
+        itemBuilder: (context, index) {
+          final val = values[index];
+          final isSelected = selectedVal == val;
+
+          return GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              widget.onAttributeChanged(key, val);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.fastOutSlowIn,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+
+              child: Row(
+                children: [
+                  // The Color Circle
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 400),
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isSelected ? Colors.white : Colors.transparent,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.surface,
+                        image: DecorationImage(
+                          image: CachedNetworkImageProvider(
+                            _getColorImageUrl(key, val),
+                          ),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // dynamic label
+                  // click color -> hien ten mau ben duoi
+                  ClipRect(
+                    child: AnimatedAlign(
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeInOutCubic,
+                      alignment: Alignment.centerLeft,
+                      widthFactor: isSelected ? 1.0 : 0.0,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          val.toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPillSelector(String key, List<String> values) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: values.map((val) {
+          final isSelected = widget.selectedAttributes[key] == val;
+          return GestureDetector(
+            onTap: () => widget.onAttributeChanged(key, val),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.white : AppColors.surface,
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: Text(
+                val,
+                style: TextStyle(
+                  color: isSelected ? Colors.black : Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildSpecsTable(Map<String, dynamic> specs) {
+    final entries = specs.entries.toList();
+    final displayEntries = _isSpecsExpanded
+        ? entries
+        : entries.take(5).toList();
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            children: displayEntries.map((entry) {
+              return Container(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: Text(
+                        entry.key.toUpperCase(),
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.4),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      flex: 6,
+                      child: Text(
+                        entry.value.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w300,
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        if (entries.length > 5) ...[
+          const SizedBox(height: 24),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              setState(() => _isSpecsExpanded = !_isSpecsExpanded);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(100),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _isSpecsExpanded ? "THU GỌN" : "XEM TẤT CẢ THÔNG SỐ",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    _isSpecsExpanded
+                        ? LucideIcons.chevronUp
+                        : LucideIcons.chevronDown,
+                    size: 14,
+                    color: Colors.white,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildEditorialDescription() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AnimatedCrossFade(
+            firstChild: Text(
+              widget.product.description,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 15,
+                height: 1.8,
+                fontWeight: FontWeight.w300,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            secondChild: Text(
+              widget.product.description,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 15,
+                height: 1.8,
+                fontWeight: FontWeight.w300,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            crossFadeState: _isDescriptionExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 400),
+          ),
+          const SizedBox(height: 24),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              setState(() => _isDescriptionExpanded = !_isDescriptionExpanded);
+            },
+            child: Text(
+              _isDescriptionExpanded ? "ẨN BỚT" : "XEM CHI TIẾT",
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuantityControl() {
+    final atMax = widget.quantity >= widget.maxQuantity;
+    final atMin = widget.quantity <= 1;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(100),
+            border: Border.all(color: AppColors.borderSubtle),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildQtyBtn(
+                icon: LucideIcons.minus,
+                isDisabled: atMin,
+                onTap: widget.onDecrement,
+                onLongPress: widget.onLongPressDecrement,
+                onLongPressEnd: widget.onLongPressEnd,
+              ),
+              Container(
+                width: 40,
+                alignment: Alignment.center,
+                child: Text(
+                  "${widget.quantity}",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              _buildQtyBtn(
+                icon: LucideIcons.plus,
+                isDisabled: atMax,
+                onTap: widget.onIncrement,
+                onLongPress: widget.onLongPressIncrement,
+                onLongPressEnd: widget.onLongPressEnd,
+              ),
+            ],
+          ),
+        ),
+        if (atMax && widget.maxQuantity > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 8, right: 4),
+            child: Text(
+              "Giới hạn kho: ${widget.maxQuantity} sản phẩm",
+              style: const TextStyle(
+                color: Color(0xFFEF4444),
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildQtyBtn({
+    required IconData icon,
+    required bool isDisabled,
+    required VoidCallback onTap,
+    required VoidCallback onLongPress,
+    required VoidCallback onLongPressEnd,
+  }) {
+    return GestureDetector(
+      onTap: isDisabled ? null : onTap,
+      onLongPress: isDisabled ? null : onLongPress,
+      onLongPressUp: onLongPressEnd,
+      onLongPressEnd: (_) => onLongPressEnd(),
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: isDisabled
+              ? Colors.transparent
+              : Colors.white.withValues(alpha: 0.05),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          icon,
+          size: 16,
+          color: isDisabled ? Colors.white24 : Colors.white,
+        ),
+      ),
+    );
+  }
+
+  String _getColorKey() {
+    return widget.product.attributeConfig.firstWhere(
+      (k) =>
+          k.toLowerCase().contains('màu') || k.toLowerCase().contains('color'),
+      orElse: () => '',
+    );
   }
 
   List<String> _getUniqueValues(String key) {
@@ -82,765 +508,11 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
         .toList();
   }
 
-  ProductVariantModel? get _currentVariant {
-    if (widget.product.variants.isEmpty) return null;
-    for (final v in widget.product.variants) {
-      final allMatch = widget.selectedAttributes.entries.every(
-        (entry) => v.attributes[entry.key]?.toString() == entry.value,
-      );
-      if (allMatch) return v;
-    }
-    return widget.product.variants.first;
-  }
-
-  Map<String, String> get _specs {
-    final Map<String, String> display = {};
-    if (widget.product.commonSpecs != null &&
-        widget.product.commonSpecs!.isNotEmpty) {
-      int count = 0;
-      widget.product.commonSpecs!.forEach((key, value) {
-        if (count < 7) {
-          display[key] = value.toString();
-          count++;
-        }
-      });
-    }
-
-    if (display.isEmpty) {
-      final configKeys = widget.product.attributeConfig.toSet();
-      final variant = _currentVariant;
-      if (variant != null) {
-        variant.attributes.forEach((key, value) {
-          if (!configKeys.contains(key)) {
-            final formattedKey = key[0].toUpperCase() + key.substring(1);
-            display[formattedKey] = value.toString();
-          }
-        });
-      }
-    }
-    return display;
-  }
-
-  Map<String, String> get _fullSpecs {
-    final Map<String, String> display = {};
-    if (widget.product.commonSpecs != null) {
-      widget.product.commonSpecs!.forEach((key, value) {
-        display[key] = value.toString();
-      });
-    }
-
-    final variant = _currentVariant;
-    if (variant != null) {
-      variant.attributes.forEach((key, value) {
-        final formattedKey = key[0].toUpperCase() + key.substring(1);
-        display[formattedKey] = value.toString();
-      });
-    }
-
-    return display.isEmpty ? _specs : display;
-  }
-
-  void _showFullSpecs() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: _surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Thuộc tính sản phẩm',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  color: _textHigh,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Expanded(
-                child: ListView(
-                  physics: const BouncingScrollPhysics(),
-                  children: _fullSpecs.entries
-                      .map(
-                        (e) => Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                flex: 2,
-                                child: Text(
-                                  e.key,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: _textMid,
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 3,
-                                child: Text(
-                                  e.value,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: _textHigh,
-                                  ),
-                                  textAlign: TextAlign.right,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+  String _getColorImageUrl(String key, String val) {
+    final v = widget.product.variants.firstWhere(
+      (v) => v.attributes[key]?.toString() == val,
+      orElse: () => widget.product.variants.first,
     );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorKey = _getColorKey();
-    final uniqueColors = colorKey.isNotEmpty ? _getUniqueValues(colorKey) : [];
-    final displayKeys = _getDisplayConfigKeys();
-
-    return Container(
-      color: _bg,
-      padding: const EdgeInsets.symmetric(vertical: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // --- color selection (mini thumbnails) ---
-          if (colorKey.isNotEmpty && uniqueColors.isNotEmpty) ...[
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.0),
-              child: Text(
-                'Màu sắc',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  color: _textHigh,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 54,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                clipBehavior: Clip.none,
-                itemCount: uniqueColors.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (context, index) {
-                  final colorValue = uniqueColors[index];
-                  final isSelected =
-                      widget.selectedAttributes[colorKey] == colorValue;
-
-                  final variant = widget.product.variants.firstWhere(
-                    (v) =>
-                        v.isActive &&
-                        v.attributes[colorKey]?.toString() == colorValue,
-                    orElse: () => widget.product.variants.first,
-                  );
-
-                  final anyInStock = widget.product.variants.any(
-                    (v) =>
-                        v.isActive &&
-                        v.attributes[colorKey]?.toString() == colorValue &&
-                        v.stock > 0,
-                  );
-
-                  return GestureDetector(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      widget.onAttributeChanged(colorKey, colorValue);
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOutCubic,
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: BoxDecoration(
-                        color: isSelected ? _accent : _surfaceAlt,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isSelected ? _accent : _border,
-                          width: 1.5,
-                        ),
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: _accent.withValues(alpha: 0.4),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ]
-                            : [],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: _surface,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isSelected ? Colors.white30 : _border,
-                                width: 1.5,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.2),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                              image:
-                                  (variant.imageUrl != null ||
-                                      widget.product.image.isNotEmpty)
-                                  ? DecorationImage(
-                                      image: CachedNetworkImageProvider(
-                                        variant.imageUrl ??
-                                            widget.product.image,
-                                      ),
-                                      fit: BoxFit.cover,
-                                      colorFilter: !anyInStock
-                                          ? const ColorFilter.mode(
-                                              Colors.grey,
-                                              BlendMode.saturation,
-                                            )
-                                          : null,
-                                    )
-                                  : null,
-                            ),
-                            child: !anyInStock
-                                ? Center(
-                                    child: Container(
-                                      width: 2,
-                                      height: 24,
-                                      transform: Matrix4.rotationZ(0.785),
-                                      color: isSelected
-                                          ? Colors.white70
-                                          : _textLow,
-                                    ),
-                                  )
-                                : null,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            colorValue.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: isSelected
-                                  ? FontWeight.w900
-                                  : FontWeight.w700,
-                              color: isSelected ? Colors.white : _textMid,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 36),
-          ],
-
-          if (displayKeys.isNotEmpty) ...[
-            ...displayKeys.map((key) {
-              final uniqueValues = _getUniqueValues(key);
-              if (uniqueValues.isEmpty) return const SizedBox.shrink();
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Text(
-                      key,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: _textHigh,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildConfigSelector(
-                    key,
-                    uniqueValues,
-                    widget.selectedAttributes[key],
-                  ),
-                  const SizedBox(height: 36),
-                ],
-              );
-            }),
-          ],
-
-          // --- quantity selector ---
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Số lượng',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: _textHigh,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                _buildQuantitySelector(),
-              ],
-            ),
-          ),
-          () {
-            final cartState = context.watch<CartCubit>().state;
-            int existingQty = 0;
-            if (cartState.cart != null && _currentVariant != null) {
-              final existing = cartState.cart!.items
-                  .where((i) => i.productVariant.id == _currentVariant!.id)
-                  .firstOrNull;
-              existingQty = existing?.quantity ?? 0;
-            }
-            if (existingQty + widget.quantity >= widget.maxQuantity) {
-              return Padding(
-                padding: const EdgeInsets.only(top: 8, left: 24, right: 24),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    'Số lượng tối đa bạn có thể mua là ${widget.maxQuantity} sản phẩm\n(Bạn đã có $existingQty trong giỏ)',
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFFEF4444),
-                      height: 1.3,
-                    ),
-                  ),
-                ),
-              );
-            }
-            return const SizedBox.shrink();
-          }(),
-          const SizedBox(height: 36),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: _surface,
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: _border, width: 1.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 15,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 4,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          color: _accent,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'MÔ TẢ SẢN PHẨM',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                          color: _textHigh,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  AnimatedCrossFade(
-                    firstChild: Text(
-                      widget.product.description,
-                      maxLines: 4,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        color: _textMid.withValues(alpha: 0.8),
-                        height: 1.6,
-                      ),
-                    ),
-                    secondChild: Text(
-                      widget.product.description,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        color: _textMid.withValues(alpha: 0.8),
-                        height: 1.6,
-                      ),
-                    ),
-                    crossFadeState: _isDescriptionExpanded
-                        ? CrossFadeState.showSecond
-                        : CrossFadeState.showFirst,
-                    duration: const Duration(milliseconds: 300),
-                  ),
-                  const SizedBox(height: 20),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _isDescriptionExpanded = !_isDescriptionExpanded;
-                      });
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: _surfaceAlt,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: _border),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            (_isDescriptionExpanded
-                                    ? 'THU GỌN'
-                                    : 'XEM THÊM CHI TIẾT')
-                                .toUpperCase(),
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: _textHigh,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Icon(
-                            _isDescriptionExpanded
-                                ? LucideIcons.chevronUp
-                                : LucideIcons.chevronDown,
-                            size: 14,
-                            color: _textHigh,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 36),
-
-          if (_specs.isNotEmpty) ...[
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.0),
-              child: Text(
-                'Thuộc tính chung',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  color: _textHigh,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: _buildSpecsList(),
-            ),
-            const SizedBox(height: 20),
-            Center(
-              child: GestureDetector(
-                onTap: _showFullSpecs,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _surfaceAlt,
-                    border: Border.all(color: _border),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'Xem thêm thuộc tính',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: _textHigh,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildConfigSelector(
-    String key,
-    List<String> values,
-    String? selectedValue,
-  ) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      clipBehavior: Clip.none,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Row(
-          children: values.map((val) {
-            final isSelected = selectedValue == val;
-
-            final comboExists = widget.isComboAvailable(key, val);
-            final hasStock = widget.isValueInStock(key, val);
-
-            final isDisabled = !comboExists;
-            final isOutOfStock = comboExists && !hasStock;
-
-            return GestureDetector(
-              onTap: isDisabled
-                  ? null
-                  : () {
-                      HapticFeedback.selectionClick();
-                      widget.onAttributeChanged(key, val);
-                    },
-              child: Opacity(
-                opacity: isDisabled ? 0.35 : (isOutOfStock ? 0.55 : 1.0),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOutCubic,
-                  margin: const EdgeInsets.only(right: 14),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 18,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isSelected ? _accent : _surfaceAlt,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isSelected
-                          ? _accent
-                          : isDisabled
-                          ? _border.withValues(alpha: 0.5)
-                          : _border,
-                      width: 1.5,
-                    ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: _accent.withValues(alpha: 0.4),
-                              blurRadius: 16,
-                              offset: const Offset(0, 8),
-                            ),
-                          ]
-                        : [],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        val.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isSelected
-                              ? FontWeight.w900
-                              : FontWeight.w800,
-                          color: isSelected ? Colors.white : _textHigh,
-                          letterSpacing: 0.5,
-                          decoration: isOutOfStock
-                              ? TextDecoration.lineThrough
-                              : null,
-                        ),
-                      ),
-                      if (isOutOfStock) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          'HẾT HÀNG',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            color: isSelected
-                                ? Colors.white70
-                                : const Color(0xFFEF4444),
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSpecsList() {
-    return Column(
-      children: _specs.entries.map((entry) {
-        final isLast = entry.key == _specs.entries.last.key;
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      entry.key,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: _textMid,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 3,
-                    child: Text(
-                      entry.value,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: _textHigh,
-                      ),
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (!isLast) Container(height: 1, color: _border),
-          ],
-        );
-      }).toList(),
-    );
-  }
-
-  // qty selector
-  Widget _buildQuantitySelector() {
-    return Container(
-      height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      decoration: BoxDecoration(
-        color: _surfaceAlt,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _qtyBtn(
-            icon: LucideIcons.minus,
-            onTap: widget.onDecrement,
-            onLongPress: widget.onLongPressDecrement,
-            onLongPressUp: widget.onLongPressEnd,
-            disabled: widget.quantity <= 1,
-          ),
-          Container(
-            constraints: const BoxConstraints(minWidth: 40),
-            alignment: Alignment.center,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: ScaleTransition(scale: animation, child: child),
-                );
-              },
-              child: Text(
-                '${widget.quantity}',
-                key: ValueKey<int>(widget.quantity),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  fontFeatures: [FontFeature.tabularFigures()],
-                  color: _textHigh,
-                ),
-              ),
-            ),
-          ),
-          _qtyBtn(
-            icon: LucideIcons.plus,
-            onTap: widget.onIncrement,
-            onLongPress: widget.onLongPressIncrement,
-            onLongPressUp: widget.onLongPressEnd,
-            disabled: widget.quantity >= widget.maxQuantity,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _qtyBtn({
-    required IconData icon,
-    required VoidCallback onTap,
-    required VoidCallback onLongPress,
-    required VoidCallback onLongPressUp,
-    bool disabled = false,
-  }) {
-    return GestureDetector(
-      onTap: disabled
-          ? null
-          : () {
-              HapticFeedback.lightImpact();
-              onTap();
-            },
-      onLongPress: disabled ? null : onLongPress,
-      onLongPressUp: onLongPressUp,
-      onLongPressCancel: onLongPressUp,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.transparent,
-        ),
-        child: Opacity(
-          opacity: disabled ? 0.2 : 1.0,
-          child: Icon(icon, size: 18, color: _textHigh),
-        ),
-      ),
-    );
+    return v.imageUrl ?? widget.product.image;
   }
 }

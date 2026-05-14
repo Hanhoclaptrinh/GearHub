@@ -1,8 +1,9 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/di/injection.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/features/auth/presentation/pages/login_page.dart';
 import 'package:mobile/src/features/auth/presentation/pages/register_page.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
@@ -25,9 +26,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    const bg = Color(0xFF07070A);
-    const textMid = Color(0xFF9191A8);
-
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthError) {
@@ -39,90 +37,110 @@ class _UserProfilePageState extends State<UserProfilePage> {
         child: AnnotatedRegion<SystemUiOverlayStyle>(
           value: SystemUiOverlayStyle.light,
           child: Scaffold(
-            backgroundColor: bg,
+            backgroundColor: AppColors.background,
             body: BlocBuilder<AuthCubit, AuthState>(
               builder: (context, state) {
                 final user = state is AuthAuthenticated ? state.user : null;
                 final isLoggedIn = state is AuthAuthenticated;
 
-                return RefreshIndicator(
-                  color: const Color(0xFF3B82F6),
-                  backgroundColor: const Color(0xFF0F0F1A),
-                  onRefresh: () async {
-                    if (isLoggedIn) {
-                      await context.read<OrdersCubit>().fetchMyOrders(
-                        status: 'ALL',
-                      );
-                    }
-                  },
-                  child: CustomScrollView(
-                    physics: const BouncingScrollPhysics(
-                      parent: AlwaysScrollableScrollPhysics(),
+                return Stack(
+                  children: [
+                    Positioned(
+                      top: -100,
+                      right: -100,
+                      child: Container(
+                        width: 300,
+                        height: 300,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFFFDE047).withValues(alpha: 0.03),
+                        ),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
+                          child: Container(color: Colors.transparent),
+                        ),
+                      ),
                     ),
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: SafeArea(
-                          bottom: false,
-                          child: Column(children: [ProfileHeader(user: user)]),
+
+                    RefreshIndicator(
+                      color: const Color(0xFFFDE047),
+                      backgroundColor: const Color(0xFF14141E),
+                      strokeWidth: 2,
+                      onRefresh: () async {
+                        if (isLoggedIn) {
+                          await context.read<OrdersCubit>().fetchMyOrders(
+                            status: 'ALL',
+                          );
+                        }
+                      },
+                      child: CustomScrollView(
+                        physics: const BouncingScrollPhysics(
+                          parent: AlwaysScrollableScrollPhysics(),
                         ),
-                      ),
-
-                      SliverPadding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                        ),
-                        sliver: SliverList(
-                          delegate: SliverChildListDelegate([
-                            if (isLoggedIn) ...[
-                              const OrderStatusCard(),
-                              const SizedBox(height: 32),
-                              const UtilitiesGrid(),
-                            ] else ...[
-                              const SizedBox(height: 24),
-                              _buildLoginCTA(context),
-                            ],
-
-                            const SizedBox(height: 24),
-
-                            ProfileMenuCard(
-                              groupLabel: 'CÀI ĐẶT HỆ THỐNG',
-                              items: [
-                                ProfileMenuItem(
-                                  title: 'Chế độ tối',
-                                  icon: LucideIcons.moon,
-                                  isToggle: true,
-                                  toggleValue: _isDarkMode,
-                                  onToggle: (val) {
-                                    setState(() => _isDarkMode = val);
-                                    HapticFeedback.selectionClick();
-                                  },
-                                ),
-                                if (isLoggedIn) ...[
-                                  ProfileMenuItem(
-                                    title: 'Sổ địa chỉ',
-                                    icon: LucideIcons.mapPin,
-                                    onTap: () {},
-                                  ),
-                                  ProfileMenuItem(
-                                    title: 'Thanh toán',
-                                    icon: LucideIcons.creditCard,
-                                    onTap: () {},
-                                  ),
+                        slivers: [
+                          SliverToBoxAdapter(
+                            child: SafeArea(
+                              bottom: false,
+                              child: Column(
+                                children: [
+                                  ProfileHeader(user: user),
                                 ],
-                              ],
+                              ),
                             ),
-                            const SizedBox(height: 32),
+                          ),
 
-                            if (isLoggedIn) _buildLogoutButton(context),
+                          SliverPadding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            sliver: SliverList(
+                              delegate: SliverChildListDelegate([
+                                if (isLoggedIn) ...[
+                                  const OrderStatusCard(),
+                                  const SizedBox(height: 48),
+                                  const UtilitiesGrid(),
+                                ] else ...[
+                                  const SizedBox(height: 40),
+                                  _buildLoginCTA(context),
+                                ],
 
-                            const SizedBox(height: 40),
-                            _buildFooter(textMid),
-                            const SizedBox(height: 32),
-                          ]),
-                        ),
+                                const SizedBox(height: 48),
+
+                                ProfileMenuCard(
+                                  groupLabel: 'CÀI ĐẶT HỆ THỐNG',
+                                  items: [
+                                    ProfileMenuItem(
+                                      title: 'Chế độ tối',
+                                      isToggle: true,
+                                      toggleValue: _isDarkMode,
+                                      onToggle: (val) {
+                                        setState(() => _isDarkMode = val);
+                                        HapticFeedback.selectionClick();
+                                      },
+                                    ),
+                                    if (isLoggedIn) ...[
+                                      ProfileMenuItem(
+                                        title: 'Địa chỉ đã lưu',
+                                        onTap: () {},
+                                      ),
+                                      ProfileMenuItem(
+                                        title: 'Phương thức thanh toán',
+                                        onTap: () {},
+                                      ),
+                                    ],
+                                  ],
+                                ),
+
+                                const SizedBox(height: 60),
+
+                                if (isLoggedIn) _buildQuietLogout(context),
+
+                                const SizedBox(height: 100),
+                              ]),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 );
               },
             ),
@@ -132,45 +150,39 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
-  Widget _buildLogoutButton(BuildContext context) {
+
+  Widget _buildQuietLogout(BuildContext context) {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, state) {
         final isLoading = state is AuthLoading;
 
-        return GestureDetector(
-          onTap: isLoading ? null : () => _showLogoutConfirmation(context),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-              vertical: 18,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.02),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: const Color(0xFFFF4D4D).withValues(alpha: 0.1),
-                width: 0.8,
-              ),
-            ),
-            alignment: Alignment.center,
-            child: isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Color(0xFFFF4D4D),
+        return Center(
+          child: GestureDetector(
+            onTap: isLoading
+                ? null
+                : () => _showQuietLogoutConfirmation(context),
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+              child: isLoading
+                  ? const SizedBox(
+                      height: 12,
+                      width: 12,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1.5,
+                        color: Colors.white24,
+                      ),
+                    )
+                  : Text(
+                      'ĐĂNG XUẤT',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.error.withValues(alpha: 0.8),
+                        letterSpacing: 2,
+                      ),
                     ),
-                  )
-                : const Text(
-                    'ĐĂNG XUẤT',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFFFF4D4D),
-                      letterSpacing: 2,
-                    ),
-                  ),
+            ),
           ),
         );
       },
@@ -178,194 +190,180 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 
   Widget _buildLoginCTA(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.05),
-          width: 0.8,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'TÙY CHỌN ĐĂNG NHẬP',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: Colors.white.withValues(alpha: 0.3),
+          ),
         ),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.03),
-              shape: BoxShape.circle,
+        const SizedBox(height: 24),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(40),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.05),
+              width: 0.8,
             ),
-            child: const Icon(
-              LucideIcons.userRound,
-              size: 32,
-              color: Color(0xFF4A4A62),
-            ),
+            borderRadius: BorderRadius.circular(16),
           ),
-          const SizedBox(height: 20),
-          const Text(
-            'MỞ KHÓA ĐẶC QUYỀN',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              letterSpacing: 1.5,
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'Đăng nhập để trải nghiệm hệ sinh thái GearHub Premium fen nhé!',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              color: Color(0xFF9191A8),
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Row(
+          child: Column(
             children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => Navigator.of(
-                    context,
-                  ).push(MaterialPageRoute(builder: (_) => const LoginPage())),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF3B82F6),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    alignment: Alignment.center,
-                    child: const Text(
-                      'ĐĂNG NHẬP',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 12,
-                        color: Colors.white,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ),
+              const Text(
+                'MỞ KHÓA TOÀN BỘ TRẢI NGHIỆM',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w200,
+                  color: Colors.white,
                 ),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const RegisterPage()),
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.03),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.1),
-                        width: 0.8,
-                      ),
-                    ),
-                    alignment: Alignment.center,
-                    child: const Text(
-                      'ĐĂNG KÝ',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 12,
-                        color: Colors.white,
-                        letterSpacing: 1,
+              const SizedBox(height: 40),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildAuthTile(
+                      'ĐĂNG NHẬP',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const LoginPage()),
                       ),
                     ),
                   ),
-                ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: _buildAuthTile(
+                      'THAM GIA',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const RegisterPage()),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showLogoutConfirmation(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF0F0F1A),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text(
-          'ĐĂNG XUẤT',
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            fontSize: 16,
-            color: Colors.white,
-            letterSpacing: 1.5,
-          ),
-        ),
-        content: const Text(
-          'Xác nhận kết thúc phiên đăng nhập của fen?',
-          style: TextStyle(color: Color(0xFF9191A8), fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text(
-              'HỦY',
-              style: TextStyle(
-                color: Color(0xFF6B7280),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              context.read<AuthCubit>().logout();
-            },
-            child: const Text(
-              'ĐĂNG XUẤT',
-              style: TextStyle(
-                color: Color(0xFFFF4D4D),
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFooter(Color textMid) {
-    return Column(
-      children: [
-        const Text(
-          'GEARHUB PREMIUM',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w900,
-            color: Colors.white,
-            letterSpacing: 3,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'VERSION 2.0.0 "PRESTIGE"',
-          style: TextStyle(
-            fontSize: 8,
-            fontWeight: FontWeight.w700,
-            color: textMid.withValues(alpha: 0.4),
-            letterSpacing: 1.5,
           ),
         ),
       ],
     );
   }
 
+  Widget _buildAuthTile(String label, {required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: 50,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.03),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.05),
+            width: 0.6,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showQuietLogoutConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF0A0A0A),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          contentPadding: const EdgeInsets.fromLTRB(32, 40, 32, 24),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'XÁC NHẬN ĐĂNG XUẤT',
+                style: TextStyle(
+                  fontWeight: FontWeight.w200,
+                  fontSize: 16,
+                  color: Colors.white,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Fen chắc chắn muốn kết thúc phiên đăng nhập tuyệt vời này chứ?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.4),
+                  fontSize: 12,
+                  height: 1.6,
+                ),
+              ),
+              const SizedBox(height: 40),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: Text(
+                        'HỦY',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.pop(dialogContext);
+                        context.read<AuthCubit>().logout();
+                      },
+                      child: const Text(
+                        'XÁC NHẬN',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showErrorSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: const Color(0xFFFF4D4D),
+        content: Text(
+          message,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+        backgroundColor: const Color(0xFF1A1A1A),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: const EdgeInsets.all(32),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       ),
     );
   }

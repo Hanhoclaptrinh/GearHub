@@ -18,24 +18,24 @@ class ProfileMenuCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          padding: const EdgeInsets.only(left: 8, bottom: 16),
           child: Text(
-            groupLabel,
-            style: const TextStyle(
-              fontSize: 10,
+            groupLabel.toUpperCase(),
+            style: TextStyle(
+              fontSize: 12,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF9191A8),
-              letterSpacing: 2,
+              color: Colors.white.withValues(alpha: 0.2),
+              letterSpacing: 1.0,
             ),
           ),
         ),
         Container(
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.02),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: Colors.white.withValues(alpha: 0.05),
-              width: 0.8,
+              width: 1,
             ),
           ),
           child: Column(
@@ -47,12 +47,12 @@ class ProfileMenuCard extends StatelessWidget {
                 children: [
                   _MenuItemWidget(item: item),
                   if (!isLast)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Divider(
-                        height: 1,
-                        color: Colors.white.withValues(alpha: 0.03),
-                      ),
+                    Divider(
+                      height: 1,
+                      thickness: 0.5,
+                      color: Colors.white.withValues(alpha: 0.05),
+                      indent: 20,
+                      endIndent: 20,
                     ),
                 ],
               );
@@ -71,38 +71,30 @@ class _MenuItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const textHigh = Colors.white;
-    const textLow = Color(0xFF9191A8);
-    const accent = Color(0xFF3B82F6);
-
     if (item.isToggle) {
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                if (item.icon != null) ...[
-                  Icon(item.icon, size: 20, color: textLow),
-                  const SizedBox(width: 16),
-                ],
-                Text(
-                  item.title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: textHigh,
-                  ),
-                ),
-              ],
+            Text(
+              item.title,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+                letterSpacing: 0.2,
+              ),
             ),
             Transform.scale(
               scale: 0.8,
               child: Switch.adaptive(
                 value: item.toggleValue ?? false,
                 onChanged: item.onToggle,
-                activeTrackColor: accent,
+                activeTrackColor: const Color(
+                  0xFFFDE047,
+                ).withValues(alpha: 0.3),
+                activeColor: const Color(0xFFFDE047),
               ),
             ),
           ],
@@ -117,25 +109,22 @@ class _MenuItemWidget extends StatelessWidget {
           HapticFeedback.lightImpact();
           item.onTap?.call();
         },
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (item.icon != null) ...[
-                    Icon(item.icon, size: 20, color: textLow),
-                    const SizedBox(width: 16),
-                  ],
                   Text(
                     item.title,
                     style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: textHigh,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                      letterSpacing: 0.2,
                     ),
                   ),
                   if (item.badge != null) ...[
@@ -146,26 +135,26 @@ class _MenuItemWidget extends StatelessWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: accent.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(6),
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        item.badge!,
-                        style: const TextStyle(
-                          fontSize: 9,
+                        item.badge!.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 7,
                           fontWeight: FontWeight.w900,
-                          color: accent,
-                          letterSpacing: 0.5,
+                          color: Colors.white.withValues(alpha: 0.3),
+                          letterSpacing: 1,
                         ),
                       ),
                     ),
                   ],
                 ],
               ),
-              const Icon(
+              Icon(
                 LucideIcons.chevronRight,
-                size: 16,
-                color: Color(0xFF4A4A62),
+                size: 14,
+                color: Colors.white.withValues(alpha: 0.1),
               ),
             ],
           ),

@@ -13,7 +13,7 @@ class ReviewLoading extends ReviewState {}
 
 class ReviewLoaded extends ReviewState {
   final List<ReviewEntity> reviews;
-  final Map<String, int> summary;
+  final Map<String, dynamic> summary;
   final int filteredTotal;
   final bool hasMore;
 

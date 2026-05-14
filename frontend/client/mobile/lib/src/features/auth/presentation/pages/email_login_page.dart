@@ -54,27 +54,25 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
 
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
-        // neu login thanh cong
-        // chuyen toi main screen
         if (state is AuthAuthenticated) {
           Navigator.of(context).popUntil((route) => route.isFirst);
         } else if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),
-              backgroundColor: Colors.redAccent,
+              backgroundColor: const Color(0xFFFF4D4D),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
           );
         }
       },
       child: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.dark,
+        value: SystemUiOverlayStyle.light,
         child: Scaffold(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          backgroundColor: const Color(0xFF07070A),
           body: SafeArea(
             child: CustomScrollView(
               physics: const BouncingScrollPhysics(),
@@ -82,52 +80,64 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: const EdgeInsets.symmetric(horizontal: 28),
                     child: Form(
                       key: _formKey,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 12),
-                          IconButton(
-                            onPressed: () {
+                          GestureDetector(
+                            onTap: () {
                               HapticFeedback.lightImpact();
                               Navigator.of(context).pop();
                             },
-                            icon: const Icon(
-                              Icons.arrow_back_ios_rounded,
-                              color: Color(0xFF1F2937),
+                            child: Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF14141E),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.arrow_back_ios_new_rounded,
+                                color: Colors.white,
+                                size: 18,
+                              ),
                             ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
                           ),
 
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 48),
 
                           // header
                           const Text(
-                            'Chào mừng trở lại! 👋',
+                            'CHÀO MỪNG\nTRỞ LẠI! 👋',
                             style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF111827),
-                              letterSpacing: -1,
+                              fontSize: 36,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: -1.5,
+                              height: 1.2,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 16),
                           Text(
-                            'Vui lòng đăng nhập để tiếp tục sử dụng các tính năng bảo mật.',
+                            'Vui lòng đăng nhập để tiếp tục trải nghiệm không gian công nghệ đỉnh cao.',
                             style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[600],
-                              height: 1.4,
+                              fontSize: 15,
+                              color: Colors.white.withValues(alpha: 0.5),
+                              height: 1.6,
+                              letterSpacing: 0.1,
                             ),
                           ),
 
                           const SizedBox(height: 48),
 
                           AuthTextField(
-                            label: 'Email hoặc Số điện thoại',
+                            label: 'EMAIL HOẶC SỐ ĐIỆN THOẠI',
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             prefixIcon: LucideIcons.mail,
@@ -141,7 +151,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                           const SizedBox(height: 20),
 
                           AuthTextField(
-                            label: 'Mật khẩu',
+                            label: 'MẬT KHẨU',
                             controller: _passwordController,
                             isPassword: true,
                             prefixIcon: LucideIcons.lock,
@@ -160,27 +170,29 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
 
                           Align(
                             alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () {
+                            child: GestureDetector(
+                              onTap: () {
                                 HapticFeedback.lightImpact();
                                 _showForgotPasswordSheet(context);
                               },
-                              style: TextButton.styleFrom(
-                                foregroundColor: const Color(0xFF0077ED),
-                                textStyle: const TextStyle(
-                                  fontWeight: FontWeight.w600,
+                              child: const Text(
+                                'QUÊN MẬT KHẨU?',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFFFDE047),
+                                  letterSpacing: 1.0,
                                 ),
                               ),
-                              child: const Text('Quên mật khẩu?'),
                             ),
                           ),
 
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 40),
 
                           BlocBuilder<AuthCubit, AuthState>(
                             builder: (context, state) {
                               return AuthPrimaryButton(
-                                label: 'Đăng Nhập',
+                                label: 'ĐĂNG NHẬP',
                                 isLoading: state is AuthLoading,
                                 onTap: _handleLogin,
                               );
@@ -190,33 +202,42 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                           const Spacer(),
                           Center(
                             child: Container(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF9FAFB),
-                                borderRadius: BorderRadius.circular(16),
+                                color: const Color(0xFF14141E),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.05),
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   const Icon(
                                     LucideIcons.shieldCheck,
-                                    size: 18,
+                                    size: 16,
                                     color: Color(0xFF10B981),
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Bảo mật mã hóa đầu cuối',
+                                    'BẢO MẬT MÃ HÓA TOÀN DIỆN',
                                     style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.grey[600],
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white.withValues(
+                                        alpha: 0.4,
+                                      ),
+                                      letterSpacing: 1.0,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
                           ),
-                          SizedBox(height: bottomPadding + 16),
+                          SizedBox(height: bottomPadding + 24),
                         ],
                       ),
                     ),
@@ -242,7 +263,6 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
       builder: (sheetContext) {
         return BlocListener<AuthCubit, AuthState>(
           listener: (ctx, state) {
-            // neu gui OTP thanh cong
             if (state is AuthForgotPasswordOtpSent) {
               Navigator.of(ctx).pop(); // close bottom sheet
               ScaffoldMessenger.of(context).showSnackBar(
@@ -251,12 +271,11 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                   backgroundColor: const Color(0xFF10B981),
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
               );
 
-              // chuyen sang trang nhap OTP
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => BlocProvider.value(
@@ -269,14 +288,13 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                 ),
               );
             } else if (state is AuthError) {
-              // hien thi snack bar thong bao loi
               ScaffoldMessenger.of(ctx).showSnackBar(
                 SnackBar(
                   content: Text(state.message),
-                  backgroundColor: Colors.redAccent,
+                  backgroundColor: const Color(0xFFFF4D4D),
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
               );
@@ -287,11 +305,12 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
               28,
               8,
               28,
-              MediaQuery.of(sheetContext).viewInsets.bottom + 28,
+              MediaQuery.of(sheetContext).viewInsets.bottom + 32,
             ),
             decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              color: Color(0xFF14141E),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+              border: Border(top: BorderSide(color: Colors.white10)),
             ),
             child: Form(
               key: resetFormKey,
@@ -299,42 +318,41 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // drag handle
                   Center(
                     child: Container(
                       width: 40,
                       height: 4,
-                      margin: const EdgeInsets.only(bottom: 24),
+                      margin: const EdgeInsets.only(bottom: 32),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE5E7EB),
+                        color: Colors.white.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                   ),
 
                   const Text(
-                    'Đặt lại mật khẩu',
+                    'ĐẶT LẠI MẬT KHẨU',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w900,
-                      color: Color(0xFF0A0A0F),
+                      color: Colors.white,
                       letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Nhập email khôi phục tài khoản.',
+                  const SizedBox(height: 12),
+                  Text(
+                    'Nhập email đã đăng ký để nhận mã khôi phục tài khoản GearHub của bạn.',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
-                      color: Color(0xFF6B7280),
+                      color: Colors.white.withValues(alpha: 0.5),
                       height: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
 
                   AuthTextField(
-                    label: 'Email',
+                    label: 'EMAIL',
                     controller: resetEmailController,
                     keyboardType: TextInputType.emailAddress,
                     prefixIcon: LucideIcons.mail,
@@ -350,12 +368,12 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
 
                   BlocBuilder<AuthCubit, AuthState>(
                     builder: (ctx, state) {
                       return AuthPrimaryButton(
-                        label: 'Gửi mã khôi phục',
+                        label: 'GỬI MÃ KHÔI PHỤC',
                         isLoading: state is AuthLoading,
                         onTap: () {
                           if (resetFormKey.currentState!.validate()) {

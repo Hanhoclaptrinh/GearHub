@@ -111,6 +111,8 @@ class _OtpPageState extends State<OtpPage> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
@@ -129,9 +131,9 @@ class _OtpPageState extends State<OtpPage> {
         }
       },
       child: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.dark,
+        value: SystemUiOverlayStyle.light,
         child: Scaffold(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          backgroundColor: const Color(0xFF07070A),
           body: SafeArea(
             child: Column(
               children: [
@@ -139,42 +141,44 @@ class _OtpPageState extends State<OtpPage> {
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.symmetric(horizontal: 28),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 12),
                           _buildBackButton(),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 48),
 
                           const Text(
-                            'Xác thực mã OTP',
+                            'XÁC THỰC\nMÃ OTP',
                             style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF111827),
-                              letterSpacing: -1.2,
+                              fontSize: 36,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: -1.5,
+                              height: 1.1,
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 16),
                           RichText(
                             text: TextSpan(
                               style: TextStyle(
                                 fontSize: 15,
-                                color: Colors.grey[500],
-                                height: 1.5,
+                                color: Colors.white.withValues(alpha: 0.5),
+                                height: 1.6,
+                                letterSpacing: 0.1,
                                 fontFamily: 'Inter',
                               ),
                               children: [
                                 const TextSpan(
                                   text:
-                                      'Vui lòng nhập mã 6 số đã được gửi tới\n',
+                                      'Vui lòng nhập mã 6 số đã được gửi tới ',
                                 ),
                                 TextSpan(
                                   text: widget.email,
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF111827),
+                                    fontWeight: FontWeight.w900,
+                                    color: Color(0xFFFDE047),
                                   ),
                                 ),
                               ],
@@ -183,7 +187,7 @@ class _OtpPageState extends State<OtpPage> {
 
                           const SizedBox(height: 48),
 
-                          // OTP Input Group
+                          // OTP input group
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: List.generate(
@@ -192,14 +196,14 @@ class _OtpPageState extends State<OtpPage> {
                             ),
                           ),
 
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 48),
 
-                          // Countdown & Resend
+                          // countdown & resend
                           Center(
                             child: Column(
                               children: [
                                 _buildExpiryTimer(),
-                                const SizedBox(height: 24),
+                                const SizedBox(height: 40),
                                 _buildResendSection(),
                               ],
                             ),
@@ -210,19 +214,21 @@ class _OtpPageState extends State<OtpPage> {
                   ),
                 ),
 
-                // Bottom Button
                 Container(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                  padding: EdgeInsets.fromLTRB(28, 20, 28, bottomPadding + 20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: const Color(0xFF07070A),
                     border: Border(
-                      top: BorderSide(color: Colors.grey[100]!, width: 1),
+                      top: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        width: 1,
+                      ),
                     ),
                   ),
                   child: BlocBuilder<AuthCubit, AuthState>(
                     builder: (context, state) {
                       return AuthPrimaryButton(
-                        label: 'Xác nhận',
+                        label: 'XÁC NHẬN',
                         isLoading: state is AuthLoading,
                         onTap: _handleVerify,
                       );
@@ -243,10 +249,10 @@ class _OtpPageState extends State<OtpPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Vui lòng nhập mã OTP gồm 6 chữ số'),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: const Color(0xFFFF4D4D),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       );
@@ -259,14 +265,12 @@ class _OtpPageState extends State<OtpPage> {
       );
       if (!mounted) return;
 
-      // goi logic verify register trong auth cubit
       context.read<AuthCubit>().verifyRegister(
         email: widget.email,
         otp: otp,
         deviceId: deviceId,
       );
     } else {
-      // verify forgot password otp first
       context.read<AuthCubit>().verifyForgotPasswordOtp(
         email: widget.email,
         otp: otp,
@@ -282,16 +286,15 @@ class _OtpPageState extends State<OtpPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Vui lòng quay lại và gửi lại form đăng ký'),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: const Color(0xFFFF4D4D),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       );
     } else {
       context.read<AuthCubit>().forgotPassword(email: widget.email);
-      // restart timers
       setState(() {
         _resendCountdown = 60;
         _canResend = false;
@@ -302,18 +305,28 @@ class _OtpPageState extends State<OtpPage> {
   }
 
   Widget _buildOtpBox(int index) {
-    return Container(
-      width: 50,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: 48,
       height: 64,
       decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
+        color: const Color(0xFF14141E),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: _focusNodes[index].hasFocus
-              ? Theme.of(context).colorScheme.primary
-              : const Color(0xFFF3F4F6),
-          width: 2,
+              ? const Color(0xFFFDE047)
+              : Colors.white.withValues(alpha: 0.08),
+          width: 1.5,
         ),
+        boxShadow: _focusNodes[index].hasFocus
+            ? [
+                BoxShadow(
+                  color: const Color(0xFFFDE047).withValues(alpha: 0.15),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : [],
       ),
       child: Center(
         child: Focus(
@@ -348,8 +361,9 @@ class _OtpPageState extends State<OtpPage> {
             ],
             style: const TextStyle(
               fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF111827),
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              fontFamily: 'Inter',
             ),
             decoration: const InputDecoration(
               border: InputBorder.none,
@@ -364,10 +378,17 @@ class _OtpPageState extends State<OtpPage> {
   Widget _buildExpiryTimer() {
     bool isUrgent = _expiryCountdown < 60;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: isUrgent ? const Color(0xFFFEF2F2) : const Color(0xFFF3F4F6),
+        color: isUrgent
+            ? const Color(0xFFFF4D4D).withValues(alpha: 0.1)
+            : const Color(0xFF14141E),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isUrgent
+              ? const Color(0xFFFF4D4D).withValues(alpha: 0.2)
+              : Colors.white.withValues(alpha: 0.05),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -375,15 +396,16 @@ class _OtpPageState extends State<OtpPage> {
           Icon(
             LucideIcons.clock,
             size: 14,
-            color: isUrgent ? const Color(0xFFEF4444) : Colors.grey[600],
+            color: isUrgent ? const Color(0xFFFF4D4D) : Colors.white54,
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           Text(
             _formatTime(_expiryCountdown),
             style: TextStyle(
               fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: isUrgent ? const Color(0xFFEF4444) : Colors.grey[700],
+              fontWeight: FontWeight.w900,
+              color: isUrgent ? const Color(0xFFFF4D4D) : Colors.white,
+              letterSpacing: 0.5,
             ),
           ),
         ],
@@ -395,19 +417,30 @@ class _OtpPageState extends State<OtpPage> {
     return Column(
       children: [
         Text(
-          "Không nhận được mã?",
-          style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+          "KHÔNG NHẬN ĐƯỢC MÃ?",
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+            color: Colors.white.withValues(alpha: 0.4),
+            letterSpacing: 1.0,
+          ),
         ),
-        const SizedBox(height: 4),
-        TextButton(
-          onPressed: _canResend ? _handleResend : null,
-          child: Text(
-            _canResend ? 'Gửi lại mã' : 'Gửi lại sau ${_resendCountdown}s',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: _canResend ? const Color(0xFF111827) : Colors.grey[400],
-              decoration: _canResend ? TextDecoration.underline : null,
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: _canResend ? _handleResend : null,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 200),
+            opacity: _canResend ? 1.0 : 0.5,
+            child: Text(
+              _canResend
+                  ? 'GỬI LẠI MÃ NGAY'
+                  : 'GỬI LẠI SAU ${_resendCountdown}S',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                color: _canResend ? const Color(0xFFFDE047) : Colors.white,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
         ),
@@ -416,11 +449,22 @@ class _OtpPageState extends State<OtpPage> {
   }
 
   Widget _buildBackButton() {
-    return IconButton(
-      onPressed: () => Navigator.pop(context),
-      icon: const Icon(Icons.arrow_back_ios_rounded, color: Color(0xFF111827)),
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(),
+    return GestureDetector(
+      onTap: () => Navigator.pop(context),
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: const Color(0xFF14141E),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: const Icon(
+          Icons.arrow_back_ios_new_rounded,
+          color: Colors.white,
+          size: 18,
+        ),
+      ),
     );
   }
 
@@ -428,9 +472,8 @@ class _OtpPageState extends State<OtpPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: Colors.redAccent,
+        backgroundColor: const Color(0xFFFF4D4D),
         behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(20),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );

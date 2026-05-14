@@ -61,7 +61,6 @@ class GlassmorphicHeader extends StatelessWidget {
                           color: Colors.white,
                           fontWeight: FontWeight.w900,
                           fontSize: 20,
-                          letterSpacing: 1.2,
                         ),
                       ),
                     ),

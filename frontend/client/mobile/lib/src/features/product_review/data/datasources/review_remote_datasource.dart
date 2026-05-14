@@ -78,9 +78,9 @@ class ReviewRemoteDatasource {
     await _dio.delete('/reviews/$reviewId');
   }
 
-  Future<Map<String, int>> getReviewSummary(String productId) async {
+  Future<Map<String, dynamic>> getReviewSummary(String productId) async {
     final response = await _dio.get('/reviews/product/$productId/summary');
-    return Map<String, int>.from(response.data);
+    return Map<String, dynamic>.from(response.data);
   }
 
   Future<List<Map<String, dynamic>>> getPendingReviews() async {

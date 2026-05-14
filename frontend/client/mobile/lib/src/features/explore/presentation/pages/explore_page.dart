@@ -77,7 +77,10 @@ class _ExplorePageState extends State<ExplorePage> {
                                   crossAxisSpacing: 12,
                                   childAspectRatio: 0.9,
                                 ),
-                            delegate: SliverChildBuilderDelegate((context, index) {
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
                               final category = state.parentCategories[index];
                               return _CategoryCard(category: category);
                             }, childCount: state.parentCategories.length),
@@ -105,12 +108,10 @@ class _ExplorePageState extends State<ExplorePage> {
               GlassmorphicHeader(
                 scrollOffset: _scrollOffset,
                 title: 'Khám phá',
-                isTransparentAtTop: false,
                 actions: [
                   HeaderIconButton(
                     icon: LucideIcons.messageCircle,
-                    onTap: () {
-                    },
+                    onTap: () {},
                   ),
                 ],
               ),

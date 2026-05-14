@@ -13,14 +13,14 @@ import '../state/review_state.dart';
 import '../widgets/shop_reply_widget.dart';
 
 const _bg = Color(0xFF07070A);
-const _surface = Color(0xFF14141E);
-const _surfaceAlt = Color(0xFF1C1C28);
-const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFFDE047);
-const _starColor = Color(0xFFFFCC00);
-const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
-const _textLow = Color(0xFF4A4A62);
+const _surface = Color(0xFF0E0E14);
+const _surfaceAlt = Color(0xFF161621);
+const _border = Color(0xFF1F1F2C);
+const _accent = Color(0xFFE2B93B);
+const _starColor = Color(0xFFFFB800);
+const _textHigh = Color(0xFFFFFFFF);
+const _textMid = Color(0xFF9494A1);
+const _textLow = Color(0xFF5A5A6E);
 
 class PendingReviewsPage extends StatefulWidget {
   const PendingReviewsPage({super.key});
@@ -51,66 +51,54 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
       create: (context) => getIt<ReviewCubit>()..loadMyReviewsData(),
       child: Scaffold(
         backgroundColor: _bg,
+        extendBodyBehindAppBar: true,
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
+          backgroundColor: _bg.withValues(alpha: 0.8),
           elevation: 0,
           scrolledUnderElevation: 0,
           centerTitle: true,
           systemOverlayStyle: SystemUiOverlayStyle.light,
           title: const Text(
-            'Đánh giá của tôi',
+            'Lịch sử đánh giá',
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
               color: _textHigh,
-              letterSpacing: 0.2,
             ),
           ),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_rounded, color: _textMid),
+            icon: const Icon(
+              Icons.arrow_back_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
             onPressed: () => Navigator.of(context).pop(),
           ),
         ),
         body: BlocBuilder<ReviewCubit, ReviewState>(
           builder: (context, state) {
             if (state is ReviewLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(
+                child: CircularProgressIndicator(
+                  color: _accent,
+                  strokeWidth: 2,
+                ),
+              );
             } else if (state is ReviewError) {
-              return Center(child: Text(state.message));
+              return Center(
+                child: Text(
+                  state.message,
+                  style: const TextStyle(color: _textMid),
+                ),
+              );
             } else if (state is MyReviewsState) {
               return Column(
                 children: [
+                  const SizedBox(height: 100),
                   _buildHeader(context, state),
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 20),
-                    decoration: BoxDecoration(
-                      color: _surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: _border),
-                    ),
-                    child: TabBar(
-                      controller: _tabController,
-                      labelColor: _accent,
-                      unselectedLabelColor: _textLow,
-                      indicatorColor: _accent,
-                      indicatorSize: TabBarIndicatorSize.label,
-                      indicatorWeight: 3,
-                      dividerColor: Colors.transparent,
-                      labelStyle: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      unselectedLabelStyle: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      tabs: const [
-                        Tab(text: 'Chưa đánh giá'),
-                        Tab(text: 'Đã đánh giá'),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 24),
+                  _buildTabBar(),
+                  const SizedBox(height: 16),
                   Expanded(
                     child: TabBarView(
                       controller: _tabController,
@@ -130,101 +118,124 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
     );
   }
 
+  Widget _buildTabBar() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      height: 48,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _border),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        labelColor: Colors.black,
+        unselectedLabelColor: _textMid,
+        indicator: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent,
+        labelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.5,
+        ),
+        tabs: const [
+          Tab(text: 'CHƯA VIẾT'),
+          Tab(text: 'ĐÃ HOÀN TẤT'),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHeader(BuildContext context, MyReviewsState state) {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, authState) {
         if (authState is AuthAuthenticated) {
           final user = authState.user;
           return Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: _surface,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: _border),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: _accent.withValues(alpha: 0.3),
-                        width: 2,
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Row(
+              children: [
+                Stack(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _accent.withValues(alpha: 0.5),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: CircleAvatar(
+                        radius: 28,
+                        backgroundColor: _surfaceAlt,
+                        backgroundImage: user.avatarUrl != null
+                            ? CachedNetworkImageProvider(user.avatarUrl!)
+                            : null,
+                        child: user.avatarUrl == null
+                            ? Text(
+                                (user.fullName ?? user.email)
+                                    .substring(0, 1)
+                                    .toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800,
+                                  color: _accent,
+                                ),
+                              )
+                            : null,
                       ),
                     ),
-                    child: CircleAvatar(
-                      radius: 30,
-                      backgroundColor: _surfaceAlt,
-                      backgroundImage: user.avatarUrl != null
-                          ? CachedNetworkImageProvider(user.avatarUrl!)
-                          : null,
-                      child: user.avatarUrl == null
-                          ? Text(
-                              (user.fullName ?? user.email)
-                                  .substring(0, 1)
-                                  .toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
-                                color: _accent,
-                              ),
-                            )
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          user.fullName ?? 'Fen GearHub',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: _textHigh,
+                  ],
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user.fullName ?? 'KHÁCH HÀNG',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: _textHigh,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.star_outline,
+                            size: 15,
+                            color: _starColor,
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _starColor.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.star_outline,
-                                    size: 12,
-                                    color: _starColor,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    '${state.completedReviews.length} Đánh giá',
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: _starColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${state.completedReviews.length} ĐÁNH GIÁ ĐÃ VIẾT',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: _accent,
+                              letterSpacing: 1.0,
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           );
         }
@@ -239,41 +250,77 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
   ) {
     if (items.isEmpty) {
       return _buildEmptyState(
-        icon: LucideIcons.star,
-        message: 'Không có sản phẩm nào để đánh giá',
-        subMessage: 'Bạn đã hoàn tất đánh giá tất cả sản phẩm.',
+        icon: Icons.star_outline,
+        message: 'MỌI THỨ ĐÃ HOÀN TẤT',
+        subMessage: 'Bạn không còn sản phẩm nào đang chờ đánh giá.',
       );
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
       itemCount: items.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 16),
+      separatorBuilder: (_, __) => const SizedBox(height: 24),
       itemBuilder: (context, index) {
         final item = items[index];
         return Container(
-          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: _surface,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(color: _border),
           ),
-          child: Row(
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: CachedNetworkImage(
-                  imageUrl: item['image'],
-                  width: 84,
-                  height: 84,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(color: _surfaceAlt),
-                  errorWidget: (context, url, error) =>
-                      Container(color: _surfaceAlt),
+              // Contained Image Composition
+              Container(
+                height: 170,
+                width: double.infinity,
+                color: _surfaceAlt,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Opacity(
+                        opacity: 0.4,
+                        child: CachedNetworkImage(
+                          imageUrl: item['image'],
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              blurRadius: 30,
+                              spreadRadius: 5,
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: CachedNetworkImage(
+                            imageUrl: item['image'],
+                            width: 140,
+                            height: 140,
+                            fit: BoxFit.contain,
+                            placeholder: (context, url) =>
+                                Container(color: Colors.transparent),
+                            errorWidget: (context, url, error) => const Icon(
+                              LucideIcons.package,
+                              color: _textLow,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
+              Padding(
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -282,68 +329,60 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 15,
                         color: _textHigh,
-                        height: 1.3,
+                        height: 1.2,
+                        letterSpacing: -0.2,
                       ),
                     ),
                     if (item['variantName'] != null &&
                         item['variantName'].toString().isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _surfaceAlt,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: _border),
-                        ),
-                        child: Text(
-                          item['variantName'].toString(),
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: _textLow,
-                            letterSpacing: 0.2,
-                          ),
+                      const SizedBox(height: 8),
+                      Text(
+                        item['variantName'].toString().toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: _textLow,
+                          letterSpacing: 1.0,
                         ),
                       ),
                     ],
-
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 20),
                     Row(
                       children: [
                         Expanded(
-                          child: OutlinedButton(
+                          flex: 2,
+                          child: TextButton(
                             onPressed: () {
                               context.read<ReviewCubit>().skipReview(
                                 item['orderItemId'],
                               );
                             },
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              side: const BorderSide(color: _border),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(12),
+                                side: const BorderSide(color: _border),
                               ),
                             ),
                             child: const Text(
                               'BỎ QUA',
                               style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
                                 color: _textMid,
+                                letterSpacing: 1.0,
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 12),
                         Expanded(
-                          child: GestureDetector(
-                            onTap: () async {
+                          flex: 3,
+                          child: ElevatedButton(
+                            onPressed: () async {
                               final result = await Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -359,20 +398,21 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
                                 context.read<ReviewCubit>().loadMyReviewsData();
                               }
                             },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(14),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              alignment: Alignment.center,
-                              child: const Text(
-                                'ĐÁNH GIÁ',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.black,
-                                ),
+                            ),
+                            child: const Text(
+                              'VIẾT ĐÁNH GIÁ',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.0,
                               ),
                             ),
                           ),
@@ -393,39 +433,47 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
     if (reviews.isEmpty) {
       return _buildEmptyState(
         icon: LucideIcons.messageSquare,
-        message: 'Bạn chưa có đánh giá nào',
-        subMessage: 'Hãy mua sắm và chia sẻ cảm nhận của bạn về sản phẩm nhé!',
+        message: 'LỊCH SỬ TRỐNG',
+        subMessage: 'Bạn chưa thực hiện đánh giá nào cho các đơn hàng.',
       );
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       itemCount: reviews.length,
       separatorBuilder: (_, __) =>
-          Divider(height: 48, color: _border.withValues(alpha: 0.5)),
+          Divider(height: 64, color: _border.withValues(alpha: 0.3)),
       itemBuilder: (context, index) {
         final review = reviews[index];
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: _surfaceAlt,
-                  backgroundImage: review.userAvatar != null
-                      ? NetworkImage(review.userAvatar!)
-                      : null,
-                  child: review.userAvatar == null
-                      ? Text(
-                          review.userName.substring(0, 1).toUpperCase(),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: _textMid,
-                          ),
-                        )
-                      : null,
+                Container(
+                  padding: const EdgeInsets.all(1.5),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: _border),
+                  ),
+                  child: CircleAvatar(
+                    radius: 16,
+                    backgroundColor: _surfaceAlt,
+                    backgroundImage: review.userAvatar != null
+                        ? NetworkImage(review.userAvatar!)
+                        : null,
+                    child: review.userAvatar == null
+                        ? Text(
+                            review.userName.substring(0, 1).toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: _textMid,
+                            ),
+                          )
+                        : null,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -435,71 +483,68 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
                       Row(
                         children: [
                           Text(
-                            review.userName,
+                            review.userName.toUpperCase(),
                             style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
                               color: _textHigh,
+                              letterSpacing: 0.5,
                             ),
                           ),
                           if (review.isVerifiedPurchase) ...[
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 6),
                             const Icon(
                               Icons.verified_rounded,
                               size: 14,
-                              color: Colors.blue,
+                              color: Color(0xFF3B82F6),
                             ),
                           ],
                         ],
                       ),
+                      const SizedBox(height: 2),
                       Text(
-                        formatDate(review.createdAt),
+                        formatDate(review.createdAt).toUpperCase(),
                         style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
                           color: _textLow,
+                          letterSpacing: 0.5,
                         ),
                       ),
-                      if (review.variantName != null &&
-                          review.variantName!.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _surfaceAlt,
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: _border),
-                          ),
-                          child: Text(
-                            review.variantName!,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: _textLow,
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),
                 Row(
                   children: List.generate(
                     5,
-                    (starIdx) => Icon(
-                      starIdx < review.rating ? Icons.star : Icons.star_outline,
-                      size: 16,
-                      color: starIdx < review.rating ? _starColor : _textLow,
+                    (starIdx) => Padding(
+                      padding: const EdgeInsets.only(left: 2),
+                      child: Icon(
+                        starIdx < review.rating
+                            ? Icons.star
+                            : Icons.star_outline,
+                        size: 14,
+                        color: starIdx < review.rating ? _starColor : _textLow,
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            if (review.variantName != null &&
+                review.variantName!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                '${review.variantName!.toUpperCase()}',
+                style: const TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  color: _accent,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
             if (review.comment != null && review.comment!.isNotEmpty) ...[
               Text(
                 review.comment!,
@@ -507,33 +552,46 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
                   fontSize: 14,
                   height: 1.6,
                   color: _textMid,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
             ],
             if (review.images.isNotEmpty) ...[
-              const SizedBox(height: 12),
               SizedBox(
-                height: 80,
+                height: 100,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: review.images.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (context, imgIdx) => ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
+                  separatorBuilder: (_, __) => const SizedBox(width: 10),
+                  itemBuilder: (context, imgIdx) => Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _border),
+                    ),
+                    clipBehavior: Clip.antiAlias,
                     child: CachedNetworkImage(
                       imageUrl: review.images[imgIdx],
-                      width: 80,
-                      height: 80,
+                      width: 100,
+                      height: 100,
                       fit: BoxFit.cover,
                     ),
                   ),
                 ),
               ),
+              const SizedBox(height: 16),
             ],
             if (review.reply != null && review.reply!.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              ShopReplyWidget(reply: review.reply!),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: _surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: _border),
+                ),
+                child: ShopReplyWidget(reply: review.reply!),
+              ),
             ],
           ],
         );
@@ -553,32 +611,38 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: _surface,
                 shape: BoxShape.circle,
                 border: Border.all(color: _border),
               ),
-              child: Icon(icon, size: 48, color: _textLow),
+              child: Icon(
+                icon,
+                size: 40,
+                color: _textLow.withValues(alpha: 0.5),
+              ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             Text(
               message,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
                 color: _textHigh,
+                letterSpacing: 2.0,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Text(
               subMessage,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 12,
                 color: _textLow,
-                height: 1.5,
+                height: 1.6,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],

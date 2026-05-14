@@ -19,7 +19,7 @@ abstract class ReviewRepository {
   });
 
   Future<Either<Failure, void>> deleteReview(String reviewId);
-  Future<Either<Failure, Map<String, int>>> getReviewSummary(String productId);
+  Future<Either<Failure, Map<String, dynamic>>> getReviewSummary(String productId);
   Future<Either<Failure, List<Map<String, dynamic>>>> getPendingReviews();
   Future<Either<Failure, List<ReviewEntity>>> getUserReviews();
   Future<Either<Failure, void>> skipReview(String orderItemId);

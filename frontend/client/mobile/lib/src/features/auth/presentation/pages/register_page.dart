@@ -88,10 +88,10 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-    // lang nghe su thay doi state tu bloc
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
-        // chuyen sang man hinh nhap otp khi nhan duoc state AuthRegisterOtpSent
         if (state is AuthRegisterOtpSent) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -99,7 +99,7 @@ class _RegisterPageState extends State<RegisterPage> {
               backgroundColor: const Color(0xFF10B981),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
           );
@@ -109,7 +109,7 @@ class _RegisterPageState extends State<RegisterPage> {
               builder: (_) => BlocProvider.value(
                 value: context.read<AuthCubit>(),
                 child: OtpPage(
-                  email: state.email, // gui kem email
+                  email: state.email,
                   otpPurpose: OtpPurpose.register,
                 ),
               ),
@@ -118,13 +118,9 @@ class _RegisterPageState extends State<RegisterPage> {
         } else if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                state.message,
-                style: const TextStyle(fontSize: 13),
-              ),
-              backgroundColor: Colors.redAccent,
+              content: Text(state.message),
+              backgroundColor: const Color(0xFFFF4D4D),
               behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.all(20),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -133,9 +129,9 @@ class _RegisterPageState extends State<RegisterPage> {
         }
       },
       child: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.dark,
+        value: SystemUiOverlayStyle.light,
         child: Scaffold(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          backgroundColor: const Color(0xFF07070A),
           body: SafeArea(
             child: Column(
               children: [
@@ -143,48 +139,51 @@ class _RegisterPageState extends State<RegisterPage> {
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.symmetric(horizontal: 28),
                       child: Form(
                         key: _formKey,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 12),
-                            IconButton(
-                              onPressed: () {
+                            GestureDetector(
+                              onTap: () {
                                 HapticFeedback.lightImpact();
                                 Navigator.of(context).pop();
                               },
-                              icon: const Icon(Icons.arrow_back_ios_rounded),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                            ),
-                            const SizedBox(height: 24),
-                            const Text(
-                              'Tạo tài khoản',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF111827),
-                                letterSpacing: -1.2,
+                              child: const Icon(
+                                Icons.arrow_back_rounded,
+                                color: Colors.white,
                               ),
                             ),
-                            const SizedBox(height: 8),
+
+                            const SizedBox(height: 32),
+                            const Text(
+                              'TẠO TÀI KHOẢN\nMỚI',
+                              style: TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: -1.5,
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
                             Text(
-                              'Tham gia GearHub để trải nghiệm hệ sinh thái thiết bị cao cấp.',
+                              'Tham gia GearHub để trải nghiệm hệ sinh thái thiết bị cao cấp nhất.',
                               style: TextStyle(
                                 fontSize: 15,
-                                color: Colors.grey[500],
+                                color: Colors.white.withValues(alpha: 0.5),
                                 height: 1.5,
                               ),
                             ),
-                            const SizedBox(height: 32),
+                            const SizedBox(height: 40),
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Expanded(
                                   child: AuthTextField(
-                                    label: 'Họ tên',
+                                    label: 'HỌ TÊN',
                                     controller: _fullNameController,
                                     prefixIcon: LucideIcons.user,
                                     validator: (v) => (v == null || v.isEmpty)
@@ -195,7 +194,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: AuthTextField(
-                                    label: 'Số điện thoại',
+                                    label: 'SĐT',
                                     controller: _phoneController,
                                     keyboardType: TextInputType.phone,
                                     prefixIcon: LucideIcons.phone,
@@ -208,7 +207,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             ),
                             const SizedBox(height: 16),
                             AuthTextField(
-                              label: 'Địa chỉ Email',
+                              label: 'ĐỊA CHỈ EMAIL',
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
                               prefixIcon: LucideIcons.mail,
@@ -218,7 +217,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             ),
                             const SizedBox(height: 16),
                             AuthTextField(
-                              label: 'Mật khẩu',
+                              label: 'MẬT KHẨU',
                               controller: _passwordController,
                               isPassword: true,
                               prefixIcon: LucideIcons.lock,
@@ -228,7 +227,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             ),
                             const SizedBox(height: 16),
                             AuthTextField(
-                              label: 'Xác nhận mật khẩu',
+                              label: 'XÁC NHẬN MẬT KHẨU',
                               controller: _confirmPasswordController,
                               isPassword: true,
                               prefixIcon: LucideIcons.shieldCheck,
@@ -246,25 +245,27 @@ class _RegisterPageState extends State<RegisterPage> {
                                 children: [
                                   AnimatedContainer(
                                     duration: const Duration(milliseconds: 200),
-                                    width: 20,
-                                    height: 20,
+                                    width: 22,
+                                    height: 22,
                                     decoration: BoxDecoration(
                                       color: _agreeTerms
-                                          ? const Color(0xFF111827)
+                                          ? const Color(0xFFFDE047)
                                           : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(6),
+                                      borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
                                         color: _agreeTerms
-                                            ? const Color(0xFF111827)
-                                            : const Color(0xFFD1D5DB),
+                                            ? const Color(0xFFFDE047)
+                                            : Colors.white.withValues(
+                                                alpha: 0.1,
+                                              ),
                                         width: 1.5,
                                       ),
                                     ),
                                     child: _agreeTerms
                                         ? const Icon(
                                             LucideIcons.check,
-                                            size: 12,
-                                            color: Colors.white,
+                                            size: 14,
+                                            color: Colors.black,
                                           )
                                         : null,
                                   ),
@@ -274,16 +275,17 @@ class _RegisterPageState extends State<RegisterPage> {
                                       text: TextSpan(
                                         style: TextStyle(
                                           fontSize: 13,
-                                          color: Colors.grey[600],
-                                          fontFamily: 'Inter',
+                                          color: Colors.white.withValues(
+                                            alpha: 0.5,
+                                          ),
                                         ),
                                         children: const [
                                           TextSpan(text: 'Tôi đồng ý với '),
                                           TextSpan(
                                             text: 'Điều khoản & Chính sách',
                                             style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              color: Color(0xFF111827),
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white,
                                             ),
                                           ),
                                         ],
@@ -293,23 +295,24 @@ class _RegisterPageState extends State<RegisterPage> {
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 32),
+                            const SizedBox(height: 40),
                             Center(
                               child: GestureDetector(
                                 onTap: () => Navigator.of(context).pop(),
                                 child: RichText(
                                   text: const TextSpan(
                                     style: TextStyle(
-                                      fontSize: 14,
-                                      color: Color(0xFF6B7280),
+                                      fontSize: 12,
+                                      color: Colors.white54,
+                                      letterSpacing: 0.5,
                                     ),
                                     children: [
-                                      TextSpan(text: 'Đã có tài khoản? '),
+                                      TextSpan(text: 'ĐÃ CÓ TÀI KHOẢN? '),
                                       TextSpan(
-                                        text: 'Đăng nhập',
+                                        text: 'ĐĂNG NHẬP',
                                         style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF111827),
+                                          fontWeight: FontWeight.w900,
+                                          color: Color(0xFFFDE047),
                                         ),
                                       ),
                                     ],
@@ -317,7 +320,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 32),
                           ],
                         ),
                       ),
@@ -326,17 +329,20 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
 
                 Container(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                  padding: EdgeInsets.fromLTRB(28, 20, 28, bottomPadding + 20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: const Color(0xFF07070A),
                     border: Border(
-                      top: BorderSide(color: Colors.grey[100]!, width: 1),
+                      top: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        width: 1,
+                      ),
                     ),
                   ),
                   child: BlocBuilder<AuthCubit, AuthState>(
                     builder: (context, state) {
                       return AuthPrimaryButton(
-                        label: 'Bắt đầu ngay',
+                        label: 'BẮT ĐẦU NGAY',
                         isLoading: state is AuthLoading,
                         onTap: _handleRegister,
                       );

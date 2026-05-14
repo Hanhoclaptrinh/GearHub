@@ -3,12 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-const _surfaceAlt = Color(0xFF1C1C28);
-const _border = Color(0xFF2A2A38);
 const _accent = Color(0xFFFDE047);
-const _accentSoft = Color(0x1AFDE047);
 const _textHigh = Colors.white;
-const _textLow = Color(0xFF475569);
+const _textLow = Color(0xFF334155);
 
 class QuantitySelector extends StatefulWidget {
   final int quantity;
@@ -73,41 +70,34 @@ class _QuantitySelectorState extends State<QuantitySelector>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-      decoration: BoxDecoration(
-        color: _surfaceAlt,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _border, width: 0.5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildButton(
-            icon: LucideIcons.minus,
-            onPressed: widget.onDecrement,
-            enabled: widget.quantity > 1,
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Text(
-              '${widget.quantity}',
-              style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 14,
-                color: _textHigh,
-              ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildButton(
+          icon: LucideIcons.minus,
+          onPressed: widget.onDecrement,
+          enabled: widget.quantity > 1,
+        ),
+        SizedBox(
+          width: 32,
+          child: Text(
+            '${widget.quantity}',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 13,
+              color: _textHigh,
             ),
           ),
-          _buildButton(
-            icon: LucideIcons.plus,
-            onPressed: widget.onIncrement,
-            enabled:
-                widget.maxQuantity == null ||
-                widget.quantity < widget.maxQuantity!,
-          ),
-        ],
-      ),
+        ),
+        _buildButton(
+          icon: LucideIcons.plus,
+          onPressed: widget.onIncrement,
+          enabled:
+              widget.maxQuantity == null ||
+              widget.quantity < widget.maxQuantity!,
+        ),
+      ],
     );
   }
 
@@ -140,16 +130,13 @@ class _QuantitySelectorState extends State<QuantitySelector>
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: Container(
-          width: 32,
-          height: 32,
+          width: 24,
+          height: 24,
           decoration: BoxDecoration(
-            color: enabled ? _accentSoft : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            border: enabled
-                ? Border.all(color: _accent.withValues(alpha: 0.2), width: 0.5)
-                : null,
+            shape: BoxShape.circle,
+            color: enabled ? Colors.white.withValues(alpha: 0.05) : Colors.transparent,
           ),
-          child: Icon(icon, size: 14, color: enabled ? _accent : _textLow),
+          child: Icon(icon, size: 12, color: enabled ? _accent : _textLow),
         ),
       ),
     );

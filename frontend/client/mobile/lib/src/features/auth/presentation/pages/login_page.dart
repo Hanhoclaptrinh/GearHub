@@ -1,6 +1,7 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../widgets/social_login_button.dart';
 import '../widgets/auth_primary_button.dart';
 import 'register_page.dart';
@@ -11,150 +12,213 @@ class LoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark,
+      value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(28, 16, 28, bottomPadding + 24),
-              child: Column(
-                children: [
-                  // illustration
-                  SvgPicture.asset(
-                    'assets/images/login-illustration.svg',
-                    height: 240,
-                    fit: BoxFit.contain,
-                  ),
-                  const SizedBox(height: 32),
+        backgroundColor: const Color(0xFF050507), // Đen sâu hơn để nổi bật OLED
+        body: Stack(
+          children: [
+            Positioned(
+              top: -size.height * 0.1,
+              right: -size.width * 0.2,
+              child: _buildGlow(
+                const Color(0xFFFDE047).withValues(alpha: 0.12),
+                300,
+              ),
+            ),
+            Positioned(
+              bottom: -size.height * 0.2,
+              left: -size.width * 0.2,
+              child: _buildGlow(
+                const Color(0xFF3B82F6).withValues(alpha: 0.08),
+                400,
+              ),
+            ),
 
-                  // heading
-                  const Text(
-                    "Đăng Nhập",
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFF0A0A0F),
-                      letterSpacing: -1,
-                      height: 1.1,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Khám phá các sản phẩm công nghệ hàng đầu\n được tuyển chọn ở GearHub.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xFF6B7280),
-                      height: 1.5,
-                      letterSpacing: -0.1,
-                    ),
-                  ),
-                  const SizedBox(height: 36),
-
-                  // social buttons
-                  SocialLoginButton(
-                    label: 'Đăng nhập với Google',
-                    iconPath: 'google',
-                    onTap: () {
-                      print('Login with Google');
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  SocialLoginButton(
-                    label: 'Đăng nhập với Facebook',
-                    iconPath: 'facebook',
-                    onTap: () {
-                      print('Login with Facebook');
-                    },
-                  ),
-                  const SizedBox(height: 24),
-
-                  // divider
-                  Row(
+            SafeArea(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(28, 40, 28, bottomPadding + 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Container(
-                          height: 1,
-                          color: const Color(0xFFE5E7EB),
-                        ),
-                      ),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          'Hoặc',
+                      _buildLogo(),
+                      const SizedBox(height: 40),
+
+                      ShaderMask(
+                        shaderCallback: (bounds) => const LinearGradient(
+                          colors: [Colors.white, Colors.white70],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ).createShader(bounds),
+                        child: const Text(
+                          "THIẾT BỊ\nCÔNG NGHỆ\nCAO CẤP",
                           style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF9CA3AF),
+                            fontSize: 44,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -1.5,
+                            height: 1.2,
                           ),
                         ),
                       ),
-                      Expanded(
-                        child: Container(
-                          height: 1,
-                          color: const Color(0xFFE5E7EB),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
 
-                  // login with email
-                  AuthPrimaryButton(
-                    label: 'Đăng nhập với Email',
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const EmailLoginPage(),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 28),
+                      const SizedBox(height: 16),
 
-                  // create account link
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        "Chưa có tài khoản? ",
+                      Text(
+                        'GearHub – Hệ sinh thái thiết bị tối thượng cho không gian sáng tạo của bạn.',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 16,
                           fontWeight: FontWeight.w400,
-                          color: Color(0xFF6B7280),
+                          color: Colors.white.withValues(alpha: 0.4),
+                          height: 1.5,
                         ),
                       ),
-                      GestureDetector(
+                      const SizedBox(height: 50),
+
+                      SocialLoginButton(
+                        label: 'TIẾP TỤC VỚI GOOGLE',
+                        iconPath: 'google',
+                        onTap: () => HapticFeedback.mediumImpact(),
+                      ),
+                      const SizedBox(height: 12),
+
+                      SocialLoginButton(
+                        label: 'TIẾP TỤC VỚI FACEBOOK',
+                        iconPath: 'facebook',
+                        onTap: () => HapticFeedback.mediumImpact(),
+                      ),
+                      const SizedBox(height: 32),
+
+                      _buildDivider(),
+                      const SizedBox(height: 32),
+
+                      AuthPrimaryButton(
+                        label: 'ĐĂNG NHẬP VỚI EMAIL',
                         onTap: () {
                           HapticFeedback.lightImpact();
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => const RegisterPage(),
+                              builder: (_) => const EmailLoginPage(),
                             ),
                           );
                         },
-                        child: const Text(
-                          'Đăng ký ngay',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF0A0A0F),
-                            decoration: TextDecoration.underline,
-                            decorationThickness: 1.5,
-                          ),
-                        ),
                       ),
+                      const SizedBox(height: 40),
+
+                      _buildFooter(context),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlow(Color color, double size) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+        child: Container(color: Colors.transparent),
+      ),
+    );
+  }
+
+  Widget _buildLogo() {
+    return Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A24),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFDE047).withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: const Center(
+        child: Icon(LucideIcons.zap, color: Color(0xFFFDE047), size: 32),
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Row(
+      children: [
+        Expanded(
+          child: Divider(
+            color: Colors.white.withValues(alpha: 0.05),
+            thickness: 1,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'HOẶC',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: Colors.white.withValues(alpha: 0.2),
+              letterSpacing: 2,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Divider(
+            color: Colors.white.withValues(alpha: 0.05),
+            thickness: 1,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFooter(BuildContext context) {
+    return Center(
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.heavyImpact();
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const RegisterPage()));
+        },
+        behavior: HitTestBehavior.opaque,
+        child: RichText(
+          text: TextSpan(
+            style: const TextStyle(fontSize: 13, letterSpacing: 0.5),
+            children: [
+              TextSpan(
+                text: "CHƯA CÓ TÀI KHOẢN? ",
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white.withValues(alpha: 0.3),
+                ),
+              ),
+              const TextSpan(
+                text: 'ĐĂNG KÝ NGAY',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFFDE047),
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ],
           ),
         ),
       ),

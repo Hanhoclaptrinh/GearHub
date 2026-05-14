@@ -124,11 +124,11 @@ class CustomBottomNavBar extends StatelessWidget {
   });
 
   static const _items = [
-    (icon: LucideIcons.house, label: 'Trang chủ'),
-    (icon: LucideIcons.search, label: 'Shop'),
-    (icon: LucideIcons.shoppingCart, label: 'Giỏ hàng'),
-    (icon: LucideIcons.shieldCheck, label: 'Ưu đãi'),
-    (icon: LucideIcons.userRound, label: 'Tôi'),
+    (icon: LucideIcons.house, label: 'TRANG CHỦ'),
+    (icon: LucideIcons.search, label: 'SHOP'),
+    (icon: LucideIcons.shoppingCart, label: 'GIỎ HÀNG'),
+    (icon: LucideIcons.shieldCheck, label: 'ƯU ĐÃI'),
+    (icon: LucideIcons.userRound, label: 'TÔI'),
   ];
 
   @override
@@ -137,30 +137,42 @@ class CustomBottomNavBar extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.transparent,
-            const Color(0xFF050505).withValues(alpha: 0.72),
-            const Color(0xFF050505),
-          ],
-          stops: const [0.0, 0.35, 1.0],
-        ),
-      ),
-      padding: EdgeInsets.fromLTRB(28, 8, 28, bottomPadding + 14),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: List.generate(
-          _items.length,
-          (i) => _ArchitecturalNavItem(
-            index: i,
-            icon: _items[i].icon,
-            label: _items[i].label,
-            isSelected: selectedIndex == i,
-            isVault: i == 2,
-            onTap: () => onItemSelected(i),
+      padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPadding + 20),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          child: Container(
+            height: 72,
+            decoration: BoxDecoration(
+              color: const Color(0xFF07070A).withValues(alpha: 0.85),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.08),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(
+                _items.length,
+                (i) => _ArchitecturalNavItem(
+                  index: i,
+                  icon: _items[i].icon,
+                  label: _items[i].label,
+                  isSelected: selectedIndex == i,
+                  isCart: i == 2,
+                  onTap: () => onItemSelected(i),
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -173,7 +185,7 @@ class _ArchitecturalNavItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isSelected;
-  final bool isVault;
+  final bool isCart;
   final VoidCallback onTap;
 
   const _ArchitecturalNavItem({
@@ -182,29 +194,47 @@ class _ArchitecturalNavItem extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.onTap,
-    this.isVault = false,
+    this.isCart = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap();
-      },
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeOutQuart,
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          onTap();
+        },
+        behavior: HitTestBehavior.opaque,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildIconLayer(),
-            const SizedBox(height: 8),
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 400),
+                  opacity: isSelected ? 1.0 : 0.0,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          blurRadius: 15,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                _buildIconLayer(),
+              ],
+            ),
+            const SizedBox(height: 6),
             _buildLabelLayer(),
-            const SizedBox(height: 4),
-            _buildIndicatorLayer(),
           ],
         ),
       ),
@@ -212,15 +242,19 @@ class _ArchitecturalNavItem extends StatelessWidget {
   }
 
   Widget _buildIconLayer() {
-    Widget iconWidget = Icon(
-      icon,
-      size: 20,
-      color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.22),
+    Widget iconWidget = AnimatedScale(
+      duration: const Duration(milliseconds: 400),
+      scale: isSelected ? 1.1 : 1.0,
+      curve: Curves.elasticOut,
+      child: Icon(
+        icon,
+        size: 22,
+        color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.3),
+      ),
     );
 
-    if (!isVault) return iconWidget;
+    if (!isCart) return iconWidget;
 
-    // cart badge
     return BlocBuilder<CartCubit, CartState>(
       builder: (context, state) {
         final count = state.cart?.items.length ?? 0;
@@ -231,13 +265,16 @@ class _ArchitecturalNavItem extends StatelessWidget {
             if (count > 0)
               Positioned(
                 top: -2,
-                right: -4,
+                right: -2,
                 child: Container(
-                  width: 4,
-                  height: 4,
+                  padding: const EdgeInsets.all(3),
                   decoration: const BoxDecoration(
-                    color: Colors.white70,
+                    color: Color(0xFFFDE047),
                     shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 8,
+                    minHeight: 8,
                   ),
                 ),
               ),
@@ -248,30 +285,16 @@ class _ArchitecturalNavItem extends StatelessWidget {
   }
 
   Widget _buildLabelLayer() {
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 400),
-      opacity: isSelected ? 0.5 : 0.0,
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 7,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 3,
-        ),
+    return AnimatedDefaultTextStyle(
+      duration: const Duration(milliseconds: 300),
+      style: TextStyle(
+        color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.3),
+        fontSize: 9,
+        fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+        letterSpacing: isSelected ? 1.2 : 0.5,
       ),
-    );
-  }
-
-  Widget _buildIndicatorLayer() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 600),
-      width: isSelected ? 3 : 0,
-      height: 3,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white,
-      ),
+      child: Text(label),
     );
   }
 }
+

@@ -1,26 +1,22 @@
 import 'dart:async';
-import 'dart:convert';
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/core/di/injection.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
+import 'package:mobile/src/core/utils/brand_identity_helper.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/models/product_variant_model.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../widgets/product_hero_section.dart';
 import '../widgets/product_info_section.dart';
 import '../widgets/sticky_bottom_bar.dart';
 import 'package:mobile/src/features/product_detail/presentation/widgets/product_reviews_preview_section.dart';
-import 'package:mobile/src/features/product_detail/presentation/widgets/product_trust_badges_section.dart';
 import 'package:mobile/src/features/product_detail/presentation/widgets/product_recommendations_section.dart';
+import 'package:mobile/src/features/product_detail/presentation/widgets/product_trust_badges_section.dart';
 import '../state/product_detail_cubit.dart';
 import '../state/product_detail_state.dart';
 import 'product_ar_view_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/services.dart';
-
-const _bg = Color(0xFF07070A);
-const _accent = Color(0xFF6366F1);
 
 class ProductDetailPage extends StatelessWidget {
   final ProductModel product;
@@ -62,391 +58,340 @@ class ProductDetailView extends StatefulWidget {
 
 class _ProductDetailViewState extends State<ProductDetailView> {
   late final ScrollController _scrollController;
-  bool _showBottomBar = true;
-
+  bool _showHeader = false;
+  bool _isBottomBarVisible = true;
+  double _lastScrollOffset = 0;
   int _quantity = 1;
-  Timer? _timer;
-
-  // ma tran bien the - dua vao thuoc tinh tung bien the + thuoc tinh mac dinh
   Map<String, String> _selectedAttributes = {};
-
-  // trang thai model 3d
-  // tat khi dung che do ar - tranh tranh chap tai nguyen -> crash app
   bool _is3DMode = false;
-
-  // selection matrix logic
-  void _initializeAttributes(ProductModel product) {
-    if (widget.initialAttributes != null &&
-        widget.initialAttributes!.isNotEmpty &&
-        _selectedAttributes.isEmpty) {
-      _selectedAttributes = Map<String, String>.from(widget.initialAttributes!);
-      return;
-    }
-    // kiem tra combo thuoc tinh dang duoc lua chon co trong khong
-    // chi thuc hien neu combo hien tai chua duoc chon
-    if (product.variants.isNotEmpty && _selectedAttributes.isEmpty) {
-      final activeVariants = product.variants.where((v) => v.isActive).toList();
-      if (activeVariants.isEmpty) return;
-
-      final firstVariant = activeVariants.first;
-      // danh sach thuoc tinh -> tao ma tran
-      // eg: 3 color * 2 version -> 6 combo
-      final configKeys = product.attributeConfig;
-
-      // set combo cho bien the dau tien
-      if (configKeys.isNotEmpty) {
-        for (var key in configKeys) {
-          if (firstVariant.attributes.containsKey(key)) {
-            _selectedAttributes[key] = firstVariant.attributes[key].toString();
-          }
-        }
-      } else {
-        _selectedAttributes = Map<String, String>.from(
-          firstVariant.attributes.map((k, v) => MapEntry(k, v.toString())),
-        );
-      }
-    }
-  }
-
-  // lay bien the khop voi combo user chon
-  ProductVariantModel? _getCurrentVariant(ProductModel product) {
-    if (product.variants.isEmpty) return null;
-
-    // lap qua danh sach bien the va tim combo khop voi lua chon user
-    for (final v in product.variants) {
-      if (!v.isActive) continue;
-
-      final allMatch = _selectedAttributes.entries.every(
-        (entry) => v.attributes[entry.key]?.toString() == entry.value,
-      );
-      if (allMatch) return v;
-    }
-
-    final activeVariants = product.variants.where((v) => v.isActive).toList();
-    return activeVariants.isNotEmpty ? activeVariants.first : null;
-  }
-
-  void _onAttributeChanged(String key, String value, ProductModel product) {
-    setState(() {
-      _selectedAttributes[key] = value; // cap nhat thuoc tinh vua chon
-
-      // kiem tra combo co ton tai khong
-      final exactMatch = product.variants.any((v) {
-        if (!v.isActive) return false;
-        return _selectedAttributes.entries.every(
-          (entry) => v.attributes[entry.key]?.toString() == entry.value,
-        );
-      });
-
-      if (!exactMatch) {
-        // neu khong co combo vua chon
-        // tim mot bien the thay the
-        // thay doi cac thuoc tinh con lai
-        final fallback = product.variants
-            .cast<ProductVariantModel?>()
-            .firstWhere(
-              (v) => v!.isActive && v.attributes[key]?.toString() == value,
-              orElse: () => null,
-            );
-        if (fallback != null) {
-          final configKeys = product.attributeConfig;
-          if (configKeys.isNotEmpty) {
-            final newMap = <String, String>{};
-            for (var k in configKeys) {
-              if (fallback.attributes.containsKey(k)) {
-                newMap[k] = fallback.attributes[k].toString();
-              }
-            }
-            _selectedAttributes = newMap;
-          } else {
-            _selectedAttributes = Map<String, String>.from(
-              fallback.attributes.map((k, v) => MapEntry(k, v.toString())),
-            );
-          }
-        }
-      }
-
-      // cap nhat so luong hang hoa theo tung combo bien the
-      final newVariant = _getCurrentVariant(product);
-      final maxQty = newVariant?.stock ?? 0;
-      if (maxQty == 0) {
-        _quantity = 0;
-      } else if (_quantity > maxQty) {
-        _quantity = maxQty;
-      } else if (_quantity == 0) {
-        _quantity = 1;
-      }
-      _saveRecentlyViewed(product);
-    });
-  }
-
-  bool isComboAvailable(String key, String value, ProductModel product) {
-    final hypothetical = Map<String, String>.from(_selectedAttributes);
-    hypothetical[key] = value;
-
-    final configKeys = product.attributeConfig;
-
-    return product.variants.any((v) {
-      if (!v.isActive) return false;
-
-      if (configKeys.isNotEmpty) {
-        return configKeys.every((k) {
-          final targetValue = hypothetical[k];
-          if (targetValue == null) return true;
-          return v.attributes[k]?.toString() == targetValue;
-        });
-      }
-
-      return hypothetical.entries.every(
-        (entry) => v.attributes[entry.key]?.toString() == entry.value,
-      );
-    });
-  }
-
-  bool isValueInStock(String key, String value, ProductModel product) {
-    return product.variants.any(
-      (v) =>
-          v.isActive && v.attributes[key]?.toString() == value && v.stock > 0,
-    );
-  }
-
-  // xu ly truoc khi chuyen sang mode ar
-  void _navigateToAR(ProductModel product) {
-    if (_is3DMode) {
-      // tat model 3d truoc de khong tranh chap tai nguyen phan cung voi ar mode
-      setState(() => _is3DMode = false);
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) _pushARPage(product);
-      });
-    } else {
-      _pushARPage(product);
-    }
-  }
-
-  void _pushARPage(ProductModel product) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => ProductARViewPage(product: product)),
-    );
-  }
-
-  // luu san pham da xem vao local storage
-  void _saveRecentlyViewed(ProductModel product) {
-    try {
-      final prefs = getIt<SharedPreferences>();
-      final List<String> currentList =
-          prefs.getStringList('recently_viewed') ?? [];
-      final currentVariant = _getCurrentVariant(product);
-      final priceToSave = currentVariant?.price ?? product.basePrice;
-
-      String imageToSave = product.baseImage;
-      if (currentVariant != null &&
-          currentVariant.imageUrl != null &&
-          currentVariant.imageUrl!.isNotEmpty) {
-        imageToSave = currentVariant.imageUrl!;
-      }
-
-      final attributesJson = jsonEncode(_selectedAttributes);
-      final entryToSave =
-          '${product.id}|${product.name}|$priceToSave|$imageToSave|$attributesJson';
-
-      currentList.removeWhere((e) => e.startsWith('${product.id}|'));
-      currentList.insert(0, entryToSave);
-
-      if (currentList.length > 5) {
-        currentList.removeRange(5, currentList.length);
-      }
-
-      prefs.setStringList('recently_viewed', currentList);
-    } catch (e) {
-      debugPrint('Error saving recently viewed: $e');
-    }
-  }
+  Timer? _quantityTimer;
 
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController();
-    _scrollController.addListener(_onScroll);
+    _scrollController = ScrollController()..addListener(_onScroll);
     _initializeAttributes(widget.initialProduct);
-    _saveRecentlyViewed(widget.initialProduct);
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
-    _timer?.cancel();
     super.dispose();
   }
 
   void _onScroll() {
-    if (_scrollController.position.userScrollDirection ==
-        ScrollDirection.reverse) {
-      if (_showBottomBar) setState(() => _showBottomBar = false);
-    } else if (_scrollController.position.userScrollDirection ==
-        ScrollDirection.forward) {
-      if (!_showBottomBar) setState(() => _showBottomBar = true);
+    final offset = _scrollController.offset;
+
+    // hieu ung show hide cho header
+    if (offset > 100 && !_showHeader) setState(() => _showHeader = true);
+    if (offset <= 100 && _showHeader) setState(() => _showHeader = false);
+
+    // show hide bottom bar
+    if (offset > _lastScrollOffset && offset > 200) {
+      if (_isBottomBarVisible) setState(() => _isBottomBarVisible = false);
+    } else if (offset < _lastScrollOffset) {
+      if (!_isBottomBarVisible) setState(() => _isBottomBarVisible = true);
+    }
+    _lastScrollOffset = offset;
+  }
+
+  void _startUpdateQuantity(bool increment, int maxStock) {
+    _quantityTimer?.cancel();
+    _quantityTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      setState(() {
+        if (increment) {
+          if (_quantity < maxStock) {
+            _quantity++;
+            HapticFeedback.lightImpact();
+          }
+        } else {
+          if (_quantity > 1) {
+            _quantity--;
+            HapticFeedback.lightImpact();
+          }
+        }
+      });
+    });
+  }
+
+  void _stopUpdateQuantity() {
+    _quantityTimer?.cancel();
+  }
+
+  void _initializeAttributes(ProductModel product) {
+    if (widget.initialAttributes != null &&
+        widget.initialAttributes!.isNotEmpty) {
+      _selectedAttributes = Map<String, String>.from(widget.initialAttributes!);
+      return;
+    }
+    if (product.variants.isNotEmpty) {
+      final v = product.variants.firstWhere(
+        (v) => v.isActive,
+        orElse: () => product.variants.first,
+      );
+      _selectedAttributes = Map<String, String>.from(
+        v.attributes.map((k, v) => MapEntry(k, v.toString())),
+      );
     }
   }
 
-  void _startTimer(VoidCallback action) {
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(milliseconds: 100), (t) => action());
+  ProductVariantModel? _getCurrentVariant(ProductModel product) {
+    for (final v in product.variants) {
+      if (v.isActive &&
+          _selectedAttributes.entries.every(
+            (e) => v.attributes[e.key]?.toString() == e.value,
+          )) {
+        return v;
+      }
+    }
+    return product.variants.isNotEmpty ? product.variants.first : null;
+  }
+
+  Widget _buildDynamicAura(String brandName) {
+    final identity = BrandIdentityHelper.getIdentity(brandName);
+    final accent = identity.accent;
+
+    return Positioned.fill(
+      child: AnimatedBuilder(
+        animation: _scrollController,
+        builder: (context, child) {
+          final offset = _scrollController.hasClients
+              ? _scrollController.offset
+              : 0.0;
+          final auraTop = -offset * 0.35;
+
+          return Stack(
+            children: [
+              Container(color: const Color(0xFF07070A)),
+              Positioned(
+                top: auraTop - 50,
+                right: -150,
+                child: Container(
+                  width: 600,
+                  height: 600,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        accent.withValues(alpha: 0.18),
+                        accent.withValues(alpha: 0.05),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.4, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: auraTop + 450,
+                left: -200,
+                child: Container(
+                  width: 500,
+                  height: 500,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        accent.withValues(alpha: 0.14),
+                        accent.withValues(alpha: 0.03),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.4, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: auraTop + 200,
+                left: 100,
+                child: Container(
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        accent.withValues(alpha: 0.06),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProductDetailCubit, ProductDetailState>(
       builder: (context, state) {
-        final currentProduct = state is ProductDetailLoaded
+        final product = state is ProductDetailLoaded
             ? state.product
             : widget.initialProduct;
+        final variant = _getCurrentVariant(product);
 
-        if (state is ProductDetailLoaded && _selectedAttributes.isEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              setState(() => _initializeAttributes(currentProduct));
-            }
-          });
-        }
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          extendBodyBehindAppBar: true,
+          body: Stack(
+            children: [
+              // dynamic bg
+              _buildDynamicAura(product.brandName ?? ""),
 
-        final relatedProducts = state is ProductDetailLoaded
-            ? state.relatedProducts
-            : <ProductModel>[];
-        final currentVariant = _getCurrentVariant(currentProduct);
-        final maxQty = currentVariant?.stock ?? 0;
-
-        return AnnotatedRegion<SystemUiOverlayStyle>(
-          value: SystemUiOverlayStyle.light,
-          child: Scaffold(
-            backgroundColor: _bg,
-            body: Stack(
-              children: [
-                CustomScrollView(
-                  controller: _scrollController,
-                  physics: const BouncingScrollPhysics(),
-                  slivers: [
-                    SliverAppBar(
-                      expandedHeight: 0,
-                      floating: true,
-                      backgroundColor: _bg,
-                      elevation: 0,
-                      scrolledUnderElevation: 0,
-                      centerTitle: true,
-                      leading: Padding(
-                        padding: const EdgeInsets.only(left: 12),
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back_rounded,
-                            color: Colors.white,
-                            size: 22,
+              CustomScrollView(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: AnimatedBuilder(
+                      animation: _scrollController,
+                      builder: (context, child) {
+                        return ProductHeroSection(
+                          product: product,
+                          currentVariant: variant,
+                          selectedAttributes: _selectedAttributes,
+                          is3DMode: _is3DMode,
+                          scrollOffset: _scrollController.hasClients
+                              ? _scrollController.offset
+                              : 0.0,
+                          onAttributeChanged: (k, v) =>
+                              setState(() => _selectedAttributes[k] = v),
+                          on3DToggle: () =>
+                              setState(() => _is3DMode = !_is3DMode),
+                          onARPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  ProductARViewPage(product: product),
+                            ),
                           ),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ),
-                      actions: [
-                        IconButton(
-                          icon: const Icon(
-                            LucideIcons.box,
-                            color: Colors.white,
-                            size: 22,
-                          ),
-                          onPressed: () => _navigateToAR(currentProduct),
-                        ),
-                      ],
-                    ),
-                    SliverToBoxAdapter(
-                      child: ProductHeroSection(
-                        product: currentProduct,
-                        currentVariant: currentVariant,
-                        selectedAttributes: _selectedAttributes,
-                        is3DMode: _is3DMode,
-                        onAttributeChanged: (key, value) =>
-                            _onAttributeChanged(key, value, currentProduct),
-                        on3DToggle: () =>
-                            setState(() => _is3DMode = !_is3DMode),
-                        onARPressed: () => _navigateToAR(currentProduct),
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: ProductInfoSection(
-                        product: currentProduct,
-                        selectedAttributes: _selectedAttributes,
-                        quantity: _quantity,
-                        maxQuantity: maxQty,
-                        onAttributeChanged: (key, value) =>
-                            _onAttributeChanged(key, value, currentProduct),
-                        isComboAvailable: (key, value) =>
-                            isComboAvailable(key, value, currentProduct),
-                        isValueInStock: (key, value) =>
-                            isValueInStock(key, value, currentProduct),
-                        onIncrement: () {
-                          if (_quantity < maxQty) {
-                            setState(() => _quantity++);
-                          }
-                        },
-                        onDecrement: () {
-                          if (_quantity > 1) {
-                            setState(() => _quantity--);
-                          }
-                        },
-                        onLongPressIncrement: () => _startTimer(() {
-                          if (_quantity < maxQty) {
-                            setState(() => _quantity++);
-                          }
-                        }),
-                        onLongPressDecrement: () => _startTimer(() {
-                          if (_quantity > 1) {
-                            setState(() => _quantity--);
-                          }
-                        }),
-                        onLongPressEnd: () => _timer?.cancel(),
-                      ),
-                    ),
-                    const SliverToBoxAdapter(
-                      child: ProductTrustBadgesSection(),
-                    ),
-                    SliverToBoxAdapter(
-                      child: ProductReviewsPreviewSection(
-                        product: currentProduct,
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: ProductRecommendationsSection(
-                        recommendations: relatedProducts,
-                      ),
-                    ),
-                    const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
-                  ],
-                ),
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: StickyBottomBar(
-                    product: currentProduct,
-                    selectedVariant: currentVariant,
-                    quantity: _quantity,
-                    isVisible: _showBottomBar,
-                  ),
-                ),
-                if (state is ProductDetailLoading)
-                  const Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: LinearProgressIndicator(
-                      backgroundColor: Colors.transparent,
-                      valueColor: AlwaysStoppedAnimation<Color>(_accent),
-                      minHeight: 2,
+                        );
+                      },
                     ),
                   ),
-              ],
-            ),
+                  SliverToBoxAdapter(
+                    child: ProductInfoSection(
+                      product: product,
+                      selectedAttributes: _selectedAttributes,
+                      quantity: _quantity,
+                      maxQuantity: variant?.stock ?? 0,
+                      onAttributeChanged: (k, v) {
+                        setState(() {
+                          _selectedAttributes[k] = v;
+                          // reset qty neu vuot qua stock
+                          final newVariant = _getCurrentVariant(product);
+                          if (_quantity > (newVariant?.stock ?? 0)) {
+                            _quantity = (newVariant?.stock ?? 0).clamp(1, 99);
+                          }
+                        });
+                      },
+                      isComboAvailable: (_, __) => true,
+                      isValueInStock: (_, __) => true,
+                      onIncrement: () {
+                        if (_quantity < (variant?.stock ?? 0)) {
+                          setState(() => _quantity++);
+                          HapticFeedback.lightImpact();
+                        }
+                      },
+                      onDecrement: () {
+                        if (_quantity > 1) {
+                          setState(() => _quantity--);
+                          HapticFeedback.lightImpact();
+                        }
+                      },
+                      onLongPressIncrement: () =>
+                          _startUpdateQuantity(true, variant?.stock ?? 0),
+                      onLongPressDecrement: () =>
+                          _startUpdateQuantity(false, variant?.stock ?? 0),
+                      onLongPressEnd: _stopUpdateQuantity,
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: ProductTrustBadgesSection(
+                      accentColor: BrandIdentityHelper.getIdentity(
+                        product.brandName ?? '',
+                      ).accent,
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: ProductReviewsPreviewSection(product: product),
+                  ),
+                  SliverToBoxAdapter(
+                    child: ProductRecommendationsSection(
+                      recommendations: state is ProductDetailLoaded
+                          ? state.relatedProducts
+                          : [],
+                    ),
+                  ),
+                  const SliverPadding(padding: EdgeInsets.only(bottom: 140)),
+                ],
+              ),
+
+              _buildHeader(),
+
+              Positioned(
+                bottom: 32,
+                left: 24,
+                right: 24,
+                child: StickyBottomBar(
+                  product: product,
+                  selectedVariant: variant,
+                  quantity: _quantity,
+                  isVisible: _isBottomBarVisible,
+                ),
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildHeader() {
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 400),
+      opacity: _showHeader ? 1.0 : 0.0,
+      child: ClipRRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            height: 100,
+            padding: const EdgeInsets.only(top: 40, left: 16, right: 16),
+            color: AppColors.background.withValues(alpha: 0.8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back_rounded,
+                    color: Colors.white,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const Text(
+                  "Trải nghiệm sản phẩm",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.more_vert_rounded,
+                    color: Colors.white,
+                  ),
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

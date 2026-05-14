@@ -1,12 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/features/auth/domain/entities/user_entity.dart';
-import 'package:mobile/src/features/profile/presentation/pages/membership_tier_page.dart';
 import 'package:mobile/src/features/profile/presentation/pages/edit_profile_page.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_state.dart';
+
+import 'package:mobile/src/features/profile/presentation/pages/membership_tier_page.dart';
 
 class ProfileHeader extends StatelessWidget {
   final UserEntity? user;
@@ -21,64 +22,67 @@ class ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const textLow = Color(0xFF9191A8);
-    const accent = Color(0xFF3B82F6);
-
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.only(top: 12, bottom: 20),
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 48),
       child: Column(
         children: [
+          // ── Profile Identity Section ──
           GestureDetector(
             onTap: user != null
-                ? () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => EditProfilePage(user: user!),
-                      ),
-                    );
-                  }
+                ? () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => EditProfilePage(user: user!),
+                    ),
+                  )
                 : null,
             child: Stack(
               alignment: Alignment.center,
               children: [
+                // Pulse/Glow Effect
                 Container(
-                  width: 120,
-                  height: 120,
+                  width: 130,
+                  height: 130,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: accent.withValues(alpha: 0.1),
-                        blurRadius: 25,
-                        spreadRadius: 2,
-                      ),
-                    ],
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFFFDE047).withValues(alpha: 0.1),
+                        const Color(0xFFFDE047).withValues(alpha: 0.0),
+                      ],
+                    ),
                   ),
                 ),
                 Container(
-                  width: 90,
-                  height: 90,
+                  width: 104,
+                  height: 104,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: accent.withValues(alpha: 0.2),
-                      width: 1,
+                      color: Colors.white.withValues(alpha: 0.08),
+                      width: 1.5,
                     ),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(3.0),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.05),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(40),
+                    padding: const EdgeInsets.all(6.0),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(52),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF14141E),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
                         child: user?.avatarUrl?.isNotEmpty == true
                             ? CachedNetworkImage(
                                 imageUrl: user!.avatarUrl!,
                                 fit: BoxFit.cover,
+                                filterQuality: FilterQuality.high,
                                 errorWidget: (_, __, ___) =>
                                     _buildInitialAvatar(),
                               )
@@ -87,22 +91,43 @@ class ProfileHeader extends StatelessWidget {
                     ),
                   ),
                 ),
+                
+                if (user != null)
+                  Positioned(
+                    bottom: 0,
+                    right: 4,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFDE047),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.edit_rounded,
+                        size: 14,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
-          const SizedBox(height: 14),
+
+          const SizedBox(height: 28),
+
           Text(
-            (user?.fullName ?? 'KHÁCH HÀNG').toUpperCase(),
+            (user?.fullName ?? 'KHÁCH HÀNG'),
             style: const TextStyle(
-              fontSize: 18,
+              fontSize: 28,
               fontWeight: FontWeight.w900,
               color: Colors.white,
-              letterSpacing: 1.5,
+              letterSpacing: -1.0,
             ),
           ),
-          const SizedBox(height: 6),
 
-          if (user != null) ...[
+          const SizedBox(height: 12),
+
+          if (user != null)
             BlocBuilder<OrdersCubit, OrdersState>(
               builder: (context, state) {
                 double totalSpent = 0.0;
@@ -116,26 +141,22 @@ class ProfileHeader extends StatelessWidget {
                   }
                 }
 
-                String tierName = 'STANDARD';
-                Color tierColor = const Color(0xFF94A3B8);
-                IconData tierIcon = LucideIcons.shield;
-
+                String tierName = 'STANDARD ACCESS';
+                Color tierColor = Colors.white54;
                 if (totalSpent >= 150000000.0) {
                   tierName = 'VIP PRESTIGE';
-                  tierColor = const Color(0xFFEF4444);
-                  tierIcon = LucideIcons.crown;
+                  tierColor = const Color(0xFFFDE047);
                 } else if (totalSpent >= 50000000.0) {
                   tierName = 'DIAMOND ELITE';
-                  tierColor = const Color(0xFF06B6D4);
-                  tierIcon = LucideIcons.gem;
+                  tierColor = const Color(0xFFB4CCFF);
                 } else if (totalSpent >= 15000000.0) {
                   tierName = 'GOLD MEMBER';
-                  tierColor = const Color(0xFFFFCC00);
-                  tierIcon = LucideIcons.sparkles;
+                  tierColor = const Color(0xFFFFD700);
                 }
 
                 return GestureDetector(
                   onTap: () {
+                    HapticFeedback.selectionClick();
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) =>
@@ -145,21 +166,24 @@ class ProfileHeader extends StatelessWidget {
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
+                      horizontal: 16,
+                      vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: tierColor.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(16),
+                      color: tierColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: tierColor.withValues(alpha: 0.15),
-                        width: 0.6,
+                        color: tierColor.withValues(alpha: 0.2),
                       ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(tierIcon, size: 10, color: tierColor),
+                        Icon(
+                          Icons.verified_rounded,
+                          size: 12,
+                          color: tierColor,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           tierName,
@@ -167,7 +191,7 @@ class ProfileHeader extends StatelessWidget {
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
                             color: tierColor,
-                            letterSpacing: 0.8,
+                            letterSpacing: 1.5,
                           ),
                         ),
                       ],
@@ -175,14 +199,15 @@ class ProfileHeader extends StatelessWidget {
                   ),
                 );
               },
-            ),
-          ] else
-            const Text(
-              'Tham gia GearHub ngay hôm nay',
+            )
+          else
+            Text(
+              'THIẾT LẬP TÀI KHOẢN NGAY',
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: textLow,
+                fontSize: 9,
+                fontWeight: FontWeight.w900,
+                color: Colors.white.withValues(alpha: 0.2),
+                letterSpacing: 1.5,
               ),
             ),
         ],
@@ -197,9 +222,9 @@ class ProfileHeader extends StatelessWidget {
             ? user!.fullName![0].toUpperCase()
             : 'U',
         style: const TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.w900,
-          color: Colors.white,
+          fontSize: 32,
+          fontWeight: FontWeight.w200,
+          color: Colors.white24,
         ),
       ),
     );

@@ -14,9 +14,6 @@ class OrderStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const textHigh = Color(0xFFF1F1F5);
-    const textLow = Color(0xFF9191A8);
-
     return BlocBuilder<OrdersCubit, OrdersState>(
       builder: (context, state) {
         int pendingCount = 0;
@@ -38,72 +35,52 @@ class OrderStatusCard extends StatelessWidget {
 
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.02),
-            borderRadius: BorderRadius.circular(28),
+            color: Colors.white.withValues(alpha: 0.03),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: Colors.white.withValues(alpha: 0.05),
-              width: 0.8,
+              width: 1,
             ),
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'QUẢN LÝ ĐƠN HÀNG',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900,
-                      color: textHigh,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              const OrderHistoryPage(initialStatus: 'ALL'),
-                        ),
-                      );
-                    },
-                    child: const Icon(
-                      LucideIcons.chevronRight,
-                      size: 14,
-                      color: textLow,
-                    ),
-                  ),
-                ],
+              const Text(
+                'QUẢN LÝ ĐƠN HÀNG',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 1.0,
+                ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildHubItem(
+                  _buildStatusItem(
                     context,
                     LucideIcons.wallet,
-                    'XÁC NHẬN',
+                    'CHUẨN BỊ',
                     'PENDING',
                     pendingCount,
                   ),
-                  _buildHubItem(
+                  _buildStatusItem(
                     context,
                     LucideIcons.package,
                     'XỬ LÝ',
                     'PROCESSING',
                     processingCount,
                   ),
-                  _buildHubItem(
+                  _buildStatusItem(
                     context,
                     LucideIcons.truck,
                     'GIAO HÀNG',
                     'SHIPPING',
                     shippingCount,
                   ),
-
                   BlocProvider(
                     create: (context) =>
                         getIt<ReviewCubit>()..loadPendingReviews(),
@@ -114,10 +91,10 @@ class OrderStatusCard extends StatelessWidget {
                           reviewCount = state.pendingReviews.length;
                         }
 
-                        return _buildHubItem(
+                        return _buildStatusItem(
                           context,
                           LucideIcons.star,
-                          'ĐÁNH GIÁ',
+                          'PHẢN HỒI',
                           'REVIEWS',
                           reviewCount,
                           onTap: () {
@@ -148,7 +125,7 @@ class OrderStatusCard extends StatelessWidget {
     );
   }
 
-  Widget _buildHubItem(
+  Widget _buildStatusItem(
     BuildContext context,
     IconData icon,
     String label,
@@ -156,7 +133,7 @@ class OrderStatusCard extends StatelessWidget {
     int count, {
     VoidCallback? onTap,
   }) {
-    const accent = Color(0xFF3B82F6);
+    final bool isActive = count > 0;
 
     return GestureDetector(
       onTap:
@@ -168,46 +145,48 @@ class OrderStatusCard extends StatelessWidget {
               ),
             );
           },
-      child: Container(
-        color: Colors.transparent,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 60,
         child: Column(
           children: [
             Stack(
               clipBehavior: Clip.none,
               alignment: Alignment.center,
               children: [
-                Icon(
-                  icon,
-                  size: 22,
-                  color: count > 0
-                      ? Colors.white
-                      : Colors.white.withValues(alpha: 0.15),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? const Color(0xFFFDE047).withValues(alpha: 0.05)
+                        : Colors.white.withValues(alpha: 0.02),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 18,
+                    color: isActive
+                        ? const Color(0xFFFDE047)
+                        : Colors.white.withValues(alpha: 0.2),
+                  ),
                 ),
-                if (count > 0)
+                if (isActive)
                   Positioned(
-                    top: -6,
-                    right: -10,
+                    top: -2,
+                    right: -2,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: accent,
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: accent.withValues(alpha: 0.3),
-                            blurRadius: 4,
-                          ),
-                        ],
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFDE047),
+                        shape: BoxShape.circle,
                       ),
                       child: Text(
                         count.toString(),
                         style: const TextStyle(
-                          fontSize: 9,
+                          fontSize: 8,
                           fontWeight: FontWeight.w900,
-                          color: Colors.white,
+                          color: Colors.black,
                           height: 1,
                         ),
                       ),
@@ -218,13 +197,14 @@ class OrderStatusCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               label,
+              textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 9,
+                fontSize: 8,
                 fontWeight: FontWeight.w800,
-                color: count > 0
-                    ? Colors.white.withValues(alpha: 0.6)
-                    : Colors.white.withValues(alpha: 0.15),
-                letterSpacing: 0.8,
+                color: isActive
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.2),
+                letterSpacing: 0.5,
               ),
             ),
           ],

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/models/product_variant_model.dart';
-import 'package:mobile/src/features/onboarding/presentation/widgets/three_animated_arrow.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/features/cart/domain/entities/cart_item_entity.dart';
 import 'package:mobile/src/features/checkout/presentation/pages/checkout_page.dart';
@@ -13,12 +12,8 @@ import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:mobile/src/shared/widgets/auth_required_modal.dart';
 import 'package:mobile/src/shared/widgets/stock_limit_dialog.dart';
-
-const _surface = Color(0xFF14141E);
-const _surfaceAlt = Color(0xFF1C1C28);
-const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFF6366F1);
-const _textHigh = Color(0xFFF1F1F5);
+import 'package:mobile/src/core/utils/formatter_utils.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class StickyBottomBar extends StatefulWidget {
   final ProductModel product;
@@ -39,63 +34,96 @@ class StickyBottomBar extends StatefulWidget {
 }
 
 class _StickyBottomBarState extends State<StickyBottomBar> {
-  bool _isAdded = false;
-  double _dragPosition = 0.0;
-  double _sliderWidth = 0.0;
-  final double _thumbSz = 52.0;
+  bool _isAdding = false;
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final variant =
+        widget.selectedVariant ??
+        (widget.product.variants.where((v) => v.isActive).firstOrNull ??
+            widget.product.variants.first);
+
     return BlocListener<CartCubit, CartState>(
       listener: (context, state) {
-        if (state is CartAddSuccess) {
-          setState(() {
-            _isAdded = true;
-          });
-          Future.delayed(const Duration(milliseconds: 1200), () {
-            if (mounted) {
-              setState(() {
-                _isAdded = false;
-                _dragPosition = 0;
-              });
-            }
-          });
+        if (state is CartAddSuccess && _isAdding) {
+          setState(() => _isAdding = false);
+          _showSuccessFeedback();
+        }
+        if (state is CartError && _isAdding) {
+          setState(() => _isAdding = false);
         }
       },
       child: AnimatedSlide(
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeOutCubic,
-        offset: widget.isVisible ? Offset.zero : const Offset(0, 1.5),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 6, 20, 16),
-            child: Container(
-              decoration: BoxDecoration(
-                color: _surface.withValues(alpha: 0.96),
-                borderRadius: BorderRadius.circular(36),
-                border: Border.all(color: _border, width: 1),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 28,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
+        duration: const Duration(milliseconds: 800),
+        curve: Curves.fastLinearToSlowEaseIn,
+        offset: widget.isVisible ? Offset.zero : const Offset(0, 2.0),
+        child: Container(
+          width: size.width - 48,
+          height: 72,
+          decoration: BoxDecoration(
+            color: const Color(0xFF07070A).withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(40),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.1),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.4),
+                blurRadius: 30,
+                offset: const Offset(0, 10),
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(36),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Row(
-                      children: [
-                        _buildOrderBtn(),
-                        const SizedBox(width: 8),
-                        Expanded(child: _buildSlider()),
-                      ],
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(40),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                child: Row(
+                  children: [
+                    _buildIconButton(
+                      icon: _isAdding
+                          ? LucideIcons.loader
+                          : LucideIcons.shoppingBag,
+                      onTap: () => _handleAddToCart(variant),
+                      isLoading: _isAdding,
                     ),
-                  ),
+                    const SizedBox(width: 8),
+
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            "Thành tiền",
+                            style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            formatVND(variant.price * widget.quantity),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    _buildPrimaryButton(
+                      label: "MUA NGAY",
+                      onTap: () => _handleBuyNow(variant),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -105,198 +133,152 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
     );
   }
 
-  Widget _buildOrderBtn() => GestureDetector(
-    onTap: () {
-      HapticFeedback.lightImpact();
-      final authState = context.read<AuthCubit>().state;
-      if (authState is! AuthAuthenticated) {
-        AuthRequiredModal.show(context);
-        return;
-      }
-
-      final variant =
-          widget.selectedVariant ??
-          (widget.product.variants.where((v) => v.isActive).firstOrNull ??
-              widget.product.variants.first);
-      final item = CartItemEntity(
-        id: "buy_now_${DateTime.now().millisecondsSinceEpoch}",
-        cartId: "buy_now",
-        productVariant: variant,
-        product: widget.product,
-        quantity: widget.quantity,
-      );
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CheckoutPage(
-            args: CheckoutArguments(items: [item], isFromCart: false),
-          ),
-        ),
-      );
-    },
-    child: Container(
-      height: 60,
-      padding: const EdgeInsets.symmetric(horizontal: 22),
-      decoration: BoxDecoration(
-        color: _surfaceAlt,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: _border, width: 1),
-      ),
-      child: const Center(
-        child: Text(
-          'MUA NGAY',
-          style: TextStyle(
-            color: _textHigh,
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.1,
-          ),
-        ),
-      ),
-    ),
-  );
-
-  // slide to add
-  Widget _buildSlider() => LayoutBuilder(
-    builder: (context, box) {
-      _sliderWidth = box.maxWidth;
-      final maxDrag = _sliderWidth - _thumbSz - 8;
-
-      return Container(
-        height: 60,
+  Widget _buildIconButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    bool isLoading = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 56,
+        height: 56,
         decoration: BoxDecoration(
-          color: _accent,
+          color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
-        child: Stack(
-          alignment: Alignment.centerLeft,
-          children: [
-            AnimatedContainer(
-              duration: _dragPosition == 0
-                  ? const Duration(milliseconds: 350)
-                  : Duration.zero,
-              curve: Curves.easeOutCubic,
-              width: _isAdded ? _sliderWidth : _dragPosition + _thumbSz + 8,
-              height: 60,
-              decoration: BoxDecoration(
-                color: _isAdded ? const Color(0xFF10B981) : _accent,
-                borderRadius: BorderRadius.circular(28),
-              ),
-            ),
-
-            Center(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                child: Padding(
-                  key: ValueKey(_isAdded),
-                  padding: EdgeInsets.only(left: _isAdded ? 0 : 48),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _isAdded ? 'ĐÃ THÊM VÀO GIỎ' : 'THÊM VÀO GIỎ',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
-                      if (!_isAdded) ...[
-                        const SizedBox(width: 8),
-                        const ThreeAnimatedArrows(color: Colors.white60),
-                      ],
-                    ],
+        child: Center(
+          child: isLoading
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
                   ),
-                ),
-              ),
+                )
+              : Icon(icon, color: Colors.white, size: 20),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrimaryButton({
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.white.withValues(alpha: 0.1),
+              blurRadius: 15,
+              offset: const Offset(0, 4),
             ),
-            // thumb
-            if (!_isAdded)
-              AnimatedPositioned(
-                duration: _dragPosition == 0
-                    ? const Duration(milliseconds: 380)
-                    : Duration.zero,
-                curve: Curves.easeOutCubic,
-                left: 4 + _dragPosition,
-                child: GestureDetector(
-                  onHorizontalDragUpdate: (d) => setState(() {
-                    _dragPosition = (_dragPosition + d.delta.dx).clamp(
-                      0,
-                      maxDrag,
-                    );
-                  }),
-                  onHorizontalDragEnd: (d) {
-                    if (_dragPosition > maxDrag * 0.75) {
-                      HapticFeedback.heavyImpact();
-                      final variant =
-                          widget.selectedVariant ??
-                          (widget.product.variants
-                                  .where((v) => v.isActive)
-                                  .firstOrNull ??
-                              widget.product.variants.first);
-
-                      final cartState = context.read<CartCubit>().state;
-                      int existingQty = 0;
-                      if (cartState.cart != null) {
-                        final existing = cartState.cart!.items
-                            .where((i) => i.productVariant.id == variant.id)
-                            .firstOrNull;
-                        existingQty = existing?.quantity ?? 0;
-                      }
-
-                      if (existingQty + widget.quantity > variant.stock) {
-                        StockLimitDialog.show(
-                          context,
-                          stockCount: variant.stock,
-                          currentQty: existingQty,
-                          message:
-                              'Số lượng sản phẩm trong kho không đủ để thêm vào giỏ hàng.\n\nKho hiện còn ${variant.stock} sản phẩm và bạn đã có $existingQty sản phẩm trong giỏ.',
-                        );
-                        setState(() => _dragPosition = 0);
-                        return;
-                      }
-
-                      setState(() {
-                        _dragPosition = maxDrag;
-                      });
-                      context.read<CartCubit>().addToCart(
-                        variant,
-                        widget.product,
-                        widget.quantity,
-                      );
-                    } else {
-                      HapticFeedback.lightImpact();
-                      setState(() => _dragPosition = 0);
-                    }
-                  },
-                  child: Container(
-                    width: _thumbSz,
-                    height: _thumbSz,
-                    decoration: BoxDecoration(
-                      color: _surface,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      color: _textHigh,
-                      size: 18,
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
+        child: Center(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF07070A),
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _handleAddToCart(ProductVariantModel variant) {
+    HapticFeedback.mediumImpact();
+    final authState = context.read<AuthCubit>().state;
+    if (authState is! AuthAuthenticated) {
+      AuthRequiredModal.show(context);
+      return;
+    }
+
+    // lay trang thai cart
+    final cartState = context.read<CartCubit>().state;
+    int existingQty = 0; // gia tri khoi tao
+    // lay ra san pham dau tien trung id voi sp them vao
+    if (cartState.cart != null) {
+      final existing = cartState.cart!.items
+          .where((i) => i.productVariant.id == variant.id)
+          .firstOrNull;
+      existingQty = existing?.quantity ?? 0;
+    }
+
+    // vuot limit stock
+    if (existingQty + widget.quantity > variant.stock) {
+      StockLimitDialog.show(
+        context,
+        stockCount: variant.stock,
+        currentQty: existingQty,
+        message: "Vượt giới hạn kho.",
       );
-    },
-  );
+      return;
+    }
+
+    setState(() => _isAdding = true);
+    context.read<CartCubit>().addToCart(
+      variant,
+      widget.product,
+      widget.quantity,
+    );
+  }
+
+  void _handleBuyNow(ProductVariantModel variant) {
+    HapticFeedback.heavyImpact();
+    final authState = context.read<AuthCubit>().state;
+    if (authState is! AuthAuthenticated) {
+      AuthRequiredModal.show(context);
+      return;
+    }
+
+    // dem toan bo thong tin va so luong cua san pham qua trang thanh toan
+    final item = CartItemEntity(
+      id: "buy_now_${DateTime.now().millisecondsSinceEpoch}",
+      cartId: "buy_now",
+      productVariant: variant,
+      product: widget.product,
+      quantity: widget.quantity,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CheckoutPage(
+          args: CheckoutArguments(items: [item], isFromCart: false),
+        ),
+      ),
+    );
+  }
+
+  void _showSuccessFeedback() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(LucideIcons.circleCheck, color: Colors.white, size: 20),
+            SizedBox(width: 12),
+            Text("Đã thêm sản phẩm vào giỏ hàng"),
+          ],
+        ),
+        backgroundColor: Colors.black,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        margin: const EdgeInsets.fromLTRB(24, 0, 24, 100),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
 }

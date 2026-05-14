@@ -27,7 +27,7 @@ class ReviewModel extends ReviewEntity {
       userId: json['userId'] as String,
       productId: json['productId'] as String,
       orderId: json['orderId'] as String?,
-      rating: json['rating'] as int,
+      rating: (json['rating'] as num).toInt(),
       comment: json['comment'] as String?,
       reply: json['reply'] as String?,
       isVerifiedPurchase: json['isVerifiedPurchase'] as bool? ?? false,

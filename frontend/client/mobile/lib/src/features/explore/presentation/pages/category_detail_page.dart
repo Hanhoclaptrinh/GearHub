@@ -243,7 +243,6 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
                     ? state.category.title
                     : '...',
                 onBack: () => Navigator.pop(context),
-                isTransparentAtTop: false,
               ),
             ],
           ),
