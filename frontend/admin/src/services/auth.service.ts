@@ -10,8 +10,8 @@ export const authService = {
       deviceId,
     });
 
-    if (data.data.user.role !== Role.ADMIN) {
-      throw new Error('Access denied. Admin only.');
+    if (data.data.user.role !== Role.ADMIN && data.data.user.role !== Role.STAFF) {
+      throw new Error('Access denied. Insufficient permissions.');
     }
 
     localStorage.setItem('admin_token', data.data.tokens.accessToken);

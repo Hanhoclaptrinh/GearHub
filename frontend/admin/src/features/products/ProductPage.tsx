@@ -733,11 +733,11 @@ export const ProductPage: React.FC = () => {
                   <Wand2 className="w-5 h-5 text-indigo-600" />
                   <span className="text-xs font-black text-slate-800 uppercase tracking-wide">Magic Bulk Action (Gán nhanh hàng loạt)</span>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                   <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase ml-1 flex items-center gap-1">Lọc theo Thuộc tính</label>
-                    <select 
+                    <select
                       id="bulk-attr-filter-key"
                       className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-primary transition-all font-bold text-slate-700 text-xs cursor-pointer"
                     >
@@ -752,10 +752,10 @@ export const ProductPage: React.FC = () => {
 
                   <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase ml-1 flex items-center gap-1">Lọc theo Giá trị</label>
-                    <input 
+                    <input
                       id="bulk-attr-filter-val"
-                      type="text" 
-                      placeholder="VD: Đen, 512GB" 
+                      type="text"
+                      placeholder="VD: Đen, 512GB"
                       className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-primary transition-all font-bold text-slate-700 text-xs"
                     />
                   </div>
@@ -890,11 +890,11 @@ export const ProductPage: React.FC = () => {
                         <UploadCloud className="w-3 h-3" /> Tải ảnh riêng cho SKU này
                       </label>
                       <div className="flex flex-wrap gap-2 mt-2 items-center bg-white p-3 rounded-xl border border-slate-200 min-h-[64px]">
-                        <input 
-                          type="file" 
+                        <input
+                          type="file"
                           multiple
-                          accept="image/*,.glb,.usdz" 
-                          className="hidden" 
+                          accept="image/*,.glb,.usdz"
+                          className="hidden"
                           id={`variant-file-${idx}`}
                           onChange={(e) => {
                             if (e.target.files) {
@@ -903,10 +903,10 @@ export const ProductPage: React.FC = () => {
                               const newFiles = [...currentFiles, ...addedFiles];
                               setVariantFiles({ ...variantFiles, [idx]: newFiles });
                             }
-                          }} 
+                          }}
                         />
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           onClick={() => document.getElementById(`variant-file-${idx}`)?.click()}
                           className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl border border-slate-200 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                         >
@@ -979,7 +979,7 @@ export const ProductPage: React.FC = () => {
                               alert('Vui lòng nhập thuộc tính màu sắc cho biến thể này trước.');
                               return;
                             }
-                            
+
                             const colorKey = Object.keys(currentVariantAttributes).find(
                               key => key.toLowerCase().includes('màu') || key.toLowerCase().includes('color')
                             );

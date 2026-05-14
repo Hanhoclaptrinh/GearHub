@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -19,13 +19,22 @@ import { cn } from '../utils/cn';
 import { authService } from '../services/auth.service';
 
 const navigation = [
-  { name: 'Dashboard', icon: LayoutDashboard, path: '/' },
-  { name: 'Sản phẩm', icon: Package, path: '/products' },
-  { name: 'Đơn hàng', icon: ShoppingCart, path: '/orders' },
-  { name: 'Người dùng', icon: Users, path: '/users' },
-  { name: 'Danh mục', icon: Tag, path: '/categories' },
-  { name: 'Thương hiệu', icon: Briefcase, path: '/brands' },
-  { name: 'Giao dịch', icon: CreditCard, path: '/transactions' },
+  { name: 'Dashboard', icon: LayoutDashboard, path: '/', roles: ['ADMIN', 'STAFF'] },
+  { name: 'Sản phẩm', icon: Package, path: '/products', roles: ['ADMIN', 'STAFF'] },
+  { name: 'Đơn hàng', icon: ShoppingCart, path: '/orders', roles: ['ADMIN', 'STAFF'] },
+  {
+    name: 'Quản trị nhân sự',
+    icon: Users,
+    path: '/users-management',
+    roles: ['ADMIN'],
+    children: [
+      { name: 'Khách hàng', path: '/users' },
+      { name: 'Nhân viên', path: '/staff' },
+    ]
+  },
+  { name: 'Danh mục', icon: Tag, path: '/categories', roles: ['ADMIN', 'STAFF'] },
+  { name: 'Thương hiệu', icon: Briefcase, path: '/brands', roles: ['ADMIN', 'STAFF'] },
+  { name: 'Giao dịch', icon: CreditCard, path: '/transactions', roles: ['ADMIN'] },
 ];
 
 export const DashboardLayout: React.FC = () => {
@@ -40,6 +49,24 @@ export const DashboardLayout: React.FC = () => {
     initialData: authService.getCurrentUser() || undefined,
     staleTime: Infinity,
   });
+
+  const [openMenus, setOpenMenus] = useState<string[]>([]);
+
+  useEffect(() => {
+    navigation.forEach(item => {
+      if (item.children?.some(c => location.pathname === c.path)) {
+        if (!openMenus.includes(item.name)) {
+          setOpenMenus(prev => [...prev, item.name]);
+        }
+      }
+    });
+  }, [location.pathname]);
+
+  const toggleMenu = (name: string) => {
+    setOpenMenus(prev =>
+      prev.includes(name) ? prev.filter(m => m !== name) : [...prev, name]
+    );
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
@@ -66,27 +93,71 @@ export const DashboardLayout: React.FC = () => {
             <span className="text-xl font-bold font-heading text-slate-800 uppercase tracking-tight">GearHub <span className="text-cta">Admin</span></span>
           </div>
 
-          <nav className="flex-1 space-y-2">
-            {navigation.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <NavLink
-                  key={item.name}
-                  to={item.path}
-                  className={({ isActive }) => cn(
-                    "flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 group relative",
-                    isActive
-                      ? "bg-primary text-white shadow-lg shadow-primary/20"
-                      : "text-slate-500 hover:bg-slate-100/80 hover:text-slate-800"
-                  )}
-                >
-                  <item.icon className={cn("w-5 h-5", !isActive && "text-slate-400 group-hover:rotate-6")} />
-                  {item.name}
-                  {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-cta rounded-full" />}
-                  <ChevronRight className={cn("ml-auto w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity", isActive && "opacity-100")} />
-                </NavLink>
-              );
-            })}
+          <nav className="flex-1 space-y-2 overflow-y-auto pr-2 custom-scrollbar">
+            {navigation
+              .filter(item => item.roles.includes(user?.role || ''))
+              .map((item) => {
+                const hasChildren = item.children && item.children.length > 0;
+                const isOpen = openMenus.includes(item.name);
+                const isActive = location.pathname === item.path || (hasChildren && item.children?.some(c => location.pathname === c.path));
+
+                if (hasChildren) {
+                  return (
+                    <div key={item.name} className="space-y-1">
+                      <button
+                        onClick={() => toggleMenu(item.name)}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 group relative",
+                          isActive && !isOpen
+                            ? "bg-primary text-white shadow-lg shadow-primary/20"
+                            : "text-slate-500 hover:bg-slate-100/80 hover:text-slate-800"
+                        )}
+                      >
+                        <item.icon className={cn("w-5 h-5", !isActive && "text-slate-400 group-hover:rotate-6")} />
+                        {item.name}
+                        <ChevronRight className={cn("ml-auto w-4 h-4 transition-transform duration-200", isOpen && "rotate-90")} />
+                      </button>
+
+                      {isOpen && (
+                        <div className="ml-9 space-y-1 animate-in slide-in-from-top-2 duration-200">
+                          {item.children?.map(child => (
+                            <NavLink
+                              key={child.path}
+                              to={child.path}
+                              className={({ isActive }) => cn(
+                                "flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all",
+                                isActive
+                                  ? "text-primary bg-primary/5"
+                                  : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                              )}
+                            >
+                              <div className={cn("w-1.5 h-1.5 rounded-full", location.pathname === child.path ? "bg-primary" : "bg-slate-300")} />
+                              {child.name}
+                            </NavLink>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <NavLink
+                    key={item.name}
+                    to={item.path}
+                    className={({ isActive }) => cn(
+                      "flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 group relative",
+                      isActive
+                        ? "bg-primary text-white shadow-lg shadow-primary/20"
+                        : "text-slate-500 hover:bg-slate-100/80 hover:text-slate-800"
+                    )}
+                  >
+                    <item.icon className={cn("w-5 h-5", !isActive && "text-slate-400 group-hover:rotate-6")} />
+                    {item.name}
+                    {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-cta rounded-full" />}
+                  </NavLink>
+                );
+              })}
           </nav>
 
           <div className="mt-auto pt-6 border-t border-slate-100">

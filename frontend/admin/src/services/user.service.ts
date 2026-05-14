@@ -15,8 +15,16 @@ export const userService = {
     const { data } = await api.patch(`/users/${userId}/role`, { role });
     return data;
   },
+  async createUser(userData: any) {
+    const { data } = await api.post('/users/admin/create', userData);
+    return data;
+  },
   async getUserStats() {
     const { data } = await api.get('/users/admin/stats');
+    return data;
+  },
+  async getUserDetail(userId: string) {
+    const { data } = await api.get(`/users/${userId}/detail`);
     return data;
   }
 };

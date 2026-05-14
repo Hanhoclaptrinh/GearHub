@@ -26,6 +26,7 @@ import type { Order } from '../../types';
 export const OrderList: React.FC = () => {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<OrderStatus | ''>('');
+  const [userId, setUserId] = useState<string | ''>('');
   const [page, setPage] = useState(1);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -34,6 +35,7 @@ export const OrderList: React.FC = () => {
   const queryClient = useQueryClient();
 
   const orderIdFromUrl = searchParams.get('orderId');
+  const userIdFromUrl = searchParams.get('userId');
 
   useEffect(() => {
     if (orderIdFromUrl) {
@@ -41,11 +43,15 @@ export const OrderList: React.FC = () => {
       setStatus('');
       setPage(1);
     }
-  }, [orderIdFromUrl]);
+    if (userIdFromUrl) {
+      setUserId(userIdFromUrl);
+      setPage(1);
+    }
+  }, [orderIdFromUrl, userIdFromUrl]);
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['orders', search, status, page],
-    queryFn: () => orderService.getOrders({ search, status, page, limit: 10 }),
+    queryKey: ['orders', search, status, page, userId],
+    queryFn: () => orderService.getOrders({ search, status, page, limit: 10, userId: userId || undefined }),
   });
 
   const updateStatusMutation = useMutation({
@@ -277,7 +283,7 @@ export const OrderList: React.FC = () => {
                         <p className="text-slate-800 text-lg font-black">Chưa có đơn hàng nào.</p>
                         <p className="text-slate-400 font-bold text-sm">Hãy thử thay đổi bộ lọc hoặc tìm kiếm.</p>
                       </div>
-                      <Button variant="outline" size="sm" className="rounded-full px-6" onClick={() => { setStatus(''); setSearch(''); }}>Xóa bộ lọc</Button>
+                      <Button variant="outline" size="sm" className="rounded-full px-6" onClick={() => { setStatus(''); setSearch(''); setUserId(''); }}>Xóa bộ lọc</Button>
                     </div>
                   </td>
                 </tr>

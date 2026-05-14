@@ -50,7 +50,7 @@ export const LoginPage: React.FC = () => {
             <Package className="text-white w-10 h-10 group-hover:rotate-6 transition-transform" />
           </div>
           <h1 className="text-3xl font-bold text-slate-900 mb-2 font-heading tracking-tight">GearHub <span className="text-cta">CMS</span></h1>
-          <p className="text-slate-500 font-medium">Đăng nhập vào hệ thống quản trị dành cho Admin</p>
+          <p className="text-slate-500 font-medium">Hệ thống quản lý dành cho quản trị và nhân viên</p>
         </div>
 
         <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 relative overflow-hidden group">

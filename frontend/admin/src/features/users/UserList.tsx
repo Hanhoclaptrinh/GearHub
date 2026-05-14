@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import {
   Users,
@@ -13,8 +13,12 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertCircle,
-  AlertTriangle
+  AlertTriangle,
+  Plus,
+  Filter,
+  Eye
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { userService } from '../../services/user.service';
 import { authService } from '../../services/auth.service';
 import { Button } from '../../components/ui/Button';
@@ -22,18 +26,32 @@ import { Input } from '../../components/ui/Input';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { UserEditModal } from '../../components/ui/UserEditModal';
+import { UserCreateModal } from '../../components/ui/UserCreateModal';
 import { cn } from '../../utils/cn';
+import { toast } from 'sonner';
 
-export const UserList: React.FC = () => {
+interface UserListProps {
+  initialRole?: string;
+}
+
+export const UserList: React.FC<UserListProps> = ({ initialRole = 'all' }) => {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<string>('all');
-  const [role, setRole] = useState<string>('all');
+  const [role, setRole] = useState<string>(initialRole);
   const [page, setPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const currentUser = useMemo(() => authService.getCurrentUser(), []);
+
+  // Dong bo state role khi initialRole thay doi (chuyen tab)
+  useEffect(() => {
+    setRole(initialRole);
+    setPage(1);
+  }, [initialRole]);
 
   const { data: userStats } = useQuery({
     queryKey: ['users', 'stats'],
@@ -64,9 +82,23 @@ export const UserList: React.FC = () => {
     mutationFn: ({ userId, role }: any) => userService.updateUserRole(userId, role),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('Cập nhật quyền thành công');
       setIsEditModalOpen(false);
       setSelectedUser(null);
     },
+  });
+
+  const createUserMutation = useMutation({
+    mutationFn: (userData: any) => userService.createUser(userData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['users', 'stats'] });
+      toast.success('Tạo tài khoản thành công');
+      setIsCreateModalOpen(false);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Không thể tạo tài khoản');
+    }
   });
 
   const users = data?.data || [];
@@ -133,81 +165,96 @@ export const UserList: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 font-heading leading-tight">Quản lý người dùng</h1>
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Tổng {meta.total} tài khoản trong hệ thống</p>
+          <h1 className="text-2xl font-bold text-slate-900 font-heading leading-tight">
+            {initialRole === 'USER' ? 'Quản lý khách hàng' : initialRole === 'STAFF' ? 'Quản lý nhân viên' : 'Quản lý tài khoản'}
+          </h1>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">
+            {initialRole === 'USER' ? `Tổng ${meta.total} khách hàng` : initialRole === 'STAFF' ? `Tổng ${meta.total} nhân sự` : `Tổng ${meta.total} tài khoản`}
+          </p>
         </div>
+
+        {initialRole === 'STAFF' && (
+          <Button 
+            onClick={() => setIsCreateModalOpen(true)}
+            className="rounded-2xl h-12 px-6 bg-primary shadow-lg shadow-primary/20 font-black uppercase text-xs tracking-widest"
+          >
+            <Plus className="w-5 h-5 mr-2" /> Thêm nhân sự
+          </Button>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card
-          className={cn(
-            "border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group cursor-pointer transition-all hover:scale-105",
-            status === 'all' && role === 'all' ? "ring-2 ring-primary bg-primary/5" : ""
-          )}
-          onClick={() => { setStatus('all'); setRole('all'); setPage(1); }}
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Users className="w-6 h-6" />
+      {initialRole === 'all' && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card
+            className={cn(
+              "border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group cursor-pointer transition-all hover:scale-105",
+              status === 'all' && role === 'all' ? "ring-2 ring-primary bg-primary/5" : ""
+            )}
+            onClick={() => { setStatus('all'); setRole('all'); setPage(1); }}
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Users className="w-6 h-6" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-slate-400 uppercase">Tổng User</span>
+                <span className="text-2xl font-black text-slate-900">{userStats?.total || 0}</span>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black text-slate-400 uppercase">Tổng User</span>
-              <span className="text-2xl font-black text-slate-900">{userStats?.total || 0}</span>
+          </Card>
+          <Card
+            className={cn(
+              "border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group cursor-pointer transition-all hover:scale-105",
+              status === 'ACTIVE' ? "ring-2 ring-green-500 bg-green-50/50" : ""
+            )}
+            onClick={() => { setStatus('ACTIVE'); setRole('all'); setPage(1); }}
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-green-50 text-green-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-slate-400 uppercase">Hoạt động</span>
+                <span className="text-2xl font-black text-slate-900">{userStats?.active || 0}</span>
+              </div>
             </div>
-          </div>
-        </Card>
-        <Card
-          className={cn(
-            "border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group cursor-pointer transition-all hover:scale-105",
-            status === 'ACTIVE' ? "ring-2 ring-green-500 bg-green-50/50" : ""
-          )}
-          onClick={() => { setStatus('ACTIVE'); setRole('all'); setPage(1); }}
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-green-50 text-green-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <CheckCircle2 className="w-6 h-6" />
+          </Card>
+          <Card
+            className={cn(
+              "border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group cursor-pointer transition-all hover:scale-105",
+              role === 'ADMIN' ? "ring-2 ring-blue-500 bg-blue-50/50" : ""
+            )}
+            onClick={() => { setRole('ADMIN'); setStatus('all'); setPage(1); }}
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Shield className="w-6 h-6" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-slate-400 uppercase">Admin</span>
+                <span className="text-2xl font-black text-slate-900">{userStats?.admins || 0}</span>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black text-slate-400 uppercase">Hoạt động</span>
-              <span className="text-2xl font-black text-slate-900">{userStats?.active || 0}</span>
+          </Card>
+          <Card
+            className={cn(
+              "border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group cursor-pointer transition-all hover:scale-105",
+              status === 'BANNED' ? "ring-2 ring-red-500 bg-red-50/50" : ""
+            )}
+            onClick={() => { setStatus('BANNED'); setRole('all'); setPage(1); }}
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-slate-400 uppercase">Bị khoá</span>
+                <span className="text-2xl font-black text-slate-900">{userStats?.banned || 0}</span>
+              </div>
             </div>
-          </div>
-        </Card>
-        <Card
-          className={cn(
-            "border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group cursor-pointer transition-all hover:scale-105",
-            role === 'ADMIN' ? "ring-2 ring-blue-500 bg-blue-50/50" : ""
-          )}
-          onClick={() => { setRole('ADMIN'); setStatus('all'); setPage(1); }}
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Shield className="w-6 h-6" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black text-slate-400 uppercase">Admin</span>
-              <span className="text-2xl font-black text-slate-900">{userStats?.admins || 0}</span>
-            </div>
-          </div>
-        </Card>
-        <Card
-          className={cn(
-            "border-none shadow-lg shadow-slate-100 p-6 bg-white rounded-3xl group cursor-pointer transition-all hover:scale-105",
-            status === 'BANNED' ? "ring-2 ring-red-500 bg-red-50/50" : ""
-          )}
-          onClick={() => { setStatus('BANNED'); setRole('all'); setPage(1); }}
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <AlertTriangle className="w-6 h-6" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black text-slate-400 uppercase">Bị khoá</span>
-              <span className="text-2xl font-black text-slate-900">{userStats?.banned || 0}</span>
-            </div>
-          </div>
-        </Card>
-      </div>
+          </Card>
+        </div>
+      )}
 
       <Card className="border-none shadow-xl shadow-slate-200/50 rounded-3xl">
         <CardContent className="p-4">
@@ -221,13 +268,30 @@ export const UserList: React.FC = () => {
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               />
             </div>
-            <Button
-              variant="outline"
-              className="px-6 h-12 rounded-2xl border-slate-100 hover:border-primary transition-all"
-              onClick={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
-            >
-              <RefreshCcw className="w-5 h-5 mr-2" /> Tải lại
-            </Button>
+            
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <div className="relative flex-1 md:flex-none md:min-w-[160px]">
+                <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <select
+                  value={status}
+                  onChange={(e) => { setStatus(e.target.value); setPage(1); }}
+                  className="w-full pl-10 pr-4 py-3 h-12 rounded-2xl bg-slate-50 border-none text-xs font-black uppercase text-slate-600 focus:ring-4 focus:ring-primary/5 transition-all appearance-none cursor-pointer"
+                >
+                  <option value="all">Tất cả trạng thái</option>
+                  <option value="ACTIVE">Đang hoạt động</option>
+                  <option value="INACTIVE">Không hoạt động</option>
+                  <option value="BANNED">Bị khóa</option>
+                </select>
+              </div>
+
+              <Button
+                variant="outline"
+                className="px-6 h-12 rounded-2xl border-slate-100 hover:border-primary transition-all flex-shrink-0"
+                onClick={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
+              >
+                <RefreshCcw className="w-5 h-5 mr-2" /> Tải lại
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -314,9 +378,18 @@ export const UserList: React.FC = () => {
                           <Button
                             variant="ghost"
                             className="p-2 h-10 w-10 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-full border-none transition-all"
-                            onClick={() => handleEditClick(user)}
+                            onClick={() => navigate(`/${initialRole === 'STAFF' ? 'staff' : 'users'}/${user.id}`)}
+                            title="Xem chi tiết"
                           >
-                            <EditIcon className="w-5 h-5" />
+                            <Eye className="w-5 h-5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            className="p-2 h-10 w-10 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full border-none transition-all"
+                            onClick={() => handleEditClick(user)}
+                            title="Chỉnh sửa"
+                          >
+                            <UserIcon className="w-5 h-5" />
                           </Button>
                         </div>
                       </td>
@@ -386,6 +459,14 @@ export const UserList: React.FC = () => {
         user={selectedUser}
         currentUser={currentUser}
         isLoading={updateStatusMutation.isPending || updateRoleMutation.isPending}
+      />
+
+      <UserCreateModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSave={(data) => createUserMutation.mutate(data)}
+        isLoading={createUserMutation.isPending}
+        defaultRole={initialRole === 'STAFF' ? 'STAFF' : 'USER'}
       />
     </div>
   );
