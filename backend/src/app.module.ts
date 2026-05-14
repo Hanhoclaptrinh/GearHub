@@ -21,6 +21,7 @@ import { ChatModule } from './chat/chat.module';
 import { ActivityLogModule } from './activity-log/activity-log.module';
 import { ActivityLogInterceptor } from './common/interceptors/activity-log.interceptor';
 import { ScheduleModule } from '@nestjs/schedule';
+import { InventoriesModule } from './inventories/inventories.module';
 
 @Module({
   imports: [
@@ -52,7 +53,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     ReviewsModule,
     ChatModule,
     ActivityLogModule,
-    ScheduleModule.forRoot()
+    ScheduleModule.forRoot(),
+    InventoriesModule
   ],
   controllers: [AppController],
   providers: [
@@ -66,7 +68,7 @@ import { ScheduleModule } from '@nestjs/schedule';
       useClass: ActivityLogInterceptor
     },
 
-    AppService
+    AppService,
   ],
   exports: [AppService]
 })

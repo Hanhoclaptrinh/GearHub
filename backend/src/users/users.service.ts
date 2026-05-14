@@ -250,5 +250,54 @@ export class UsersService {
 
     return { total, active, admins, banned };
   }
+
+  async getDetailedUser(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        profile: true,
+        orders: {
+          take: 10,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            _count: { select: { items: true } }
+          }
+        },
+        activityLogs: {
+          take: 10,
+          orderBy: { createdAt: 'desc' }
+        }
+      }
+    });
+
+    if (!user) throw new NotFoundException(`Không tìm thấy người dùng với ID: ${id}`);
+
+    // tinh toan thong ke
+    const [totalAggregate, spentAggregate] = await Promise.all([
+      this.prisma.order.aggregate({
+        where: { userId: id },
+        _count: { id: true }
+      }),
+      this.prisma.order.aggregate({
+        where: { 
+          userId: id, 
+          OR: [
+            { paymentStatus: 'PAID' },
+            { status: 'DELIVERED' }
+          ]
+        },
+        _sum: { totalAmount: true }
+      })
+    ]);
+
+    return {
+      ...user,
+      stats: {
+        totalSpent: spentAggregate._sum.totalAmount || 0,
+        totalOrders: totalAggregate._count.id || 0,
+        successfulOrders: spentAggregate._sum.totalAmount ? spentAggregate._sum.totalAmount : 0, // day la vi du, ban co the tinh them count
+      }
+    };
+  }
 }
 

@@ -1,4 +1,4 @@
-import { Controller, Patch, UseGuards, Request, Get, Query, UseInterceptors, Body, UploadedFile, FileTypeValidator, MaxFileSizeValidator, ParseFilePipe, Param, NotFoundException } from '@nestjs/common';
+import { Controller, Patch, UseGuards, Request, Get, Query, UseInterceptors, Body, UploadedFile, FileTypeValidator, MaxFileSizeValidator, ParseFilePipe, Param, NotFoundException, Post } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -9,6 +9,8 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { CreateUserDto } from './dto/create-user.dto';
+
 
 @Controller('users')
 export class UsersController {
@@ -26,9 +28,23 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
+  @Post('admin/create')
+  async createStaff(@Body() data: CreateUserDto) {
+    return this.userService.createNewUser(data);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @Get('admin/stats')
   async getUserStats() {
     return this.userService.getUserStats();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get(':id/detail')
+  async getDetailedUser(@Param('id') id: string) {
+    return this.userService.getDetailedUser(id);
   }
 
   @UseGuards(JwtAuthGuard)

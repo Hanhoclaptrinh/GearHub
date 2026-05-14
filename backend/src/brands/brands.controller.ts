@@ -30,7 +30,7 @@ export class BrandsController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.STAFF)
   @UseInterceptors(FileInterceptor('file'))
   @LogActivity(ActivityAction.BRAND_CREATED)
   async createBrand(
@@ -49,7 +49,7 @@ export class BrandsController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.STAFF)
   @UseInterceptors(FileInterceptor('file'))
   @LogActivity(ActivityAction.BRAND_UPDATED)
   async updateBrand(
@@ -69,7 +69,7 @@ export class BrandsController {
 
   @Patch(':id/toggle')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.STAFF)
   @LogActivity(ActivityAction.BRAND_TOGGLED)
   async toggleStatus(@Param('id') id: string) {
     return this.brandsService.toggleStatus(id);
@@ -77,7 +77,7 @@ export class BrandsController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.STAFF)
   @LogActivity(ActivityAction.BRAND_DELETED)
   async removeBrand(@Param('id') id: string) {
     return this.brandsService.removeBrand(id);

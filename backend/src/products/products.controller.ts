@@ -83,7 +83,7 @@ export class ProductsController {
 
     @Post('generate-variants')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     async generateVariants(@Body() body: { axes: Record<string, string[]>; productSlug?: string }) {
         if (!body.axes || Object.keys(body.axes).length === 0) {
             throw new BadRequestException('Vui lòng cung cấp ít nhất 1 trục thuộc tính');
@@ -93,7 +93,7 @@ export class ProductsController {
 
     @Post()
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     @UseInterceptors(AnyFilesInterceptor())
     @LogActivity(ActivityAction.PRODUCT_CREATED)
     async createProduct(@Body() data: CreateProductDto, @UploadedFiles() files: Express.Multer.File[]) {
@@ -102,7 +102,7 @@ export class ProductsController {
 
     @Post(':id/assets')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     @UseInterceptors(FilesInterceptor('files', 10))
     @LogActivity(ActivityAction.ASSET_UPLOADED)
     async addAssets(
@@ -117,7 +117,7 @@ export class ProductsController {
 
     @Delete('assets/:assetId')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     @LogActivity(ActivityAction.ASSET_DELETED)
     async removeAsset(@Param('assetId') assetId: string) {
         return this.productsService.removeAsset(assetId);
@@ -125,7 +125,7 @@ export class ProductsController {
 
     @Patch(':productId/assets/:assetId/primary')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     @LogActivity(ActivityAction.ASSET_SET_PRIMARY)
     async setPrimaryAsset(
         @Param('productId') productId: string,
@@ -136,7 +136,7 @@ export class ProductsController {
 
     @Patch(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     @UseInterceptors(AnyFilesInterceptor())
     @LogActivity(ActivityAction.PRODUCT_UPDATED)
     async updateProduct(@Param('id') id: string, @Body() data: UpdateProductDto, @UploadedFiles() files: Express.Multer.File[]) {
@@ -145,7 +145,7 @@ export class ProductsController {
 
     @Delete(':id/hard-delete')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     @LogActivity(ActivityAction.PRODUCT_DELETED)
     async removeProduct(@Param('id') id: string) {
         return this.productsService.removeProduct(id);
@@ -153,7 +153,7 @@ export class ProductsController {
 
     @Delete(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     @LogActivity(ActivityAction.PRODUCT_TOGGLED)
     async toggleStatus(@Param('id') id: string) {
         return this.productsService.toggleStatus(id);
@@ -161,14 +161,14 @@ export class ProductsController {
 
     @Patch(':id/featured')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     async toggleFeatured(@Param('id') id: string) {
         return this.productsService.toggleFeatured(id);
     }
 
     @Patch(':id/restore')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     @LogActivity(ActivityAction.PRODUCT_RESTORED)
     async restore(@Param('id') id: string) {
         return this.productsService.restore(id);
@@ -176,42 +176,42 @@ export class ProductsController {
 
     @Post(':id/variant')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     async addVariant(@Param('id') id: string, @Body() data: CreateVariantDto) {
         return this.productsService.addVariant(id, data);
     }
 
     @Patch('variant/:variantId')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     async updateVariant(@Param('variantId') variantId: string, @Body() data: UpdateVariantDto) {
         return this.productsService.updateVariant(variantId, data);
     }
 
     @Patch('variant/:variantId/toggle')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     async toggleVariant(@Param('variantId') variantId: string) {
         return this.productsService.toggleVariant(variantId);
     }
 
     @Patch('variants/:variantId/destock')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     async decreaseStock(@Param('variantId') variantId: string, @Body('quantity') quantity: number) {
         return this.productsService.decreaseStock(variantId, quantity);
     }
 
     @Patch('variants/:variantId/instock')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     async increaseStock(@Param('variantId') variantId: string, @Body('quantity') quantity: number) {
         return this.productsService.increaseStock(variantId, quantity);
     }
 
     @Get('inventory/stats')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     async getInventoryStats() {
         return this.productsService.getInventoryStats();
     }

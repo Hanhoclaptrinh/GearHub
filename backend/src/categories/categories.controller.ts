@@ -36,7 +36,7 @@ export class CategoriesController {
 
     @Post()
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     @UseInterceptors(FileInterceptor('file'))
     @LogActivity(ActivityAction.CATEGORY_CREATED)
     async createCategory(
@@ -55,7 +55,7 @@ export class CategoriesController {
 
     @Patch(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     @UseInterceptors(FileInterceptor('file'))
     @LogActivity(ActivityAction.CATEGORY_UPDATED)
     async updateCategory(
@@ -75,7 +75,7 @@ export class CategoriesController {
 
     @Delete(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     @LogActivity(ActivityAction.CATEGORY_DELETED)
     async removeCategory(@Param('id') id: string) {
         return this.categoriesService.removeCategory(id);

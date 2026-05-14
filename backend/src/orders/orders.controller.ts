@@ -34,7 +34,7 @@ export class OrdersController {
 
     @Get('admin/dashboard')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     async getDashboard() {
         const stats = await this.orderService.getAdminStats();
         const topProducts = await this.orderService.getTopSellingProducts();
@@ -47,14 +47,14 @@ export class OrdersController {
 
     @Get('top-products')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     async getTopProducts(@Query('limit') limit?: number) {
         return this.orderService.getTopSellingProducts(limit ? Number(limit) : 5);
     }
 
     @Get('admin')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     async getAllOrders(
         @Query('page') page?: number,
         @Query('limit') limit?: number,
@@ -77,7 +77,7 @@ export class OrdersController {
 
     @Patch(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     async updateOrderStatus(@Param('id') id: string, @Body() data: UpdateOrderStatusDto) {
         return this.orderService.updateOrderStatus(id, data);
     }
