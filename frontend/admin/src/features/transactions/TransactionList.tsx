@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { 
-  CreditCard, 
-  Search, 
-  ExternalLink, 
-  Calendar, 
-  Clock, 
+import {
+  CreditCard,
+  Search,
+  ExternalLink,
+  Calendar,
+  Clock,
   RefreshCcw,
   CheckCircle2,
   XCircle,
@@ -36,9 +36,9 @@ export const TransactionList: React.FC = () => {
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['transactions', search, page, paymentMethod, status, startDate, endDate],
-    queryFn: () => transactionService.getAllTransactions({ 
-      search, 
-      page, 
+    queryFn: () => transactionService.getAllTransactions({
+      search,
+      page,
       limit: 10,
       paymentMethod: paymentMethod || undefined,
       status: status || undefined,
@@ -75,7 +75,7 @@ export const TransactionList: React.FC = () => {
 
   const getPaymentMethodLabel = (method: string, provider?: string) => {
     switch (method) {
-      case 'PAYMENT_GATEWAY': 
+      case 'PAYMENT_GATEWAY':
         return `Cổng thanh toán${provider ? ` (${provider})` : ''}`;
       case 'BANK_TRANSFER': return 'Chuyển khoản';
       case 'E_WALLET': return 'Ví điện tử';
@@ -116,10 +116,10 @@ export const TransactionList: React.FC = () => {
                   }}
                 />
               </div>
-              <Button 
-                  variant="outline" 
-                  className="px-6 h-11 rounded-2xl hover:bg-slate-50 border-slate-200"
-                  onClick={() => refetch()}
+              <Button
+                variant="outline"
+                className="px-6 h-11 rounded-2xl hover:bg-slate-50 border-slate-200"
+                onClick={() => refetch()}
               >
                 <RefreshCcw className="w-5 h-5" />
               </Button>
@@ -209,7 +209,7 @@ export const TransactionList: React.FC = () => {
                 transactions.map((tx: any) => (
                   <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-8 py-6">
-                      <button 
+                      <button
                         onClick={() => setSelectedTx(tx)}
                         className="font-mono text-xs font-bold text-primary hover:underline underline-offset-4 decoration-primary/30 text-left line-clamp-1 max-w-[150px]"
                       >
@@ -224,7 +224,7 @@ export const TransactionList: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-8 py-6">
-                       <span className="font-bold text-slate-600">{getPaymentMethodLabel(tx.paymentMethod, tx.provider)}</span>
+                      <span className="font-bold text-slate-600">{getPaymentMethodLabel(tx.paymentMethod, tx.provider)}</span>
                     </td>
                     <td className="px-8 py-6">
                       <span className="font-black text-slate-900 tracking-tight">
@@ -252,13 +252,13 @@ export const TransactionList: React.FC = () => {
                 <tr>
                   <td colSpan={6} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center gap-4">
-                        <div className="w-20 h-20 bg-slate-50 rounded-[32px] flex items-center justify-center text-slate-200">
-                             <CreditCard size={40} />
-                        </div>
-                        <div>
-                             <p className="text-slate-800 text-lg font-black tracking-tight underline-offset-4 decoration-primary/30">Chưa có giao dịch nào.</p>
-                             <p className="text-slate-400 font-bold text-sm">Hãy thử thay đổi tiêu chí tìm kiếm.</p>
-                        </div>
+                      <div className="w-20 h-20 bg-slate-50 rounded-[32px] flex items-center justify-center text-slate-200">
+                        <CreditCard size={40} />
+                      </div>
+                      <div>
+                        <p className="text-slate-800 text-lg font-black tracking-tight underline-offset-4 decoration-primary/30">Chưa có giao dịch nào.</p>
+                        <p className="text-slate-400 font-bold text-sm">Hãy thử thay đổi tiêu chí tìm kiếm.</p>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -271,21 +271,21 @@ export const TransactionList: React.FC = () => {
           <div className="px-10 py-6 border-t border-slate-100 bg-slate-50/10 flex items-center justify-between">
             <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Trang {page} / {meta.lastPage}</p>
             <div className="flex gap-2">
-              <Button 
-                  variant="outline" 
-                  size="sm" 
-                  disabled={page === 1} 
-                  onClick={() => setPage(page - 1)}
-                  className="rounded-xl px-6 font-bold"
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 1}
+                onClick={() => setPage(page - 1)}
+                className="rounded-xl px-6 font-bold"
               >
                 Trước
               </Button>
-              <Button 
-                  variant="outline" 
-                  size="sm" 
-                  disabled={page === meta.lastPage} 
-                  onClick={() => setPage(page + 1)}
-                  className="rounded-xl px-6 font-bold"
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === meta.lastPage}
+                onClick={() => setPage(page + 1)}
+                className="rounded-xl px-6 font-bold"
               >
                 Sau
               </Button>
@@ -301,166 +301,166 @@ export const TransactionList: React.FC = () => {
         </div>
       )}
       {/* Transaction Detail Drawer */}
-      <Drawer 
-        isOpen={!!selectedTx} 
-        onClose={() => setSelectedTx(null)} 
+      <Drawer
+        isOpen={!!selectedTx}
+        onClose={() => setSelectedTx(null)}
         title="Thông tin chi tiết"
       >
         {selectedTx && (
           <div className="space-y-8 animate-in slide-in-from-right duration-500">
             {/* Payment Summary Card */}
             <div className="p-6 rounded-[24px] bg-primary/5 border border-primary/10 space-y-4">
-               <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 px-3 py-1 bg-white border border-primary/20 rounded-full">
-                     <DollarSign size={14} className="text-primary" />
-                     <span className="text-[10px] font-black uppercase text-primary tracking-widest leading-none">Tổng thanh toán</span>
-                  </div>
-                  {getStatusBadge(selectedTx.status)}
-               </div>
-               <div className="text-4xl font-black text-slate-900 tracking-tight">
-                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selectedTx.amount || 0)}
-               </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 px-3 py-1 bg-white border border-primary/20 rounded-full">
+                  <DollarSign size={14} className="text-primary" />
+                  <span className="text-[10px] font-black uppercase text-primary tracking-widest leading-none">Tổng thanh toán</span>
+                </div>
+                {getStatusBadge(selectedTx.status)}
+              </div>
+              <div className="text-4xl font-black text-slate-900 tracking-tight">
+                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selectedTx.amount || 0)}
+              </div>
             </div>
 
             {/* Main Info Blocks */}
             <div className="grid grid-cols-1 gap-6">
-               {/* Transaction Basic Info */}
-               <div className="space-y-5">
-                  <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
-                     <FileText size={14} className="text-slate-300" /> Chi tiết giao dịch
-                  </h4>
-                  <div className="space-y-4 bg-slate-50/50 p-5 rounded-3xl border border-slate-100">
-                     <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nội dung</span>
-                        <p className="font-bold text-slate-800 leading-relaxed italic">"{selectedTx.description || 'Không có nội dung'}"</p>
-                     </div>
-                     <div className="grid grid-cols-2 gap-4">
-                        <div className="flex flex-col gap-1">
-                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mã giao dịch</span>
-                           <p className="font-mono text-xs font-bold text-slate-900 bg-white px-2 py-1 border border-slate-100 rounded-lg break-all">{selectedTx.transactionCode || selectedTx.id}</p>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Thời gian</span>
-                           <p className="font-bold text-slate-900 text-sm">{new Date(selectedTx.createdAt).toLocaleString('vi-VN')}</p>
-                        </div>
-                     </div>
-                     <div className="flex flex-col gap-1 pt-2">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Phương thức</span>
-                        <div className="flex items-center gap-2">
-                           <div className="w-8 h-8 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-slate-400">
-                              <Briefcase size={16} />
-                           </div>
-                           <p className="font-bold text-slate-900">{getPaymentMethodLabel(selectedTx.paymentMethod, selectedTx.provider)}</p>
-                        </div>
-                     </div>
+              {/* Transaction Basic Info */}
+              <div className="space-y-5">
+                <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                  <FileText size={14} className="text-slate-300" /> Chi tiết giao dịch
+                </h4>
+                <div className="space-y-4 bg-slate-50/50 p-5 rounded-3xl border border-slate-100">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nội dung</span>
+                    <p className="font-bold text-slate-800 leading-relaxed italic">"{selectedTx.description || 'Không có nội dung'}"</p>
                   </div>
-               </div>
-
-               {/* Recipient info */}
-               <div className="space-y-5">
-                  <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
-                     <User size={14} className="text-slate-300" /> Thông tin khách hàng
-                  </h4>
-                  <div className="space-y-5 bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
-                     <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
-                           <User size={18} />
-                        </div>
-                        <div className="flex-1">
-                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Người nhận</span>
-                           <p className="font-black text-slate-900 text-lg">{selectedTx.order?.receiverName || 'N/A'}</p>
-                        </div>
-                     </div>
-                     
-                     <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
-                           <Phone size={18} />
-                        </div>
-                        <div className="flex-1">
-                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Số điện thoại</span>
-                           <p className="font-bold text-slate-900">{selectedTx.order?.receiverPhone || 'N/A'}</p>
-                        </div>
-                     </div>
-
-                     <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
-                           <ExternalLink size={18} />
-                        </div>
-                        <div className="flex-1">
-                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tài khoản đặt hàng</span>
-                           <p className="font-bold text-slate-900 italic underline underline-offset-4 decoration-primary/20">{selectedTx.order?.user?.email || 'Guest'}</p>
-                        </div>
-                     </div>
-
-                     <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
-                           <MapPin size={18} />
-                        </div>
-                        <div className="flex-1">
-                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Địa chỉ giao hàng</span>
-                           <p className="text-sm font-bold text-slate-800 leading-relaxed mt-1">{selectedTx.order?.shippingAddress || 'N/A'}</p>
-                        </div>
-                     </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mã giao dịch</span>
+                      <p className="font-mono text-xs font-bold text-slate-900 bg-white px-2 py-1 border border-slate-100 rounded-lg break-all">{selectedTx.transactionCode || selectedTx.id}</p>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Thời gian</span>
+                      <p className="font-bold text-slate-900 text-sm">{new Date(selectedTx.createdAt).toLocaleString('vi-VN')}</p>
+                    </div>
                   </div>
-               </div>
-
-               {/* Products List */}
-               <div className="space-y-5">
-                  <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
-                     <ShoppingBag size={14} className="text-slate-300" /> Sản phẩm ({selectedTx.order?.items?.length || 0})
-                  </h4>
-                  <div className="overflow-hidden border border-slate-100 rounded-3xl">
-                     <table className="w-full text-left text-sm border-collapse">
-                        <thead className="bg-slate-50/50">
-                           <tr>
-                              <th className="px-5 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Sản phẩm</th>
-                              <th className="px-5 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right">Thành tiền</th>
-                           </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                           {selectedTx.order?.items?.map((item: any, idx: number) => (
-                              <tr key={idx} className="bg-white">
-                                 <td className="px-5 py-4">
-                                    <div className="flex flex-col gap-1">
-                                       <span className="font-black text-slate-900 leading-tight">{item.productName}</span>
-                                       <div className="flex items-center gap-2 mt-1">
-                                          <span className="px-2 py-0.5 bg-slate-100 rounded-md text-[10px] font-bold text-slate-600">
-                                             {item.variantName}
-                                          </span>
-                                          <span className="text-slate-400 text-xs font-bold">x {item.quantity}</span>
-                                       </div>
-                                    </div>
-                                 </td>
-                                 <td className="px-5 py-4 text-right">
-                                    <span className="font-black text-slate-900 tracking-tight">
-                                       {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(item.priceAtPurchase || 0) * item.quantity)}
-                                    </span>
-                                 </td>
-                              </tr>
-                           ))}
-                           {!selectedTx.order?.items?.length && (
-                              <tr>
-                                 <td colSpan={2} className="px-5 py-10 text-center text-slate-400 italic">Không có dữ liệu sản phẩm</td>
-                              </tr>
-                           )}
-                        </tbody>
-                     </table>
+                  <div className="flex flex-col gap-1 pt-2">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Phương thức</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-slate-400">
+                        <Briefcase size={16} />
+                      </div>
+                      <p className="font-bold text-slate-900">{getPaymentMethodLabel(selectedTx.paymentMethod, selectedTx.provider)}</p>
+                    </div>
                   </div>
-               </div>
+                </div>
+              </div>
 
-               {/* Note */}
-               <div className="space-y-4">
-                  <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
-                     <NotebookText size={14} className="text-slate-300" /> Ghi chú đơn hàng
-                  </h4>
-                  <div className="p-5 rounded-3xl bg-amber-50/30 border border-amber-100 text-amber-900/70 italic text-sm font-bold leading-relaxed">
-                     {selectedTx.order?.note || 'Không có ghi chú của khách hàng.'}
+              {/* Recipient info */}
+              <div className="space-y-5">
+                <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                  <User size={14} className="text-slate-300" /> Thông tin khách hàng
+                </h4>
+                <div className="space-y-5 bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
+                      <User size={18} />
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Người nhận</span>
+                      <p className="font-black text-slate-900 text-lg">{selectedTx.order?.receiverName || 'N/A'}</p>
+                    </div>
                   </div>
-               </div>
+
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
+                      <Phone size={18} />
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Số điện thoại</span>
+                      <p className="font-bold text-slate-900">{selectedTx.order?.receiverPhone || 'N/A'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
+                      <ExternalLink size={18} />
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tài khoản đặt hàng</span>
+                      <p className="font-bold text-slate-900 italic underline underline-offset-4 decoration-primary/20">{selectedTx.order?.user?.email || 'Guest'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
+                      <MapPin size={18} />
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Địa chỉ giao hàng</span>
+                      <p className="text-sm font-bold text-slate-800 leading-relaxed mt-1">{selectedTx.order?.shippingAddress || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Products List */}
+              <div className="space-y-5">
+                <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                  <ShoppingBag size={14} className="text-slate-300" /> Sản phẩm ({selectedTx.order?.items?.length || 0})
+                </h4>
+                <div className="overflow-hidden border border-slate-100 rounded-3xl">
+                  <table className="w-full text-left text-sm border-collapse">
+                    <thead className="bg-slate-50/50">
+                      <tr>
+                        <th className="px-5 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Sản phẩm</th>
+                        <th className="px-5 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right">Thành tiền</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {selectedTx.order?.items?.map((item: any, idx: number) => (
+                        <tr key={idx} className="bg-white">
+                          <td className="px-5 py-4">
+                            <div className="flex flex-col gap-1">
+                              <span className="font-black text-slate-900 leading-tight">{item.productName}</span>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="px-2 py-0.5 bg-slate-100 rounded-md text-[10px] font-bold text-slate-600">
+                                  {item.variantName}
+                                </span>
+                                <span className="text-slate-400 text-xs font-bold">x {item.quantity}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-5 py-4 text-right">
+                            <span className="font-black text-slate-900 tracking-tight">
+                              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(item.priceAtPurchase || 0) * item.quantity)}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      {!selectedTx.order?.items?.length && (
+                        <tr>
+                          <td colSpan={2} className="px-5 py-10 text-center text-slate-400 italic">Không có dữ liệu sản phẩm</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Note */}
+              <div className="space-y-4">
+                <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                  <NotebookText size={14} className="text-slate-300" /> Ghi chú đơn hàng
+                </h4>
+                <div className="p-5 rounded-3xl bg-amber-50/30 border border-amber-100 text-amber-900/70 italic text-sm font-bold leading-relaxed">
+                  {selectedTx.order?.note || 'Không có ghi chú của khách hàng.'}
+                </div>
+              </div>
             </div>
 
             <div className="pt-6 pb-2">
-              <Button 
+              <Button
                 variant="outline"
                 className="w-full h-12 rounded-2xl font-black uppercase tracking-[0.2em] text-xs border-slate-200 hover:bg-slate-50 hover:text-slate-900 transition-all shadow-sm"
                 onClick={() => setSelectedTx(null)}

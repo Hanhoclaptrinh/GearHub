@@ -1,21 +1,21 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { 
-  ChevronLeft, 
-  Mail, 
-  Phone, 
-  Calendar, 
-  Shield, 
-  CheckCircle2, 
-  XCircle, 
-  AlertCircle,
-  ShoppingBag,
-  CreditCard,
-  Clock,
-  ExternalLink,
-  MapPin,
-  Activity
+import {
+    ChevronLeft,
+    Mail,
+    Phone,
+    Calendar,
+    Shield,
+    CheckCircle2,
+    XCircle,
+    AlertCircle,
+    ShoppingBag,
+    CreditCard,
+    Clock,
+    ExternalLink,
+    MapPin,
+    Activity
 } from 'lucide-react';
 import { userService } from '../../services/user.service';
 import { Button } from '../../components/ui/Button';
@@ -67,9 +67,9 @@ export const UserDetailPage: React.FC = () => {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex items-center gap-4">
-                <Button 
-                    variant="ghost" 
-                    size="sm" 
+                <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => navigate(-1)}
                     className="rounded-xl hover:bg-white shadow-sm border border-transparent hover:border-slate-100"
                 >
@@ -97,7 +97,7 @@ export const UserDetailPage: React.FC = () => {
                                 </div>
                             </div>
                             <h2 className="text-2xl font-black text-slate-900 mb-1">{user.profile?.fullName || 'Người dùng mới'}</h2>
-                            <Badge 
+                            <Badge
                                 variant={user.role === 'ADMIN' ? 'info' : 'default'}
                                 className={cn(
                                     "rounded-full px-4 h-7 font-black text-[10px] uppercase tracking-widest",
@@ -202,9 +202,9 @@ export const UserDetailPage: React.FC = () => {
                                 </div>
                                 <h3 className="font-black text-slate-800 uppercase tracking-tight">Đơn hàng gần đây</h3>
                             </div>
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
+                            <Button
+                                variant="ghost"
+                                size="sm"
                                 className="text-[10px] font-black uppercase text-primary hover:bg-primary/5 rounded-xl px-4"
                                 onClick={() => navigate(`/orders?userId=${user.id}`)}
                             >
@@ -238,13 +238,13 @@ export const UserDetailPage: React.FC = () => {
                                                 <Badge className={cn(
                                                     "rounded-full px-3 h-6 text-[10px] font-black border-none",
                                                     order.status === 'DELIVERED' ? "bg-green-50 text-green-600" :
-                                                    order.status === 'CANCELLED' ? "bg-slate-100 text-slate-400" :
-                                                    order.status === 'PENDING' ? "bg-amber-50 text-amber-600" :
-                                                    "bg-blue-50 text-blue-600"
+                                                        order.status === 'CANCELLED' ? "bg-slate-100 text-slate-400" :
+                                                            order.status === 'PENDING' ? "bg-amber-50 text-amber-600" :
+                                                                "bg-blue-50 text-blue-600"
                                                 )}>
-                                                    {order.status === 'CANCELLED' ? 'Đã hủy' : 
-                                                     order.status === 'DELIVERED' ? 'Hoàn tất' : 
-                                                     order.status === 'PENDING' ? 'Chờ duyệt' : order.status}
+                                                    {order.status === 'CANCELLED' ? 'Đã hủy' :
+                                                        order.status === 'DELIVERED' ? 'Hoàn tất' :
+                                                            order.status === 'PENDING' ? 'Chờ duyệt' : order.status}
                                                 </Badge>
                                             </td>
                                             <td className="px-8 py-4 text-center">
@@ -274,9 +274,9 @@ export const UserDetailPage: React.FC = () => {
                                 </div>
                                 <h3 className="font-black text-slate-800 uppercase tracking-tight">Nhật ký hoạt động</h3>
                             </div>
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
+                            <Button
+                                variant="ghost"
+                                size="sm"
                                 className="text-[10px] font-black uppercase text-primary hover:bg-primary/5 rounded-xl px-4"
                                 onClick={() => navigate(`/activity-log?userId=${user.id}`)}
                             >

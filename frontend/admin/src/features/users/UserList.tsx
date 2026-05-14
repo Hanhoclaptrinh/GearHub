@@ -174,7 +174,7 @@ export const UserList: React.FC<UserListProps> = ({ initialRole = 'all' }) => {
         </div>
 
         {initialRole === 'STAFF' && (
-          <Button 
+          <Button
             onClick={() => setIsCreateModalOpen(true)}
             className="rounded-2xl h-12 px-6 bg-primary shadow-lg shadow-primary/20 font-black uppercase text-xs tracking-widest"
           >
@@ -268,7 +268,7 @@ export const UserList: React.FC<UserListProps> = ({ initialRole = 'all' }) => {
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               />
             </div>
-            
+
             <div className="flex items-center gap-2 w-full md:w-auto">
               <div className="relative flex-1 md:flex-none md:min-w-[160px]">
                 <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -471,9 +471,3 @@ export const UserList: React.FC<UserListProps> = ({ initialRole = 'all' }) => {
     </div>
   );
 };
-
-const EditIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-  </svg>
-);
