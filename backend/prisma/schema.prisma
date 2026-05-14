@@ -22,15 +22,16 @@ model User {
   createdAt DateTime   @default(now()) @map("created_at")
   updatedAt DateTime   @updatedAt @map("updated_at")
 
-  profile      Profile?
-  activityLogs ActivityLog[]
-  carts        Cart?
-  wishlists    Wishlist[]
-  orders       Order[]
-  chatRooms    ChatRoom[]    @relation("UserChatRooms")
-  staffRooms   ChatRoom[]    @relation("StaffChatRooms")
-  reviews      Review[]
-  sentMessages Message[]     @relation("SenderMessages")
+  profile               Profile?
+  activityLogs          ActivityLog[]
+  carts                 Cart?
+  wishlists             Wishlist[]
+  orders                Order[]
+  chatRooms             ChatRoom[]             @relation("UserChatRooms")
+  staffRooms            ChatRoom[]             @relation("StaffChatRooms")
+  reviews               Review[]
+  sentMessages          Message[]              @relation("SenderMessages")
+  inventoryTransactions InventoryTransaction[]
 
   @@map("users")
 }
@@ -139,10 +140,11 @@ model ProductVariant {
   barcode    String? @db.VarChar(100)
   isActive   Boolean @default(true) @map("is_active")
 
-  product    Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
-  cartItems  CartItem[]
-  orderItems OrderItem[]
-  assets     ProductAsset[]
+  product               Product                @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartItems             CartItem[]
+  orderItems            OrderItem[]
+  assets                ProductAsset[]
+  inventoryTransactions InventoryTransaction[]
 
   @@index([price])
   @@index([barcode])
@@ -442,4 +444,41 @@ enum UserStatus {
   ACTIVE
   BANNED
   INACTIVE
+}
+
+// ====================== INVENTORY ======================
+model InventoryTransaction {
+  id String @id @default(uuid()) @db.VarChar(36)
+
+  variantId String         @map("variant_id") @db.VarChar(36)
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+  type InventoryTransactionType
+
+  quantity    Int
+  beforeStock Int @map("before_stock")
+  afterStock  Int @map("after_stock")
+
+  reason      String? @db.Text
+  referenceId String? @map("reference_id") @db.VarChar(36)
+
+  createdById String? @map("created_by_id") @db.VarChar(36)
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([variantId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("inventory_transactions")
+}
+
+enum InventoryTransactionType {
+  INITIAL_IMPORT
+  IMPORT
+  SALE
+  ORDER_CANCEL
+  RETURN
+  DAMAGED
+  ADJUSTMENT
 }

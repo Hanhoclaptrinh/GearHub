@@ -3,8 +3,9 @@ import { CartService } from 'src/cart/cart.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ProductsService } from 'src/products/products.service';
 import { ActivityLogService } from 'src/activity-log/activity-log.service';
+import { InventoriesService } from 'src/inventories/inventories.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { OrderStatus, Prisma, Role, PaymentStatus, PaymentMethod, TransactionStatus } from '@prisma/client';
+import { OrderStatus, InventoryTransactionType, Prisma, Role, PaymentStatus, PaymentMethod, TransactionStatus } from '@prisma/client';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 @Injectable()
@@ -13,7 +14,8 @@ export class OrdersService {
         private prisma: PrismaService,
         private productService: ProductsService,
         private cartService: CartService,
-        private activityLogService: ActivityLogService
+        private activityLogService: ActivityLogService,
+        private inventoriesService: InventoriesService,
     ) { }
 
     async createOrder(userId: string, data: CreateOrderDto) {
@@ -79,18 +81,17 @@ export class OrdersService {
                 }
             });
 
-            // tru stock trong kho
+            // tru stock qua InventoryService
             for (const item of items) {
                 const variant = variants.find(v => v.id === item.variantId);
-                const result = await tx.productVariant.updateMany({
-                    where: { id: item.variantId, stock: { gte: item.quantity } },
-                    data: {
-                        stock: { decrement: item.quantity }
-                    }
+                await this.inventoriesService.adjustStock({
+                    variantId: item.variantId,
+                    type: InventoryTransactionType.SALE,
+                    quantity: item.quantity,
+                    referenceId: order.id,
+                    reason: `Trừ kho cho đơn hàng #${order.id.slice(0, 8)}`,
+                    tx,
                 });
-                if (result.count === 0) {
-                    throw new BadRequestException(`Sản phẩm ${variant?.name || item.variantId} không đủ tồn kho`);
-                }
             }
 
             // don gio hang
@@ -258,25 +259,28 @@ export class OrdersService {
 
             if (isNewRefundStatus && !isCurrentRefundStatus) {
                 for (const item of order.items) {
-                    await tx.productVariant.update({
-                        where: { id: item.productVariantId },
-                        data: { stock: { increment: item.quantity } }
+                    const refundType = status === OrderStatus.CANCELLED || status === OrderStatus.FAILED
+                        ? InventoryTransactionType.ORDER_CANCEL
+                        : InventoryTransactionType.RETURN;
+                    await this.inventoriesService.adjustStock({
+                        variantId: item.productVariantId,
+                        type: refundType,
+                        quantity: item.quantity,
+                        referenceId: orderId,
+                        reason: `Hoàn kho từ đơn hàng #${orderId.slice(0, 8)} - ${status}`,
+                        tx,
                     });
                 }
             } else if (!isNewRefundStatus && isCurrentRefundStatus) {
                 // hoan lai kho neu don hang chuyen tu trang thai huy/tra ve trang thai dang xu ly
                 for (const item of order.items) {
-                    const variant = await tx.productVariant.findUnique({
-                        where: { id: item.productVariantId },
-                        select: { stock: true, name: true }
-                    });
-                    if (!variant) throw new NotFoundException(`Sản phẩm variant ${item.productVariantId} không tồn tại`);
-                    if (variant.stock < item.quantity) {
-                        throw new BadRequestException(`Sản phẩm ${variant.name} không đủ tồn kho để khôi phục đơn hàng (Hiện còn: ${variant.stock})`);
-                    }
-                    await tx.productVariant.update({
-                        where: { id: item.productVariantId },
-                        data: { stock: { decrement: item.quantity } }
+                    await this.inventoriesService.adjustStock({
+                        variantId: item.productVariantId,
+                        type: InventoryTransactionType.SALE,
+                        quantity: item.quantity,
+                        referenceId: orderId,
+                        reason: `Trừ lại kho khi khôi phục đơn hàng #${orderId.slice(0, 8)}`,
+                        tx,
                     });
                 }
             }
@@ -368,13 +372,15 @@ export class OrdersService {
                 throw new BadRequestException('Chỉ có thể hủy đơn hàng đang chờ xác nhận');
             }
 
-            // hoan kho
+            // hoan kho qua InventoryService
             for (const item of order.items) {
-                await tx.productVariant.update({
-                    where: { id: item.productVariantId },
-                    data: {
-                        stock: { increment: item.quantity }
-                    }
+                await this.inventoriesService.adjustStock({
+                    variantId: item.productVariantId,
+                    type: InventoryTransactionType.ORDER_CANCEL,
+                    quantity: item.quantity,
+                    referenceId: order.id,
+                    reason: `Hoàn kho - đơn hàng bị hủy bởi người mua`,
+                    tx,
                 });
             }
 

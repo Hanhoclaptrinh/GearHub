@@ -3,12 +3,13 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import slugify from 'slugify';
-import { AssetType, Prisma } from '@prisma/client';
+import { AssetType, InventoryTransactionType, Prisma } from '@prisma/client';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { UpdateVariantDto } from './dto/update-variant.dto';
 import { RedisService } from 'src/redis/redis.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { InventoriesService } from 'src/inventories/inventories.service';
 
 @Injectable()
 export class ProductsService {
@@ -18,6 +19,7 @@ export class ProductsService {
         private redisService: RedisService,
         private prisma: PrismaService,
         private cloudinaryService: CloudinaryService,
+        private inventoriesService: InventoriesService,
     ) { }
 
     // ADMIN
@@ -154,18 +156,32 @@ export class ProductsService {
                             }
                         }
 
+                        const initialStock = parseInt(v.stock || '0');
+
                         const createdVariant = await tx.productVariant.create({
                             data: {
                                 productId: product.id,
                                 sku,
                                 name: `${data.name} - ${sku}`,
                                 price: parseFloat(v.price),
-                                stock: parseInt(v.stock || '0'),
+                                stock: 0,
                                 attributes: v.attributes || {},
                                 imageUrl: variantImageUrl,
                                 barcode: v.barcode || null,
                             }
                         });
+
+                        // tao inventory transaction cho stock khoi tao
+                        if (initialStock > 0) {
+                            await this.inventoriesService.adjustStock({
+                                variantId: createdVariant.id,
+                                type: InventoryTransactionType.INITIAL_IMPORT,
+                                quantity: initialStock,
+                                reason: 'Stock khởi tạo khi tạo sản phẩm',
+                                createdById: undefined,
+                                tx,
+                            });
+                        }
 
                         if (variantAssetUrls.length > 0) {
                             await Promise.all(
@@ -185,16 +201,28 @@ export class ProductsService {
                     }
                 } else {
                     // fallback
-                    await tx.productVariant.create({
+                    const fallbackStock = parseInt(data.stock || '0');
+                    const fallbackVariant = await tx.productVariant.create({
                         data: {
                             productId: product.id,
                             sku: data.sku || `${slug}-default`,
                             name: `${data.name} - Standard`,
                             price: parseFloat(data.price || '0'),
-                            stock: parseInt(data.stock || '0'),
+                            stock: 0,
                             attributes: data.attributes ? JSON.parse(data.attributes) : {},
                         }
                     });
+
+                    if (fallbackStock > 0) {
+                        await this.inventoriesService.adjustStock({
+                            variantId: fallbackVariant.id,
+                            type: InventoryTransactionType.INITIAL_IMPORT,
+                            quantity: fallbackStock,
+                            reason: 'Stock khởi tạo khi tạo sản phẩm',
+                            createdById: undefined,
+                            tx,
+                        });
+                    }
                 }
 
                 // handle assets
@@ -408,7 +436,7 @@ export class ProductsService {
                                 sku: sku,
                                 name: `${updatedProduct.name} - ${sku}`,
                                 price: price,
-                                stock: stock,
+                                // stock khong duoc cap nhat qua product form
                                 attributes: vData.attributes || {},
                                 imageUrl: variantFilesMap[idx]?.length ? variantImageUrl : (vData.imageUrl || null),
                                 barcode: vData.barcode ?? existing.barcode,
@@ -421,13 +449,25 @@ export class ProductsService {
                                 sku: sku,
                                 name: `${updatedProduct.name} - ${sku}`,
                                 price: price,
-                                stock: stock,
+                                stock: 0,
                                 attributes: vData.attributes || {},
                                 imageUrl: variantImageUrl || null,
                                 barcode: vData.barcode || null,
                             }
                         });
                         finalVariantId = createdVariant.id;
+
+                        // tao inventory transaction cho variant moi
+                        if (stock > 0) {
+                            await this.inventoriesService.adjustStock({
+                                variantId: createdVariant.id,
+                                type: InventoryTransactionType.INITIAL_IMPORT,
+                                quantity: stock,
+                                reason: 'Stock khởi tạo khi thêm biến thể mới',
+                                createdById: undefined,
+                                tx,
+                            });
+                        }
                     }
 
                     if (existing) {
@@ -459,8 +499,9 @@ export class ProductsService {
                         );
                     }
                 }
-            } else if (data.price || data.stock || data.sku || data.attributes) {
+            } else if (data.price || data.sku || data.attributes) {
                 // fallback neu chi truyen le 1 variant (lay variant dau tien)
+                // stock khong duoc cap nhat qua product form
                 const firstVariant = await tx.productVariant.findFirst({
                     where: { productId: id }
                 });
@@ -468,7 +509,6 @@ export class ProductsService {
                 if (firstVariant) {
                     const variantUpdate: any = {};
                     if (data.price) variantUpdate.price = parseFloat(data.price);
-                    if (data.stock) variantUpdate.stock = parseInt(data.stock);
                     if (data.sku) variantUpdate.sku = data.sku;
                     if (data.attributes) {
                         try {

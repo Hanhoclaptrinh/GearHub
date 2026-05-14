@@ -765,7 +765,7 @@ export const ProductPage: React.FC = () => {
                       <label className="text-[10px] font-black text-slate-400 uppercase ml-1 flex items-center gap-1">Hành động áp dụng</label>
                       <div className="grid grid-cols-3 gap-2">
                         <input id="bulk-price-val" type="number" placeholder="Gán Giá" className="h-10 px-3 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold w-full" />
-                        <input id="bulk-stock-val" type="number" placeholder="Gán Kho" className="h-10 px-3 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold w-full" />
+                        <input id="bulk-stock-val" type="number" placeholder={isEdit ? 'Không đổi' : 'Gán Kho'} disabled={isEdit} className={cn("h-10 px-3 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold w-full", isEdit && "opacity-50 cursor-not-allowed")} />
                         <input id="bulk-barcode-val" type="text" placeholder="Barcode" className="h-10 px-3 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold w-full" />
                       </div>
                     </div>
@@ -870,7 +870,14 @@ export const ProductPage: React.FC = () => {
                     </div>
                     <div className="relative">
                       <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Số lượng tồn</label>
-                      <Input icon={Package} type="number" placeholder="0" {...register(`variants.${idx}.stock` as const)} error={(errors.variants as any)?.[idx]?.stock?.message} />
+                      {isEdit ? (
+                        <div className="relative">
+                          <Input icon={Package} type="number" value={watch(`variants.${idx}.stock`)} disabled className="opacity-60 cursor-not-allowed" />
+                          <span className="absolute -bottom-4 left-1 text-[9px] font-bold text-amber-500">Không thể chỉnh sửa trực tiếp ở đây</span>
+                        </div>
+                      ) : (
+                        <Input icon={Package} type="number" placeholder="0" {...register(`variants.${idx}.stock` as const)} error={(errors.variants as any)?.[idx]?.stock?.message} />
+                      )}
                       {fields.length > 1 && (
                         <button
                           type="button"
