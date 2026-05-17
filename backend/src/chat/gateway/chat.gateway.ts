@@ -49,7 +49,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     private readonly socketAuthGuard: ChatSocketAuthGuard
   ) { }
 
-  // middleware auth cho socket
+  /// middleware auth cho socket
   afterInit(server: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents>) {
     server.use(async (socket, next) => {
       try {
@@ -63,10 +63,10 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   }
 
   async handleConnection(client: AuthenticatedSocket) {
-    const user = client.data.user; // lay user da duoc auth tu afterinit
-    this.socketUsers.set(client.id, user.id); // luu socket id tuong ung userid
+    const user = client.data.user; /// lay user da duoc auth tu afterinit
+    this.socketUsers.set(client.id, user.id); /// luu socket id tuong ung userid
 
-    // join room chat
+    /// join room chat
     await client.join(this.userRoom(user.id));
     if (this.isStaff(user.role)) {
       await client.join('staff:online');
@@ -86,8 +86,8 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     @MessageBody() data: JoinRoomDto
   ) {
     try {
-      const result = await this.chatService.joinRoom(client.data.user, data); // kiem tra user co quyen join room khong
-      await client.join(this.chatRoom(result.room.id)); // join room
+      const result = await this.chatService.joinRoom(client.data.user, data); /// kiem tra user co quyen join room khong
+      await client.join(this.chatRoom(result.room.id)); /// join room
 
       client.emit('room:joined', result);
       this.publishRoomUpdated(result.room);
@@ -108,7 +108,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       const result = await this.chatService.sendMessage(client.data.user, data);
       await client.join(this.chatRoom(result.room.id));
 
-      // broadcast tin nhan cho nguoi trong room
+      /// broadcast tin nhan cho nguoi trong room
       this.server.to(this.chatRoom(result.room.id)).emit('message:new', {
         clientMessageId: result.clientMessageId,
         message: result.message,
@@ -116,6 +116,19 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       });
 
       this.publishRoomUpdated(result.room);
+
+      this.chatService.scheduleAiResponseIfEligible(
+        client.data.user,
+        result,
+        (aiResult) => {
+          if (!aiResult) return;
+          this.server.to(this.chatRoom(aiResult.room.id)).emit('message:new', {
+            message: aiResult.message,
+            room: aiResult.room,
+          });
+          this.publishRoomUpdated(aiResult.room);
+        },
+      );
 
       return result;
     } catch (error) {

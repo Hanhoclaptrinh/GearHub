@@ -39,6 +39,7 @@ const MessageBubble: React.FC<{
 }> = ({ message, room, currentUserId }) => {
   const isSystem = message.type === "SYSTEM";
   const isMine = message.senderId === currentUserId;
+  const isAi = message.isAi;
   const isCustomer = isCustomerMessage(message, room);
 
   if (isSystem) {
@@ -53,8 +54,13 @@ const MessageBubble: React.FC<{
 
   return (
     <div className={cn("flex gap-3", isMine ? "justify-end" : "justify-start")}>
-      {!isMine && (
+      {!isMine && !isAi && (
         <ChatAvatar profile={room.customer} size="sm" className="mt-1" />
+      )}
+      {!isMine && isAi && (
+        <div className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-cyan-300/10 text-cyan-200 ring-1 ring-cyan-200/20">
+          <MessageSquareText className="h-4 w-4" />
+        </div>
       )}
       <div className={cn("max-w-[78%]", isMine && "items-end text-right")}>
         <div
@@ -75,7 +81,7 @@ const MessageBubble: React.FC<{
             isMine && "justify-end",
           )}
         >
-          <span>{isCustomer ? "Customer" : "Staff"}</span>
+          <span>{isAi ? "GearHub AI" : isCustomer ? "Customer" : "Staff"}</span>
           <span>{formatMessageTime(message.createdAt)}</span>
           {isMine && (
             <span

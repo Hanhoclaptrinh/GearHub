@@ -38,7 +38,7 @@ export class BrandsController {
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 2 }), // logo 2mb limit
+          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 2 }), /// logo 2mb limit
         ],
         fileIsRequired: false,
       }),

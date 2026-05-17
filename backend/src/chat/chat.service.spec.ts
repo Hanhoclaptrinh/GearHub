@@ -4,9 +4,10 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { Role, RoomStatus } from '@prisma/client';
+import { MessageStatus, MessageType, Role, RoomStatus } from '@prisma/client';
 import { ChatRepository } from './repositories/chat.repository';
 import { ChatService } from './chat.service';
+import { AiChatService } from 'src/ai/ai-chat.service';
 
 const baseRoom = {
   id: 'room-1',
@@ -37,7 +38,13 @@ describe('ChatService', () => {
       closeRoom: jest.fn(),
     };
 
-    service = new ChatService(repository as unknown as ChatRepository);
+    service = new ChatService(
+      repository as unknown as ChatRepository,
+      {
+        isEnabled: jest.fn().mockReturnValue(false),
+        respondToUserMessage: jest.fn(),
+      } as unknown as AiChatService,
+    );
   });
 
   describe('claimRoom', () => {
@@ -188,24 +195,24 @@ describe('ChatService', () => {
       expect(repository.closeRoom).not.toHaveBeenCalled();
     });
 
-    it('rejects closing an already closed room', async () => {
+    it('treats closing an already closed room as idempotent', async () => {
       repository.findRoomById.mockResolvedValue({
         ...baseRoom,
         staffId: 'staff-1',
         status: RoomStatus.CLOSED,
       });
 
-      await expect(
-        service.closeRoom(
-          {
-            id: 'staff-1',
-            email: 'staff@gearhub.com',
-            role: Role.STAFF,
-          },
-          'room-1',
-        ),
-      ).rejects.toBeInstanceOf(BadRequestException);
+      const result = await service.closeRoom(
+        {
+          id: 'staff-1',
+          email: 'staff@gearhub.com',
+          role: Role.STAFF,
+        },
+        'room-1',
+      );
 
+      expect(result.message).toBeNull();
+      expect(result.room.status).toBe(RoomStatus.CLOSED);
       expect(repository.closeRoom).not.toHaveBeenCalled();
     });
 
@@ -269,6 +276,65 @@ describe('ChatService', () => {
       expect(result.room.status).toBe(RoomStatus.CLOSED);
 
       expect(repository.closeRoom).toHaveBeenCalled();
+    });
+  });
+
+  describe('scheduleAiResponseIfEligible', () => {
+    it('starts AI work without awaiting it and publishes later', async () => {
+      let resolveAi: (value: any) => void = () => undefined;
+      const aiService = {
+        isEnabled: jest.fn().mockReturnValue(true),
+        respondToUserMessage: jest.fn().mockReturnValue(
+          new Promise((resolve) => {
+            resolveAi = resolve;
+          }),
+        ),
+      } as unknown as AiChatService;
+      service = new ChatService(repository as unknown as ChatRepository, aiService);
+
+      const publish = jest.fn();
+      const sendResult = {
+        room: { ...baseRoom, status: RoomStatus.BOT_ONLY },
+        message: {
+          id: 'message-1',
+          roomId: 'room-1',
+          senderId: 'customer-1',
+          content: 'Tu van laptop',
+          type: MessageType.TEXT,
+          status: MessageStatus.SENT,
+          readAt: null,
+          isAi: false,
+          createdAt: new Date(),
+        },
+        clientMessageId: 'local-1',
+      };
+
+      service.scheduleAiResponseIfEligible(
+        {
+          id: 'customer-1',
+          email: 'customer@gearhub.com',
+          role: Role.USER,
+        },
+        sendResult as any,
+        publish,
+      );
+
+      expect((aiService as any).respondToUserMessage).toHaveBeenCalled();
+      expect(publish).not.toHaveBeenCalled();
+
+      const aiResult = {
+        room: sendResult.room,
+        message: {
+          ...sendResult.message,
+          id: 'ai-message-1',
+          senderId: null,
+          isAi: true,
+        },
+      };
+      resolveAi(aiResult);
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(publish).toHaveBeenCalledWith(aiResult);
     });
   });
 });

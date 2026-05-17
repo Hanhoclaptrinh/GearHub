@@ -5,9 +5,10 @@ import { RedisModule } from 'src/redis/redis.module';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 import { InventoriesModule } from 'src/inventories/inventories.module';
+import { AiModule } from 'src/ai/ai.module';
 
 @Module({
-  imports: [RedisModule, PrismaModule, CloudinaryModule, InventoriesModule],
+  imports: [RedisModule, PrismaModule, CloudinaryModule, InventoriesModule, AiModule],
   providers: [ProductsService],
   controllers: [ProductsController],
   exports: [ProductsService]

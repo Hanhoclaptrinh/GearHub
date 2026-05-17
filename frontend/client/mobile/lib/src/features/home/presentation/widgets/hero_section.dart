@@ -324,14 +324,19 @@ class _HeroSectionState extends State<HeroSection>
                                 color: AppColors.textPrimary,
                                 borderRadius: BorderRadius.circular(1),
                                 boxShadow: const [
-                                  BoxShadow(color: AppColors.textPrimary, blurRadius: 5),
+                                  BoxShadow(
+                                    color: AppColors.textPrimary,
+                                    blurRadius: 5,
+                                  ),
                                 ],
                               ),
                             ),
                           )
                         : isPast
                         ? ColoredBox(
-                            color: AppColors.textPrimary.withValues(alpha: 0.45),
+                            color: AppColors.textPrimary.withValues(
+                              alpha: 0.45,
+                            ),
                           )
                         : const SizedBox.shrink(),
                   ),
@@ -542,7 +547,10 @@ class _CinematicProductSlide extends StatelessWidget {
             );
           }
         })
-        .catchError((e) => debugPrint('[Hero] $e'));
+        .catchError((e) {
+          debugPrint('[Hero] $e');
+          return null;
+        });
   }
 }
 
@@ -753,7 +761,9 @@ class _EditorialCTAState extends State<_EditorialCTA>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             decoration: BoxDecoration(
-              color: AppColors.textPrimary.withValues(alpha: _pressed ? 0.10 : 0.04),
+              color: AppColors.textPrimary.withValues(
+                alpha: _pressed ? 0.10 : 0.04,
+              ),
               borderRadius: BorderRadius.circular(100),
               border: Border.all(
                 color: AppColors.textPrimary.withValues(alpha: 0.14),

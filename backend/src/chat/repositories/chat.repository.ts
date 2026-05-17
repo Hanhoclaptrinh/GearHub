@@ -122,12 +122,13 @@ export class ChatRepository {
 
   createCustomerRoom(
     userId: string,
+    status: RoomStatus = RoomStatus.NEED_HUMAN,
     tx: PrismaTransaction | PrismaService = this.prisma,
   ) {
     return tx.chatRoom.create({
       data: {
         userId,
-        status: RoomStatus.NEED_HUMAN,
+        status,
         customerUnreadCount: 0,
         staffUnreadCount: 0,
       },
@@ -232,6 +233,7 @@ export class ChatRepository {
     roomId: string;
     senderId: string;
     senderRole: Role;
+    roomStatus: RoomStatus;
     content: string;
     now: Date;
     tx: PrismaTransaction;
@@ -252,7 +254,9 @@ export class ChatRepository {
 
     const unreadUpdate =
       params.senderRole === Role.USER
-        ? { staffUnreadCount: { increment: 1 } }
+        ? params.roomStatus === RoomStatus.BOT_ONLY
+          ? {}
+          : { staffUnreadCount: { increment: 1 } }
         : { customerUnreadCount: { increment: 1 } };
 
     const room = await params.tx.chatRoom.update({
@@ -266,6 +270,105 @@ export class ChatRepository {
     });
 
     return { message, room };
+  }
+
+  async createAiMessageAndUpdateRoom(params: {
+    roomId: string;
+    content: string;
+    now: Date;
+    tx: PrismaTransaction;
+  }) {
+    const message = await params.tx.message.create({
+      data: {
+        roomId: params.roomId,
+        senderId: null,
+        content: params.content,
+        type: MessageType.TEXT,
+        status: MessageStatus.SENT,
+        readAt: null,
+        isAi: true,
+        createdAt: params.now,
+      },
+      select: messageSelect,
+    });
+
+    const room = await params.tx.chatRoom.update({
+      where: { id: params.roomId },
+      data: {
+        lastMessageAt: params.now,
+        lastMessageContent: params.content,
+        customerUnreadCount: { increment: 1 },
+      },
+      select: roomDetailSelect,
+    });
+
+    return { message, room };
+  }
+
+  getLatestMessageInRoom(
+    roomId: string,
+    tx: PrismaTransaction | PrismaService = this.prisma,
+  ) {
+    return tx.message.findFirst({
+      where: { roomId },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: messageSelect,
+    });
+  }
+
+  async handoffRoomToHuman(params: {
+    roomId: string;
+    now: Date;
+    tx: PrismaTransaction;
+  }) {
+    const message = await params.tx.message.create({
+      data: {
+        roomId: params.roomId,
+        senderId: null,
+        content: 'GearHub đã chuyển cuộc trò chuyện sang nhân viên hỗ trợ.',
+        type: MessageType.SYSTEM,
+        status: MessageStatus.SENT,
+        readAt: null,
+        isAi: false,
+        createdAt: params.now,
+      },
+      select: messageSelect,
+    });
+
+    const room = await params.tx.chatRoom.update({
+      where: { id: params.roomId },
+      data: {
+        status: RoomStatus.NEED_HUMAN,
+        staffId: null,
+        lastMessageAt: params.now,
+        lastMessageContent: message.content,
+        staffUnreadCount: { increment: 1 },
+      },
+      select: roomDetailSelect,
+    });
+
+    return { message, room };
+  }
+
+  async getRecentMessages(roomId: string, take: number) {
+    const messages = await this.prisma.message.findMany({
+      where: { roomId },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take,
+      select: messageSelect,
+    });
+
+    return messages.reverse();
+  }
+
+  getAiContext(roomId: string) {
+    return this.prisma.aiContext.findUnique({
+      where: { roomId },
+      select: {
+        summary: true,
+        tokensUsed: true,
+      },
+    });
   }
 
   async markRoomAsRead(params: {

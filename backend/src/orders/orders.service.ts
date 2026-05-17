@@ -23,7 +23,7 @@ export class OrdersService {
         const variantIds = items.map(i => i.variantId);
 
         return await this.prisma.$transaction(async (tx) => {
-            // lay thong tin variant truc tiep tu db
+            /// lay thong tin variant truc tiep tu db
             const variants = await tx.productVariant.findMany({
                 where: { id: { in: variantIds } },
                 include: {
@@ -35,7 +35,7 @@ export class OrdersService {
                 throw new NotFoundException('Một số sản phẩm không tồn tại trong hệ thống');
             }
 
-            // tinh tong tien va kiem tra stock trong kho
+            /// tinh tong tien va kiem tra stock trong kho
             let totalAmount = 0;
             const orderItemsData = items.map(item => {
                 const variant = variants.find(v => v.id === item.variantId);
@@ -43,7 +43,7 @@ export class OrdersService {
                     throw new NotFoundException(`Sản phẩm với ID ${item.variantId} không tồn tại`);
                 }
 
-                // kiem tra kho
+                /// kiem tra kho
                 if (variant.stock < item.quantity) {
                     throw new BadRequestException(`Sản phẩm ${variant.name} chỉ còn ${variant.stock} sản phẩm`);
                 }
@@ -53,17 +53,17 @@ export class OrdersService {
                 return {
                     productVariantId: item.variantId,
                     quantity: item.quantity,
-                    priceAtPurchase: variant.price, // gia tai thoi diem mua hang
+                    priceAtPurchase: variant.price, /// gia tai thoi diem mua hang
                     productName: variant.product.name,
                     variantName: variant.name
                 };
             });
 
-            // tinh thue VAT 10%
+            /// tinh thue VAT 10%
             const vatAmount = totalAmount * 0.1;
             const finalTotal = totalAmount + vatAmount;
 
-            // tao order
+            /// tao order
             const order = await tx.order.create({
                 data: {
                     userId,
@@ -81,7 +81,7 @@ export class OrdersService {
                 }
             });
 
-            // tru stock qua InventoryService
+            /// tru stock qua InventoryService
             for (const item of items) {
                 const variant = variants.find(v => v.id === item.variantId);
                 await this.inventoriesService.adjustStock({
@@ -94,8 +94,8 @@ export class OrdersService {
                 });
             }
 
-            // don gio hang
-            // xoa cac sp da mua
+            /// don gio hang
+            /// xoa cac sp da mua
             await tx.cartItem.deleteMany({
                 where: {
                     cart: { userId },
@@ -115,7 +115,7 @@ export class OrdersService {
             this.prisma.order.findMany({
                 where: {
                     userId,
-                    ...(status && { status }) // loc theo status
+                    ...(status && { status }) /// loc theo status
                 },
                 include: {
                     items: {
@@ -150,7 +150,7 @@ export class OrdersService {
         };
     }
 
-    // all order admin
+    /// all order admin
     async getAllOrders(
         query: {
             page?: number;
@@ -255,7 +255,7 @@ export class OrdersService {
             });
             if (!order) throw new NotFoundException('Không tìm thấy đơn hàng');
 
-            // hoan kho neu don hang bi huy hoac khach tra hang hoac giao hang that bai
+            /// hoan kho neu don hang bi huy hoac khach tra hang hoac giao hang that bai
             const refundStatuses: OrderStatus[] = [OrderStatus.CANCELLED, OrderStatus.RETURNED, OrderStatus.FAILED];
             const isNewRefundStatus = refundStatuses.includes(status as OrderStatus);
             const isCurrentRefundStatus = refundStatuses.includes(order.status as OrderStatus);
@@ -275,7 +275,7 @@ export class OrdersService {
                     });
                 }
             } else if (!isNewRefundStatus && isCurrentRefundStatus) {
-                // hoan lai kho neu don hang chuyen tu trang thai huy/tra ve trang thai dang xu ly
+                /// hoan lai kho neu don hang chuyen tu trang thai huy/tra ve trang thai dang xu ly
                 for (const item of order.items) {
                     await this.inventoriesService.adjustStock({
                         variantId: item.productVariantId,
@@ -288,7 +288,7 @@ export class OrdersService {
                 }
             }
 
-            // cap nhat trang thai don hang
+            /// cap nhat trang thai don hang
             const updatedOrder = await tx.order.update({
                 where: { id: orderId },
                 data: { status }
@@ -334,7 +334,7 @@ export class OrdersService {
                 });
             }
 
-            // tracking cho khach theo doi
+            /// tracking cho khach theo doi
             await tx.orderTracking.create({
                 data: {
                     orderId,
@@ -361,7 +361,7 @@ export class OrdersService {
         return labels[status] || status;
     }
 
-    // user huy don hang
+    /// user huy don hang
     async cancelOrder(userId: string, id: string) {
         return await this.prisma.$transaction(async (tx) => {
             const order = await tx.order.findFirst({
@@ -375,7 +375,7 @@ export class OrdersService {
                 throw new BadRequestException('Chỉ có thể hủy đơn hàng đang chờ xác nhận');
             }
 
-            // hoan kho qua InventoryService
+            /// hoan kho qua InventoryService
             for (const item of order.items) {
                 await this.inventoriesService.adjustStock({
                     variantId: item.productVariantId,
@@ -387,13 +387,13 @@ export class OrdersService {
                 });
             }
 
-            // cap nhat lai trang thai don hang
+            /// cap nhat lai trang thai don hang
             const updatedOrder = await tx.order.update({
                 where: { id },
                 data: { status: OrderStatus.CANCELLED }
             });
 
-            // tracking
+            /// tracking
             await tx.orderTracking.create({
                 data: {
                     orderId: id,
@@ -434,29 +434,29 @@ export class OrdersService {
 
     async getAdminStats() {
         const [revenue, orderCounts, userCount, lowStockVariants, latestLogs] = await Promise.all([
-            // tong doanh thu tu cac don hang da thanh toan (paymentStatus = PAID)
+            /// tong doanh thu tu cac don hang da thanh toan (paymentStatus = PAID)
             this.prisma.order.aggregate({
                 _sum: { totalAmount: true },
                 where: { paymentStatus: PaymentStatus.PAID }
             }),
 
-            // dem so luong don hang theo tung trang thai
+            /// dem so luong don hang theo tung trang thai
             this.prisma.order.groupBy({
                 by: ['status'],
                 _count: { id: true }
             }),
 
-            // tong so khach hang da dang ky
+            /// tong so khach hang da dang ky
             this.prisma.user.count({
                 where: { role: Role.USER }
             }),
 
-            // san pham sap het hang (stock < 10)
+            /// san pham sap het hang (stock < 10)
             this.prisma.productVariant.count({
                 where: { stock: { lt: 10 } }
             }),
 
-            // lay 7 log gan nhat
+            /// lay 7 log gan nhat
             this.activityLogService.findAll({ page: 1, limit: 7 })
         ]);
 
@@ -465,7 +465,7 @@ export class OrdersService {
             return acc;
         }, {});
 
-        // fetch revenue & orders trend data (last 7 days)
+        /// fetch revenue & orders trend data (last 7 days)
         const trends = await this.getTrends(7);
 
         return {
@@ -495,7 +495,7 @@ export class OrdersService {
             }
         });
 
-        // stat chua du lieu cac ngay
+        /// stat chua du lieu cac ngay
         const statsMap = new Map<string, { orders: number; revenue: number }>();
 
         for (let i = 0; i < days; i++) {
@@ -505,7 +505,7 @@ export class OrdersService {
             statsMap.set(dateStr, { orders: 0, revenue: 0 });
         }
 
-        // do du lieu vao map
+        /// do du lieu vao map
         allOrders.forEach(order => {
             const dateStr = order.createdAt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
             if (statsMap.has(dateStr)) {
@@ -531,21 +531,21 @@ export class OrdersService {
     }
 
     async reOrder(userId: string, id: string) {
-        // lay thong tin don cu
+        /// lay thong tin don cu
         const oldOrder = await this.prisma.order.findFirst({
             where: { id, userId },
             include: { items: true }
         });
         if (!oldOrder) throw new NotFoundException('Không tìm thấy đơn hàng cũ');
 
-        // chuan bi du lieu cho don hang moi
-        // lay lai danh sach variantId va quantity tu don hang cu
+        /// chuan bi du lieu cho don hang moi
+        /// lay lai danh sach variantId va quantity tu don hang cu
         const itemsForNewOrder = oldOrder.items.map(item => ({
             variantId: item.productVariantId,
             quantity: item.quantity
         }));
 
-        // tai su dung thong tin ship
+        /// tai su dung thong tin ship
         const reOrderData: CreateOrderDto = {
             receiverName: oldOrder.receiverName,
             receiverPhone: oldOrder.receiverPhone,

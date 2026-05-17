@@ -37,7 +37,7 @@ export class PaymentService {
             platform
         });
 
-        // tao bang ghi giao dich o trang thai pending
+        /// tao bang ghi giao dich o trang thai pending
         await this.prisma.transaction.upsert({
             where: {
                 orderId: order.id,
@@ -210,14 +210,14 @@ export class PaymentService {
                     providerTransactionId: transactionNo,
                     rawResponse: JSON.stringify(query)
                 },
-            }).catch(() => {});
+            }).catch(() => { });
             return { success: false, message: 'Thanh toán thất bại' };
         }
     }
 
-    async getAllTransactions(query: { 
-        page?: number; 
-        limit?: number; 
+    async getAllTransactions(query: {
+        page?: number;
+        limit?: number;
         search?: string;
         paymentMethod?: PaymentMethod;
         status?: TransactionStatus;

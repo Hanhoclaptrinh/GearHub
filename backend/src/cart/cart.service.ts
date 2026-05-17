@@ -13,7 +13,7 @@ export class CartService {
         private productService: ProductsService
     ) { }
 
-    // su dung upsert nguyen tu de tranh loi duplicate khi goi dong thoi
+    /// su dung upsert nguyen tu de tranh loi duplicate khi goi dong thoi
     private async getOrCreateCart(userId: string) {
         return this.prisma.cart.upsert({
             where: { userId },
@@ -97,11 +97,11 @@ export class CartService {
 
         if (!cart) return this.getOrCreateCart(userId);
 
-        // filter va canh bao san pham da het hang hoac dung kinh doanh
+        /// filter va canh bao san pham da het hang hoac dung kinh doanh
         const itemsWithTotal = cart.items.map(item => {
-            const isAvailable = 
-                item.productVariant.isActive && 
-                item.productVariant.product.isActive && 
+            const isAvailable =
+                item.productVariant.isActive &&
+                item.productVariant.product.isActive &&
                 item.productVariant.stock > 0;
 
             return {
@@ -195,7 +195,7 @@ export class CartService {
     async syncCart(userId: string, data: SyncCartDto) {
         const cart = await this.getOrCreateCart(userId);
 
-        // gom cac item trung variantId tu client gui len
+        /// gom cac item trung variantId tu client gui len
         const aggregatedItems = data.items.reduce((acc, item) => {
             const existing = acc.find(i => i.variantId === item.variantId);
             if (existing) {
@@ -206,7 +206,7 @@ export class CartService {
             return acc;
         }, [] as { variantId: string; quantity: number }[]);
 
-        // lay danh sach bien the tu db de check stock va isactive
+        /// lay danh sach bien the tu db de check stock va isactive
         const variantIds = aggregatedItems.map(i => i.variantId);
         const variants = await this.prisma.productVariant.findMany({
             where: {
@@ -217,22 +217,22 @@ export class CartService {
             select: { id: true, stock: true }
         });
 
-        // thuc hien dong bo
+        /// thuc hien dong bo
         await Promise.all(
             aggregatedItems.map(async (item) => {
                 const v = variants.find(v => v.id === item.variantId);
                 if (!v) return;
 
-                // tim xem mon nay da co trong gio hang cua user chua
+                /// tim xem mon nay da co trong gio hang cua user chua
                 const existingInCart = cart.items.find(i => i.productVariantId === item.variantId);
                 const currentInCart = existingInCart ? existingInCart.quantity : 0;
 
-                // tinh so luong cuoi cung: (trong db + local gui len) nhung khong vuot qua so luong ton kho
+                /// tinh so luong cuoi cung: (trong db + local gui len) nhung khong vuot qua so luong ton kho
                 const finalQuantity = Math.min(currentInCart + item.quantity, v.stock);
 
                 if (finalQuantity <= 0) return;
 
-                // dung upsert voi finalQty da duoc tinh
+                /// dung upsert voi finalQty da duoc tinh
                 return this.prisma.cartItem.upsert({
                     where: {
                         cartId_productVariantId: {
@@ -249,7 +249,7 @@ export class CartService {
                 });
             })
         );
-        // tra ve gio hang de UI cap nhat
+        /// tra ve gio hang de UI cap nhat
         return this.getCart(userId);
     }
 }

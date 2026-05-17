@@ -13,11 +13,11 @@ export class ReviewsService {
         private cloudinaryService: CloudinaryService
     ) { }
 
-    // tao danh gia
+    /// tao danh gia
     async createReview(userId: string, data: CreateReviewDto, files: Express.Multer.File[]) {
         const { orderItemId, rating, comment } = data;
 
-        // tim order item va xac thuc quyen so huu
+        /// tim order item va xac thuc quyen so huu
         const orderItem = await this.prisma.orderItem.findUnique({
             where: { id: orderItemId },
             include: {
@@ -35,7 +35,7 @@ export class ReviewsService {
         const productId = orderItem.productVariant.productId;
 
         return await this.prisma.$transaction(async (tx) => {
-            // tao review
+            /// tao review
             const review = await tx.review.create({
                 data: {
                     userId,
@@ -47,7 +47,7 @@ export class ReviewsService {
                 }
             });
 
-            // xu ly file (cmt anh hoac video)
+            /// xu ly file (cmt anh hoac video)
             if (files && files.length > 0) {
                 const uploadResult = await Promise.all(
                     files.map(file => this.cloudinaryService.uploadFile(file))
@@ -62,7 +62,7 @@ export class ReviewsService {
                 });
             }
 
-            // cap nhat rating va review count cho prod
+            /// cap nhat rating va review count cho prod
             const stats = await tx.review.aggregate({
                 where: { productId },
                 _avg: { rating: true },
@@ -81,11 +81,11 @@ export class ReviewsService {
         });
     }
 
-    // get danh sach review cua 1 prod
+    /// get danh sach review cua 1 prod
     async getProductReviews(
-        productId: string, 
-        page: number = 1, 
-        limit: number = 10, 
+        productId: string,
+        page: number = 1,
+        limit: number = 10,
         isAdmin: boolean = false,
         rating?: number,
         hasImage?: boolean
@@ -145,7 +145,7 @@ export class ReviewsService {
 
             return {
                 ...review,
-                variantName: (review.orderItem?.productVariant as any)?.attributes 
+                variantName: (review.orderItem?.productVariant as any)?.attributes
                     ? Object.entries((review.orderItem?.productVariant as any).attributes)
                         .map(([key, value]) => `${key}: ${value}`)
                         .join(', ')
@@ -163,7 +163,7 @@ export class ReviewsService {
         };
     }
 
-    // admin reply to customer
+    /// admin reply to customer
     async replyReview(id: string, data: ReplyReviewDto) {
         const review = await this.prisma.review.findUnique({ where: { id } });
         if (!review) throw new NotFoundException('Không tìm thấy đánh giá');
@@ -174,23 +174,23 @@ export class ReviewsService {
         })
     }
 
-    // for ai review & rcm
+    /// for ai review & rcm
     async getReviewSummary(productId: string) {
-        // dem so luong rating trong prod
+        /// dem so luong rating trong prod
         const counts = await this.prisma.review.groupBy({
             by: ['rating'],
             where: { productId },
             _count: { id: true }
         });
 
-        // khoi tao defaut obj
+        /// khoi tao defaut obj
         const summary = {
             "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, total: 0, average: 0
         };
 
         let totalStars = 0;
 
-        // cong don
+        /// cong don
         counts.forEach(item => {
             const count = item._count.id;
             summary[item.rating.toString()] = count;
@@ -205,7 +205,7 @@ export class ReviewsService {
         return summary;
     }
 
-    // admin an review
+    /// admin an review
     async toggleVisibility(id: string) {
         const review = await this.prisma.review.findUnique({ where: { id } });
         if (!review) throw new NotFoundException('Không tìm thấy đánh giá');
@@ -221,7 +221,7 @@ export class ReviewsService {
         };
     }
 
-    // sua review
+    /// sua review
     async updateReview(userId: string, id: string, data: UpdateReviewDto) {
         const review = await this.prisma.review.findUnique({ where: { id } });
         if (!review) throw new NotFoundException('Không tìm thấy đánh giá');
@@ -236,7 +236,7 @@ export class ReviewsService {
                 }
             });
 
-            // neu co update rating thi phai tinh lai avg rating cho prod
+            /// neu co update rating thi phai tinh lai avg rating cho prod
             if (data.rating !== undefined) {
                 const stats = await tx.review.aggregate({
                     where: { productId: review.productId },
@@ -257,8 +257,8 @@ export class ReviewsService {
         });
     }
 
-    // xoa review
-    // tinh lai avg rating
+    /// xoa review
+    /// tinh lai avg rating
     async deleteReview(id: string) {
         const review = await this.prisma.review.findUnique({ where: { id } });
         if (!review) throw new NotFoundException('Không tìm thấy đánh giá');
@@ -266,7 +266,7 @@ export class ReviewsService {
         return await this.prisma.$transaction(async (tx) => {
             await tx.review.delete({ where: { id } });
 
-            // tinh lai stats sau khi xoa
+            /// tinh lai stats sau khi xoa
             const stats = await tx.review.aggregate({
                 where: { productId: review.productId },
                 _avg: { rating: true },
@@ -284,7 +284,7 @@ export class ReviewsService {
     }
 
     async getPendingReviews(userId: string) {
-        // lay truc tiep cac order item chua co review
+        /// lay truc tiep cac order item chua co review
         const pendingItems = await this.prisma.orderItem.findMany({
             where: {
                 order: {

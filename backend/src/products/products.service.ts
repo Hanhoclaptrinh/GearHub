@@ -10,6 +10,7 @@ import { UpdateVariantDto } from './dto/update-variant.dto';
 import { RedisService } from 'src/redis/redis.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InventoriesService } from 'src/inventories/inventories.service';
+import { EmbeddingService } from 'src/ai/embedding.service';
 
 @Injectable()
 export class ProductsService {
@@ -20,9 +21,10 @@ export class ProductsService {
         private prisma: PrismaService,
         private cloudinaryService: CloudinaryService,
         private inventoriesService: InventoriesService,
+        private embeddingService: EmbeddingService,
     ) { }
 
-    // ADMIN
+    /// ADMIN
     async createProduct(data: CreateProductDto, files: Express.Multer.File[]) {
         const existingProduct = await this.prisma.product.findFirst({
             where: { name: data.name }
@@ -33,16 +35,16 @@ export class ProductsService {
 
         const slug = slugify(data.name, { lower: true, strict: true });
 
-        // parse metadata/attributes
+        /// parse metadata/attributes
         const parsedMetadata = data.metadata ? JSON.parse(data.metadata) : {};
 
-        // upload cloudinary
+        /// upload cloudinary
         const uploadedAssets: { url: string; type: AssetType; isPrimary: boolean }[] = [];
         const primaryIndex = parseInt(data.primaryIndex || '0');
 
-        // cac file chung cho san pham
+        /// cac file chung cho san pham
         const generalFiles = (files || []).filter(f => f.fieldname === 'files' || !f.fieldname);
-        // gom nhom cac file thuoc tung bien the
+        /// gom nhom cac file thuoc tung bien the
         const variantFilesMap: Record<number, Express.Multer.File[]> = {};
 
         (files || []).forEach(f => {
@@ -66,8 +68,8 @@ export class ProductsService {
                 else if (fileName.endsWith('.usdz')) type = AssetType.USDZ;
 
 
-                // upload assets len cld
-                // xac dinh anh primary
+                /// upload assets len cld
+                /// xac dinh anh primary
                 uploadedAssets.push({
                     url: upload.secure_url,
                     type,
@@ -76,10 +78,10 @@ export class ProductsService {
             }
         }
 
-        // mo transaction cho database operations
+        /// mo transaction cho database operations
         try {
-            return await this.prisma.$transaction(async (tx) => {
-                // build metadata with common_specs namespace
+            const result = await this.prisma.$transaction(async (tx) => {
+                /// build metadata with common_specs namespace
                 const finalMetadata = { ...parsedMetadata };
                 if (data.commonSpecs) {
                     try {
@@ -89,7 +91,7 @@ export class ProductsService {
                     }
                 }
 
-                // parse vault specs
+                /// parse vault specs
                 let parsedVaultSpecs = null;
                 if (data.vaultSpecs) {
                     try {
@@ -99,7 +101,7 @@ export class ProductsService {
                     }
                 }
 
-                // parent prod
+                /// parent prod
                 const product = await tx.product.create({
                     data: {
                         name: data.name,
@@ -116,10 +118,10 @@ export class ProductsService {
                     }
                 });
 
-                // handle variants
+                /// handle variants
                 if (data.variants) {
                     const variantList = JSON.parse(data.variants);
-                    // dung cache tranh upload nhieu file vao cung 1 bien the
+                    /// dung cache tranh upload nhieu file vao cung 1 bien the
                     const uploadedVariantFilesCache: Record<string, string> = {};
 
                     for (let idx = 0; idx < variantList.length; idx++) {
@@ -171,7 +173,7 @@ export class ProductsService {
                             }
                         });
 
-                        // tao inventory transaction cho stock khoi tao
+                        /// tao inventory transaction cho stock khoi tao
                         if (initialStock > 0) {
                             await this.inventoriesService.adjustStock({
                                 variantId: createdVariant.id,
@@ -200,7 +202,7 @@ export class ProductsService {
                         }
                     }
                 } else {
-                    // fallback
+                    /// fallback
                     const fallbackStock = parseInt(data.stock || '0');
                     const fallbackVariant = await tx.productVariant.create({
                         data: {
@@ -225,7 +227,7 @@ export class ProductsService {
                     }
                 }
 
-                // handle assets
+                /// handle assets
                 let finalThumbnailUrl = product.thumbnailUrl;
 
                 if (uploadedAssets.length > 0) {
@@ -242,7 +244,7 @@ export class ProductsService {
                         )
                     );
 
-                    // auto-select thumbnail neu khong set
+                    /// auto-select thumbnail neu khong set
                     if (!finalThumbnailUrl) {
                         const primaryAsset = assets.find(a => a.isPrimary);
                         const firstImageAsset = assets.find(a => a.type === AssetType.IMAGE);
@@ -272,8 +274,10 @@ export class ProductsService {
                     },
                 });
             }, {
-                timeout: 20000 // 20s
+                timeout: 20000 /// 20s
             });
+            this.queueProductEmbeddingSync(result?.id);
+            return result;
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError) {
                 if (error.code === 'P2002') {
@@ -294,7 +298,7 @@ export class ProductsService {
         });
         if (!product) throw new NotFoundException('Sản phẩm không tồn tại');
 
-        // neu update name thi check slug
+        /// neu update name thi check slug
         if (data.name) {
             const newSlug = slugify(data.name, { lower: true, strict: true });
 
@@ -310,8 +314,8 @@ export class ProductsService {
             }
         }
 
-        return await this.prisma.$transaction(async (tx) => {
-            // chuan bi data cho san pham cha
+        const result = await this.prisma.$transaction(async (tx) => {
+            /// chuan bi data cho san pham cha
             const updateData: any = {};
             if (data.name) {
                 updateData.name = data.name;
@@ -342,7 +346,7 @@ export class ProductsService {
                 }
             }
 
-            // merge common_specs vao metadata
+            /// merge common_specs vao metadata
             if (data.commonSpecs) {
                 try {
                     const existingMeta = updateData.metadata || (product.metadata as any) || {};
@@ -353,7 +357,7 @@ export class ProductsService {
                 }
             }
 
-            // vault specs
+            /// vault specs
             if (data.vaultSpecs) {
                 try {
                     updateData.vaultSpecs = JSON.parse(data.vaultSpecs);
@@ -362,7 +366,7 @@ export class ProductsService {
                 }
             }
 
-            // cap nhat san pham cha
+            /// cap nhat san pham cha
             const updatedProduct = await tx.product.update({
                 where: { id },
                 data: updateData
@@ -381,7 +385,7 @@ export class ProductsService {
                 }
             });
 
-            // cap nhat thong tin bien the
+            /// cap nhat thong tin bien the
             if (data.variants) {
                 const variants = JSON.parse(data.variants);
                 const existingVariants = await tx.productVariant.findMany({
@@ -436,7 +440,7 @@ export class ProductsService {
                                 sku: sku,
                                 name: `${updatedProduct.name} - ${sku}`,
                                 price: price,
-                                // stock khong duoc cap nhat qua product form
+                                /// stock khong duoc cap nhat qua product form
                                 attributes: vData.attributes || {},
                                 imageUrl: variantFilesMap[idx]?.length ? variantImageUrl : (vData.imageUrl || null),
                                 barcode: vData.barcode ?? existing.barcode,
@@ -457,7 +461,7 @@ export class ProductsService {
                         });
                         finalVariantId = createdVariant.id;
 
-                        // tao inventory transaction cho variant moi
+                        /// tao inventory transaction cho variant moi
                         if (stock > 0) {
                             await this.inventoriesService.adjustStock({
                                 variantId: createdVariant.id,
@@ -500,8 +504,8 @@ export class ProductsService {
                     }
                 }
             } else if (data.price || data.sku || data.attributes) {
-                // fallback neu chi truyen le 1 variant (lay variant dau tien)
-                // stock khong duoc cap nhat qua product form
+                /// fallback neu chi truyen le 1 variant (lay variant dau tien)
+                /// stock khong duoc cap nhat qua product form
                 const firstVariant = await tx.productVariant.findFirst({
                     where: { productId: id }
                 });
@@ -525,7 +529,7 @@ export class ProductsService {
                 }
             }
 
-            // xu ly new assets
+            /// xu ly new assets
             if (generalFiles && generalFiles.length > 0) {
                 for (const file of generalFiles) {
                     const upload = await this.cloudinaryService.uploadFile(file);
@@ -545,7 +549,7 @@ export class ProductsService {
                 }
             }
 
-            // xu ly primary asset
+            /// xu ly primary asset
             if (data.primaryIndex !== undefined) {
                 const pIdx = parseInt(data.primaryIndex);
                 const allAssets = await tx.productAsset.findMany({
@@ -579,8 +583,10 @@ export class ProductsService {
                 include: { assets: true, variants: true }
             });
         }, {
-            timeout: 20000 // 20s
+            timeout: 20000 /// 20s
         });
+        this.queueProductEmbeddingSync(id);
+        return result;
     }
 
     async addAssets(id: string, files: Express.Multer.File[]) {
@@ -610,7 +616,7 @@ export class ProductsService {
 
         const newAssets = await Promise.all(assetPromises);
 
-        // neu chua co anh thumnail - lay anh dau tien upload
+        /// neu chua co anh thumnail - lay anh dau tien upload
         if (!product.thumbnailUrl) {
             const firstImageAsset = newAssets.find(a => a.type === AssetType.IMAGE);
             if (firstImageAsset) {
@@ -638,10 +644,10 @@ export class ProductsService {
         const productId = asset.productId;
 
         return await this.prisma.$transaction(async (tx) => {
-            // xoa asset
+            /// xoa asset
             await tx.productAsset.delete({ where: { id: assetId } });
 
-            // neu anh primary bi xoa - tim anh khac thay the
+            /// neu anh primary bi xoa - tim anh khac thay the
             if (asset.isPrimary) {
                 const nextAsset = await tx.productAsset.findFirst({
                     where: { productId, type: AssetType.IMAGE },
@@ -658,7 +664,7 @@ export class ProductsService {
                         data: { thumbnailUrl: nextAsset.url }
                     });
                 } else {
-                    // set null neu khong con anh
+                    /// set null neu khong con anh
                     await tx.product.update({
                         where: { id: productId },
                         data: { thumbnailUrl: null }
@@ -676,19 +682,19 @@ export class ProductsService {
         if (!asset) throw new NotFoundException('Asset không tồn tại hoặc không thuộc sản phẩm này');
 
         return await this.prisma.$transaction(async (tx) => {
-            // tat tat ca primary hien tai cua prod
+            /// tat tat ca primary hien tai cua prod
             await tx.productAsset.updateMany({
                 where: { productId },
                 data: { isPrimary: false }
             })
 
-            // bat primary duoc chon
+            /// bat primary duoc chon
             const updatedAsset = await tx.productAsset.update({
                 where: { id: assetId },
                 data: { isPrimary: true }
             });
 
-            // dong bo lam thumbail
+            /// dong bo lam thumbail
             await tx.product.update({
                 where: { id: productId },
                 data: { thumbnailUrl: updatedAsset.url }
@@ -707,13 +713,13 @@ export class ProductsService {
         if (!product) throw new NotFoundException('Sản phẩm không tồn tại');
 
         return await this.prisma.$transaction(async (tx) => {
-            // toggle product
+            /// toggle product
             const updatedProduct = await tx.product.update({
                 where: { id },
                 data: { isActive: !product.isActive }
             });
 
-            // an toan bo bien the neu sp cha ngung kinh doanh
+            /// an toan bo bien the neu sp cha ngung kinh doanh
             if (!updatedProduct.isActive) {
                 await tx.productVariant.updateMany({
                     where: { productId: id },
@@ -748,7 +754,7 @@ export class ProductsService {
     }
 
     async removeProduct(id: string) {
-        // tim san pham bao gom bien the va so luong don hang cua tung bien the
+        /// tim san pham bao gom bien the va so luong don hang cua tung bien the
         const product = await this.prisma.product.findUnique({
             where: { id },
             include: {
@@ -764,12 +770,12 @@ export class ProductsService {
 
         if (!product) throw new NotFoundException('Không tìm thấy sản phẩm để xóa');
 
-        // tong so don hang cua tat ca bien the
-        // bien the da co don hang khong xoa prod cha
+        /// tong so don hang cua tat ca bien the
+        /// bien the da co don hang khong xoa prod cha
         const totalOrders = product.variants.reduce((sum, variant) => sum + variant._count.orderItems, 0);
 
         if (totalOrders > 0) {
-            // neu co nguoi mua chi an san pham
+            /// neu co nguoi mua chi an san pham
             return this.prisma.product.update({
                 where: { id },
                 data: { isActive: false }
@@ -788,7 +794,7 @@ export class ProductsService {
         });
     }
 
-    // CLIENT
+    /// CLIENT
     async getAllProducts(
         query: {
             page?: number;
@@ -822,7 +828,7 @@ export class ProductsService {
 
         const skip = (page - 1) * limit;
 
-        // de quy qua category
+        /// de quy qua category
         let categoryIds: string[] | undefined = undefined;
         if (categoryId) {
             const currentCategory = await this.prisma.category.findUnique({
@@ -832,35 +838,35 @@ export class ProductsService {
             categoryIds = currentCategory ? [currentCategory.id, ...currentCategory.children.map(c => c.id)] : [categoryId];
         }
 
-        // dieu kien loc
+        /// dieu kien loc
         let whereCondition: any = {
             categoryId: categoryIds ? { in: categoryIds } : undefined,
             brandId: brandId || undefined,
         };
 
-        // xu ly logic isActive vs showInactiveOnly vs showActiveOnly
+        /// xu ly logic isActive vs showInactiveOnly vs showActiveOnly
         if (showInactiveOnly) {
-            // hien thi san pham inactive hoac san pham active co variants inactive
+            /// hien thi san pham inactive hoac san pham active co variants inactive
             whereCondition.OR = [
                 { isActive: false },
                 { variants: { some: { isActive: false } } }
             ];
         } else if (showActiveOnly) {
-            // hien thi san pham dang kinh doanh
+            /// hien thi san pham dang kinh doanh
             whereCondition.isActive = true;
             whereCondition.variants = {
                 some: { isActive: true }
             };
         } else {
-            // hien thi san pham active cho client
+            /// hien thi san pham active cho client
             whereCondition.isActive = isAdmin ? undefined : true;
         }
 
         if (search) {
             const words = search.trim().split(/\s+/).filter(w => w.length > 0);
             if (words.length > 0) {
-                // cho phep tim kiem sau hon
-                // khong phu thuoc viet hoa viet thuong
+                /// cho phep tim kiem sau hon
+                /// khong phu thuoc viet hoa viet thuong
                 const searchConditions = words.map(word => {
                     return {
                         OR: [
@@ -873,7 +879,7 @@ export class ProductsService {
                 });
 
                 if (showInactiveOnly && whereCondition.OR) {
-                    // merge search conditions vao OR da co san pham inactive
+                    /// merge search conditions vao OR da co san pham inactive
                     whereCondition.AND = [
                         { OR: whereCondition.OR },
                         ...searchConditions
@@ -886,7 +892,7 @@ export class ProductsService {
         }
 
 
-        // loc gia qua variant
+        /// loc gia qua variant
         if (minPrice || maxPrice) {
             whereCondition.variants = {
                 some: {
@@ -898,7 +904,7 @@ export class ProductsService {
             };
         }
 
-        // loc theo ton kho
+        /// loc theo ton kho
         if (inventoryStatus && inventoryStatus !== 'all') {
             if (inventoryStatus === 'out_of_stock') {
                 whereCondition.variants = {
@@ -918,7 +924,7 @@ export class ProductsService {
             }
         }
 
-        // loc theo loai asset
+        /// loc theo loai asset
         if (assetType && assetType !== 'all') {
             if (assetType === 'has_3d') {
                 whereCondition.assets = {
@@ -931,7 +937,7 @@ export class ProductsService {
             }
         }
 
-        // query db
+        /// query db
         const [items, total] = await Promise.all([
             this.prisma.product.findMany({
                 where: whereCondition,
@@ -965,7 +971,7 @@ export class ProductsService {
     }
 
     async getProductById(idOrSlug: string) {
-        // regex uuid hop le
+        /// regex uuid hop le
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
 
         const product = await this.prisma.product.findUnique({
@@ -1040,7 +1046,7 @@ export class ProductsService {
         return await this.prisma.product.findMany({
             where: {
                 categoryId: currentProduct.categoryId,
-                id: { not: id }, // khong lay chinh no
+                id: { not: id }, /// khong lay chinh no
                 isActive: true,
                 variants: {
                     some: {}
@@ -1071,9 +1077,9 @@ export class ProductsService {
         });
     }
 
-    // lay nhung sp duoc danh gia cao
-    // fallback khi chua co review -> lay sp theo sold cnt
-    // debug -> lay sp vua duoc tao
+    /// lay nhung sp duoc danh gia cao
+    /// fallback khi chua co review -> lay sp theo sold cnt
+    /// debug -> lay sp vua duoc tao
     async getTopRatedProducts(limit: number = 5) {
         const productSelect = {
             id: true,
@@ -1104,7 +1110,7 @@ export class ProductsService {
             }
         } satisfies Prisma.ProductSelect;
 
-        // layer 1: lay sp theo top rating & review cnt
+        /// layer 1: lay sp theo top rating & review cnt
         let products = await this.prisma.product.findMany({
             where: {
                 isActive: true,
@@ -1117,7 +1123,7 @@ export class ProductsService {
             take: limit
         });
 
-        // layer 2 & 3
+        /// layer 2 & 3
         if (products.length === 0) {
             products = await this.prisma.product.findMany({
                 where: {
@@ -1126,8 +1132,8 @@ export class ProductsService {
                 },
                 select: productSelect,
                 orderBy: [
-                    { soldCount: 'desc' }, // l2
-                    { createdAt: 'desc' } // l3: debug
+                    { soldCount: 'desc' }, /// l2
+                    { createdAt: 'desc' } /// l3: debug
                 ],
                 take: limit
             });
@@ -1136,7 +1142,7 @@ export class ProductsService {
         return products;
     }
 
-    // lay cac san pham provip
+    /// lay cac san pham provip
     async getVaultProducts() {
         const products = await this.prisma.product.findMany({
             where: {
@@ -1188,7 +1194,7 @@ export class ProductsService {
 
         const parsedAttributes = data.attributes ? JSON.parse(data.attributes) : {};
 
-        return await this.prisma.productVariant.create({
+        const variant = await this.prisma.productVariant.create({
             data: {
                 productId: id,
                 sku: data.sku,
@@ -1198,6 +1204,8 @@ export class ProductsService {
                 attributes: parsedAttributes
             }
         });
+        this.queueProductEmbeddingSync(id);
+        return variant;
     }
 
     async getInventoryStats() {
@@ -1212,7 +1220,7 @@ export class ProductsService {
             this.prisma.productVariant.findMany({
                 select: { price: true, stock: true }
             }),
-            // active variants (of active products)
+            /// active variants (of active products)
             this.prisma.productVariant.findMany({
                 where: {
                     isActive: true,
@@ -1220,12 +1228,12 @@ export class ProductsService {
                 },
                 select: { price: true, stock: true }
             }),
-            // inactive variants
+            /// inactive variants
             this.prisma.productVariant.findMany({
                 where: { isActive: false },
                 include: { product: { select: { name: true } } }
             }),
-            // inactive products
+            /// inactive products
             this.prisma.product.findMany({
                 where: { isActive: false },
                 select: { id: true, name: true, slug: true }
@@ -1236,25 +1244,25 @@ export class ProductsService {
             return acc + (Number(curr.price) * curr.stock);
         }, 0);
 
-        // actual (active only)
+        /// actual (active only)
         const actualStock = activeVariants.reduce((acc, curr) => acc + curr.stock, 0);
         const actualCapital = activeVariants.reduce((acc, curr) => {
             return acc + (Number(curr.price) * curr.stock);
         }, 0);
 
         return {
-            // totalSKUs
+            /// totalSKUs
             totalSKUs,
             totalStock: totalStock._sum.stock || 0,
             lowStockCount,
             workingCapital: capitalValue,
 
-            // actual (active only)
+            /// actual (active only)
             activeSKUs: activeVariants.length,
             actualStock,
             actualCapital,
 
-            // inactive
+            /// inactive
             inactiveSKUs: inactiveVariants.length,
             inactiveVariants: inactiveVariants.map(v => ({
                 id: v.id,
@@ -1280,7 +1288,7 @@ export class ProductsService {
 
         const parsedAttributes = data.attributes ? JSON.parse(data.attributes) : {};
 
-        return await this.prisma.productVariant.update({
+        const updatedVariant = await this.prisma.productVariant.update({
             where: { id: variantId },
             data: {
                 ...data,
@@ -1289,6 +1297,8 @@ export class ProductsService {
                 attributes: parsedAttributes
             }
         });
+        this.queueProductEmbeddingSync(variant.productId);
+        return updatedVariant;
     }
 
     async toggleVariant(variantId: string) {
@@ -1305,7 +1315,7 @@ export class ProductsService {
 
         if (!variant) throw new NotFoundException('Biến thể không tồn tại');
 
-        // khong duoc ngung kinh doanh san pham trong dno hang chua hoan tat
+        /// khong duoc ngung kinh doanh san pham trong dno hang chua hoan tat
         const activeOrders = variant.orderItems.filter(oi =>
             !['DELIVERED', 'CANCELLED', 'RETURNED', 'FAILED'].includes(oi.order.status)
         );
@@ -1314,14 +1324,14 @@ export class ProductsService {
             throw new BadRequestException('Không thể thay đổi trạng thái biến thể vì có đơn hàng chưa hoàn tất');
         }
 
-        return await this.prisma.$transaction(async (tx) => {
-            // toggle isActive
+        const result = await this.prisma.$transaction(async (tx) => {
+            /// toggle isActive
             const updatedVariant = await tx.productVariant.update({
                 where: { id: variantId },
                 data: { isActive: !variant.isActive }
             });
 
-            // ngung kinh doanh -> xoa khoi gio hang
+            /// ngung kinh doanh -> xoa khoi gio hang
             if (!updatedVariant.isActive) {
                 await tx.cartItem.deleteMany({
                     where: { productVariantId: variantId }
@@ -1333,9 +1343,11 @@ export class ProductsService {
                 message: `Biến thể ${updatedVariant.isActive ? 'đã được kích hoạt' : 'đã được tắt'}`
             };
         });
+        this.queueProductEmbeddingSync(variant.productId);
+        return result;
     }
 
-    // giam stock khi khach hang chot don
+    /// giam stock khi khach hang chot don
     async decreaseStock(variantId: string, quantity: number) {
         const variant = await this.prisma.productVariant.findUnique({ where: { id: variantId } });
         if (!variant) throw new NotFoundException('Biến thể không tồn tại');
@@ -1344,45 +1356,49 @@ export class ProductsService {
             throw new BadRequestException(`Sản phẩm ${variant.name} không đủ hàng trong kho`);
         }
 
-        return this.prisma.productVariant.update({
+        const updatedVariant = await this.prisma.productVariant.update({
             where: { id: variantId },
             data: { stock: { decrement: quantity } }
         });
+        this.queueProductEmbeddingSync(variant.productId);
+        return updatedVariant;
     }
 
-    // khach hang huy don hoac thanh toan that bai
-    // tra lai stock cho don hang
+    /// khach hang huy don hoac thanh toan that bai
+    /// tra lai stock cho don hang
     async increaseStock(variantId: string, quantity: number) {
         const variant = await this.prisma.productVariant.findUnique({
             where: { id: variantId },
-            select: { id: true }
+            select: { id: true, productId: true }
         });
 
         if (!variant) throw new NotFoundException('Biến thể không tồn tại');
 
-        return this.prisma.productVariant.update({
+        const updatedVariant = await this.prisma.productVariant.update({
             where: { id: variantId },
             data: {
                 stock: { increment: quantity }
             }
         });
+        this.queueProductEmbeddingSync(variant.productId);
+        return updatedVariant;
     }
 
-    // tang view san pham
+    /// tang view san pham
     async incrementView(id: string, deviceId: string = 'default') {
         const cacheKey = `view_check:${id}:${deviceId}`;
         const isViewed = await this.redisService.get(cacheKey);
 
         if (!isViewed) {
-            // danh dau key tranh spam trong 30p
+            /// danh dau key tranh spam trong 30p
             await this.redisService.set(cacheKey, '1', 'EX', 1800);
-            // tong view moi chua luu vao db
+            /// tong view moi chua luu vao db
             await this.redisService.incr(`product_views_buffer:${id}`);
         }
     }
 
-    // su dung cron auto cong don view sau moi 10 phutt
-    // tranh nghen co chai neu co nhieu user truy cap dong thoi vao 1 item
+    /// su dung cron auto cong don view sau moi 10 phutt
+    /// tranh nghen co chai neu co nhieu user truy cap dong thoi vao 1 item
     @Cron(CronExpression.EVERY_10_MINUTES)
     async syncViewsToDb() {
         const keys = await this.redisService.keys('product_views_buffer:*');
@@ -1399,12 +1415,12 @@ export class ProductsService {
                 } catch (err) {
                     this.logger.error(`Failed to sync views for product ${productId}: ${err.message}`);
                 }
-                await this.redisService.del(key); // reset buffer
+                await this.redisService.del(key); /// reset buffer
             }
         }
     }
 
-    // SKU engine
+    /// SKU engine
     private generateSKU(slug: string, attributes?: Record<string, any>): string {
         const slugPart = slug
             .split('-')
@@ -1426,14 +1442,19 @@ export class ProductsService {
         return `${slugPart}-${attrPart}`;
     }
 
-    // tao ma tran bien the
+    private queueProductEmbeddingSync(productId?: string | null) {
+        if (!productId) return;
+        void this.embeddingService.syncProductEmbeddingBestEffort(productId);
+    }
+
+    /// tao ma tran bien the
     async generateVariantMatrix(axes: Record<string, string[]>, productSlug?: string) {
-        // truc thuoc tinh
-        // dung de tao combo bien the
+        /// truc thuoc tinh
+        /// dung de tao combo bien the
         const keys = Object.keys(axes);
         if (keys.length === 0) return [];
 
-        // tich de-cac (cartesian product)
+        /// tich de-cac (cartesian product)
         const combinations: Record<string, string>[] = keys.reduce(
             (acc, key) => {
                 const newCombos: Record<string, string>[] = [];

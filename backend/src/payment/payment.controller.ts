@@ -21,9 +21,9 @@ export class PaymentController {
         @Param('orderId') orderId: string,
         @Query('platform') platform: string = 'web',
         @Request() req) {
-        // lay ip cua khach hang
-        // neu chay qua proxy (Nginx/Cloudflare) thi dung 'x-forwarded-for'
-        // neu khong thi dung remoteAddress
+        /// lay ip cua khach hang
+        /// neu chay qua proxy (Nginx/Cloudflare) thi dung 'x-forwarded-for'
+        /// neu khong thi dung remoteAddress
         const ipAddr =
             req.headers['x-forwarded-for']?.toString() ||
             req.socket.remoteAddress ||
@@ -40,7 +40,7 @@ export class PaymentController {
         const baseRedirect = isMobile ? mobileScheme : frontendUrl;
 
         try {
-            // this.logger.log(`VNPay return callback received with params: ${JSON.stringify(query)}`);
+            /// this.logger.log(`VNPay return callback received with params: ${JSON.stringify(query)}`);
 
             if (!query['vnp_TxnRef']) {
                 throw new BadRequestException('Missing vnp_TxnRef parameter');
@@ -56,7 +56,7 @@ export class PaymentController {
                 return res.redirect(`${baseRedirect}?status=failed&message=${encodeURIComponent(r.message || 'Unknown error')}`);
             }
         } catch (error) {
-            // this.logger.error(`Error in vnpayReturn: ${error.message}`, error.stack);
+            /// this.logger.error(`Error in vnpayReturn: ${error.message}`, error.stack);
             return res.redirect(`${baseRedirect}?status=error&message=${encodeURIComponent(error.message)}`);
         }
     }

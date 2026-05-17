@@ -70,7 +70,7 @@ export class UsersService {
     const { page = 1, limit = 10, search, role, status } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {}; // auto filter
+    const where: any = {}; /// auto filter
 
     if (role) {
       where.role = role;
@@ -96,7 +96,7 @@ export class UsersService {
         include: {
           profile: true,
           _count: {
-            select: { orders: true } // xem user da mua bao nhieu don
+            select: { orders: true } /// xem user da mua bao nhieu don
           }
         },
         orderBy: { createdAt: 'desc' },
@@ -190,7 +190,7 @@ export class UsersService {
   }
 
   async updateUserStatus(id: string, data: UpdateUserStatusDto, adminId: string) {
-    // chan admin tu khoa chinh minh
+    /// chan admin tu khoa chinh minh
     if (id === adminId && data.status === UserStatus.BANNED) {
       throw new BadRequestException('Bạn không thể tự khóa tài khoản của chính mình');
     }
@@ -272,15 +272,15 @@ export class UsersService {
 
     if (!user) throw new NotFoundException(`Không tìm thấy người dùng với ID: ${id}`);
 
-    // tinh toan thong ke
+    /// tinh toan thong ke
     const [totalAggregate, spentAggregate] = await Promise.all([
       this.prisma.order.aggregate({
         where: { userId: id },
         _count: { id: true }
       }),
       this.prisma.order.aggregate({
-        where: { 
-          userId: id, 
+        where: {
+          userId: id,
           OR: [
             { paymentStatus: 'PAID' },
             { status: 'DELIVERED' }
@@ -295,7 +295,7 @@ export class UsersService {
       stats: {
         totalSpent: spentAggregate._sum.totalAmount || 0,
         totalOrders: totalAggregate._count.id || 0,
-        successfulOrders: spentAggregate._sum.totalAmount ? spentAggregate._sum.totalAmount : 0, // day la vi du, ban co the tinh them count
+        successfulOrders: spentAggregate._sum.totalAmount ? spentAggregate._sum.totalAmount : 0, /// day la vi du, ban co the tinh them count
       }
     };
   }

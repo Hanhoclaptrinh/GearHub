@@ -23,17 +23,6 @@ export class AuthController {
     return this.authService.verifyRegister(data.email, data.otp);
   }
 
-  // @Post('register')
-  // @LogActivity(ActivityAction.USER_REGISTER)
-  // async register(@Body() data: RegisterDto) {
-  //   return this.authService.register(data);
-  // }
-
-  // @Post('register/send-otp')
-  // async sendRegisterOtp(@Body('email') email: string) {
-  //   return this.authService.sendRegisterOtp(email);
-  // }
-
   @Post('login')
   @LogActivity(ActivityAction.USER_LOGIN)
   async login(@Body() data: LoginDto) {

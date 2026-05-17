@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { Role, RoomStatus } from '@prisma/client';
@@ -22,10 +23,16 @@ import {
   ChatRoomSummaryResponseDto,
   LatestCustomerRoomResponseDto,
 } from './dto/chat-response.dto';
+import { AiChatService } from 'src/ai/ai-chat.service';
 
 @Injectable()
 export class ChatService {
-  constructor(private readonly chatRepository: ChatRepository) { }
+  private readonly logger = new Logger(ChatService.name);
+
+  constructor(
+    private readonly chatRepository: ChatRepository,
+    private readonly aiChatService: AiChatService,
+  ) { }
 
   async joinRoom(user: SocketUser, data: JoinRoomDto) {
     const room = await this.resolveRoom(user, data.roomId);
@@ -74,6 +81,7 @@ export class ChatService {
         roomId: currentRoom.id,
         senderId: user.id,
         senderRole: user.role,
+        roomStatus: currentRoom.status,
         content,
         now,
         tx,
@@ -108,10 +116,10 @@ export class ChatService {
   async getLatestMyRoom(
     userId: string,
   ): Promise<LatestCustomerRoomResponseDto> {
-    // lay phong chat cuoi cung cua user
-    // case 1: user chua tung chat -> tao moi
-    // case 2: user dang chat -> vao lai chinh phong chat tiep tuc chat - khong tao phong moi
-    // case 3: room closed -> vao room closed truoc do -> hien option new chat
+    /// lay phong chat cuoi cung cua user
+    /// case 1: user chua tung chat -> tao moi
+    /// case 2: user dang chat -> vao lai chinh phong chat tiep tuc chat - khong tao phong moi
+    /// case 3: room closed -> vao room closed truoc do -> hien option new chat
     const room = await this.chatRepository.findLatestCustomerRoom(userId);
     if (!room) {
       return {
@@ -138,12 +146,16 @@ export class ChatService {
         tx,
       );
       if (activeRoom) {
-        // neu user dang co chat chua closed -> vao chinh phong do - khong tao room moi
+        /// neu user dang co chat chua closed -> vao chinh phong do - khong tao room moi
         return activeRoom;
       }
 
-      // room closed hoac new chat -> tao moi -> need human - cho nhan vien claim
-      return this.chatRepository.createCustomerRoom(userId, tx);
+      /// AI-enabled rooms start in BOT_ONLY; otherwise preserve human support flow.
+      return this.chatRepository.createCustomerRoom(
+        userId,
+        this.aiChatService.isEnabled() ? RoomStatus.BOT_ONLY : RoomStatus.NEED_HUMAN,
+        tx,
+      );
     });
 
     return {
@@ -232,9 +244,9 @@ export class ChatService {
   }
 
   async claimRoom(user: SocketUser, roomId: string) {
-    this.assertStaffOrAdmin(user); // dam bao nguoi thuc hien claim la staff hoac admin
+    this.assertStaffOrAdmin(user); /// dam bao nguoi thuc hien claim la staff hoac admin
 
-    // chi thuc hien logic khi chua co ai nhan hoac nguoi dang nhan chinh la cu
+    /// chi thuc hien logic khi chua co ai nhan hoac nguoi dang nhan chinh la cu
     const result = await this.chatRepository.claimRoom({
       roomId,
       staffId: user.id,
@@ -304,6 +316,37 @@ export class ChatService {
     await this.resolveRoom(user, data.roomId);
   }
 
+  async respondWithAiIfEligible(
+    user: SocketUser,
+    result: Awaited<ReturnType<ChatRepository['createMessageAndUpdateRoom']>>,
+  ) {
+    return this.aiChatService.respondToUserMessage({
+      room: result.room,
+      userMessage: result.message,
+      senderRole: user.role,
+    });
+  }
+
+  scheduleAiResponseIfEligible(
+    user: SocketUser,
+    result: Awaited<ReturnType<ChatRepository['createMessageAndUpdateRoom']>> & {
+      clientMessageId?: string;
+    },
+    publish: (aiResult: Awaited<ReturnType<AiChatService['respondToUserMessage']>>) => void,
+  ) {
+    void this.respondWithAiIfEligible(user, result)
+      .then((aiResult) => {
+        if (aiResult) {
+          publish(aiResult);
+        }
+      })
+      .catch((error) => {
+        this.logger.warn(
+          `AI response skipped for room=${result.room.id} message=${result.message.id}: ${this.errorMessage(error)}`,
+        );
+      });
+  }
+
   private async resolveRoom(
     user: SocketUser,
     roomId?: string,
@@ -366,5 +409,9 @@ export class ChatService {
       email: user.email ?? '',
       role: user.role,
     };
+  }
+
+  private errorMessage(error: unknown) {
+    return error instanceof Error ? error.message : String(error);
   }
 }

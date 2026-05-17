@@ -16,7 +16,7 @@ export class VnPayGateway implements PaymentGateway {
 
         const createDate = moment().format('YYYYMMDDHHmmss');
 
-        // add platform to return url
+        /// add platform to return url
         if (data.platform) {
             const url = new URL(vnpReturnUrl);
             url.searchParams.set('platform', data.platform);
@@ -40,16 +40,16 @@ export class VnPayGateway implements PaymentGateway {
 
         const sortedParams = this.sortObject(vnp_Params);
 
-        // build query string
+        /// build query string
         const signData = Object.keys(sortedParams)
             .map((key) => `${key}=${encodeURIComponent(sortedParams[key]).replace(/%20/g, "+")}`)
             .join('&');
 
-        // hash data
+        /// hash data
         const hmac = crypto.createHmac('sha512', vnpHashSecret);
         const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
 
-        // url generate
+        /// url generate
         const finalUrl = `${vnpUrl}?${signData}&vnp_SecureHash=${signed}`;
         return finalUrl;
     }
@@ -80,7 +80,7 @@ export class VnPayGateway implements PaymentGateway {
 
         const sortedParams = this.sortObject(data);
 
-        // encoding
+        /// encoding
         const signData = Object.keys(sortedParams)
             .map((key) => {
                 const value = encodeURIComponent(sortedParams[key].toString()).replace(/%20/g, "+");

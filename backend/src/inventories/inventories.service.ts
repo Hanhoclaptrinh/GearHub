@@ -133,13 +133,13 @@ export class InventoriesService {
         const skip = (page - 1) * limit;
         const LOW_STOCK_THRESHOLD = 10;
 
-        // filter cate cha
+        /// filter cate cha
         let categoryIds: string[] | undefined;
         if (categoryId) {
             categoryIds = await this.getAllCategoryIds(categoryId);
         }
 
-        // filter prod
+        /// filter prod
         const productWhere: Prisma.ProductWhereInput = {
             isActive: true,
         };
@@ -160,7 +160,7 @@ export class InventoriesService {
             ];
         }
 
-        // filter variant
+        /// filter variant
         const variantWhere: Prisma.ProductVariantWhereInput = {};
         if (stockFilter === 'low_stock') {
             variantWhere.stock = { gt: 0, lte: LOW_STOCK_THRESHOLD };
