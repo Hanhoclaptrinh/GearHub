@@ -10,11 +10,11 @@ import 'package:mobile/src/core/utils/hero_banners_utils.dart';
 import 'package:mobile/src/features/home/domain/entities/hero_product_entity.dart';
 import 'package:mobile/src/features/product_detail/data/datasources/product_detail_remote_datasource.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import '../state/home_cubit.dart';
 import '../state/home_state.dart';
 
 const _kHeroH = 580.0;
-const _kBg = Color(0xFF030305);
 
 enum _ProductBias { shiftRight, shiftLeft, centerSoft }
 
@@ -263,10 +263,10 @@ class _HeroSectionState extends State<HeroSection>
                           end: Alignment.bottomCenter,
                           stops: [0.0, 0.14, 0.86, 1.0],
                           colors: [
-                            Color(0xFF030305),
+                            AppColors.background,
                             Colors.transparent,
                             Colors.transparent,
-                            Color(0xFF030305),
+                            AppColors.background,
                           ],
                         ),
                       ),
@@ -294,7 +294,7 @@ class _HeroSectionState extends State<HeroSection>
           Text(
             '0${_currentPage + 1}',
             style: const TextStyle(
-              color: Colors.white,
+              color: AppColors.textPrimary,
               fontWeight: FontWeight.w700,
               fontSize: 11,
               letterSpacing: 1.2,
@@ -311,7 +311,7 @@ class _HeroSectionState extends State<HeroSection>
                     height: 1.5,
                     margin: const EdgeInsets.symmetric(horizontal: 2),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
+                      color: AppColors.textPrimary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(1),
                     ),
                     clipBehavior: Clip.antiAlias,
@@ -321,17 +321,17 @@ class _HeroSectionState extends State<HeroSection>
                             widthFactor: _progress,
                             child: DecoratedBox(
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: AppColors.textPrimary,
                                 borderRadius: BorderRadius.circular(1),
                                 boxShadow: const [
-                                  BoxShadow(color: Colors.white, blurRadius: 5),
+                                  BoxShadow(color: AppColors.textPrimary, blurRadius: 5),
                                 ],
                               ),
                             ),
                           )
                         : isPast
                         ? ColoredBox(
-                            color: Colors.white.withValues(alpha: 0.45),
+                            color: AppColors.textPrimary.withValues(alpha: 0.45),
                           )
                         : const SizedBox.shrink(),
                   ),
@@ -343,7 +343,7 @@ class _HeroSectionState extends State<HeroSection>
           Text(
             '0$length',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.3),
+              color: AppColors.textPrimary.withValues(alpha: 0.3),
               fontWeight: FontWeight.w500,
               fontSize: 11,
               letterSpacing: 1.2,
@@ -357,7 +357,7 @@ class _HeroSectionState extends State<HeroSection>
   Widget _buildLoading() => const SizedBox(
     height: _kHeroH,
     child: ColoredBox(
-      color: _kBg,
+      color: AppColors.background,
       child: Center(
         child: SizedBox(
           width: 28,
@@ -374,7 +374,7 @@ class _HeroSectionState extends State<HeroSection>
   Widget _buildError(String msg) => SizedBox(
     height: _kHeroH,
     child: ColoredBox(
-      color: _kBg,
+      color: AppColors.background,
       child: Center(
         child: Text(
           msg,
@@ -411,7 +411,7 @@ class _CinematicProductSlide extends StatelessWidget {
     return GestureDetector(
       onTap: () => _navigate(context),
       child: ColoredBox(
-        color: _kBg,
+        color: AppColors.background,
         child: Stack(
           clipBehavior: Clip.none,
           children: [
@@ -480,7 +480,7 @@ class _CinematicProductSlide extends StatelessWidget {
                         decoration: const BoxDecoration(
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black,
+                              color: AppColors.ctaPrimaryText,
                               blurRadius: 22,
                               spreadRadius: 10,
                             ),
@@ -503,8 +503,8 @@ class _CinematicProductSlide extends StatelessWidget {
                       stops: const [0.28, 0.52, 1.0],
                       colors: [
                         Colors.transparent,
-                        _kBg.withValues(alpha: 0.65),
-                        _kBg,
+                        AppColors.background.withValues(alpha: 0.65),
+                        AppColors.background,
                       ],
                     ),
                   ),
@@ -566,7 +566,7 @@ class _CinematicBannerSlide extends StatelessWidget {
     final fade = (1.0 - clamped.abs() * 0.6).clamp(0.0, 1.0);
 
     return ColoredBox(
-      color: _kBg,
+      color: AppColors.background,
       child: Stack(
         children: [
           Positioned.fill(
@@ -596,9 +596,9 @@ class _CinematicBannerSlide extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   stops: const [0.05, 0.45, 1.0],
                   colors: [
-                    _kBg.withValues(alpha: 0.4),
-                    _kBg.withValues(alpha: 0.65),
-                    _kBg.withValues(alpha: 0.96),
+                    AppColors.background.withValues(alpha: 0.4),
+                    AppColors.background.withValues(alpha: 0.65),
+                    AppColors.background.withValues(alpha: 0.96),
                   ],
                 ),
               ),
@@ -673,7 +673,7 @@ class _StaggeredReveal extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                   letterSpacing: -0.8,
                   height: 1.12,
                 ),
@@ -696,7 +696,7 @@ class _StaggeredReveal extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: AppColors.textPrimary.withValues(alpha: 0.55),
                   letterSpacing: 0.1,
                   height: 1.45,
                 ),
@@ -753,10 +753,10 @@ class _EditorialCTAState extends State<_EditorialCTA>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: _pressed ? 0.10 : 0.04),
+              color: AppColors.textPrimary.withValues(alpha: _pressed ? 0.10 : 0.04),
               borderRadius: BorderRadius.circular(100),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.14),
+                color: AppColors.textPrimary.withValues(alpha: 0.14),
                 width: 0.6,
               ),
             ),
@@ -768,7 +768,7 @@ class _EditorialCTAState extends State<_EditorialCTA>
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: AppColors.textPrimary,
                     letterSpacing: 0.3,
                   ),
                 ),
@@ -779,7 +779,7 @@ class _EditorialCTAState extends State<_EditorialCTA>
                   child: Icon(
                     Icons.arrow_forward,
                     size: 11,
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: AppColors.textPrimary.withValues(alpha: 0.45),
                   ),
                 ),
               ],
@@ -861,7 +861,7 @@ class _ParticlePainter extends CustomPainter {
       canvas.drawCircle(
         Offset(p.x * size.width, p.baseY * size.height + dy),
         p.size,
-        Paint()..color = Colors.white.withValues(alpha: opacity),
+        Paint()..color = AppColors.textPrimary.withValues(alpha: opacity),
       );
     }
   }
@@ -877,7 +877,7 @@ class _GrainPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.022)
+      ..color = AppColors.textPrimary.withValues(alpha: 0.022)
       ..strokeWidth = 0.6
       ..strokeCap = StrokeCap.round;
 
@@ -905,7 +905,7 @@ class _Vignette extends StatelessWidget {
           colors: [
             Colors.transparent,
             Colors.transparent,
-            Colors.black.withValues(alpha: 0.35),
+            AppColors.ctaPrimaryText.withValues(alpha: 0.35),
           ],
           stops: const [0.0, 0.55, 1.0],
         ),

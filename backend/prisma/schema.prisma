@@ -305,6 +305,8 @@ model ChatRoom {
   lastMessageAt      DateTime?  @map("last_message_at")
   lastMessageContent String?    @map("last_message_content") @db.Text
   unreadCount        Int        @default(0) @map("unread_count")
+  customerUnreadCount Int       @default(0) @map("customer_unread_count")
+  staffUnreadCount    Int       @default(0) @map("staff_unread_count")
   metadata           Json?
   createdAt          DateTime   @default(now()) @map("created_at")
   updatedAt          DateTime   @updatedAt @map("updated_at")
@@ -314,21 +316,29 @@ model ChatRoom {
   messages  Message[]
   aiContext AiContext?
 
+  @@index([userId])
+  @@index([staffId])
+  @@index([status])
+  @@index([lastMessageAt])
   @@map("chat_rooms")
 }
 
 model Message {
-  id        String   @id @default(uuid()) @db.VarChar(36)
-  roomId    String   @map("room_id") @db.VarChar(36)
-  senderId  String?  @map("sender_id") @db.VarChar(36)
-  content   String   @db.Text
-  isAi      Boolean  @default(false) @map("is_ai")
-  createdAt DateTime @default(now()) @map("created_at")
+  id        String        @id @default(uuid()) @db.VarChar(36)
+  roomId    String        @map("room_id") @db.VarChar(36)
+  senderId  String?       @map("sender_id") @db.VarChar(36)
+  content   String        @db.Text
+  type      MessageType   @default(TEXT)
+  status    MessageStatus @default(SENT)
+  isAi      Boolean       @default(false) @map("is_ai")
+  readAt    DateTime?     @map("read_at")
+  createdAt DateTime      @default(now()) @map("created_at")
 
   room   ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
   sender User?    @relation("SenderMessages", fields: [senderId], references: [id])
 
   @@index([roomId])
+  @@index([senderId])
   @@index([createdAt])
   @@map("messages")
 }
@@ -432,6 +442,18 @@ enum TransactionStatus {
   SUCCESS
   FAILED
   PENDING
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  SYSTEM
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
 }
 
 enum RoomStatus {

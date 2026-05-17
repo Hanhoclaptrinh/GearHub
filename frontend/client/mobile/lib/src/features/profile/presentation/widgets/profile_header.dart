@@ -91,7 +91,7 @@ class ProfileHeader extends StatelessWidget {
                     ),
                   ),
                 ),
-                
+
                 if (user != null)
                   Positioned(
                     bottom: 0,

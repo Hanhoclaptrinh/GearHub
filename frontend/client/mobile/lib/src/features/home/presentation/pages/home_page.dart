@@ -7,6 +7,7 @@ import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
+import 'package:mobile/src/features/chat/presentation/widgets/concierge_entry_button.dart';
 import 'package:mobile/src/shared/pages/search_page.dart';
 import 'package:mobile/src/shared/widgets/glassmorphic_header.dart';
 import '../widgets/hero_section.dart';
@@ -128,7 +129,7 @@ class _HomePageState extends State<HomePage>
             ).push(MaterialPageRoute(builder: (_) => const SearchPage()));
           },
         ),
-        HeaderIconButton(icon: LucideIcons.bell, onTap: () {}),
+        const ConciergeEntryButton(compact: true),
       ],
     );
   }

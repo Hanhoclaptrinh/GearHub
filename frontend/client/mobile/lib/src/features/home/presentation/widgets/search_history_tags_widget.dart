@@ -1,15 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-
-const _surface = Color(0xFF14141E);
-const _surfaceAlt = Color(0xFF1C1C28);
-const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFF6366F1);
-const _accentSoft = Color(0x186366F1);
-const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
-const _textLow = Color(0xFF4A4A62);
+import 'package:mobile/src/core/theme/app_colors.dart';
 
 class SearchHistoryTagsWidget extends StatelessWidget {
   final List<String> searchHistory;
@@ -42,13 +34,13 @@ class SearchHistoryTagsWidget extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: const BoxDecoration(
-                      color: _accentSoft,
+                      color: AppColors.brandIndigoSoft,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       LucideIcons.history,
                       size: 14,
-                      color: _accent,
+                      color: AppColors.brandIndigo,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -57,7 +49,7 @@ class SearchHistoryTagsWidget extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
-                      color: _textHigh,
+                      color: AppColors.textPrimary,
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -76,7 +68,7 @@ class SearchHistoryTagsWidget extends StatelessWidget {
                   'Xóa tất cả',
                   style: TextStyle(
                     fontSize: 13,
-                    color: Color(0xFFEF4444),
+                    color: AppColors.error,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -99,9 +91,9 @@ class SearchHistoryTagsWidget extends StatelessWidget {
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: _surfaceAlt,
+                    color: AppColors.cardSurfaceAltAlt,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: _border),
+                    border: Border.all(color: AppColors.borderCardStrong),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -111,7 +103,7 @@ class SearchHistoryTagsWidget extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: _textMid,
+                          color: AppColors.textSlate,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -120,7 +112,7 @@ class SearchHistoryTagsWidget extends StatelessWidget {
                         child: const Icon(
                           LucideIcons.x,
                           size: 14,
-                          color: _textLow,
+                          color: AppColors.textDim,
                         ),
                       ),
                     ],
@@ -139,13 +131,13 @@ class SearchHistoryTagsWidget extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.1),
+                  color: AppColors.warning.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   LucideIcons.sparkles,
                   size: 14,
-                  color: Colors.orange,
+                  color: AppColors.warning,
                 ),
               ),
               const SizedBox(width: 10),
@@ -154,7 +146,7 @@ class SearchHistoryTagsWidget extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
-                  color: _textHigh,
+                  color: AppColors.textPrimary,
                   letterSpacing: -0.3,
                 ),
               ),
@@ -176,16 +168,16 @@ class SearchHistoryTagsWidget extends StatelessWidget {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: _surface,
+                    color: AppColors.cardSurfaceAlt,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: _border),
+                    border: Border.all(color: AppColors.borderCardStrong),
                   ),
                   child: Text(
                     k,
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: _textMid,
+                      color: AppColors.textSlate,
                     ),
                   ),
                 ),

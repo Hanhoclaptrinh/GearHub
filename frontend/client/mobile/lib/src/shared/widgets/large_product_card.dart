@@ -71,13 +71,13 @@ class _LargeProductCardState extends State<LargeProductCard>
             border: Border.all(color: AppColors.cardBorder, width: 0.8),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
+                color: AppColors.ctaPrimaryText.withValues(alpha: 0.35),
                 blurRadius: 40,
                 offset: const Offset(0, 16),
               ),
               // subtle inner top highlight
               BoxShadow(
-                color: Colors.white.withValues(alpha: 0.025),
+                color: AppColors.textPrimary.withValues(alpha: 0.025),
                 blurRadius: 0,
                 spreadRadius: 0,
                 offset: const Offset(0, 1),
@@ -274,10 +274,10 @@ class _ImageStage extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.06),
+                color: AppColors.textPrimary.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(4),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.10),
+                  color: AppColors.textPrimary.withValues(alpha: 0.10),
                   width: 0.5,
                 ),
               ),
@@ -407,14 +407,14 @@ class _CartButtonState extends State<_CartButton>
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
           decoration: BoxDecoration(
             color: _pressed
-                ? Colors.white.withValues(alpha: 0.88)
-                : Colors.white,
+                ? AppColors.textPrimary.withValues(alpha: 0.88)
+                : AppColors.textPrimary,
             borderRadius: BorderRadius.circular(16),
             boxShadow: _pressed
                 ? []
                 : [
                     BoxShadow(
-                      color: Colors.white.withValues(alpha: 0.12),
+                      color: AppColors.textPrimary.withValues(alpha: 0.12),
                       blurRadius: 14,
                       offset: const Offset(0, 4),
                     ),
@@ -426,13 +426,13 @@ class _CartButtonState extends State<_CartButton>
               Icon(
                 Icons.add_shopping_cart_rounded,
                 size: 15,
-                color: Colors.black,
+                color: AppColors.ctaPrimaryText,
               ),
               SizedBox(width: 8),
               Text(
                 'Thêm vào giỏ',
                 style: TextStyle(
-                  color: Colors.black,
+                  color: AppColors.ctaPrimaryText,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.2,
@@ -473,12 +473,12 @@ class _ChipRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: isSelected
-                  ? Colors.white.withValues(alpha: 0.10)
+                  ? AppColors.textPrimary.withValues(alpha: 0.10)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: isSelected
-                    ? Colors.white.withValues(alpha: 0.28)
+                    ? AppColors.textPrimary.withValues(alpha: 0.28)
                     : AppColors.cardBorder,
                 width: isSelected ? 0.8 : 0.6,
               ),

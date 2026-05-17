@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
 
 class VaultCard extends StatefulWidget {
@@ -167,7 +168,7 @@ class _VaultCardState extends State<VaultCard> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFF0D0D0D), Color(0xFF050505)],
+                  colors: [AppColors.background, Colors.black],
                 ),
               ),
             ),
@@ -181,7 +182,7 @@ class _VaultCardState extends State<VaultCard> {
                   gradient: RadialGradient(
                     center: const Alignment(-0.35, -0.35),
                     colors: [
-                      const Color(0xFF1E1E1E).withValues(alpha: 0.5),
+                      AppColors.cardSurface.withValues(alpha: 0.5),
                       Colors.transparent,
                     ],
                     stops: const [0.0, 0.75],

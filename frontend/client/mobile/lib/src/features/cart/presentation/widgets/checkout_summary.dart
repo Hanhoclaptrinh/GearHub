@@ -2,12 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-
-const _surface = Color(0xFF14141E);
-const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFFFCC00);
-const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
+import 'package:mobile/src/core/theme/app_colors.dart';
 
 class CheckoutSummary extends StatelessWidget {
   final double subtotal;
@@ -34,12 +29,12 @@ class CheckoutSummary extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       decoration: BoxDecoration(
-        color: _surface.withValues(alpha: 0.9),
+        color: AppColors.cardSurfaceAlt.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: _border, width: 0.5),
+        border: Border.all(color: AppColors.borderCardStrong, width: 0.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
+            color: AppColors.ctaPrimaryText.withValues(alpha: 0.4),
             blurRadius: 30,
             offset: const Offset(0, 10),
           ),
@@ -62,12 +57,15 @@ class CheckoutSummary extends StatelessWidget {
                   _buildSummaryRow(
                     label: 'Giảm giá',
                     amount: -discount,
-                    amountColor: const Color(0xFF34D399),
+                    amountColor: AppColors.emerald400,
                   ),
                 ],
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 18),
-                  child: Container(height: 1, color: _border),
+                  child: Container(
+                    height: 1,
+                    color: AppColors.borderCardStrong,
+                  ),
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -77,7 +75,7 @@ class CheckoutSummary extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: _textMid,
+                        color: AppColors.slate400,
                       ),
                     ),
                     Text(
@@ -85,7 +83,7 @@ class CheckoutSummary extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
-                        color: _accent,
+                        color: AppColors.accentGold,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -115,7 +113,7 @@ class CheckoutSummary extends StatelessWidget {
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w400,
-            color: _textMid,
+            color: AppColors.slate400,
           ),
         ),
         Text(
@@ -125,7 +123,7 @@ class CheckoutSummary extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: amountColor ?? _textHigh,
+            color: amountColor ?? AppColors.textPrimary,
           ),
         ),
       ],
@@ -144,11 +142,11 @@ class CheckoutSummary extends StatelessWidget {
         width: double.infinity,
         height: 56,
         decoration: BoxDecoration(
-          color: _accent,
+          color: AppColors.accentGold,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: _accent.withValues(alpha: 0.3),
+              color: AppColors.accentGold.withValues(alpha: 0.3),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -161,7 +159,7 @@ class CheckoutSummary extends StatelessWidget {
                   height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    color: Colors.black,
+                    color: AppColors.ctaPrimaryText,
                   ),
                 )
               : const Row(
@@ -170,14 +168,14 @@ class CheckoutSummary extends StatelessWidget {
                     Text(
                       'THANH TOÁN',
                       style: TextStyle(
-                        color: Colors.black,
+                        color: AppColors.ctaPrimaryText,
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.5,
                       ),
                     ),
                     SizedBox(width: 10),
-                    Icon(LucideIcons.arrowRight, color: Colors.black, size: 18),
+                    Icon(LucideIcons.arrowRight, color: AppColors.ctaPrimaryText, size: 18),
                   ],
                 ),
         ),

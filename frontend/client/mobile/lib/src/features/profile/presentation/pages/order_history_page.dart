@@ -2,19 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
+import 'package:mobile/src/features/chat/presentation/widgets/concierge_entry_button.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_state.dart';
-
-const _bg = Color(0xFF07070A);
-const _surface = Color(0xFF14141E);
-const _surfaceAlt = Color(0xFF1C1C28);
-const _border = Color(0xFF2A2A38);
-const _indigo = Color(0xFF6366F1);
-const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
-const _textLow = Color(0xFF4A4A62);
 
 double _toDouble(dynamic val) {
   if (val == null) return 0.0;
@@ -81,9 +74,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
           return AnnotatedRegion<SystemUiOverlayStyle>(
             value: SystemUiOverlayStyle.light,
             child: Scaffold(
-              backgroundColor: _bg,
+              backgroundColor: AppColors.background,
               appBar: AppBar(
-                backgroundColor: _bg,
+                backgroundColor: AppColors.background,
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 centerTitle: true,
@@ -91,16 +84,16 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                   icon: const Icon(
                     Icons.arrow_back_rounded,
                     color: Colors.white,
-                    size: 22,
+                    size: 24,
                   ),
                   onPressed: () => Navigator.pop(context),
                 ),
                 title: const Text(
                   'Lịch sử đơn hàng',
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 18,
                     fontWeight: FontWeight.w900,
-                    color: _textHigh,
+                    color: AppColors.textPrimary,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -110,7 +103,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                     decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
-                          color: _border.withValues(alpha: 0.5),
+                          color: AppColors.borderCardStrong.withValues(
+                            alpha: 0.5,
+                          ),
                         ),
                       ),
                     ),
@@ -119,11 +114,11 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                       isScrollable: true,
                       physics: const BouncingScrollPhysics(),
                       tabAlignment: TabAlignment.start,
-                      indicatorColor: _indigo,
+                      indicatorColor: AppColors.brandIndigo,
                       indicatorWeight: 3,
                       dividerColor: Colors.transparent,
-                      labelColor: _indigo,
-                      unselectedLabelColor: _textLow,
+                      labelColor: AppColors.brandIndigo,
+                      unselectedLabelColor: AppColors.textDim,
                       labelStyle: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 13,
@@ -162,7 +157,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                 builder: (context, state) {
                   if (state is OrdersLoading) {
                     return const Center(
-                      child: CircularProgressIndicator(color: _indigo),
+                      child: CircularProgressIndicator(
+                        color: AppColors.brandIndigo,
+                      ),
                     );
                   }
 
@@ -183,8 +180,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
 
                     if (filteredOrders.isEmpty) {
                       return RefreshIndicator(
-                        color: _indigo,
-                        backgroundColor: _surface,
+                        color: AppColors.brandIndigo,
+                        backgroundColor: AppColors.cardSurfaceAlt,
                         onRefresh: () async {
                           await context.read<OrdersCubit>().fetchMyOrders(
                             status: 'ALL',
@@ -203,13 +200,13 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                                   Container(
                                     padding: const EdgeInsets.all(20),
                                     decoration: const BoxDecoration(
-                                      color: _surface,
+                                      color: AppColors.cardSurfaceAlt,
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
                                       LucideIcons.shoppingBag,
                                       size: 40,
-                                      color: _textLow,
+                                      color: AppColors.textDim,
                                     ),
                                   ),
                                   const SizedBox(height: 24),
@@ -218,7 +215,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w800,
-                                      color: _textHigh,
+                                      color: AppColors.textPrimary,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
@@ -227,7 +224,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       fontSize: 13,
-                                      color: _textLow,
+                                      color: AppColors.textDim,
                                     ),
                                   ),
                                 ],
@@ -239,8 +236,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                     }
 
                     return RefreshIndicator(
-                      color: _indigo,
-                      backgroundColor: _surface,
+                      color: AppColors.brandIndigo,
+                      backgroundColor: AppColors.cardSurfaceAlt,
                       onRefresh: () async {
                         await context.read<OrdersCubit>().fetchMyOrders(
                           status: 'ALL',
@@ -291,9 +288,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: _surface,
+        color: AppColors.cardSurfaceAlt,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _border),
+        border: Border.all(color: AppColors.borderCardStrong),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -311,7 +308,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                     style: const TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 14,
-                      color: _textHigh,
+                      color: AppColors.textPrimary,
                       letterSpacing: -0.2,
                     ),
                   ),
@@ -323,13 +320,13 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                 createdAt,
                 style: const TextStyle(
                   fontSize: 12,
-                  color: _textLow,
+                  color: AppColors.textDim,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 14),
-                child: Divider(height: 1, color: _border),
+                child: Divider(height: 1, color: AppColors.borderCardStrong),
               ),
               if (items.isNotEmpty) ...[
                 Row(
@@ -339,9 +336,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                       width: 54,
                       height: 54,
                       decoration: BoxDecoration(
-                        color: _surfaceAlt,
+                        color: AppColors.cardSurfaceAltAlt,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: _border),
+                        border: Border.all(color: AppColors.borderCardStrong),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(11),
@@ -362,7 +359,10 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                                 errorBuilder: (c, e, s) =>
                                     const Icon(LucideIcons.package),
                               )
-                            : const Icon(LucideIcons.package, color: _textLow),
+                            : const Icon(
+                                LucideIcons.package,
+                                color: AppColors.textDim,
+                              ),
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -378,7 +378,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                             style: const TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: 14,
-                              color: _textHigh,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -387,7 +387,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 12,
-                              color: _textLow,
+                              color: AppColors.textDim,
                             ),
                           ),
                           if (items.length > 1) ...[
@@ -396,7 +396,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                               "và ${items.length - 1} sản phẩm khác...",
                               style: const TextStyle(
                                 fontSize: 12,
-                                color: _textLow,
+                                color: AppColors.textDim,
                                 fontStyle: FontStyle.italic,
                               ),
                             ),
@@ -408,7 +408,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                 ),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 14),
-                  child: Divider(height: 1, color: _border),
+                  child: Divider(height: 1, color: AppColors.borderCardStrong),
                 ),
               ],
               Row(
@@ -419,7 +419,10 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                     children: [
                       const Text(
                         "Tổng số tiền",
-                        style: TextStyle(fontSize: 12, color: _textLow),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textDim,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -427,7 +430,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
-                          color: _textHigh,
+                          color: AppColors.textPrimary,
                           letterSpacing: -0.2,
                         ),
                       ),
@@ -446,7 +449,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                         _buildActionButton(
                           context,
                           'Mua lại',
-                          _indigo,
+                          AppColors.brandIndigo,
                           () =>
                               context.read<OrdersCubit>().reOrder(order['id']),
                         ),
@@ -462,8 +465,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
   }
 
   Widget _buildStatusBadge(String status) {
-    Color bg = _border;
-    Color fg = _textMid;
+    Color bg = AppColors.borderCardStrong;
+    Color fg = AppColors.slate400;
     String text = status;
 
     switch (status) {
@@ -473,8 +476,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
         text = 'Chờ xác nhận';
         break;
       case 'CONFIRMED':
-        bg = _indigo.withValues(alpha: 0.15);
-        fg = _indigo;
+        bg = AppColors.brandIndigo.withValues(alpha: 0.15);
+        fg = AppColors.brandIndigo;
         text = 'Đã xác nhận';
         break;
       case 'PROCESSING':
@@ -548,24 +551,30 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
     showDialog(
       context: context,
       builder: (dCtx) => AlertDialog(
-        backgroundColor: _surface,
+        backgroundColor: AppColors.cardSurfaceAlt,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(28),
-          side: const BorderSide(color: _border),
+          side: const BorderSide(color: AppColors.borderCardStrong),
         ),
         title: const Text(
           'Xác nhận',
-          style: TextStyle(fontWeight: FontWeight.w900, color: _textHigh),
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            color: AppColors.textPrimary,
+          ),
         ),
         content: const Text(
           'Bạn có chắc chắn muốn hủy đơn hàng này không?',
-          style: TextStyle(color: _textMid),
+          style: TextStyle(color: AppColors.slate400),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dCtx),
-            child: const Text('Quay lại', style: TextStyle(color: _textLow)),
+            child: const Text(
+              'Quay lại',
+              style: TextStyle(color: AppColors.textDim),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -610,7 +619,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
       builder: (_) => Container(
         height: MediaQuery.of(context).size.height * 0.85,
         decoration: const BoxDecoration(
-          color: _bg,
+          color: AppColors.background,
           borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
@@ -622,7 +631,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                 width: 40,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: _border,
+                  color: AppColors.borderCardStrong,
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -636,12 +645,14 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
-                    color: _textHigh,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 _buildStatusBadge(order['status'] ?? 'PENDING'),
               ],
             ),
+            const SizedBox(height: 16),
+            const ConciergeEntryButton(label: 'Hỗ trợ đơn hàng'),
             const SizedBox(height: 16),
             Expanded(
               child: SingleChildScrollView(
@@ -653,9 +664,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: _surface,
+                        color: AppColors.cardSurfaceAlt,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: _border),
+                        border: Border.all(color: AppColors.borderCardStrong),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -665,7 +676,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: 13,
-                              color: _textLow,
+                              color: AppColors.textDim,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -674,7 +685,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                               const Icon(
                                 LucideIcons.user,
                                 size: 16,
-                                color: _textMid,
+                                color: AppColors.slate400,
                               ),
                               const SizedBox(width: 8),
                               Text(
@@ -682,7 +693,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w800,
                                   fontSize: 14,
-                                  color: _textHigh,
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
                             ],
@@ -693,14 +704,14 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                               const Icon(
                                 LucideIcons.phone,
                                 size: 16,
-                                color: _textMid,
+                                color: AppColors.slate400,
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 order['receiverPhone'] ?? 'Chưa cập nhật',
                                 style: const TextStyle(
                                   fontSize: 13,
-                                  color: _textMid,
+                                  color: AppColors.slate400,
                                 ),
                               ),
                             ],
@@ -712,7 +723,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                               const Icon(
                                 LucideIcons.mapPin,
                                 size: 16,
-                                color: _textMid,
+                                color: AppColors.slate400,
                               ),
                               const SizedBox(width: 8),
                               Expanded(
@@ -720,7 +731,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                                   order['shippingAddress'] ?? 'Chưa cập nhật',
                                   style: const TextStyle(
                                     fontSize: 13,
-                                    color: _textMid,
+                                    color: AppColors.slate400,
                                     height: 1.4,
                                   ),
                                 ),
@@ -737,7 +748,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
-                        color: _textHigh,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -751,9 +762,11 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                               width: 50,
                               height: 50,
                               decoration: BoxDecoration(
-                                color: _surfaceAlt,
+                                color: AppColors.cardSurfaceAltAlt,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: _border),
+                                border: Border.all(
+                                  color: AppColors.borderCardStrong,
+                                ),
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
@@ -788,7 +801,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w800,
                                       fontSize: 13,
-                                      color: _textHigh,
+                                      color: AppColors.textPrimary,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -805,7 +818,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                                         style: const TextStyle(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 13,
-                                          color: _textMid,
+                                          color: AppColors.slate400,
                                         ),
                                       ),
                                       Text(
@@ -813,7 +826,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                                         style: const TextStyle(
                                           fontWeight: FontWeight.w800,
                                           fontSize: 13,
-                                          color: _textLow,
+                                          color: AppColors.textDim,
                                         ),
                                       ),
                                     ],
@@ -830,9 +843,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: _surface,
+                        color: AppColors.cardSurfaceAlt,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: _border),
+                        border: Border.all(color: AppColors.borderCardStrong),
                       ),
                       child: Column(
                         children: [
@@ -849,7 +862,10 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                           ),
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 12),
-                            child: Divider(height: 1, color: _border),
+                            child: Divider(
+                              height: 1,
+                              color: AppColors.borderCardStrong,
+                            ),
                           ),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -859,7 +875,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                                 style: TextStyle(
                                   fontWeight: FontWeight.w900,
                                   fontSize: 14,
-                                  color: _textHigh,
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
                               Text(
@@ -867,7 +883,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w900,
                                   fontSize: 20,
-                                  color: _indigo,
+                                  color: AppColors.brandIndigo,
                                   letterSpacing: -0.2,
                                 ),
                               ),
@@ -893,7 +909,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
         Text(
           label,
           style: const TextStyle(
-            color: _textLow,
+            color: AppColors.textDim,
             fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
@@ -903,7 +919,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
           style: TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: 13,
-            color: valueColor ?? _textHigh,
+            color: valueColor ?? AppColors.textPrimary,
           ),
         ),
       ],

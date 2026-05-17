@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/services.dart';
@@ -9,10 +8,8 @@ import 'package:mobile/src/features/product_review/presentation/state/review_cub
 import 'package:mobile/src/features/product_review/presentation/state/review_state.dart';
 import 'package:mobile/src/features/product_review/presentation/widgets/shop_reply_widget.dart';
 import 'package:mobile/src/shared/widgets/glassmorphic_header.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import '../../../../core/di/injection.dart';
-
-const _bg = Color(0xFF07070A);
-const _starColor = Color(0xFFFFCC00);
 
 class ProductReviewsPage extends StatefulWidget {
   final String productId;
@@ -51,7 +48,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
     return BlocProvider(
       create: (context) => getIt<ReviewCubit>()..loadReviews(widget.productId),
       child: Scaffold(
-        backgroundColor: _bg,
+        backgroundColor: AppColors.background,
         body: Stack(
           children: [
             _buildImmersiveBackground(),
@@ -61,7 +58,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                 if (state is ReviewLoading) {
                   return const Center(
                     child: CircularProgressIndicator(
-                      color: _starColor,
+                      color: AppColors.accentGold,
                       strokeWidth: 2,
                     ),
                   );
@@ -106,7 +103,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                                           style: TextStyle(
                                             fontSize: 10,
                                             fontWeight: FontWeight.w800,
-                                            color: Colors.white,
+                                            color: AppColors.textPrimary,
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -117,9 +114,8 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                                         style: TextStyle(
                                           fontSize: 10,
                                           fontWeight: FontWeight.w500,
-                                          color: Colors.white.withValues(
-                                            alpha: 0.3,
-                                          ),
+                                          color: AppColors.textPrimary
+                                              .withValues(alpha: 0.3),
                                         ),
                                       ),
                                     ],
@@ -160,7 +156,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
           gradient: RadialGradient(
             center: Alignment(0, -0.6),
             radius: 1.5,
-            colors: [ Color(0xFF1A1A25), _bg],
+            colors: [Color(0xFF1A1A25), AppColors.background],
           ),
         ),
       ),
@@ -181,9 +177,11 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
+        color: AppColors.textPrimary.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(
+          color: AppColors.textPrimary.withValues(alpha: 0.05),
+        ),
       ),
       child: Row(
         children: [
@@ -204,7 +202,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                         style: const TextStyle(
                           fontSize: 56,
                           fontWeight: FontWeight.w300,
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                           height: 1,
                         ),
                       ),
@@ -214,7 +212,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
-                          color: Colors.white.withValues(alpha: 0.2),
+                          color: AppColors.textPrimary.withValues(alpha: 0.2),
                         ),
                       ),
                     ],
@@ -230,8 +228,8 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                         fill > 0.5 ? Icons.star : Icons.star_outline,
                         size: 14,
                         color: fill > 0.5
-                            ? _starColor
-                            : Colors.white.withValues(alpha: 0.05),
+                            ? AppColors.accentGold
+                            : AppColors.textPrimary.withValues(alpha: 0.05),
                       ),
                     );
                   }),
@@ -242,7 +240,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
-                    color: Colors.white.withValues(alpha: 0.3),
+                    color: AppColors.textPrimary.withValues(alpha: 0.3),
                   ),
                 ),
               ],
@@ -273,7 +271,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w900,
-              color: Colors.white.withValues(alpha: 0.3),
+              color: AppColors.textPrimary.withValues(alpha: 0.3),
             ),
           ),
           const SizedBox(width: 12),
@@ -281,7 +279,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
             child: Container(
               height: 2,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: AppColors.textPrimary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(1),
               ),
               child: FractionallySizedBox(
@@ -290,13 +288,15 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                 child: Container(
                   decoration: BoxDecoration(
                     color: stars >= 4
-                        ? _starColor
-                        : Colors.white.withValues(alpha: 0.2),
+                        ? AppColors.accentGold
+                        : AppColors.textPrimary.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(1),
                     boxShadow: stars >= 4
                         ? [
                             BoxShadow(
-                              color: _starColor.withValues(alpha: 0.3),
+                              color: AppColors.accentGold.withValues(
+                                alpha: 0.3,
+                              ),
                               blurRadius: 8,
                             ),
                           ]
@@ -320,7 +320,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w800,
-            color: Colors.white,
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 20),
@@ -398,13 +398,13 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
           color: isSelected
-              ? Colors.white
-              : Colors.white.withValues(alpha: 0.03),
+              ? AppColors.textPrimary
+              : AppColors.textPrimary.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(100),
           border: Border.all(
             color: isSelected
-                ? Colors.white
-                : Colors.white.withValues(alpha: 0.07),
+                ? AppColors.textPrimary
+                : AppColors.textPrimary.withValues(alpha: 0.07),
           ),
         ),
         child: Row(
@@ -414,8 +414,8 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                 icon,
                 size: 12,
                 color: isSelected
-                    ? Colors.black
-                    : Colors.white.withValues(alpha: 0.4),
+                    ? AppColors.ctaPrimaryText
+                    : AppColors.textPrimary.withValues(alpha: 0.4),
               ),
               const SizedBox(width: 8),
             ],
@@ -424,7 +424,9 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w900,
-                color: isSelected ? Colors.black : Colors.white,
+                color: isSelected
+                    ? AppColors.ctaPrimaryText
+                    : AppColors.textPrimary,
               ),
             ),
           ],
@@ -440,7 +442,9 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
           padding: const EdgeInsets.symmetric(vertical: 32),
           decoration: BoxDecoration(
             border: Border(
-              top: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+              top: BorderSide(
+                color: AppColors.textPrimary.withValues(alpha: 0.05),
+              ),
             ),
           ),
           child: Column(
@@ -455,11 +459,11 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: _starColor.withValues(alpha: 0.3),
+                        color: AppColors.accentGold.withValues(alpha: 0.3),
                       ),
                     ),
                     child: CircleAvatar(
-                      backgroundColor: const Color(0xFF1A1A25),
+                      backgroundColor: AppColors.cardSurfaceAltAlt,
                       backgroundImage: review.userAvatar != null
                           ? CachedNetworkImageProvider(review.userAvatar!)
                           : null,
@@ -469,7 +473,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w900,
-                                color: _starColor,
+                                color: AppColors.accentGold,
                               ),
                             )
                           : null,
@@ -485,7 +489,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w900,
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -494,7 +498,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w500,
-                            color: Colors.white.withValues(alpha: 0.3),
+                            color: AppColors.textPrimary.withValues(alpha: 0.3),
                           ),
                         ),
                       ],
@@ -506,20 +510,24 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: _starColor.withValues(alpha: 0.05),
+                      color: AppColors.accentGold.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: _starColor.withValues(alpha: 0.1),
+                        color: AppColors.accentGold.withValues(alpha: 0.1),
                       ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.star, size: 12, color: _starColor),
+                        const Icon(
+                          Icons.star,
+                          size: 12,
+                          color: AppColors.accentGold,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           '${review.rating}',
                           style: const TextStyle(
-                            color: _starColor,
+                            color: AppColors.accentGold,
                             fontWeight: FontWeight.w900,
                             fontSize: 13,
                           ),
@@ -538,7 +546,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
-                      color: _starColor.withValues(alpha: 0.5),
+                      color: AppColors.accentGold.withValues(alpha: 0.5),
                     ),
                   ),
                 ),
@@ -548,7 +556,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w300,
-                    color: Colors.white.withValues(alpha: 0.7),
+                    color: AppColors.textPrimary.withValues(alpha: 0.7),
                     height: 1.8,
                   ),
                 ),
@@ -593,13 +601,13 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
             Icon(
               LucideIcons.messageSquareDashed,
               size: 48,
-              color: Colors.white.withValues(alpha: 0.1),
+              color: AppColors.textPrimary.withValues(alpha: 0.1),
             ),
             const SizedBox(height: 24),
             Text(
               'CHƯA CÓ DỮ LIỆU TRẢI NGHIỆM',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: AppColors.textPrimary.withValues(alpha: 0.2),
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
               ),

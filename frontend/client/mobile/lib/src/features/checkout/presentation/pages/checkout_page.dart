@@ -17,15 +17,7 @@ import 'package:mobile/src/features/checkout/presentation/widgets/price_breakdow
 import 'package:mobile/src/features/checkout/presentation/widgets/edit_address_modal.dart';
 import 'vnpay_payment_page.dart';
 import 'package:mobile/src/features/profile/presentation/pages/order_history_page.dart';
-
-const _bg = Color(0xFF07070A);
-const _surface = Color(0xFF14141E);
-const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFFDE047);
-const _pink = Color(0xFFFF6B8A);
-const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
-const _textLow = Color(0xFF4A4A62);
+import 'package:mobile/src/core/theme/app_colors.dart';
 
 class CheckoutArguments {
   final List<CartItemEntity> items;
@@ -149,7 +141,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     content: Text(
                       'Thanh toán VNPay không thành công hoặc đã bị hủy.',
                     ),
-                    backgroundColor: _pink,
+                    backgroundColor: AppColors.accentPink,
                   ),
                 );
               }
@@ -166,14 +158,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Lỗi đặt hàng: ${state.message}'),
-                backgroundColor: _pink,
+                backgroundColor: AppColors.accentPink,
               ),
             );
           }
         },
         builder: (context, state) {
           return Scaffold(
-            backgroundColor: _bg,
+            backgroundColor: AppColors.background,
             body: Stack(
               children: [
                 CustomScrollView(
@@ -233,19 +225,19 @@ class _CheckoutPageState extends State<CheckoutPage> {
       centerTitle: true,
       elevation: 0,
       scrolledUnderElevation: 0,
-      backgroundColor: _bg,
+      backgroundColor: AppColors.background,
       leading: GestureDetector(
         onTap: () => Navigator.pop(context),
         child: const Icon(
           Icons.arrow_back_rounded,
-          color: Colors.white,
+          color: AppColors.textPrimary,
           size: 22,
         ),
       ),
       title: const Text(
         "Thanh toán",
         style: TextStyle(
-          color: _textHigh,
+          color: AppColors.textPrimary,
           fontWeight: FontWeight.w800,
           fontSize: 20,
           letterSpacing: -0.5,
@@ -263,25 +255,29 @@ class _CheckoutPageState extends State<CheckoutPage> {
           style: TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: 16,
-            color: _textHigh,
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
           decoration: BoxDecoration(
-            color: _surface,
+            color: AppColors.cardSurfaceAlt,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: _border, width: 0.5),
+            border: Border.all(color: AppColors.borderCardStrong, width: 0.5),
           ),
           child: TextField(
             controller: _noteController,
             maxLines: 1,
-            style: const TextStyle(color: _textHigh, fontSize: 14),
+            style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
             decoration: const InputDecoration(
-              icon: Icon(LucideIcons.fileText, size: 18, color: _textLow),
+              icon: Icon(
+                LucideIcons.fileText,
+                size: 18,
+                color: AppColors.textDim,
+              ),
               hintText: "Thêm ghi chú cho đơn hàng...",
-              hintStyle: TextStyle(color: _textLow, fontSize: 13),
+              hintStyle: TextStyle(color: AppColors.textDim, fontSize: 13),
               border: InputBorder.none,
             ),
           ),
@@ -304,8 +300,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
       child: Container(
         padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPadding + 16),
         decoration: const BoxDecoration(
-          color: _bg,
-          border: Border(top: BorderSide(color: _border, width: 0.5)),
+          color: AppColors.background,
+          border: Border(
+            top: BorderSide(color: AppColors.borderCardStrong, width: 0.5),
+          ),
         ),
         child: Row(
           children: [
@@ -318,7 +316,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
-                    color: _textLow,
+                    color: AppColors.textDim,
                     letterSpacing: 1,
                   ),
                 ),
@@ -328,7 +326,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
-                    color: _textHigh,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -346,7 +344,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                               content: Text(
                                 'Vui lòng thêm đầy đủ thông tin giao hàng.',
                               ),
-                              backgroundColor: _pink,
+                              backgroundColor: AppColors.accentPink,
                             ),
                           );
                           return;
@@ -356,11 +354,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 child: Container(
                   height: 56,
                   decoration: BoxDecoration(
-                    color: _accent,
+                    color: AppColors.brandYellow,
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: _accent.withValues(alpha: 0.3),
+                        color: AppColors.brandYellow.withValues(alpha: 0.3),
                         blurRadius: 5,
                       ),
                     ],
@@ -372,13 +370,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             height: 22,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
-                              color: Colors.black,
+                              color: AppColors.ctaPrimaryText,
                             ),
                           )
                         : const Text(
                             "ĐẶT HÀNG",
                             style: TextStyle(
-                              color: Colors.black,
+                              color: AppColors.ctaPrimaryText,
                               fontWeight: FontWeight.w900,
                               fontSize: 14,
                             ),
@@ -397,23 +395,27 @@ class _CheckoutPageState extends State<CheckoutPage> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: _surface,
+        backgroundColor: AppColors.cardSurfaceAlt,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: _border, width: 0.5),
+          side: const BorderSide(color: AppColors.borderCardStrong, width: 0.5),
         ),
         title: const Text(
           "Xác nhận đặt hàng",
           style: TextStyle(
             fontWeight: FontWeight.w900,
             fontSize: 20,
-            color: _textHigh,
+            color: AppColors.textPrimary,
             letterSpacing: -0.5,
           ),
         ),
         content: Text(
           "Bạn có chắc chắn muốn đặt đơn hàng này với tổng số tiền là ${formatVND(_total)}?",
-          style: const TextStyle(color: _textMid, fontSize: 14, height: 1.5),
+          style: const TextStyle(
+            color: AppColors.slate400,
+            fontSize: 14,
+            height: 1.5,
+          ),
         ),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
@@ -422,7 +424,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             child: const Text(
               "Hủy",
               style: TextStyle(
-                color: _textMid,
+                color: AppColors.slate400,
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
               ),
@@ -444,7 +446,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
-                color: _accent,
+                color: AppColors.brandYellow,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: const Text(
@@ -452,7 +454,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 14,
-                  color: Colors.black,
+                  color: AppColors.ctaPrimaryText,
                 ),
               ),
             ),
@@ -488,10 +490,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: _surface,
+        backgroundColor: AppColors.cardSurfaceAlt,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(28),
-          side: const BorderSide(color: _border, width: 0.5),
+          side: const BorderSide(color: AppColors.borderCardStrong, width: 0.5),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -511,14 +513,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
-                color: _textHigh,
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             const Text(
               "Đơn hàng của bạn đang được xử lý.",
               textAlign: TextAlign.center,
-              style: TextStyle(color: _textMid, fontSize: 14),
+              style: TextStyle(color: AppColors.slate400, fontSize: 14),
             ),
             const SizedBox(height: 28),
             GestureDetector(
@@ -536,11 +538,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 width: double.infinity,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: _accent,
+                  color: AppColors.brandYellow,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: _accent.withValues(alpha: 0.3),
+                      color: AppColors.brandYellow.withValues(alpha: 0.3),
                       blurRadius: 14,
                       offset: const Offset(0, 6),
                     ),
@@ -550,7 +552,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   child: Text(
                     "XEM ĐƠN HÀNG",
                     style: TextStyle(
-                      color: Colors.black,
+                      color: AppColors.ctaPrimaryText,
                       fontWeight: FontWeight.w900,
                       fontSize: 14,
                       letterSpacing: 1,

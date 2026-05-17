@@ -4,18 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/core/utils/brand_identity_helper.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
+import 'package:mobile/src/features/chat/presentation/widgets/concierge_entry_button.dart';
 import 'package:mobile/src/features/home/domain/entities/brand_entity.dart';
 import 'package:mobile/src/features/home/presentation/state/brand_products_cubit.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/widgets/glassmorphic_header.dart';
 import 'package:mobile/src/shared/widgets/small_product_card.dart';
-
-const _bg = Color(0xFF07070A);
-const _textMid = Color(0xFF9191A8);
 
 class BrandDetailPage extends StatelessWidget {
   final BrandEntity brand;
@@ -101,7 +100,7 @@ class _BrandDetailStorytellingViewState
         statusBarBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: _bg,
+        backgroundColor: AppColors.background,
         body: Stack(
           children: [
             // bg
@@ -129,6 +128,7 @@ class _BrandDetailStorytellingViewState
               onBack: () => Navigator.pop(context),
               maxScroll: 250,
               centerTitle: true,
+              actions: const [ConciergeEntryButton(compact: true)],
             ),
 
             Positioned(
@@ -167,7 +167,7 @@ class _BrandDetailStorytellingViewState
           gradient: RadialGradient(
             center: const Alignment(0.7, -0.6),
             radius: 1.2,
-            colors: [accent.withValues(alpha: 0.12), _bg],
+            colors: [accent.withValues(alpha: 0.12), AppColors.background],
           ),
         ),
       ),
@@ -395,7 +395,9 @@ class _BrandDetailStorytellingViewState
                         child: Text(
                           item.title,
                           style: TextStyle(
-                            color: isSelected ? Colors.white : _textMid,
+                            color: isSelected
+                                ? Colors.white
+                                : AppColors.slate400,
                             fontSize: 13,
                             fontWeight: isSelected
                                 ? FontWeight.w800
@@ -465,7 +467,7 @@ class _BrandDetailStorytellingViewState
                       'Bộ sưu tập huyền thoại đang được tinh tuyển.\nHãy sẵn sàng cho sự bùng nổ tiếp theo.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: _textMid,
+                        color: AppColors.slate400,
                         fontSize: 12,
                         height: 1.6,
                         fontWeight: FontWeight.w500,
@@ -661,10 +663,7 @@ class _MasterpieceCard extends StatelessWidget {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF2A2D34),
-              Color(0xFF141519),
-            ],
+            colors: [AppColors.surfaceHover, AppColors.cardSurfaceAlt],
           ),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
@@ -693,9 +692,7 @@ class _MasterpieceCard extends StatelessWidget {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: accent.withValues(
-                          alpha: 0.15,
-                        ),
+                        color: accent.withValues(alpha: 0.15),
                         blurRadius: 60,
                         spreadRadius: 20,
                       ),
@@ -722,8 +719,7 @@ class _MasterpieceCard extends StatelessWidget {
                           color: accent,
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          letterSpacing:
-                              2.5,
+                          letterSpacing: 2.5,
                         ),
                       ),
                     ],
@@ -748,8 +744,7 @@ class _MasterpieceCard extends StatelessWidget {
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
-                      fontWeight: FontWeight
-                          .w600,
+                      fontWeight: FontWeight.w600,
                       letterSpacing: 1.2,
                       height: 1.3,
                     ),

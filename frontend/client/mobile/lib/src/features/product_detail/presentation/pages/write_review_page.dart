@@ -5,22 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/features/product_review/presentation/state/review_cubit.dart';
 import 'package:mobile/src/features/product_review/presentation/state/review_state.dart';
 import '../../../../core/di/injection.dart';
-
-const _bg = Color(0xFF07070A);
-const _surface = Color(0xFF14141E);
-const _surfaceAlt = Color(0xFF1C1C28);
-const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFFDE047);
-const starColor = Color(0xFFFFCC00);
-const _accentSoft = Color(0x26F59E0B);
-const _indigo = Color(0xFF6366F1);
-const _indigoSoft = Color(0x1A6366F1);
-const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
-const _textLow = Color(0xFF4A4A62);
 
 const _ratingLabels = [
   '',
@@ -161,7 +149,7 @@ class _WriteReviewPageState extends State<WriteReviewPage>
             final isSubmitting = state is ReviewLoading;
 
             return Scaffold(
-              backgroundColor: _bg,
+              backgroundColor: AppColors.background,
               extendBodyBehindAppBar: true,
               appBar: AppBar(
                 backgroundColor: Colors.transparent,
@@ -174,14 +162,17 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: _textHigh,
+                    color: AppColors.textPrimary,
                     letterSpacing: 0.2,
                   ),
                 ),
                 leading: Padding(
                   padding: const EdgeInsets.only(left: 8),
                   child: IconButton(
-                    icon: const Icon(Icons.close_rounded, color: _textMid),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: AppColors.slate400,
+                    ),
                     onPressed: () {
                       FocusScope.of(context).unfocus();
                       Navigator.of(context).pop();
@@ -242,9 +233,9 @@ class _WriteReviewPageState extends State<WriteReviewPage>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _surface,
+        color: AppColors.cardSurfaceAlt,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _border),
+        border: Border.all(color: AppColors.borderCardStrong),
       ),
       child: Row(
         children: [
@@ -260,7 +251,7 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                   width: 56,
                   height: 56,
                   alignment: Alignment.center,
-                  color: _surfaceAlt,
+                  color: AppColors.cardSurfaceAltAlt,
                   child: const SizedBox(
                     width: 18,
                     height: 18,
@@ -270,10 +261,10 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                 errorWidget: (_, __, ___) => Container(
                   width: 56,
                   height: 56,
-                  color: _surfaceAlt,
+                  color: AppColors.cardSurfaceAltAlt,
                   child: const Icon(
                     LucideIcons.package,
-                    color: _textLow,
+                    color: AppColors.textDim,
                     size: 24,
                   ),
                 ),
@@ -289,7 +280,7 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                   'Đánh giá cho',
                   style: TextStyle(
                     fontSize: 11,
-                    color: _textLow,
+                    color: AppColors.textDim,
                     letterSpacing: 0.8,
                     fontWeight: FontWeight.w600,
                   ),
@@ -300,7 +291,7 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: _textHigh,
+                    color: AppColors.textPrimary,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -318,9 +309,9 @@ class _WriteReviewPageState extends State<WriteReviewPage>
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
       decoration: BoxDecoration(
-        color: _surface,
+        color: AppColors.cardSurfaceAlt,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _border),
+        border: Border.all(color: AppColors.borderCardStrong),
       ),
       child: Column(
         children: [
@@ -329,7 +320,7 @@ class _WriteReviewPageState extends State<WriteReviewPage>
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: _textMid,
+              color: AppColors.slate400,
               letterSpacing: 0.1,
             ),
           ),
@@ -352,11 +343,15 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                       child: Icon(
                         filled ? Icons.star : Icons.star_outline,
                         size: 44,
-                        color: filled ? starColor : _textLow,
+                        color: filled
+                            ? AppColors.accentGold
+                            : AppColors.textDim,
                         shadows: filled
                             ? [
                                 Shadow(
-                                  color: starColor.withValues(alpha: 0.5),
+                                  color: AppColors.accentGold.withValues(
+                                    alpha: 0.5,
+                                  ),
                                   blurRadius: 12,
                                 ),
                               ]
@@ -382,7 +377,7 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: starColor.withValues(alpha: 0.1),
+                  color: AppColors.accentGold.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -390,7 +385,7 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: starColor,
+                    color: AppColors.accentGold,
                     letterSpacing: 0.3,
                   ),
                 ),
@@ -411,10 +406,14 @@ class _WriteReviewPageState extends State<WriteReviewPage>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: _indigoSoft,
+                color: AppColors.brandIndigoSoft,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(LucideIcons.image, size: 16, color: _indigo),
+              child: const Icon(
+                LucideIcons.image,
+                size: 16,
+                color: AppColors.brandIndigo,
+              ),
             ),
             const SizedBox(width: 12),
             const Expanded(
@@ -426,12 +425,12 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: _textHigh,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   Text(
                     'Tối đa 5 ảnh',
-                    style: TextStyle(fontSize: 12, color: _textLow),
+                    style: TextStyle(fontSize: 12, color: AppColors.textDim),
                   ),
                 ],
               ),
@@ -439,16 +438,16 @@ class _WriteReviewPageState extends State<WriteReviewPage>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: _surfaceAlt,
+                color: AppColors.cardSurfaceAltAlt,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: _border),
+                border: Border.all(color: AppColors.borderCardStrong),
               ),
               child: Text(
                 '${_selectedImages.length}/5',
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: _textMid,
+                  color: AppColors.slate400,
                 ),
               ),
             ),
@@ -469,10 +468,10 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                     height: 96,
                     margin: const EdgeInsets.only(right: 12),
                     decoration: BoxDecoration(
-                      color: _surface,
+                      color: AppColors.cardSurfaceAlt,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color: _indigo.withValues(alpha: 0.4),
+                        color: AppColors.brandIndigo.withValues(alpha: 0.4),
                         width: 1.5,
                       ),
                     ),
@@ -482,13 +481,13 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: const BoxDecoration(
-                            color: _indigoSoft,
+                            color: AppColors.brandIndigoSoft,
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
                             Icons.add_rounded,
                             size: 20,
-                            color: _indigo,
+                            color: AppColors.brandIndigo,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -497,7 +496,7 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: _indigo,
+                            color: AppColors.brandIndigo,
                           ),
                         ),
                       ],
@@ -559,13 +558,13 @@ class _WriteReviewPageState extends State<WriteReviewPage>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: _accentSoft,
+                color: AppColors.brandYellowSoft,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
                 LucideIcons.messageSquare,
                 size: 16,
-                color: _accent,
+                color: AppColors.brandYellow,
               ),
             ),
             const SizedBox(width: 12),
@@ -574,7 +573,7 @@ class _WriteReviewPageState extends State<WriteReviewPage>
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: _textHigh,
+                color: AppColors.textPrimary,
               ),
             ),
           ],
@@ -582,9 +581,9 @@ class _WriteReviewPageState extends State<WriteReviewPage>
         const SizedBox(height: 14),
         Container(
           decoration: BoxDecoration(
-            color: _surface,
+            color: AppColors.cardSurfaceAlt,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _border),
+            border: Border.all(color: AppColors.borderCardStrong),
           ),
           child: TextField(
             controller: _commentController,
@@ -593,13 +592,17 @@ class _WriteReviewPageState extends State<WriteReviewPage>
               fontSize: 15,
               fontWeight: FontWeight.w500,
               height: 1.65,
-              color: _textHigh,
+              color: AppColors.textPrimary,
             ),
-            cursorColor: _indigo,
+            cursorColor: AppColors.brandIndigo,
             decoration: const InputDecoration(
               hintText:
                   'Sản phẩm dùng tốt không? Đóng gói thế nào?\nChia sẻ trải nghiệm thực tế cho mọi người...',
-              hintStyle: TextStyle(color: _textLow, fontSize: 14, height: 1.6),
+              hintStyle: TextStyle(
+                color: AppColors.textDim,
+                fontSize: 14,
+                height: 1.6,
+              ),
               contentPadding: EdgeInsets.all(20),
               border: InputBorder.none,
             ),
@@ -619,18 +622,20 @@ class _WriteReviewPageState extends State<WriteReviewPage>
     return Container(
       padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + bottomPadding),
       decoration: const BoxDecoration(
-        color: _surface,
-        border: Border(top: BorderSide(color: _border)),
+        color: AppColors.cardSurfaceAlt,
+        border: Border(top: BorderSide(color: AppColors.borderCardStrong)),
       ),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         child: ElevatedButton(
           onPressed: canSubmit ? () => _submitReview(context) : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: canSubmit ? Colors.white : _surfaceAlt,
-            foregroundColor: canSubmit ? Colors.black : _textLow,
-            disabledBackgroundColor: _surfaceAlt,
-            disabledForegroundColor: _textLow,
+            backgroundColor: canSubmit
+                ? Colors.white
+                : AppColors.cardSurfaceAltAlt,
+            foregroundColor: canSubmit ? Colors.black : AppColors.textDim,
+            disabledBackgroundColor: AppColors.cardSurfaceAltAlt,
+            disabledForegroundColor: AppColors.textDim,
             elevation: canSubmit ? 0 : 0,
             minimumSize: const Size(double.infinity, 58),
             shape: RoundedRectangleBorder(
@@ -656,7 +661,7 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.2,
-                        color: canSubmit ? Colors.black : _textLow,
+                        color: canSubmit ? Colors.black : AppColors.textDim,
                       ),
                     ),
                   ],

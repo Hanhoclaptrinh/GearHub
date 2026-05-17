@@ -25,6 +25,11 @@ import 'package:mobile/src/features/cart/domain/repositories/cart_repository.dar
     as mobile_cart_repo;
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart'
     as mobile_cart_cubit;
+import 'package:mobile/src/features/chat/data/datasources/chat_remote_datasource.dart';
+import 'package:mobile/src/features/chat/data/repositories/chat_repository_impl.dart';
+import 'package:mobile/src/features/chat/domain/repositories/chat_repository.dart';
+import 'package:mobile/src/features/chat/presentation/services/chat_socket_service.dart';
+import 'package:mobile/src/features/chat/presentation/state/concierge_cubit.dart';
 import 'package:mobile/src/features/checkout/presentation/state/checkout_cubit.dart'
     as mobile_checkout_cubit;
 import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
@@ -129,6 +134,22 @@ Future<void> setupDependencies() async {
 
   getIt.registerFactory<mobile_checkout_cubit.CheckoutCubit>(
     () => mobile_checkout_cubit.CheckoutCubit(apiClient: getIt<ApiClient>()),
+  );
+
+  // chat
+  getIt.registerLazySingleton<ChatRemoteDatasource>(
+    () => ChatRemoteDatasource(dio: getIt<ApiClient>().dio),
+  );
+  getIt.registerLazySingleton<ChatRepository>(
+    () => ChatRepositoryImpl(remoteDatasource: getIt<ChatRemoteDatasource>()),
+  );
+  getIt.registerLazySingleton<ChatSocketService>(() => ChatSocketService());
+  getIt.registerFactory<ConciergeCubit>(
+    () => ConciergeCubit(
+      repository: getIt<ChatRepository>(),
+      socketService: getIt<ChatSocketService>(),
+      storageService: getIt<SecureStorageService>(),
+    ),
   );
 
   getIt.registerFactory<OrdersCubit>(

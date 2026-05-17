@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/core/di/injection.dart';
+import 'package:mobile/src/features/chat/presentation/widgets/concierge_entry_button.dart';
 import 'package:mobile/src/features/explore/domain/repositories/explore_repository.dart';
 import 'package:mobile/src/shared/widgets/glassmorphic_header.dart';
 import '../../../home/domain/entities/category_entity.dart';
@@ -11,15 +13,6 @@ import '../state/category_detail_state.dart';
 import '../../../../shared/widgets/product_card.dart';
 import '../../../../shared/widgets/product_card_shimmer.dart';
 import '../../../../shared/widgets/product_filter_drawer.dart';
-
-const _bg = Color(0xFF07070A);
-const _surfaceAlt = Color(0xFF1C1C28);
-const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFFFCC00);
-const _accentSoft = Color(0x18F59E0B);
-const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
-const _textLow = Color(0xFF4A4A62);
 
 class CategoryDetailPage extends StatelessWidget {
   final CategoryEntity category;
@@ -79,7 +72,7 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
       builder: (context, state) {
         return Scaffold(
           key: _scaffoldKey,
-          backgroundColor: _bg,
+          backgroundColor: AppColors.background,
           endDrawer: state is CategoryDetailLoaded
               ? ProductFilterDrawer(
                   initialMinPrice: state.minPrice,
@@ -117,7 +110,7 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
                       child: Center(
                         child: Text(
                           state.message,
-                          style: const TextStyle(color: _textMid),
+                          style: const TextStyle(color: AppColors.slate400),
                         ),
                       ),
                     ),
@@ -133,7 +126,7 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
 
                     SliverToBoxAdapter(
                       child: Container(
-                        color: _bg,
+                        color: AppColors.background,
                         padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
                         child: Row(
                           children: [
@@ -145,7 +138,7 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
                                     style: const TextStyle(
                                       fontSize: 17,
                                       fontWeight: FontWeight.w900,
-                                      color: _textHigh,
+                                      color: AppColors.textPrimary,
                                     ),
                                   ),
                                   const TextSpan(
@@ -153,7 +146,7 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w500,
-                                      color: _textMid,
+                                      color: AppColors.slate400,
                                     ),
                                   ),
                                 ],
@@ -171,9 +164,11 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
                                   vertical: 8,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: _surfaceAlt,
+                                  color: AppColors.cardSurfaceAltAlt,
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: _border),
+                                  border: Border.all(
+                                    color: AppColors.borderCardStrong,
+                                  ),
                                 ),
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -181,7 +176,7 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
                                     Icon(
                                       LucideIcons.settings2,
                                       size: 14,
-                                      color: _textMid,
+                                      color: AppColors.slate400,
                                     ),
                                     SizedBox(width: 6),
                                     Text(
@@ -189,7 +184,7 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700,
-                                        color: _textMid,
+                                        color: AppColors.slate400,
                                       ),
                                     ),
                                   ],
@@ -219,7 +214,7 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
                                   child: Center(
                                     child: CircularProgressIndicator(
                                       strokeWidth: 1.5,
-                                      color: _textLow,
+                                      color: AppColors.textDim,
                                     ),
                                   ),
                                 );
@@ -243,6 +238,7 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
                     ? state.category.title
                     : '...',
                 onBack: () => Navigator.pop(context),
+                actions: const [ConciergeEntryButton(compact: true)],
               ),
             ],
           ),
@@ -279,12 +275,12 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
               padding: const EdgeInsets.symmetric(horizontal: 18),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? Colors.white.withValues(alpha: 0.1)
+                    ? AppColors.textPrimary.withValues(alpha: 0.1)
                     : Colors.transparent,
                 border: Border.all(
                   color: isSelected
-                      ? Colors.white.withValues(alpha: 0.2)
-                      : Colors.white.withValues(alpha: 0.05),
+                      ? AppColors.textPrimary.withValues(alpha: 0.2)
+                      : AppColors.textPrimary.withValues(alpha: 0.05),
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(20),
@@ -293,7 +289,7 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
                 child: Text(
                   isAll ? 'Tất cả' : item!.title,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : _textMid,
+                    color: isSelected ? AppColors.textPrimary : AppColors.slate400,
                     fontSize: 13,
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
                   ),
@@ -316,14 +312,14 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
             Container(
               padding: const EdgeInsets.all(28),
               decoration: BoxDecoration(
-                color: _surfaceAlt,
+                color: AppColors.cardSurfaceAltAlt,
                 shape: BoxShape.circle,
-                border: Border.all(color: _border),
+                border: Border.all(color: AppColors.borderCardStrong),
               ),
               child: const Icon(
                 LucideIcons.packageOpen,
                 size: 52,
-                color: _textLow,
+                color: AppColors.textDim,
               ),
             ),
             const SizedBox(height: 24),
@@ -332,7 +328,7 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
-                color: _textHigh,
+                color: AppColors.textPrimary,
                 letterSpacing: -0.2,
               ),
             ),
@@ -340,7 +336,11 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
             const Text(
               'Chúng tôi đang cập nhật hàng mới,\nfen quay lại sau nhé!',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: _textMid, height: 1.6),
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.slate400,
+                height: 1.6,
+              ),
             ),
             if (state.selectedSubCategory != null) ...[
               const SizedBox(height: 28),
@@ -354,16 +354,18 @@ class _CategoryDetailViewState extends State<_CategoryDetailView> {
                     vertical: 14,
                   ),
                   decoration: BoxDecoration(
-                    color: _accentSoft,
+                    color: AppColors.accentGoldSoft,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: _accent.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: AppColors.accentGold.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: const Text(
                     'Xem tất cả sản phẩm',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: _accent,
+                      color: AppColors.accentGold,
                     ),
                   ),
                 ),

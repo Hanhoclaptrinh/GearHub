@@ -1,12 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-
-const _surface = Color(0xFF14141E);
-const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFFDE047);
-const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
-const _textLow = Color(0xFF4A4A62);
+import 'package:mobile/src/core/theme/app_colors.dart';
 
 class DeliverySection extends StatelessWidget {
   final String name;
@@ -37,7 +31,7 @@ class DeliverySection extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 16,
-                color: _textHigh,
+                color: AppColors.textPrimary,
               ),
             ),
             GestureDetector(
@@ -48,10 +42,10 @@ class DeliverySection extends StatelessWidget {
                   vertical: 7,
                 ),
                 decoration: BoxDecoration(
-                  color: _accent.withValues(alpha: 0.1),
+                  color: AppColors.brandYellow.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: _accent.withValues(alpha: 0.25),
+                    color: AppColors.brandYellow.withValues(alpha: 0.25),
                     width: 0.5,
                   ),
                 ),
@@ -60,7 +54,7 @@ class DeliverySection extends StatelessWidget {
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
-                    color: _accent,
+                    color: AppColors.brandYellow,
                   ),
                 ),
               ),
@@ -72,9 +66,9 @@ class DeliverySection extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: _surface,
+            color: AppColors.cardSurfaceAlt,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _border, width: 0.5),
+            border: Border.all(color: AppColors.borderCardStrong, width: 0.5),
           ),
           child: hasInfo
               ? Column(
@@ -82,25 +76,33 @@ class DeliverySection extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(LucideIcons.user, size: 16, color: _textMid),
+                        const Icon(
+                          LucideIcons.user,
+                          size: 16,
+                          color: AppColors.slate400,
+                        ),
                         const SizedBox(width: 10),
                         Text(
                           name,
                           style: const TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 15,
-                            color: _textHigh,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         if (phone.isNotEmpty) ...[
                           const SizedBox(width: 12),
-                          Container(width: 1, height: 14, color: _border),
+                          Container(
+                            width: 1,
+                            height: 14,
+                            color: AppColors.borderCardStrong,
+                          ),
                           const SizedBox(width: 12),
                           Text(
                             phone,
                             style: const TextStyle(
                               fontSize: 13,
-                              color: _textMid,
+                              color: AppColors.slate400,
                             ),
                           ),
                         ],
@@ -108,7 +110,10 @@ class DeliverySection extends StatelessWidget {
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Container(height: 1, color: _border),
+                      child: Container(
+                        height: 1,
+                        color: AppColors.borderCardStrong,
+                      ),
                     ),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,7 +121,7 @@ class DeliverySection extends StatelessWidget {
                         const Icon(
                           LucideIcons.mapPin,
                           size: 16,
-                          color: Color(0xFF0077ED),
+                          color: AppColors.brandBlue,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -124,7 +129,7 @@ class DeliverySection extends StatelessWidget {
                             address,
                             style: const TextStyle(
                               fontSize: 14,
-                              color: _textMid,
+                              color: AppColors.slate400,
                               height: 1.5,
                             ),
                           ),
@@ -138,20 +143,27 @@ class DeliverySection extends StatelessWidget {
                     padding: EdgeInsets.symmetric(vertical: 16),
                     child: Column(
                       children: [
-                        Icon(LucideIcons.mapPin, size: 28, color: _textLow),
+                        Icon(
+                          LucideIcons.mapPin,
+                          size: 28,
+                          color: AppColors.textDim,
+                        ),
                         SizedBox(height: 10),
                         Text(
                           "Chưa có địa chỉ giao hàng",
                           style: TextStyle(
                             fontSize: 14,
-                            color: _textMid,
+                            color: AppColors.slate400,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         SizedBox(height: 4),
                         Text(
                           "Nhấn 'Thêm địa chỉ' để bắt đầu",
-                          style: TextStyle(fontSize: 12, color: _textLow),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textDim,
+                          ),
                         ),
                       ],
                     ),

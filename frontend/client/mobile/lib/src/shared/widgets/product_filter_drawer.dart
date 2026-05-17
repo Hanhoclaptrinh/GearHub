@@ -1,17 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
-
-const _bg = Color(0xFF07070A);
-const _surfaceAlt = Color(0xFF16161F);
-const _border = Color(0xFF22222E);
-const _borderMid = Color(0xFF2C2C3C);
-const _accent = Color(0xFFFDE047);
-const _accentGlow = Color(0x26FDE047);
-const _textHigh = Color(0xFFF4F4F8);
-const _textMid = Color(0xFF8888A4);
-const _textLow = Color(0xFF44445A);
 
 class ProductFilterDrawer extends StatefulWidget {
   final double? initialMinPrice;
@@ -141,7 +132,7 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
     final activeCount = _activeFilterCount;
 
     return Drawer(
-      backgroundColor: _bg,
+      backgroundColor: AppColors.background,
       width: MediaQuery.of(context).size.width * 0.88,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
@@ -153,7 +144,7 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
         opacity: _fadeAnim,
         child: Container(
           decoration: const BoxDecoration(
-            color: _bg,
+            color: AppColors.background,
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(28),
               bottomLeft: Radius.circular(28),
@@ -199,7 +190,9 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
     return Container(
       padding: EdgeInsets.fromLTRB(24, safeArea.top + 28, 20, 24),
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: _border, width: 0.5)),
+        border: Border(
+          bottom: BorderSide(color: AppColors.cardBorder, width: 0.5),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,7 +209,7 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
                       style: TextStyle(
                         fontSize: 30,
                         fontWeight: FontWeight.w900,
-                        color: _textHigh,
+                        color: AppColors.textPrimary,
                         letterSpacing: -1,
                         height: 1,
                       ),
@@ -229,7 +222,7 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: _accent,
+                          color: AppColors.brandYellow,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -251,7 +244,7 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
                       : '$activeCount bộ lọc đang được áp dụng',
                   style: const TextStyle(
                     fontSize: 12,
-                    color: _textMid,
+                    color: AppColors.textSlate,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -264,11 +257,15 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: _surfaceAlt,
+                color: AppColors.cardSurfaceAltAlt,
                 shape: BoxShape.circle,
-                border: Border.all(color: _borderMid, width: 0.5),
+                border: Border.all(color: AppColors.cardBorder, width: 0.5),
               ),
-              child: const Icon(LucideIcons.x, size: 18, color: _textMid),
+              child: const Icon(
+                LucideIcons.x,
+                size: 18,
+                color: AppColors.textSlate,
+              ),
             ),
           ),
         ],
@@ -284,7 +281,7 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
         style: const TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w800,
-          color: _textLow,
+          color: AppColors.textDim,
           letterSpacing: 2,
         ),
       ),
@@ -308,18 +305,22 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
             duration: const Duration(milliseconds: 200),
             margin: EdgeInsets.fromLTRB(16, i == 0 ? 0 : 0, 16, isLast ? 0 : 0),
             decoration: BoxDecoration(
-              color: isSelected ? _accentGlow : Colors.transparent,
+              color: isSelected
+                  ? AppColors.brandYellowSoft
+                  : Colors.transparent,
             ),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
                 border: Border(
                   left: BorderSide(
-                    color: isSelected ? _accent : Colors.transparent,
+                    color: isSelected
+                        ? AppColors.brandYellow
+                        : Colors.transparent,
                     width: 2,
                   ),
                   bottom: BorderSide(
-                    color: isLast ? Colors.transparent : _border,
+                    color: isLast ? Colors.transparent : AppColors.cardBorder,
                     width: 0.5,
                   ),
                 ),
@@ -331,17 +332,21 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: isSelected ? _accent : _surfaceAlt,
+                      color: isSelected
+                          ? AppColors.brandYellow
+                          : AppColors.cardSurfaceAltAlt,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? _accent : _border,
+                        color: isSelected
+                            ? AppColors.brandYellow
+                            : AppColors.cardBorder,
                         width: 0.5,
                       ),
                     ),
                     child: Icon(
                       opt.icon,
                       size: 17,
-                      color: isSelected ? Colors.white : _textMid,
+                      color: isSelected ? Colors.white : AppColors.textSlate,
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -356,7 +361,9 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
                             fontWeight: isSelected
                                 ? FontWeight.w800
                                 : FontWeight.w600,
-                            color: isSelected ? _textHigh : _textMid,
+                            color: isSelected
+                                ? AppColors.textPrimary
+                                : AppColors.textSlate,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -364,7 +371,7 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
                           opt.sub,
                           style: const TextStyle(
                             fontSize: 11,
-                            color: _textLow,
+                            color: AppColors.textDim,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -378,7 +385,7 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
                       width: 8,
                       height: 8,
                       decoration: const BoxDecoration(
-                        color: _accent,
+                        color: AppColors.brandYellow,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -405,7 +412,11 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
               height: 1.5,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [_border, _accent.withValues(alpha: 0.5), _border],
+                  colors: [
+                    AppColors.cardBorder,
+                    AppColors.brandYellow.withValues(alpha: 0.5),
+                    AppColors.cardBorder,
+                  ],
                 ),
               ),
             ),
@@ -425,16 +436,16 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
           style: const TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w700,
-            color: _textLow,
+            color: AppColors.textDim,
             letterSpacing: 1.5,
           ),
         ),
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            color: _surfaceAlt,
+            color: AppColors.cardSurfaceAltAlt,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _borderMid, width: 0.5),
+            border: Border.all(color: AppColors.cardBorder, width: 0.5),
           ),
           child: Row(
             children: [
@@ -444,7 +455,7 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
                   '₫',
                   style: TextStyle(
                     fontSize: 14,
-                    color: _textMid,
+                    color: AppColors.textSlate,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -457,9 +468,9 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: _textHigh,
+                    color: AppColors.textPrimary,
                   ),
-                  cursorColor: _accent,
+                  cursorColor: AppColors.brandYellow,
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(
@@ -488,10 +499,10 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
       child: SliderTheme(
         data: const SliderThemeData(
           trackHeight: 3,
-          activeTrackColor: _accent,
-          inactiveTrackColor: _border,
-          thumbColor: _textHigh,
-          overlayColor: _accentGlow,
+          activeTrackColor: AppColors.brandYellow,
+          inactiveTrackColor: AppColors.cardBorder,
+          thumbColor: AppColors.textPrimary,
+          overlayColor: AppColors.brandYellowSoft,
           rangeThumbShape: RoundRangeSliderThumbShape(
             enabledThumbRadius: 11,
             elevation: 6,
@@ -523,7 +534,7 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
             '0 ₫',
             style: TextStyle(
               fontSize: 11,
-              color: _textLow,
+              color: AppColors.textDim,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -531,7 +542,7 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
             formatVND(_maxLimit),
             style: const TextStyle(
               fontSize: 11,
-              color: _textLow,
+              color: AppColors.textDim,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -544,7 +555,9 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
     return Container(
       padding: EdgeInsets.fromLTRB(20, 16, 20, safeArea.bottom + 20),
       decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: _border, width: 0.5)),
+        border: Border(
+          top: BorderSide(color: AppColors.cardBorder, width: 0.5),
+        ),
       ),
       child: Row(
         children: [
@@ -557,14 +570,14 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: _surfaceAlt,
+                color: AppColors.cardSurfaceAltAlt,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: _borderMid, width: 0.5),
+                border: Border.all(color: AppColors.cardBorder, width: 0.5),
               ),
               child: const Icon(
                 LucideIcons.rotateCcw,
                 size: 18,
-                color: _textMid,
+                color: AppColors.textSlate,
               ),
             ),
           ),
@@ -588,7 +601,7 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: _accent.withValues(alpha: 0.35),
+                      color: AppColors.brandYellow.withValues(alpha: 0.35),
                       blurRadius: 5,
                     ),
                   ],

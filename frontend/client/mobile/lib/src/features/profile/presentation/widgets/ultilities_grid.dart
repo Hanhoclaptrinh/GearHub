@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/features/chat/presentation/widgets/concierge_entry_button.dart';
 import 'package:mobile/src/features/wishlist/presentation/pages/wishlist_page.dart';
 import 'package:mobile/src/features/wishlist/presentation/state/wishlist_cubit.dart';
 import 'package:mobile/src/features/wishlist/presentation/state/wishlist_state.dart';
@@ -35,10 +36,11 @@ class UtilitiesGrid extends StatelessWidget {
                 children: [
                   _buildEditorialTile(
                     context,
-                    icon: LucideIcons.sparkles,
-                    title: 'TRỢ LÝ AI',
-                    subtitle: 'AI ASSISTANT',
+                    icon: LucideIcons.headset,
+                    title: 'CONCIERGE',
+                    subtitle: 'GEARHUB SUPPORT',
                     height: 180,
+                    onTap: () => ConciergeEntryButton.open(context),
                   ),
                   const SizedBox(height: 16),
                   _buildEditorialTile(

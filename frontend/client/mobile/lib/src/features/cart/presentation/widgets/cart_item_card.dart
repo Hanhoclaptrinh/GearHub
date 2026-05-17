@@ -6,17 +6,8 @@ import 'package:mobile/src/features/cart/domain/entities/cart_item_entity.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 import 'package:mobile/src/shared/widgets/stock_limit_dialog.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'quantity_selector.dart';
-
-const _bg = Color(0xFF07070A);
-const _surface = Color(0xFF0E0E18);
-const _surfaceAlt = Color(0xFF14141E);
-const _border = Color(0xFF252535);
-const _accent = Color(0xFFFDE047);
-const _accentSoft = Color(0x1AFDE047);
-const _textHigh = Colors.white;
-const _textMid = Color(0xFF94A3B8);
-const _textLow = Color(0xFF475569);
 
 class CartItemCard extends StatefulWidget {
   final CartItemEntity item;
@@ -114,9 +105,11 @@ class _CartItemCardState extends State<CartItemCard>
       builder: (BuildContext sheetContext) {
         return Container(
           decoration: const BoxDecoration(
-            color: _bg,
+            color: AppColors.background,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border(top: BorderSide(color: _border, width: 0.5)),
+            border: Border(
+              top: BorderSide(color: AppColors.borderCardStrong, width: 0.5),
+            ),
           ),
           padding: const EdgeInsets.only(top: 20, bottom: 32),
           child: Column(
@@ -126,7 +119,7 @@ class _CartItemCardState extends State<CartItemCard>
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: _border,
+                  color: AppColors.borderCardStrong,
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -138,7 +131,7 @@ class _CartItemCardState extends State<CartItemCard>
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: _textHigh,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -198,12 +191,14 @@ class _CartItemCardState extends State<CartItemCard>
                           vertical: 16,
                         ),
                         decoration: BoxDecoration(
-                          color: isSelected ? _accentSoft : _surfaceAlt,
+                          color: isSelected
+                              ? AppColors.brandYellowSoft
+                              : AppColors.cardSurfaceAlt,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: isSelected
-                                ? _accent.withValues(alpha: 0.4)
-                                : _border,
+                                ? AppColors.brandYellow.withValues(alpha: 0.4)
+                                : AppColors.borderCardStrong,
                             width: isSelected ? 1 : 0.5,
                           ),
                         ),
@@ -220,7 +215,9 @@ class _CartItemCardState extends State<CartItemCard>
                                     style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 14,
-                                      color: isSelected ? _textHigh : _textMid,
+                                      color: isSelected
+                                          ? AppColors.textPrimary
+                                          : AppColors.slate400,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -230,8 +227,8 @@ class _CartItemCardState extends State<CartItemCard>
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                       color: isSelected
-                                          ? Colors.white
-                                          : _textLow,
+                                          ? AppColors.textPrimary
+                                          : AppColors.slate600,
                                     ),
                                   ),
                                 ],
@@ -240,7 +237,7 @@ class _CartItemCardState extends State<CartItemCard>
                             if (isSelected)
                               const Icon(
                                 LucideIcons.circleCheck,
-                                color: _accent,
+                                color: AppColors.brandYellow,
                                 size: 22,
                               ),
                           ],
@@ -274,14 +271,14 @@ class _CartItemCardState extends State<CartItemCard>
         children: [
           Positioned.fill(
             child: Container(
-              color: _surface,
+              color: AppColors.cardSurface,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   _buildActionButton(
                     icon: LucideIcons.sparkles,
                     label: 'Tương tự',
-                    color: _textMid,
+                    color: AppColors.slate400,
                     onTap: () {
                       _close();
                       widget.onViewSimilar();
@@ -324,10 +321,10 @@ class _CartItemCardState extends State<CartItemCard>
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 decoration: BoxDecoration(
-                  color: _bg,
+                  color: AppColors.background,
                   border: Border(
                     bottom: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: AppColors.textPrimary.withValues(alpha: 0.05),
                       width: 0.5,
                     ),
                   ),
@@ -355,7 +352,7 @@ class _CartItemCardState extends State<CartItemCard>
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w900,
                                     fontSize: 12,
-                                    color: _textHigh,
+                                    color: AppColors.textPrimary,
                                     letterSpacing: 1.0,
                                     height: 1.4,
                                   ),
@@ -382,7 +379,7 @@ class _CartItemCardState extends State<CartItemCard>
                                         ? 'Mặc định'
                                         : variantName,
                                     style: const TextStyle(
-                                      color: _textMid,
+                                      color: AppColors.slate400,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 0.5,
@@ -396,7 +393,7 @@ class _CartItemCardState extends State<CartItemCard>
                                   const Icon(
                                     LucideIcons.chevronDown,
                                     size: 10,
-                                    color: _textMid,
+                                    color: AppColors.slate400,
                                   ),
                                 ],
                               ],
@@ -407,7 +404,7 @@ class _CartItemCardState extends State<CartItemCard>
                           const Text(
                             'GIÁ',
                             style: TextStyle(
-                              color: _textLow,
+                              color: AppColors.slate600,
                               fontSize: 9,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.8,
@@ -427,7 +424,7 @@ class _CartItemCardState extends State<CartItemCard>
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w200,
                                       fontSize: 22,
-                                      color: Colors.white,
+                                      color: AppColors.textPrimary,
                                       letterSpacing: -0.5,
                                       height: 1.0,
                                     ),
@@ -461,10 +458,12 @@ class _CartItemCardState extends State<CartItemCard>
       width: 80,
       height: 80,
       decoration: BoxDecoration(
-        color: const Color(0xFF14141E),
+        color: AppColors.cardSurfaceAlt,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isSelected ? _accent.withValues(alpha: 0.3) : _border,
+          color: isSelected
+              ? AppColors.brandYellow.withValues(alpha: 0.3)
+              : AppColors.borderCardStrong,
           width: 0.5,
         ),
       ),
@@ -479,7 +478,7 @@ class _CartItemCardState extends State<CartItemCard>
   Widget _buildProductImage(String url) {
     if (url.isEmpty) {
       return const Center(
-        child: Icon(LucideIcons.image, color: _textLow, size: 28),
+        child: Icon(LucideIcons.image, color: AppColors.slate600, size: 28),
       );
     }
     if (url.startsWith('http')) {
@@ -487,7 +486,7 @@ class _CartItemCardState extends State<CartItemCard>
         url,
         fit: BoxFit.contain,
         errorBuilder: (_, __, ___) => const Center(
-          child: Icon(LucideIcons.image, color: _textLow, size: 28),
+          child: Icon(LucideIcons.image, color: AppColors.slate600, size: 28),
         ),
       );
     }
@@ -501,14 +500,16 @@ class _CartItemCardState extends State<CartItemCard>
       height: 16,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isSelected ? _accent : Colors.transparent,
+        color: isSelected ? AppColors.brandYellow : Colors.transparent,
         border: Border.all(
-          color: isSelected ? _accent : Colors.white.withValues(alpha: 0.1),
+          color: isSelected
+              ? AppColors.brandYellow
+              : AppColors.textPrimary.withValues(alpha: 0.1),
           width: 1,
         ),
       ),
       child: isSelected
-          ? const Icon(Icons.check, size: 10, color: Colors.black)
+          ? const Icon(Icons.check, size: 10, color: AppColors.ctaPrimaryText)
           : null,
     );
   }

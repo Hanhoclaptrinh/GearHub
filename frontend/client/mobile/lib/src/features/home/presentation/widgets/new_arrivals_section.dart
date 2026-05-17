@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../shared/widgets/large_product_card.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../state/home_cubit.dart';
 import '../state/home_state.dart';
@@ -152,7 +153,7 @@ class _NewArrivalsSectionState extends State<NewArrivalsSection>
               height: 24,
               child: CircularProgressIndicator(
                 strokeWidth: 1.2,
-                valueColor: AlwaysStoppedAnimation(Color(0x30FFFFFF)),
+                valueColor: AlwaysStoppedAnimation(AppColors.borderLight),
               ),
             ),
           ),

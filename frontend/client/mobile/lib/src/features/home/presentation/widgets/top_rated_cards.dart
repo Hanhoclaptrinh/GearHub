@@ -200,7 +200,7 @@ class _Loader extends StatelessWidget {
       height: 16,
       child: CircularProgressIndicator(
         strokeWidth: 1.2,
-        valueColor: AlwaysStoppedAnimation(Color(0x20FFFFFF)),
+        valueColor: AlwaysStoppedAnimation(AppColors.borderLight),
       ),
     ),
   );

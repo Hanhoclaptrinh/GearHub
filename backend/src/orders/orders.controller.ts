@@ -59,13 +59,15 @@ export class OrdersController {
         @Query('page') page?: number,
         @Query('limit') limit?: number,
         @Query('status') status?: OrderStatus,
-        @Query('search') search?: string
+        @Query('search') search?: string,
+        @Query('userId') userId?: string
     ) {
         return this.orderService.getAllOrders({
             page: page ? Number(page) : 1,
             limit: limit ? Number(limit) : 10,
             status,
-            search
+            search,
+            userId
         });
     }
 

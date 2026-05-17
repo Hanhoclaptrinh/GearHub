@@ -156,19 +156,22 @@ export class OrdersService {
             page?: number;
             limit?: number;
             status?: OrderStatus;
-            search?: string
+            search?: string;
+            userId?: string;
         }
     ) {
         const {
             page = 1,
             limit = 10,
             status,
-            search
+            search,
+            userId
         } = query;
         const skip = (page - 1) * limit;
 
         const whereCondition: any = {
             ...(status && { status }),
+            ...(userId && { userId }),
             ...(search && {
                 OR: [
                     { id: { contains: search } },

@@ -7,16 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/features/home/presentation/state/home_cubit.dart';
 import 'package:mobile/src/features/home/presentation/state/home_state.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import '../../domain/entities/hero_product_entity.dart';
-
-const _kBg = Color(0xFF080810);
-const _kSurface = Color(0xFF0C0C18);
-const _kBorder = Color(0xFF1A1A2E);
-const _kLine = Color(0xFF20203A);
-const _kWhite = Color(0xFFF0F0F8);
-const _kMuted = Color(0xFF4A4A6A);
-const _kGold = Color(0xFFD4A843);
-const _kGoldDim = Color(0xFF1A1200);
 
 class HeroCard extends StatelessWidget {
   final HeroProductEntity product;
@@ -78,16 +70,16 @@ class HeroCard extends StatelessWidget {
           margin: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(36),
-            border: Border.all(color: _kBorder, width: 0.8),
+            border: Border.all(color: AppColors.cardBorder, width: 0.8),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.50),
+                color: AppColors.ctaPrimaryText.withValues(alpha: 0.50),
                 blurRadius: 40,
                 offset: const Offset(0, 20),
               ),
               if (diff.abs() < 0.3)
                 BoxShadow(
-                  color: _kGold.withValues(alpha: 0.06),
+                  color: AppColors.accentGold.withValues(alpha: 0.06),
                   blurRadius: 30,
                   spreadRadius: 4,
                 ),
@@ -101,7 +93,7 @@ class HeroCard extends StatelessWidget {
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [_kBg, _kSurface],
+                      colors: [AppColors.background, AppColors.cardSurface],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -128,7 +120,7 @@ class HeroCard extends StatelessWidget {
                         center: const Alignment(0.4, -0.4),
                         radius: 1.1,
                         colors: [
-                          Colors.white.withValues(alpha: 0.07),
+                          AppColors.textPrimary.withValues(alpha: 0.07),
                           Colors.transparent,
                         ],
                       ),
@@ -174,7 +166,7 @@ class HeroCard extends StatelessWidget {
                           const Text(
                             'FEATURED',
                             style: TextStyle(
-                              color: _kMuted,
+                              color: AppColors.textDim,
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 1.6,
@@ -184,7 +176,7 @@ class HeroCard extends StatelessWidget {
                           const Text(
                             '//',
                             style: TextStyle(
-                              color: Color(0xFF2A2A45),
+                              color: AppColors.textDim,
                               fontSize: 9,
                             ),
                           ),
@@ -196,7 +188,7 @@ class HeroCard extends StatelessWidget {
                                       .toUpperCase()
                                 : product.id.toUpperCase(),
                             style: const TextStyle(
-                              color: _kGold,
+                              color: AppColors.accentGold,
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 1.5,
@@ -209,7 +201,7 @@ class HeroCard extends StatelessWidget {
                       Text(
                         product.name.toUpperCase(),
                         style: const TextStyle(
-                          color: _kWhite,
+                          color: AppColors.textPrimary,
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.5,
@@ -226,7 +218,7 @@ class HeroCard extends StatelessWidget {
                             height: 2,
                             width: 32,
                             decoration: BoxDecoration(
-                              color: _kGold,
+                              color: AppColors.accentGold,
                               borderRadius: BorderRadius.circular(1),
                             ),
                           ),
@@ -235,7 +227,9 @@ class HeroCard extends StatelessWidget {
                             height: 2,
                             width: 10,
                             decoration: BoxDecoration(
-                              color: _kGold.withValues(alpha: 0.30),
+                              color: AppColors.accentGold.withValues(
+                                alpha: 0.30,
+                              ),
                               borderRadius: BorderRadius.circular(1),
                             ),
                           ),
@@ -267,7 +261,7 @@ class HeroCard extends StatelessWidget {
                                 errorWidget: (_, __, ___) => const Icon(
                                   Icons.broken_image_outlined,
                                   size: 40,
-                                  color: _kMuted,
+                                  color: AppColors.textDim,
                                 ),
                               )
                             : Image.asset(
@@ -292,9 +286,12 @@ class HeroCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(24, 16, 24, 22),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.28),
+                        color: AppColors.ctaPrimaryText.withValues(alpha: 0.28),
                         border: const Border(
-                          top: BorderSide(color: _kBorder, width: 0.5),
+                          top: BorderSide(
+                            color: AppColors.cardBorder,
+                            width: 0.5,
+                          ),
                         ),
                       ),
                       child: Row(
@@ -312,7 +309,7 @@ class HeroCard extends StatelessWidget {
                                   Text(
                                     product.tagline,
                                     style: const TextStyle(
-                                      color: _kMuted,
+                                      color: AppColors.textDim,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w500,
                                       letterSpacing: 0.1,
@@ -329,7 +326,7 @@ class HeroCard extends StatelessWidget {
                                         width: i == 0 ? 16 : 6,
                                         height: 1,
                                         margin: const EdgeInsets.only(right: 3),
-                                        color: _kLine,
+                                        color: AppColors.borderCardStrong,
                                       ),
                                     ),
                                   ),
@@ -362,14 +359,17 @@ class _CTAButton extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
     decoration: BoxDecoration(
-      color: _kGoldDim,
+      color: AppColors.accentGoldDim,
       borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: _kGold.withValues(alpha: 0.35), width: 0.5),
+      border: Border.all(
+        color: AppColors.accentGold.withValues(alpha: 0.35),
+        width: 0.5,
+      ),
     ),
     child: const Text(
       'KHÁM PHÁ',
       style: TextStyle(
-        color: _kGold,
+        color: AppColors.accentGold,
         fontSize: 11,
         fontWeight: FontWeight.w800,
         letterSpacing: 1.2,
@@ -395,7 +395,7 @@ class _CornerPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF252538)
+      ..color = AppColors.borderCardStrong
       ..strokeWidth = 1.2
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.square;
@@ -451,7 +451,7 @@ class GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF1A1A2E)
+      ..color = AppColors.cardBorder
       ..strokeWidth = 0.4;
 
     for (double x = 0; x <= size.width; x += 28) {

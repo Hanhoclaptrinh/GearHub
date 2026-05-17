@@ -13,6 +13,7 @@ import { CategoryList } from './features/categories/CategoryList';
 import { BrandList } from './features/brands/BrandList';
 import { TransactionList } from './features/transactions/TransactionList';
 import { InventoryPage } from './features/inventory/InventoryPage';
+import { ChatCenterPage } from './features/chat/ChatCenterPage';
 import { authService } from './services/auth.service';
 
 const queryClient = new QueryClient({
@@ -78,6 +79,7 @@ const App: React.FC = () => {
             <Route path="products/edit/:slug" element={<ProductPage />} />
             <Route path="inventory" element={<InventoryPage />} />
             <Route path="orders" element={<OrderList />} />
+            <Route path="chat" element={<ChatCenterPage />} />
             <Route
               path="users"
               element={

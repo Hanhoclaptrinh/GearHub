@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/features/explore/domain/repositories/explore_repository.dart';
 import 'package:mobile/src/features/home/data/datasources/home_remote_datasource.dart';
@@ -16,15 +17,6 @@ import 'package:mobile/src/shared/widgets/image_search_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-
-const _bg = Color(0xFF07070A);
-const _surfaceAlt = Color(0xFF1C1C28);
-const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFF6366F1);
-const _accentSoft = Color(0x186366F1);
-const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
-const _textLow = Color(0xFF4A4A62);
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -332,7 +324,7 @@ class _SearchPageState extends State<SearchPage> {
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         key: _scaffoldKey,
-        backgroundColor: _bg,
+        backgroundColor: AppColors.background,
         endDrawer: ProductFilterDrawer(
           initialMinPrice: _minPrice,
           initialMaxPrice: _maxPrice,
@@ -360,7 +352,7 @@ class _SearchPageState extends State<SearchPage> {
                     child: const Icon(
                       Icons.arrow_back_rounded,
                       color: Colors.white,
-                      size: 22,
+                      size: 24,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -368,14 +360,17 @@ class _SearchPageState extends State<SearchPage> {
                     child: Container(
                       height: 48,
                       decoration: BoxDecoration(
-                        color: _surfaceAlt,
+                        color: AppColors.cardSurfaceAltAlt,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: _border),
+                        border: Border.all(color: AppColors.borderCardStrong),
                       ),
                       child: TextField(
                         controller: _controller,
                         autofocus: true,
-                        style: const TextStyle(color: _textHigh, fontSize: 15),
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 15,
+                        ),
                         textInputAction: TextInputAction.search,
                         onChanged: _onSearchChanged,
                         onSubmitted: (_) => _executeFullSearch(),
@@ -383,7 +378,7 @@ class _SearchPageState extends State<SearchPage> {
                           prefixIcon: const Icon(
                             LucideIcons.search,
                             size: 18,
-                            color: _textMid,
+                            color: AppColors.textSlate,
                           ),
                           suffixIcon: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -397,7 +392,7 @@ class _SearchPageState extends State<SearchPage> {
                                   child: const Icon(
                                     LucideIcons.x,
                                     size: 18,
-                                    color: _textMid,
+                                    color: AppColors.textSlate,
                                   ),
                                 )
                               else ...[
@@ -406,7 +401,7 @@ class _SearchPageState extends State<SearchPage> {
                                   child: const Icon(
                                     LucideIcons.mic,
                                     size: 18,
-                                    color: _textMid,
+                                    color: AppColors.textSlate,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -415,7 +410,7 @@ class _SearchPageState extends State<SearchPage> {
                                   child: const Icon(
                                     LucideIcons.camera,
                                     size: 18,
-                                    color: _textMid,
+                                    color: AppColors.textSlate,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -426,7 +421,7 @@ class _SearchPageState extends State<SearchPage> {
                           hintStyle: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
-                            color: _textLow,
+                            color: AppColors.textDim,
                           ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
@@ -444,7 +439,11 @@ class _SearchPageState extends State<SearchPage> {
         body: Stack(
           children: [
             _isLoading
-                ? const Center(child: CircularProgressIndicator(color: _accent))
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.brandIndigo,
+                    ),
+                  )
                 : _isFullSearchMode
                 ? SearchProductGrid(
                     searchResults: _searchResults,
@@ -489,13 +488,13 @@ class _SearchPageState extends State<SearchPage> {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: const BoxDecoration(
-                      color: _accentSoft,
+                      color: AppColors.brandIndigoSoft,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       LucideIcons.flame,
                       size: 14,
-                      color: _accent,
+                      color: AppColors.brandIndigo,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -504,7 +503,7 @@ class _SearchPageState extends State<SearchPage> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
-                      color: _textHigh,
+                      color: AppColors.textPrimary,
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -524,10 +523,10 @@ class _SearchPageState extends State<SearchPage> {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: _accentSoft,
+                          color: AppColors.brandIndigoSoft,
                           borderRadius: BorderRadius.circular(100),
                           border: Border.all(
-                            color: _accent.withValues(alpha: 0.2),
+                            color: AppColors.brandIndigo.withValues(alpha: 0.2),
                           ),
                         ),
                         child: Row(
@@ -536,7 +535,7 @@ class _SearchPageState extends State<SearchPage> {
                             const Icon(
                               LucideIcons.layoutGrid,
                               size: 14,
-                              color: _accent,
+                              color: AppColors.brandIndigo,
                             ),
                             const SizedBox(width: 8),
                             Text(
@@ -544,7 +543,7 @@ class _SearchPageState extends State<SearchPage> {
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
-                                color: _accent,
+                                color: AppColors.brandIndigo,
                               ),
                             ),
                           ],
@@ -562,11 +561,18 @@ class _SearchPageState extends State<SearchPage> {
                   child: Center(
                     child: Column(
                       children: [
-                        Icon(LucideIcons.searchX, size: 48, color: _textLow),
+                        Icon(
+                          LucideIcons.searchX,
+                          size: 48,
+                          color: AppColors.textDim,
+                        ),
                         SizedBox(height: 16),
                         Text(
                           'Không tìm thấy sản phẩm gợi ý nào.',
-                          style: TextStyle(color: _textMid, fontSize: 14),
+                          style: TextStyle(
+                            color: AppColors.textSlate,
+                            fontSize: 14,
+                          ),
                         ),
                       ],
                     ),

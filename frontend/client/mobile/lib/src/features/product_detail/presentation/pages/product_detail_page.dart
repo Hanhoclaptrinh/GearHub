@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/core/utils/brand_identity_helper.dart';
+import 'package:mobile/src/features/chat/presentation/widgets/concierge_entry_button.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/models/product_variant_model.dart';
 import '../widgets/product_hero_section.dart';
@@ -318,6 +319,57 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                     ),
                   ),
                   SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.035),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.07),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Cần tư vấn setup?',
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.92,
+                                      ),
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Trao đổi với GearHub để chọn cấu hình phù hợp.',
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.42,
+                                      ),
+                                      fontSize: 12,
+                                      height: 1.45,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            const ConciergeEntryButton(label: 'Trao đổi'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
                     child: ProductReviewsPreviewSection(product: product),
                   ),
                   SliverToBoxAdapter(
@@ -360,7 +412,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
             height: 100,
-            padding: const EdgeInsets.only(top: 40, left: 16, right: 16),
+            padding: const EdgeInsets.only(top: 40, left: 8, right: 8),
             color: AppColors.background.withValues(alpha: 0.8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -369,6 +421,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                   icon: const Icon(
                     Icons.arrow_back_rounded,
                     color: Colors.white,
+                    size: 24,
                   ),
                   onPressed: () => Navigator.pop(context),
                 ),
@@ -380,13 +433,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                     fontSize: 14,
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(
-                    Icons.more_vert_rounded,
-                    color: Colors.white,
-                  ),
-                  onPressed: () {},
-                ),
+                const ConciergeEntryButton(compact: true),
               ],
             ),
           ),

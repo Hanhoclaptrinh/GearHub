@@ -1,15 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/widgets/product_card.dart';
-
-const _bg = Color(0xFF07070A);
-const _surfaceAlt = Color(0xFF1C1C28);
-const _border = Color(0xFF2A2A38);
-const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
-const _textLow = Color(0xFF4A4A62);
 
 class SearchProductGrid extends StatelessWidget {
   final List<ProductModel> searchResults;
@@ -32,7 +26,7 @@ class SearchProductGrid extends StatelessWidget {
       children: [
         Container(
           padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
-          decoration: const BoxDecoration(color: _bg),
+          decoration: const BoxDecoration(color: AppColors.background),
           child: Column(
             children: [
               Padding(
@@ -48,7 +42,7 @@ class SearchProductGrid extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w900,
-                              color: _textHigh,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                           const TextSpan(
@@ -56,7 +50,7 @@ class SearchProductGrid extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
-                              color: _textMid,
+                              color: AppColors.textSlate,
                             ),
                           ),
                         ],
@@ -70,16 +64,16 @@ class SearchProductGrid extends StatelessWidget {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: _surfaceAlt,
+                          color: AppColors.cardSurfaceAltAlt,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: _border),
+                          border: Border.all(color: AppColors.borderCardStrong),
                         ),
                         child: const Row(
                           children: [
                             Icon(
                               LucideIcons.slidersHorizontal,
                               size: 14,
-                              color: _textMid,
+                              color: AppColors.textSlate,
                             ),
                             const SizedBox(width: 8),
                             Text(
@@ -87,7 +81,7 @@ class SearchProductGrid extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
-                                color: _textMid,
+                                color: AppColors.textSlate,
                               ),
                             ),
                           ],
@@ -123,48 +117,51 @@ class SearchProductGrid extends StatelessWidget {
             ],
           ),
         ),
-        const Divider(height: 1, color: _border, thickness: 0.5),
+        const Divider(
+          height: 1,
+          color: AppColors.borderCardStrong,
+          thickness: 0.5,
+        ),
         Expanded(
-          child:
-              searchResults.isEmpty
-                  ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: _surfaceAlt,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: _border),
-                          ),
-                          child: const Icon(
-                            LucideIcons.packageSearch,
-                            size: 48,
-                            color: _textLow,
-                          ),
+          child: searchResults.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardSurfaceAltAlt,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.borderCardStrong),
                         ),
-                        const SizedBox(height: 20),
-                        const Text(
-                          'Không tìm thấy sản phẩm nào.',
-                          style: TextStyle(
-                            color: _textMid,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
+                        child: const Icon(
+                          LucideIcons.packageSearch,
+                          size: 48,
+                          color: AppColors.textDim,
                         ),
-                      ],
-                    ),
-                  )
-                  : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: searchResults.length,
-                    itemBuilder: (context, index) {
-                      final p = searchResults[index];
-                      return ProductCard(product: p);
-                    },
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Không tìm thấy sản phẩm nào.',
+                        style: TextStyle(
+                          color: AppColors.textSlate,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: searchResults.length,
+                  itemBuilder: (context, index) {
+                    final p = searchResults[index];
+                    return ProductCard(product: p);
+                  },
+                ),
         ),
       ],
     );
@@ -182,28 +179,30 @@ class SearchProductGrid extends StatelessWidget {
         margin: const EdgeInsets.only(right: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color:
-              isSelected
-                  ? Colors.white.withValues(alpha: 0.1)
-                  : Colors.transparent,
+          color: isSelected
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(100),
           border: Border.all(
-            color:
-                isSelected
-                    ? Colors.white.withValues(alpha: 0.2)
-                    : Colors.white.withValues(alpha: 0.05),
+            color: isSelected
+                ? Colors.white.withValues(alpha: 0.2)
+                : Colors.white.withValues(alpha: 0.05),
           ),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 14, color: isSelected ? Colors.white : _textMid),
+            Icon(
+              icon,
+              size: 14,
+              color: isSelected ? Colors.white : AppColors.textSlate,
+            ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                color: isSelected ? Colors.white : _textMid,
+                color: isSelected ? Colors.white : AppColors.textSlate,
               ),
             ),
           ],

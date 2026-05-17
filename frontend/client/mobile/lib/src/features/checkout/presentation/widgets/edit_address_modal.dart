@@ -6,16 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-
-const _bg = Color(0xFF07070A);
-const _surface = Color(0xFF14141E);
-const _surfaceAlt = Color(0xFF1C1C28);
-const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFFDE047);
-const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
-const _textLow = Color(0xFF4A4A62);
-const _pink = Color(0xFFFF6B8A);
+import 'package:mobile/src/core/theme/app_colors.dart';
 
 class EditAddressPage extends StatefulWidget {
   final String initialName;
@@ -131,7 +122,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           behavior: SnackBarBehavior.floating,
-          backgroundColor: _pink,
+          backgroundColor: AppColors.accentPink,
           content: Text(
             'Vui lòng nhập đủ thông tin.',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
@@ -159,7 +150,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: AppColors.background,
       body: Stack(
         children: [
           CustomScrollView(
@@ -167,7 +158,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
             slivers: [
               SliverAppBar(
                 pinned: true,
-                backgroundColor: _bg,
+                backgroundColor: AppColors.background,
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 leading: GestureDetector(
@@ -184,7 +175,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: _textHigh,
+                    color: AppColors.textPrimary,
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -268,7 +259,10 @@ class _EditAddressPageState extends State<EditAddressPage> {
                         width: double.infinity,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: _border, width: 0.5),
+                          border: Border.all(
+                            color: AppColors.borderCardStrong,
+                            width: 0.5,
+                          ),
                         ),
                         clipBehavior: Clip.antiAlias,
                         child: Stack(
@@ -320,10 +314,12 @@ class _EditAddressPageState extends State<EditAddressPage> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: _surface.withValues(alpha: 0.85),
+                                  color: AppColors.cardSurfaceAlt.withValues(
+                                    alpha: 0.85,
+                                  ),
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
-                                    color: _border,
+                                    color: AppColors.borderCardStrong,
                                     width: 0.5,
                                   ),
                                 ),
@@ -333,14 +329,14 @@ class _EditAddressPageState extends State<EditAddressPage> {
                                     Icon(
                                       LucideIcons.move,
                                       size: 12,
-                                      color: _textMid,
+                                      color: AppColors.slate400,
                                     ),
                                     SizedBox(width: 6),
                                     Text(
                                       'Kéo để chọn vị trí',
                                       style: TextStyle(
                                         fontSize: 10,
-                                        color: _textMid,
+                                        color: AppColors.slate400,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -365,9 +361,12 @@ class _EditAddressPageState extends State<EditAddressPage> {
                             vertical: 14,
                           ),
                           decoration: BoxDecoration(
-                            color: _surface,
+                            color: AppColors.cardSurfaceAlt,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: _border, width: 0.5),
+                            border: Border.all(
+                              color: AppColors.borderCardStrong,
+                              width: 0.5,
+                            ),
                           ),
                           child: Row(
                             children: [
@@ -377,11 +376,13 @@ class _EditAddressPageState extends State<EditAddressPage> {
                                 height: 22,
                                 decoration: BoxDecoration(
                                   color: _saveAsDefault
-                                      ? _accent
+                                      ? AppColors.brandYellow
                                       : Colors.transparent,
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(
-                                    color: _saveAsDefault ? _accent : _textLow,
+                                    color: _saveAsDefault
+                                        ? AppColors.brandYellow
+                                        : AppColors.textDim,
                                     width: 2,
                                   ),
                                 ),
@@ -399,7 +400,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: _textMid,
+                                  color: AppColors.slate400,
                                 ),
                               ),
                             ],
@@ -422,19 +423,24 @@ class _EditAddressPageState extends State<EditAddressPage> {
             child: Container(
               padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPadding + 16),
               decoration: const BoxDecoration(
-                color: _bg,
-                border: Border(top: BorderSide(color: _border, width: 0.5)),
+                color: AppColors.background,
+                border: Border(
+                  top: BorderSide(
+                    color: AppColors.borderCardStrong,
+                    width: 0.5,
+                  ),
+                ),
               ),
               child: GestureDetector(
                 onTap: _handleSave,
                 child: Container(
                   height: 56,
                   decoration: BoxDecoration(
-                    color: _accent,
+                    color: AppColors.brandYellow,
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: _accent.withValues(alpha: 0.3),
+                        color: AppColors.brandYellow.withValues(alpha: 0.3),
                         blurRadius: 5,
                       ),
                     ],
@@ -470,9 +476,9 @@ class _EditAddressPageState extends State<EditAddressPage> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: _surfaceAlt,
+        color: AppColors.cardSurfaceAltAlt,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _border, width: 0.5),
+        border: Border.all(color: AppColors.borderCardStrong, width: 0.5),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextField(
@@ -481,24 +487,24 @@ class _EditAddressPageState extends State<EditAddressPage> {
         keyboardType: keyboardType,
         onSubmitted: onSubmitted,
         onChanged: onChanged,
-        style: const TextStyle(color: _textHigh, fontSize: 14),
+        style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
         textInputAction: onSubmitted != null
             ? TextInputAction.search
             : TextInputAction.next,
         decoration: InputDecoration(
-          icon: Icon(icon, size: 18, color: _textLow),
+          icon: Icon(icon, size: 18, color: AppColors.textDim),
           suffixIcon: onSubmitted != null
               ? IconButton(
                   icon: const Icon(
                     LucideIcons.search,
                     size: 16,
-                    color: _accent,
+                    color: AppColors.brandYellow,
                   ),
                   onPressed: () => onSubmitted(controller.text),
                 )
               : null,
           hintText: hint,
-          hintStyle: const TextStyle(color: _textLow, fontSize: 13),
+          hintStyle: const TextStyle(color: AppColors.textDim, fontSize: 13),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 16),
         ),
@@ -568,7 +574,7 @@ class _SectionLabel extends StatelessWidget {
           width: 3,
           height: 14,
           decoration: BoxDecoration(
-            color: _accent,
+            color: AppColors.brandYellow,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -578,7 +584,7 @@ class _SectionLabel extends StatelessWidget {
           style: const TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w800,
-            color: _textLow,
+            color: AppColors.textDim,
             letterSpacing: 1.5,
           ),
         ),

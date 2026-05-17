@@ -61,7 +61,7 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
           title: const Text(
             'Lịch sử đánh giá',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.w800,
               color: _textHigh,
             ),
@@ -70,7 +70,7 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
             icon: const Icon(
               Icons.arrow_back_rounded,
               color: Colors.white,
-              size: 22,
+              size: 24,
             ),
             onPressed: () => Navigator.of(context).pop(),
           ),

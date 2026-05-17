@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/core/di/injection.dart';
+import 'package:mobile/src/features/chat/presentation/widgets/concierge_entry_button.dart';
 import 'package:mobile/src/features/home/presentation/state/home_cubit.dart';
 import 'package:mobile/src/features/home/presentation/state/home_state.dart';
 import 'package:mobile/src/features/home/domain/entities/category_entity.dart';
@@ -10,11 +12,6 @@ import 'package:mobile/src/shared/widgets/search_bar_widget.dart';
 import 'package:mobile/src/shared/widgets/glassmorphic_header.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'category_detail_page.dart';
-
-const _bg = Color(0xFF07070A);
-const _indigo = Color(0xFF6366F1);
-const _textHigh = Color(0xFFF1F1F5);
-const _textLow = Color(0xFF4A4A62);
 
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});
@@ -52,7 +49,7 @@ class _ExplorePageState extends State<ExplorePage> {
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.light,
         child: Scaffold(
-          backgroundColor: _bg,
+          backgroundColor: AppColors.background,
           body: Stack(
             children: [
               CustomScrollView(
@@ -90,7 +87,9 @@ class _ExplorePageState extends State<ExplorePage> {
                       if (state is HomeLoading) {
                         return const SliverFillRemaining(
                           child: Center(
-                            child: CircularProgressIndicator(color: _indigo),
+                            child: CircularProgressIndicator(
+                              color: AppColors.brandIndigo,
+                            ),
                           ),
                         );
                       }
@@ -108,12 +107,7 @@ class _ExplorePageState extends State<ExplorePage> {
               GlassmorphicHeader(
                 scrollOffset: _scrollOffset,
                 title: 'Khám phá',
-                actions: [
-                  HeaderIconButton(
-                    icon: LucideIcons.messageCircle,
-                    onTap: () {},
-                  ),
-                ],
+                actions: const [ConciergeEntryButton(compact: true)],
               ),
             ],
           ),
@@ -155,10 +149,14 @@ class _CategoryCard extends StatelessWidget {
                       errorWidget: (context, url, error) => const Icon(
                         LucideIcons.package,
                         size: 32,
-                        color: _textLow,
+                        color: AppColors.textDim,
                       ),
                     )
-                  : const Icon(LucideIcons.package, size: 40, color: _textLow),
+                  : const Icon(
+                      LucideIcons.package,
+                      size: 40,
+                      color: AppColors.textDim,
+                    ),
             ),
           ),
           Padding(
@@ -171,7 +169,7 @@ class _CategoryCard extends StatelessWidget {
               style: const TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 14,
-                color: _textHigh,
+                color: AppColors.textPrimary,
                 letterSpacing: -0.2,
               ),
             ),

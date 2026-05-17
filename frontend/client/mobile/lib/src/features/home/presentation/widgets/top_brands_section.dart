@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -29,7 +30,7 @@ class TopBrandsSection extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
-                    color: Colors.white,
+                    color: AppColors.textPrimary,
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -124,7 +125,7 @@ class _BrandCardState extends State<_BrandCard>
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(28),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.12),
+                color: AppColors.glassStroke,
                 width: 1.2,
               ),
               boxShadow: [
@@ -146,8 +147,8 @@ class _BrandCardState extends State<_BrandCard>
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        Colors.white.withValues(alpha: 0.12),
-                        Colors.white.withValues(alpha: 0.04),
+                        AppColors.glassFill,
+                        AppColors.glassFill.withValues(alpha: 0.05),
                       ],
                     ),
                   ),
@@ -175,7 +176,7 @@ class _BrandCardState extends State<_BrandCard>
             style: const TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF94A3B8),
+              color: AppColors.slate400,
               letterSpacing: 1.2,
             ),
           ),

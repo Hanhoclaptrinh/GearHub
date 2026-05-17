@@ -18,7 +18,7 @@ class LoginPage extends StatelessWidget {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: const Color(0xFF050507), // Đen sâu hơn để nổi bật OLED
+        backgroundColor: const Color(0xFF050507),
         body: Stack(
           children: [
             Positioned(

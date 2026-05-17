@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/widgets/small_product_card.dart';
@@ -107,7 +108,7 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF6B7280),
+                    color: AppColors.slate400,
                     decoration: TextDecoration.underline,
                   ),
                 ),

@@ -1,16 +1,9 @@
 import 'package:dio/dio.dart' as dio_pkg;
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/core/constants/api_constant.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-const _bg = Color(0xFF07070A);
-const _surface = Color(0xFF14141E);
-const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFFFCC00);
-const _pink = Color(0xFFFF6B8A);
-const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
 
 class VnpayPaymentPage extends StatefulWidget {
   final String paymentUrl;
@@ -33,9 +26,9 @@ class _VnpayPaymentPageState extends State<VnpayPaymentPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: _bg,
+        backgroundColor: AppColors.background,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
@@ -44,12 +37,12 @@ class _VnpayPaymentPageState extends State<VnpayPaymentPage> {
           style: TextStyle(
             fontWeight: FontWeight.w900,
             fontSize: 15,
-            color: _textHigh,
+            color: AppColors.textPrimary,
             letterSpacing: 1,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded, color: _textMid),
+          icon: const Icon(Icons.close_rounded, color: AppColors.slate400),
           onPressed: () => _cancelPayment(),
         ),
       ),
@@ -103,7 +96,10 @@ class _VnpayPaymentPageState extends State<VnpayPaymentPage> {
           ),
           if (_isLoading)
             const Center(
-              child: CircularProgressIndicator(color: _accent, strokeWidth: 2),
+              child: CircularProgressIndicator(
+                color: AppColors.accentGold,
+                strokeWidth: 2,
+              ),
             ),
         ],
       ),
@@ -146,25 +142,31 @@ class _VnpayPaymentPageState extends State<VnpayPaymentPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: _surface,
+        backgroundColor: AppColors.cardSurfaceAlt,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: _border, width: 0.5),
+          side: const BorderSide(color: AppColors.borderCardStrong, width: 0.5),
         ),
         title: const Text(
           'Hủy thanh toán',
-          style: TextStyle(fontWeight: FontWeight.w800, color: _textHigh),
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+          ),
         ),
         content: const Text(
           'Bạn có chắc chắn muốn hủy thanh toán không?',
-          style: TextStyle(color: _textMid, height: 1.5),
+          style: TextStyle(color: AppColors.slate400, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text(
               'Không',
-              style: TextStyle(color: _textMid, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: AppColors.slate400,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           TextButton(
@@ -174,7 +176,10 @@ class _VnpayPaymentPageState extends State<VnpayPaymentPage> {
             },
             child: const Text(
               'Có, Hủy',
-              style: TextStyle(color: _pink, fontWeight: FontWeight.w800),
+              style: TextStyle(
+                color: AppColors.accentPink,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ],

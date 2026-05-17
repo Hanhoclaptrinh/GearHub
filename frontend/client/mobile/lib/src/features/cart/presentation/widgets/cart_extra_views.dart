@@ -1,13 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-
-const _surface = Color(0xFF14141E);
-const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFFDE047);
-const _accentSoft = Color(0x1AFDE047);
-const _textHigh = Colors.white;
-const _textMid = Color(0xFF94A3B8);
-const _textLow = Color(0xFF475569);
+import 'package:mobile/src/core/theme/app_colors.dart';
 
 class PromoSection extends StatelessWidget {
   const PromoSection({super.key});
@@ -17,19 +10,23 @@ class PromoSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
-        color: _surface,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _border, width: 0.5),
+        border: Border.all(color: AppColors.borderCardStrong, width: 0.5),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: _accentSoft,
+              color: AppColors.brandYellowSoft,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(LucideIcons.ticket, color: _accent, size: 20),
+            child: const Icon(
+              LucideIcons.ticket,
+              color: AppColors.brandYellow,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 14),
           const Expanded(
@@ -41,18 +38,22 @@ class PromoSection extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
-                    color: _textHigh,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 SizedBox(height: 2),
                 Text(
                   'Mở khóa giảm giá đặc biệt',
-                  style: TextStyle(color: _textMid, fontSize: 12),
+                  style: TextStyle(color: AppColors.slate400, fontSize: 12),
                 ),
               ],
             ),
           ),
-          const Icon(LucideIcons.chevronRight, color: _textLow, size: 18),
+          const Icon(
+            LucideIcons.chevronRight,
+            color: AppColors.slate600,
+            size: 18,
+          ),
         ],
       ),
     );
@@ -76,17 +77,17 @@ class EmptyCartView extends StatelessWidget {
               width: 140,
               height: 140,
               decoration: BoxDecoration(
-                color: _accentSoft,
+                color: AppColors.brandYellowSoft,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: _accent.withValues(alpha: 0.15),
+                  color: AppColors.brandYellow.withValues(alpha: 0.15),
                   width: 1,
                 ),
               ),
               child: const Icon(
                 LucideIcons.shoppingCart,
                 size: 56,
-                color: _accent,
+                color: AppColors.brandYellow,
               ),
             ),
             const SizedBox(height: 36),
@@ -95,7 +96,7 @@ class EmptyCartView extends StatelessWidget {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
-                color: _textHigh,
+                color: AppColors.textPrimary,
                 letterSpacing: 1.5,
               ),
             ),
@@ -103,7 +104,11 @@ class EmptyCartView extends StatelessWidget {
             const Text(
               'Chưa có sản phẩm nào trong giỏ hàng.\nHãy khám phá ngay!',
               textAlign: TextAlign.center,
-              style: TextStyle(color: _textMid, fontSize: 14, height: 1.6),
+              style: TextStyle(
+                color: AppColors.slate400,
+                fontSize: 14,
+                height: 1.6,
+              ),
             ),
             const SizedBox(height: 40),
             GestureDetector(

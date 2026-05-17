@@ -27,10 +27,7 @@ class AppColors {
   // ── depth & border ──
   static const Color borderSubtle = Color(0x0FFFFFFF);
   static const Color borderLight = Color(0x14FFFFFF);
-
-  static const Color error = Color(0xFFFF4D4D);
-  static const Color success = Color(0xFF10B981);
-
+  
   // ── hero section ──
   static const Color heroBg1 = Color(0xFF0B1020);
   static const Color heroBg2 = Color(0xFF111827);
@@ -49,14 +46,38 @@ class AppColors {
   static const Color indicatorActive = Color(0xCCFFFFFF);
   static const Color indicatorBg = Color(0x26FFFFFF);
 
-  // ── card & brand extension ──
-  static const Color cardSurface = Color(0xFF0E0E18);
-  static const Color cardBorder = Color(0xFF1E1E2E);
+  // ── status & feedback ──
+  static const Color error = Color(0xFFFF4D4D);
+  static const Color success = Color(0xFF10B981);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color info = Color(0xFF3B82F6);
+
+  // ── brand & semantic accents ──
   static const Color brandYellow = Color(0xFFFDE047);
+  static const Color brandYellowSoft = Color(0x1AFDE047);
   static const Color brandBlue = Color(0xFF3B82F6);
+  static const Color brandIndigo = Color(0xFF6366F1);
+  static const Color brandIndigoSoft = Color(0x1A6366F1);
+  static const Color accentPink = Color(0xFFFF6B8A);
+  static const Color accentGold = Color(0xFFFFCC00);
+  static const Color accentGoldSoft = Color(0x18F59E0B);
+  static const Color accentGoldDim = Color(0xFF1A1200);
+  static const Color emerald400 = Color(0xFF34D399);
+
+  // ── cards & containers ──
+  static const Color cardSurface = Color(0xFF0E0E18);
+  static const Color cardSurfaceAlt = Color(0xFF14141E);
+  static const Color cardSurfaceAltAlt = Color(0xFF1C1C28);
+  static const Color cardBorder = Color(0xFF1E1E2E);
+  static const Color borderCardStrong = Color(0xFF2A2A38);
+
+  // ── additional text & utility ──
   static const Color textSlate = Color(0xFF8892A4);
   static const Color textDim = Color(0xFF4A5263);
+  static const Color slate400 = Color(0xFF94A3B8);
+  static const Color slate600 = Color(0xFF475569);
 
+  // ── gradients ──
   static const LinearGradient luxuryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,

@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 
 class GlassmorphicHeader extends StatelessWidget {
   final double scrollOffset;
@@ -33,8 +34,6 @@ class GlassmorphicHeader extends StatelessWidget {
         ? (scrollOffset / (maxScroll / 20)).clamp(0.0, 20.0)
         : 20.0;
 
-    const bg = Color(0xFF07070A);
-
     return Positioned(
       top: 0,
       left: 0,
@@ -45,7 +44,7 @@ class GlassmorphicHeader extends StatelessWidget {
           child: Container(
             height: topPadding + 60,
             decoration: BoxDecoration(
-              color: bg.withValues(alpha: baseOpacity * 0.8),
+              color: AppColors.background.withValues(alpha: baseOpacity * 0.8),
             ),
             child: Padding(
               padding: EdgeInsets.only(top: topPadding, left: 16, right: 16),
@@ -58,7 +57,7 @@ class GlassmorphicHeader extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                           fontWeight: FontWeight.w900,
                           fontSize: 20,
                         ),
@@ -77,8 +76,8 @@ class GlassmorphicHeader extends StatelessWidget {
                               onTap: onBack,
                               child: const Icon(
                                 Icons.arrow_back_rounded,
-                                color: Colors.white,
-                                size: 22,
+                                color: AppColors.textPrimary,
+                                size: 24,
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -89,7 +88,7 @@ class GlassmorphicHeader extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppColors.textPrimary,
                                 fontWeight: FontWeight.w900,
                                 fontSize: 24,
                                 letterSpacing: -0.5,
@@ -107,8 +106,8 @@ class GlassmorphicHeader extends StatelessWidget {
                         onTap: onBack,
                         child: const Icon(
                           Icons.arrow_back_rounded,
-                          color: Colors.white,
-                          size: 22,
+                          color: AppColors.textPrimary,
+                          size: 24,
                         ),
                       ),
                     ),
@@ -151,12 +150,7 @@ class HeaderIconButton extends StatelessWidget {
         width: 40,
         height: 40,
         margin: const EdgeInsets.only(left: 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        ),
-        child: Icon(icon, size: 18, color: color ?? Colors.white),
+        child: Icon(icon, size: 22, color: color ?? AppColors.textPrimary),
       ),
     );
   }

@@ -1,11 +1,8 @@
-import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-
-const _accent = Color(0xFFFDE047);
-const _textHigh = Colors.white;
-const _textLow = Color(0xFF334155);
+import 'package:mobile/src/core/theme/app_colors.dart';
 
 class QuantitySelector extends StatefulWidget {
   final int quantity;
@@ -86,7 +83,7 @@ class _QuantitySelectorState extends State<QuantitySelector>
             style: const TextStyle(
               fontWeight: FontWeight.w900,
               fontSize: 13,
-              color: _textHigh,
+              color: AppColors.textPrimary,
             ),
           ),
         ),
@@ -136,7 +133,7 @@ class _QuantitySelectorState extends State<QuantitySelector>
             shape: BoxShape.circle,
             color: enabled ? Colors.white.withValues(alpha: 0.05) : Colors.transparent,
           ),
-          child: Icon(icon, size: 12, color: enabled ? _accent : _textLow),
+          child: Icon(icon, size: 12, color: enabled ? AppColors.brandYellow : AppColors.slate600),
         ),
       ),
     );

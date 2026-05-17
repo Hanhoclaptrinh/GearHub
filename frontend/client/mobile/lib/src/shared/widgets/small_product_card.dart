@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 
 class SmallProductCard extends StatelessWidget {
   final ProductModel product;
@@ -21,8 +22,6 @@ class SmallProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const textHigh = Color(0xFFF1F1F5);
-
     return GestureDetector(
       onTap:
           onTap ??
@@ -37,10 +36,10 @@ class SmallProductCard extends StatelessWidget {
       child: Container(
         width: width,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
+          color: AppColors.textPrimary.withValues(alpha: 0.02),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.05),
+            color: AppColors.textPrimary.withValues(alpha: 0.05),
             width: 0.8,
           ),
         ),
@@ -54,7 +53,7 @@ class SmallProductCard extends StatelessWidget {
                 child: Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.01),
+                    color: AppColors.textPrimary.withValues(alpha: 0.01),
                   ),
                   child: Hero(
                     tag: heroTag ?? 'collection_${product.id}',
@@ -69,13 +68,15 @@ class SmallProductCard extends StatelessWidget {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 1,
-                              color: Colors.white.withValues(alpha: 0.1),
+                              color: AppColors.textPrimary.withValues(
+                                alpha: 0.1,
+                              ),
                             ),
                           ),
                         ),
                         errorWidget: (context, url, error) => Icon(
                           Icons.image_not_supported_outlined,
-                          color: Colors.white.withValues(alpha: 0.05),
+                          color: AppColors.textPrimary.withValues(alpha: 0.05),
                           size: 24,
                         ),
                       ),
@@ -96,7 +97,7 @@ class SmallProductCard extends StatelessWidget {
                       child: Text(
                         product.baseName.toUpperCase(),
                         style: const TextStyle(
-                          color: textHigh,
+                          color: AppColors.textPrimary,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.5,
@@ -130,7 +131,7 @@ class SmallProductCard extends StatelessWidget {
                         Text(
                           formatVND(product.price),
                           style: TextStyle(
-                            color: textHigh.withValues(alpha: 0.9),
+                            color: AppColors.textPrimary.withValues(alpha: 0.9),
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
                           ),

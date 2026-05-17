@@ -215,20 +215,6 @@ class _ArchitecturalNavItem extends StatelessWidget {
                 AnimatedOpacity(
                   duration: const Duration(milliseconds: 400),
                   opacity: isSelected ? 1.0 : 0.0,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          blurRadius: 15,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
                 _buildIconLayer(),
               ],
@@ -272,10 +258,7 @@ class _ArchitecturalNavItem extends StatelessWidget {
                     color: Color(0xFFFDE047),
                     shape: BoxShape.circle,
                   ),
-                  constraints: const BoxConstraints(
-                    minWidth: 8,
-                    minHeight: 8,
-                  ),
+                  constraints: const BoxConstraints(minWidth: 8, minHeight: 8),
                 ),
               ),
           ],
@@ -297,4 +280,3 @@ class _ArchitecturalNavItem extends StatelessWidget {
     );
   }
 }
-

@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-
-const _surface = Color(0xFF14141E);
-const _surfaceAlt = Color(0xFF1C1C28);
-const _border = Color(0xFF2A2A38);
-const _textHigh = Color(0xFFF1F1F5);
-const _textMid = Color(0xFF9191A8);
+import 'package:mobile/src/core/theme/app_colors.dart';
 
 class PaymentSelectionSection extends StatelessWidget {
   final String selectedMethod;
@@ -28,7 +23,7 @@ class PaymentSelectionSection extends StatelessWidget {
           style: TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: 16,
-            color: _textHigh,
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 12),
@@ -67,12 +62,12 @@ class PaymentSelectionSection extends StatelessWidget {
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: _surface,
+          color: AppColors.cardSurfaceAlt,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isSelected
-                ? Color(0xFF0077ED).withValues(alpha: 0.5)
-                : _border,
+                ? AppColors.brandBlue.withValues(alpha: 0.5)
+                : AppColors.borderCardStrong,
             width: isSelected ? 1.5 : 0.5,
           ),
         ),
@@ -83,14 +78,14 @@ class PaymentSelectionSection extends StatelessWidget {
               height: 44,
               decoration: BoxDecoration(
                 color: isSelected
-                    ? const Color(0xFF0077ED).withValues(alpha: 0.15)
-                    : _surfaceAlt,
+                    ? AppColors.brandBlue.withValues(alpha: 0.15)
+                    : AppColors.cardSurfaceAltAlt,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
                 icon,
                 size: 22,
-                color: isSelected ? const Color(0xFF0077ED) : _textMid,
+                color: isSelected ? AppColors.brandBlue : AppColors.slate400,
               ),
             ),
             const SizedBox(width: 14),
@@ -103,13 +98,18 @@ class PaymentSelectionSection extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
-                      color: isSelected ? _textHigh : _textMid,
+                      color: isSelected
+                          ? AppColors.textPrimary
+                          : AppColors.slate400,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(fontSize: 12, color: _textMid),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.slate400,
+                    ),
                   ),
                 ],
               ),
@@ -120,9 +120,11 @@ class PaymentSelectionSection extends StatelessWidget {
               height: 24,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isSelected ? const Color(0xFF0077ED) : Colors.transparent,
+                color: isSelected ? AppColors.brandBlue : Colors.transparent,
                 border: Border.all(
-                  color: isSelected ? const Color(0xFF0077ED) : _border,
+                  color: isSelected
+                      ? AppColors.brandBlue
+                      : AppColors.borderCardStrong,
                   width: 2,
                 ),
               ),

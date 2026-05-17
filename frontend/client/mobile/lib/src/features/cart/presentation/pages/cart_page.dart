@@ -1,5 +1,4 @@
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,6 +11,7 @@ import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_state.dart';
 import 'package:mobile/src/features/cart/domain/entities/cart_item_entity.dart';
 import 'package:mobile/src/features/cart/presentation/widgets/cart_item_card.dart';
+import 'package:mobile/src/features/chat/presentation/widgets/concierge_entry_button.dart';
 import 'package:mobile/src/features/checkout/presentation/pages/checkout_page.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/features/home/presentation/pages/main_screen.dart';
@@ -19,16 +19,7 @@ import 'package:mobile/src/features/product_detail/presentation/pages/product_de
 import 'package:mobile/src/shared/widgets/large_product_card.dart';
 import 'package:mobile/src/shared/widgets/auth_required_modal.dart';
 import 'package:mobile/src/shared/widgets/glassmorphic_header.dart';
-
-const _bg = Color(0xFF07070A);
-const _surface = Color(0xFF14141E);
-const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFFDE047);
-const _accentSoft = Color(0x1AFDE047);
-const _pink = Color(0xFFFF4D4D);
-const _textHigh = Colors.white;
-const _textMid = Color(0xFF94A3B8);
-const _textLow = Color(0xFF475569);
+import 'package:mobile/src/core/theme/app_colors.dart';
 
 class CartPage extends StatefulWidget {
   final bool isNavVisible;
@@ -122,16 +113,19 @@ class _CartPageState extends State<CartPage> {
       builder: (context, state) {
         if (state is CartLoading) {
           return const Scaffold(
-            backgroundColor: _bg,
+            backgroundColor: AppColors.background,
             body: Center(
-              child: CircularProgressIndicator(color: _accent, strokeWidth: 2),
+              child: CircularProgressIndicator(
+                color: AppColors.brandYellow,
+                strokeWidth: 2,
+              ),
             ),
           );
         }
 
         if (state is CartError) {
           return Scaffold(
-            backgroundColor: _bg,
+            backgroundColor: AppColors.background,
             body: Stack(
               children: [
                 Center(
@@ -141,7 +135,7 @@ class _CartPageState extends State<CartPage> {
                       const Icon(
                         LucideIcons.triangleAlert,
                         size: 48,
-                        color: _pink,
+                        color: AppColors.error,
                       ),
                       const SizedBox(height: 16),
                       Padding(
@@ -149,7 +143,10 @@ class _CartPageState extends State<CartPage> {
                         child: Text(
                           state.message,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: _textMid, fontSize: 14),
+                          style: const TextStyle(
+                            color: AppColors.slate400,
+                            fontSize: 14,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -161,16 +158,18 @@ class _CartPageState extends State<CartPage> {
                             vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: _accentSoft,
+                            color: AppColors.brandYellowSoft,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: _accent.withValues(alpha: 0.3),
+                              color: AppColors.brandYellow.withValues(
+                                alpha: 0.3,
+                              ),
                             ),
                           ),
                           child: const Text(
                             'Thử lại',
                             style: TextStyle(
-                              color: _accent,
+                              color: AppColors.brandYellow,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -202,7 +201,7 @@ class _CartPageState extends State<CartPage> {
         // empty state
         if (items.isEmpty) {
           return Scaffold(
-            backgroundColor: _bg,
+            backgroundColor: AppColors.background,
             body: Stack(
               children: [
                 Center(
@@ -219,7 +218,7 @@ class _CartPageState extends State<CartPage> {
                               const Icon(
                                 LucideIcons.shoppingCart,
                                 size: 80,
-                                color: _textLow,
+                                color: AppColors.slate600,
                               ),
                         ),
                         const SizedBox(height: 32),
@@ -229,7 +228,7 @@ class _CartPageState extends State<CartPage> {
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w900,
-                            color: _textHigh,
+                            color: AppColors.textPrimary,
                             letterSpacing: 1.5,
                           ),
                         ),
@@ -239,7 +238,7 @@ class _CartPageState extends State<CartPage> {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 14,
-                            color: _textMid,
+                            color: AppColors.slate400,
                             height: 1.6,
                           ),
                         ),
@@ -249,7 +248,11 @@ class _CartPageState extends State<CartPage> {
                     ),
                   ),
                 ),
-                const GlassmorphicHeader(scrollOffset: 0, title: 'Giỏ hàng'),
+                const GlassmorphicHeader(
+                  scrollOffset: 0,
+                  title: 'Giỏ hàng',
+                  actions: [ConciergeEntryButton(compact: true)],
+                ),
               ],
             ),
           );
@@ -257,7 +260,7 @@ class _CartPageState extends State<CartPage> {
 
         // cart with items
         return Scaffold(
-          backgroundColor: _bg,
+          backgroundColor: AppColors.background,
           body: Stack(
             children: [
               CustomScrollView(
@@ -292,7 +295,7 @@ class _CartPageState extends State<CartPage> {
                                       style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w900,
-                                        color: _textHigh,
+                                        color: AppColors.textPrimary,
                                         letterSpacing: 1.0,
                                       ),
                                     ),
@@ -302,7 +305,9 @@ class _CartPageState extends State<CartPage> {
                                           ? LucideIcons.circleCheck
                                           : LucideIcons.circle,
                                       size: 12,
-                                      color: allSelected ? _accent : _textLow,
+                                      color: allSelected
+                                          ? AppColors.brandYellow
+                                          : AppColors.slate600,
                                     ),
                                   ],
                                 ),
@@ -315,7 +320,9 @@ class _CartPageState extends State<CartPage> {
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w900,
-                                    color: _pink.withValues(alpha: 0.5),
+                                    color: AppColors.error.withValues(
+                                      alpha: 0.5,
+                                    ),
                                     letterSpacing: 1.0,
                                   ),
                                 ),
@@ -326,7 +333,9 @@ class _CartPageState extends State<CartPage> {
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w500,
-                                  color: _textHigh.withValues(alpha: 0.3),
+                                  color: AppColors.textPrimary.withValues(
+                                    alpha: 0.3,
+                                  ),
                                 ),
                               ),
                             ],
@@ -390,12 +399,7 @@ class _CartPageState extends State<CartPage> {
               GlassmorphicHeader(
                 scrollOffset: _scrollOffset,
                 title: 'Giỏ hàng',
-                actions: [
-                  HeaderIconButton(
-                    icon: LucideIcons.messageCircle,
-                    onTap: () {},
-                  ),
-                ],
+                actions: const [ConciergeEntryButton(compact: true)],
               ),
               // floating checkout bar
               Builder(
@@ -435,25 +439,34 @@ class _CartPageState extends State<CartPage> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          backgroundColor: _surface,
+          backgroundColor: AppColors.surfaceElevated,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
-            side: const BorderSide(color: _border, width: 0.5),
+            side: const BorderSide(
+              color: AppColors.borderCardStrong,
+              width: 0.5,
+            ),
           ),
           title: const Text(
             'Xóa giỏ hàng',
-            style: TextStyle(fontWeight: FontWeight.w800, color: _textHigh),
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
           ),
           content: const Text(
             'Bạn có chắc chắn muốn xóa toàn bộ sản phẩm trong giỏ hàng?',
-            style: TextStyle(color: _textMid, height: 1.5),
+            style: TextStyle(color: AppColors.slate400, height: 1.5),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
               child: const Text(
                 'Hủy',
-                style: TextStyle(color: _textMid, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  color: AppColors.slate400,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             TextButton(
@@ -463,7 +476,10 @@ class _CartPageState extends State<CartPage> {
               },
               child: const Text(
                 'Xóa',
-                style: TextStyle(color: _pink, fontWeight: FontWeight.w800),
+                style: TextStyle(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ],
@@ -485,10 +501,10 @@ class _CartPageState extends State<CartPage> {
           margin: const EdgeInsets.symmetric(horizontal: 16),
           padding: const EdgeInsets.fromLTRB(24, 20, 20, 20),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
+            color: AppColors.textPrimary.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(32),
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.1),
+              color: AppColors.textPrimary.withValues(alpha: 0.1),
               width: 0.5,
             ),
           ),
@@ -502,7 +518,7 @@ class _CartPageState extends State<CartPage> {
                     const Text(
                       'Tổng cộng',
                       style: TextStyle(
-                        color: _textMid,
+                        color: AppColors.slate400,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.5,
@@ -515,7 +531,7 @@ class _CartPageState extends State<CartPage> {
                       child: Text(
                         hasSelection ? formatVND(total) : '0 ₫',
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.5,
@@ -543,13 +559,15 @@ class _CartPageState extends State<CartPage> {
                   ),
                   decoration: BoxDecoration(
                     color: hasSelection
-                        ? _accent
-                        : Colors.white.withValues(alpha: 0.05),
+                        ? AppColors.brandYellow
+                        : AppColors.textPrimary.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: hasSelection
                         ? [
                             BoxShadow(
-                              color: _accent.withValues(alpha: 0.3),
+                              color: AppColors.brandYellow.withValues(
+                                alpha: 0.3,
+                              ),
                               blurRadius: 20,
                               offset: const Offset(0, 4),
                             ),
@@ -563,8 +581,8 @@ class _CartPageState extends State<CartPage> {
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.5,
                       color: hasSelection
-                          ? Colors.black
-                          : Colors.white.withValues(alpha: 0.2),
+                          ? AppColors.ctaPrimaryText
+                          : AppColors.textPrimary.withValues(alpha: 0.2),
                     ),
                   ),
                 ),
@@ -585,14 +603,14 @@ class _CartPageState extends State<CartPage> {
             padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
             child: Row(
               children: [
-                Container(width: 32, height: 1.5, color: _accent),
+                Container(width: 32, height: 1.5, color: AppColors.brandYellow),
                 const SizedBox(width: 12),
                 const Text(
                   'KHÁM PHÁ THÊM',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
-                    color: _textHigh,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -628,11 +646,11 @@ class _CartPageState extends State<CartPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 18),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.textPrimary,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.white.withValues(alpha: 0.1),
+              color: AppColors.textPrimary.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -643,7 +661,7 @@ class _CartPageState extends State<CartPage> {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w900,
-            color: Colors.black,
+            color: AppColors.ctaPrimaryText,
             letterSpacing: 1,
           ),
         ),
@@ -660,21 +678,21 @@ class PromoSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _surface,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _border, width: 1),
+        border: Border.all(color: AppColors.borderCardStrong, width: 1),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: _accent.withValues(alpha: 0.1),
+              color: AppColors.brandYellow.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               LucideIcons.ticketPercent,
-              color: _accent,
+              color: AppColors.brandYellow,
               size: 24,
             ),
           ),
@@ -688,18 +706,22 @@ class PromoSection extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
-                    color: _textHigh,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 SizedBox(height: 4),
                 Text(
                   'Chọn hoặc nhập mã khuyến mãi',
-                  style: TextStyle(fontSize: 13, color: _textMid),
+                  style: TextStyle(fontSize: 13, color: AppColors.slate400),
                 ),
               ],
             ),
           ),
-          const Icon(LucideIcons.chevronRight, color: _textLow, size: 20),
+          const Icon(
+            LucideIcons.chevronRight,
+            color: AppColors.slate600,
+            size: 20,
+          ),
         ],
       ),
     );

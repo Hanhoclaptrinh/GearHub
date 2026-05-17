@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -232,7 +233,7 @@ class _CategoryProductCard extends StatelessWidget {
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF1E2129), Color(0xFF0D0E12)],
+                  colors: [AppColors.cardSurface, AppColors.background],
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -272,9 +273,7 @@ class _CategoryProductCard extends StatelessWidget {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(
-                                0xFF6366F1,
-                              ).withValues(alpha: 0.1),
+                              color: AppColors.brandBlue.withValues(alpha: 0.1),
                               blurRadius: 80,
                               spreadRadius: 5,
                             ),
@@ -331,9 +330,9 @@ class _CategoryProductCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w600,
-                            color: const Color(
-                              0xFFFDE047,
-                            ).withValues(alpha: isMain ? 0.5 : 0.2),
+                            color: AppColors.brandYellow.withValues(
+                              alpha: isMain ? 0.5 : 0.2,
+                            ),
                             letterSpacing: 1.8,
                           ),
                         ),
