@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:mobile/src/features/chat/domain/entities/product_recommendation_entity.dart';
 
 class ChatMessageEntity extends Equatable {
   final String id;
@@ -13,6 +14,7 @@ class ChatMessageEntity extends Equatable {
   final String? clientMessageId;
   final bool isOptimistic;
   final bool isFailed;
+  final List<ProductRecommendationEntity>? recommendations;
 
   const ChatMessageEntity({
     required this.id,
@@ -27,6 +29,7 @@ class ChatMessageEntity extends Equatable {
     this.clientMessageId,
     this.isOptimistic = false,
     this.isFailed = false,
+    this.recommendations,
   });
 
   bool get isSystem => type == 'SYSTEM';
@@ -44,6 +47,7 @@ class ChatMessageEntity extends Equatable {
     String? clientMessageId,
     bool? isOptimistic,
     bool? isFailed,
+    List<ProductRecommendationEntity>? recommendations,
   }) {
     return ChatMessageEntity(
       id: id ?? this.id,
@@ -58,6 +62,7 @@ class ChatMessageEntity extends Equatable {
       clientMessageId: clientMessageId ?? this.clientMessageId,
       isOptimistic: isOptimistic ?? this.isOptimistic,
       isFailed: isFailed ?? this.isFailed,
+      recommendations: recommendations ?? this.recommendations,
     );
   }
 
@@ -75,5 +80,6 @@ class ChatMessageEntity extends Equatable {
     clientMessageId,
     isOptimistic,
     isFailed,
+    recommendations,
   ];
 }

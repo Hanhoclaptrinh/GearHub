@@ -46,7 +46,7 @@ export class EmbeddingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
-  ) { }
+  ) {}
 
   /// vector hoa cau hoi cua KH
   async embedText(text: string): Promise<number[]> {
@@ -114,7 +114,10 @@ export class EmbeddingService {
   }
 
   async syncProductEmbeddingBestEffort(productId: string) {
-    if (!this.isAiEnabled() || !this.configService.get<string>('GEMINI_API_KEY')) {
+    if (
+      !this.isAiEnabled() ||
+      !this.configService.get<string>('GEMINI_API_KEY')
+    ) {
       return;
     }
 
@@ -203,17 +206,27 @@ export class EmbeddingService {
 
     return [
       `Sản phẩm: ${product.name}`,
-      product.isVault ? `Bộ sưu tập: GearHub Vault (Phiên bản Cao cấp / Giới hạn)` : '',
+      product.isVault
+        ? `Bộ sưu tập: GearHub Vault (Phiên bản Cao cấp / Giới hạn)`
+        : '',
       product.isFeatured ? `Trạng thái: Khuyên dùng / Bán chạy nhất` : '',
       `Thương hiệu: ${product.brand?.name ?? 'Chưa rõ'}`,
       `Danh mục: ${product.category?.name ?? 'Chưa rõ'}`,
       product.tagline ? `Slogan: ${product.tagline}` : '',
-      product.description ? `Mô tả: ${this.truncate(product.description, 900)}` : '',
-      product.metadata ? `Thông số chung: ${this.safeJson(this.getCommonSpecs(product.metadata))}` : '',
-      product.vaultSpecs ? `Thông số Vault: ${this.safeJson(product.vaultSpecs)}` : '',
+      product.description
+        ? `Mô tả: ${this.truncate(product.description, 900)}`
+        : '',
+      product.metadata
+        ? `Thông số chung: ${this.safeJson(this.getCommonSpecs(product.metadata))}`
+        : '',
+      product.vaultSpecs
+        ? `Thông số Vault: ${this.safeJson(product.vaultSpecs)}`
+        : '',
       `Đánh giá: ${product.averageRating}/5 sao (${product.reviewCount} lượt đánh giá)`,
       formattedAttrs ? `Các phiên bản hỗ trợ: ${formattedAttrs}` : '',
-    ].filter(Boolean).join('\n');
+    ]
+      .filter(Boolean)
+      .join('\n');
   }
 
   private async deleteProductEmbeddingIfTableExists(productId: string) {
@@ -232,22 +245,24 @@ export class EmbeddingService {
   }
 
   private getEmbeddingModelName() {
-    return (
-      this.configService.get<string>('GEMINI_EMBEDDING_MODEL')!
-    );
+    return this.configService.get<string>('GEMINI_EMBEDDING_MODEL')!;
   }
 
   private getEmbeddingDimensions() {
     const dimensions = Number(process.env.GEMINI_EMBEDDING_DIMENSIONS);
     if (!Number.isInteger(dimensions) || dimensions <= 0) {
-      throw new Error('GEMINI_EMBEDDING_DIMENSIONS phải là một số nguyên dương');
+      throw new Error(
+        'GEMINI_EMBEDDING_DIMENSIONS phải là một số nguyên dương',
+      );
     }
 
     return dimensions;
   }
 
   private truncate(value: string, maxLength: number) {
-    return value.length <= maxLength ? value : `${value.slice(0, maxLength)}...`;
+    return value.length <= maxLength
+      ? value
+      : `${value.slice(0, maxLength)}...`;
   }
 
   private getCommonSpecs(metadata: Prisma.JsonValue) {

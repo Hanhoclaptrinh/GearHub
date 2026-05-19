@@ -7,9 +7,15 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
-  WsException
+  WsException,
 } from '@nestjs/websockets';
-import { BadRequestException, HttpException, Logger, UsePipes, ValidationPipe } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  Logger,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { Server } from 'socket.io';
 import { ChatService } from '../chat.service';
@@ -18,39 +24,53 @@ import type { AuthenticatedSocket } from '../types/socket-user.type';
 import type {
   ClientToServerEvents,
   InterServerEvents,
-  ServerToClientEvents
+  ServerToClientEvents,
 } from '../types/chat-socket-events.type';
 import { JoinRoomDto } from '../dto/join-room.dto';
 import { SendMessageDto } from '../dto/send-message.dto';
 import { MarkRoomReadDto } from '../dto/mark-room-read.dto';
 import { TypingDto } from '../dto/typing.dto';
 
-@UsePipes(new ValidationPipe({
-  whitelist: true,
-  forbidNonWhitelisted: true,
-  transform: true
-}))
+@UsePipes(
+  new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  }),
+)
 @WebSocketGateway({
   namespace: '/chat',
   cors: {
     origin: true,
-    credentials: true
-  }
+    credentials: true,
+  },
 })
-export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+export class ChatGateway
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
-  private server: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents>;
+  private server: Server<
+    ClientToServerEvents,
+    ServerToClientEvents,
+    InterServerEvents
+  >;
 
   private readonly logger = new Logger(ChatGateway.name);
   private readonly socketUsers = new Map<string, string>();
 
   constructor(
     private readonly chatService: ChatService,
-    private readonly socketAuthGuard: ChatSocketAuthGuard
-  ) { }
+    private readonly socketAuthGuard: ChatSocketAuthGuard,
+  ) {}
 
   /// middleware auth cho socket
-  afterInit(server: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents>) {
+  afterInit(
+    server: Server<
+      ClientToServerEvents,
+      ServerToClientEvents,
+      InterServerEvents
+    >,
+  ) {
     server.use(async (socket, next) => {
       try {
         const user = await this.socketAuthGuard.authenticate(socket);
@@ -83,7 +103,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage('room:join')
   async handleJoinRoom(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: JoinRoomDto
+    @MessageBody() data: JoinRoomDto,
   ) {
     try {
       const result = await this.chatService.joinRoom(client.data.user, data); /// kiem tra user co quyen join room khong
@@ -91,7 +111,12 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
       client.emit('room:joined', result);
       this.publishRoomUpdated(result.room);
-      this.publishMessagesRead(result.room, client.data.user.role, client.data.user.id, result.readAt);
+      this.publishMessagesRead(
+        result.room,
+        client.data.user.role,
+        client.data.user.id,
+        result.readAt,
+      );
 
       return result;
     } catch (error) {
@@ -102,7 +127,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage('message:send')
   async handleSendMessage(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: SendMessageDto
+    @MessageBody() data: SendMessageDto,
   ) {
     try {
       const result = await this.chatService.sendMessage(client.data.user, data);
@@ -112,7 +137,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       this.server.to(this.chatRoom(result.room.id)).emit('message:new', {
         clientMessageId: result.clientMessageId,
         message: result.message,
-        room: result.room
+        room: result.room,
       });
 
       this.publishRoomUpdated(result.room);
@@ -128,6 +153,18 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
           });
           this.publishRoomUpdated(aiResult.room);
         },
+        () => {
+          this.server.to(this.chatRoom(result.room.id)).emit('typing:start', {
+            roomId: result.room.id,
+            userId: 'ai',
+          });
+        },
+        () => {
+          this.server.to(this.chatRoom(result.room.id)).emit('typing:stop', {
+            roomId: result.room.id,
+            userId: 'ai',
+          });
+        },
       );
 
       return result;
@@ -139,12 +176,20 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage('messages:read')
   async handleMessagesRead(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: MarkRoomReadDto
+    @MessageBody() data: MarkRoomReadDto,
   ) {
     try {
-      const result = await this.chatService.markRoomAsRead(client.data.user, data);
+      const result = await this.chatService.markRoomAsRead(
+        client.data.user,
+        data,
+      );
       this.publishRoomUpdated(result.room);
-      this.publishMessagesRead(result.room, client.data.user.role, client.data.user.id, result.readAt);
+      this.publishMessagesRead(
+        result.room,
+        client.data.user.role,
+        client.data.user.id,
+        result.readAt,
+      );
 
       return result;
     } catch (error) {
@@ -155,13 +200,13 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage('typing:start')
   async handleTypingStart(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: TypingDto
+    @MessageBody() data: TypingDto,
   ) {
     try {
       await this.chatService.assertCanUseTyping(client.data.user, data);
       client.to(this.chatRoom(data.roomId)).emit('typing:start', {
         roomId: data.roomId,
-        userId: client.data.user.id
+        userId: client.data.user.id,
       });
     } catch (error) {
       throw this.toWsException(error);
@@ -171,24 +216,28 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage('typing:stop')
   async handleTypingStop(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: TypingDto
+    @MessageBody() data: TypingDto,
   ) {
     try {
       await this.chatService.assertCanUseTyping(client.data.user, data);
       client.to(this.chatRoom(data.roomId)).emit('typing:stop', {
         roomId: data.roomId,
-        userId: client.data.user.id
+        userId: client.data.user.id,
       });
     } catch (error) {
       throw this.toWsException(error);
     }
   }
 
-  publishMessageNew(payload: Parameters<ServerToClientEvents['message:new']>[0]) {
+  publishMessageNew(
+    payload: Parameters<ServerToClientEvents['message:new']>[0],
+  ) {
     this.server.to(this.chatRoom(payload.room.id)).emit('message:new', payload);
   }
 
-  publishRoomUpdated(room: Parameters<ServerToClientEvents['room:updated']>[0]['room']) {
+  publishRoomUpdated(
+    room: Parameters<ServerToClientEvents['room:updated']>[0]['room'],
+  ) {
     this.server
       .to(this.chatRoom(room.id))
       .to(this.userRoom(room.userId))
@@ -200,20 +249,20 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     room: Parameters<ServerToClientEvents['messages:read']>[0]['room'],
     readerRole: Role,
     readerId: string,
-    readAt: Date
+    readAt: Date,
   ) {
     this.server.to(this.chatRoom(room.id)).emit('messages:read', {
       roomId: room.id,
       readerId,
       readerRole,
       readAt,
-      room
+      room,
     });
   }
 
   publishRoomClaimed(
     room: Parameters<ServerToClientEvents['room:claimed']>[0]['room'],
-    staffId: string
+    staffId: string,
   ) {
     this.server
       .to(this.chatRoom(room.id))
@@ -223,13 +272,13 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
         roomId: room.id,
         staffId,
         status: room.status,
-        room
+        room,
       });
   }
 
   publishRoomClosed(
     room: Parameters<ServerToClientEvents['room:closed']>[0]['room'],
-    closedById: string
+    closedById: string,
   ) {
     this.server
       .to(this.chatRoom(room.id))
@@ -239,7 +288,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
         roomId: room.id,
         closedById,
         status: room.status,
-        room
+        room,
       });
   }
 
@@ -264,7 +313,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       return new WsException({
         statusCode: error.getStatus(),
         message: error.message,
-        error: error.getResponse()
+        error: error.getResponse(),
       });
     }
 

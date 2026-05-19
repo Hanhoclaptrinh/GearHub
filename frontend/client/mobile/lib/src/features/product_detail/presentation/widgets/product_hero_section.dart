@@ -479,7 +479,21 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                 color: Colors.grey,
               ),
             )
-          : Image.asset(url, fit: BoxFit.contain),
+          : url.isNotEmpty
+              ? Image.asset(
+                  url,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.broken_image_outlined,
+                    size: 40,
+                    color: Colors.grey,
+                  ),
+                )
+              : const Icon(
+                  Icons.image_not_supported_outlined,
+                  size: 40,
+                  color: Colors.grey,
+                ),
     );
   }
 
@@ -612,7 +626,21 @@ class _ProductGalleryModalState extends State<_ProductGalleryModal> {
                                     color: Colors.grey,
                                   ),
                                 )
-                              : Image.asset(url, fit: BoxFit.contain),
+                              : url.isNotEmpty
+                                  ? Image.asset(
+                                      url,
+                                      fit: BoxFit.contain,
+                                      errorBuilder: (_, __, ___) => const Icon(
+                                        Icons.broken_image_outlined,
+                                        size: 40,
+                                        color: Colors.grey,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.image_not_supported_outlined,
+                                      size: 40,
+                                      color: Colors.grey,
+                                    ),
                         ),
                       );
                     },

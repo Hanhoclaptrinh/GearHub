@@ -32,7 +32,7 @@ export class ChatService {
   constructor(
     private readonly chatRepository: ChatRepository,
     private readonly aiChatService: AiChatService,
-  ) { }
+  ) {}
 
   async joinRoom(user: SocketUser, data: JoinRoomDto) {
     const room = await this.resolveRoom(user, data.roomId);
@@ -153,7 +153,9 @@ export class ChatService {
       /// AI-enabled rooms start in BOT_ONLY; otherwise preserve human support flow.
       return this.chatRepository.createCustomerRoom(
         userId,
-        this.aiChatService.isEnabled() ? RoomStatus.BOT_ONLY : RoomStatus.NEED_HUMAN,
+        this.aiChatService.isEnabled()
+          ? RoomStatus.BOT_ONLY
+          : RoomStatus.NEED_HUMAN,
         tx,
       );
     });
@@ -319,22 +321,30 @@ export class ChatService {
   async respondWithAiIfEligible(
     user: SocketUser,
     result: Awaited<ReturnType<ChatRepository['createMessageAndUpdateRoom']>>,
+    onStart?: () => void,
   ) {
     return this.aiChatService.respondToUserMessage({
       room: result.room,
       userMessage: result.message,
       senderRole: user.role,
+      onStart,
     });
   }
 
   scheduleAiResponseIfEligible(
     user: SocketUser,
-    result: Awaited<ReturnType<ChatRepository['createMessageAndUpdateRoom']>> & {
+    result: Awaited<
+      ReturnType<ChatRepository['createMessageAndUpdateRoom']>
+    > & {
       clientMessageId?: string;
     },
-    publish: (aiResult: Awaited<ReturnType<AiChatService['respondToUserMessage']>>) => void,
+    publish: (
+      aiResult: Awaited<ReturnType<AiChatService['respondToUserMessage']>>,
+    ) => void,
+    onStart?: () => void,
+    onEnd?: () => void,
   ) {
-    void this.respondWithAiIfEligible(user, result)
+    void this.respondWithAiIfEligible(user, result, onStart)
       .then((aiResult) => {
         if (aiResult) {
           publish(aiResult);
@@ -344,6 +354,11 @@ export class ChatService {
         this.logger.warn(
           `AI response skipped for room=${result.room.id} message=${result.message.id}: ${this.errorMessage(error)}`,
         );
+      })
+      .finally(() => {
+        if (onEnd) {
+          onEnd();
+        }
       });
   }
 

@@ -1,4 +1,12 @@
-import { Controller, Get, Param, Post, Query, Request, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
@@ -13,30 +21,21 @@ import { ChatGateway } from './gateway/chat.gateway';
 export class AdminChatController {
   constructor(
     private readonly chatService: ChatService,
-    private readonly chatGateway: ChatGateway
-  ) { }
+    private readonly chatGateway: ChatGateway,
+  ) {}
 
   @Get('rooms')
-  getRooms(
-    @Request() req,
-    @Query() query: GetAdminRoomsQueryDto
-  ) {
+  getRooms(@Request() req, @Query() query: GetAdminRoomsQueryDto) {
     return this.chatService.getAdminRooms(this.toSocketUser(req), query);
   }
 
   @Get('rooms/:roomId')
-  getRoomDetail(
-    @Request() req,
-    @Param('roomId') roomId: string
-  ) {
+  getRoomDetail(@Request() req, @Param('roomId') roomId: string) {
     return this.chatService.getAdminRoomDetail(this.toSocketUser(req), roomId);
   }
 
   @Post('rooms/:roomId/claim')
-  async claimRoom(
-    @Request() req,
-    @Param('roomId') roomId: string
-  ) {
+  async claimRoom(@Request() req, @Param('roomId') roomId: string) {
     const user = this.toSocketUser(req);
     const result = await this.chatService.claimRoom(user, roomId);
 
@@ -47,17 +46,14 @@ export class AdminChatController {
   }
 
   @Post('rooms/:roomId/close')
-  async closeRoom(
-    @Request() req,
-    @Param('roomId') roomId: string
-  ) {
+  async closeRoom(@Request() req, @Param('roomId') roomId: string) {
     const user = this.toSocketUser(req);
     const result = await this.chatService.closeRoom(user, roomId);
 
     if (result.socketMessage) {
       this.chatGateway.publishMessageNew({
         message: result.socketMessage,
-        room: result.socketRoom
+        room: result.socketRoom,
       });
     }
 
@@ -66,7 +62,7 @@ export class AdminChatController {
 
     return {
       room: result.room,
-      message: result.message
+      message: result.message,
     };
   }
 
@@ -74,7 +70,7 @@ export class AdminChatController {
     return this.chatService.toSocketUser({
       id: req.user.userId,
       email: req.user.email,
-      role: req.user.role as Role
+      role: req.user.role as Role,
     });
   }
 }

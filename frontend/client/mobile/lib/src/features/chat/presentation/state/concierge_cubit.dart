@@ -342,13 +342,19 @@ class ConciergeCubit extends Cubit<ConciergeState> {
 
   void _handleTypingStart(dynamic payload) {
     if (payload is Map && payload['roomId'] == state.room?.id) {
-      emit(state.copyWith(isTyping: true));
+      emit(state.copyWith(
+        isTyping: true,
+        typingUserId: payload['userId']?.toString(),
+      ));
     }
   }
 
   void _handleTypingStop(dynamic payload) {
     if (payload is Map && payload['roomId'] == state.room?.id) {
-      emit(state.copyWith(isTyping: false));
+      emit(state.copyWith(
+        isTyping: false,
+        clearTypingUser: true,
+      ));
     }
   }
 

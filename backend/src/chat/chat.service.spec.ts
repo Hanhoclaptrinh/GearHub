@@ -290,7 +290,10 @@ describe('ChatService', () => {
           }),
         ),
       } as unknown as AiChatService;
-      service = new ChatService(repository as unknown as ChatRepository, aiService);
+      service = new ChatService(
+        repository as unknown as ChatRepository,
+        aiService,
+      );
 
       const publish = jest.fn();
       const sendResult = {

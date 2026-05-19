@@ -35,7 +35,19 @@ export class AiSafetyService {
 
   /// chuan hoa va lam sach cau tra loi cua ai truoc khi gui
   sanitizeModelOutput(content: string) {
-    const trimmed = content.replace(/\0/g, '').trim();
+    let trimmed = content.replace(/\0/g, '').trim();
+    
+    /// loai bo markdown json blocks ma Gemini co the co tinh tra ve mac cho prompt
+    if (trimmed.startsWith('```json')) {
+      trimmed = trimmed.replace(/^```json\s*/i, '');
+    } else if (trimmed.startsWith('```')) {
+      trimmed = trimmed.replace(/^```\s*/, '');
+    }
+    if (trimmed.endsWith('```')) {
+      trimmed = trimmed.replace(/\s*```$/, '');
+    }
+    trimmed = trimmed.trim();
+
     if (!trimmed) {
       /// fallback khi ai tra ve noi dung trong
       return 'Mình cần thêm một chút thông tin để tư vấn chính xác hơn. Bạn đang tìm sản phẩm nào hoặc mức ngân sách khoảng bao nhiêu?';

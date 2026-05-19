@@ -15,8 +15,8 @@ type JwtPayload = {
 export class ChatSocketAuthGuard {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly prisma: PrismaService
-  ) { }
+    private readonly prisma: PrismaService,
+  ) {}
 
   async authenticate(socket: Socket): Promise<SocketUser> {
     const token = this.extractToken(socket);
@@ -41,8 +41,8 @@ export class ChatSocketAuthGuard {
         id: true,
         email: true,
         role: true,
-        status: true
-      }
+        status: true,
+      },
     });
 
     if (!user || user.status !== UserStatus.ACTIVE) {
@@ -52,7 +52,7 @@ export class ChatSocketAuthGuard {
     return {
       id: user.id,
       email: user.email,
-      role: user.role
+      role: user.role,
     };
   }
 

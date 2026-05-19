@@ -14,6 +14,7 @@ export type PublicProductContext = {
   name: string;
   slug: string;
   url: string;
+  thumbnailUrl: string | null;
   brand: string | null;
   category: string | null;
   tagline: string | null;

@@ -16,12 +16,20 @@ describe('AiSafetyService', () => {
   });
 
   it('detects Vietnamese handoff requests', () => {
-    expect(service.isHumanHandoffRequest('minh muon gap nhan vien ho tro')).toBe(true);
-    expect(service.isHumanHandoffRequest('cho minh noi chuyen voi shop')).toBe(true);
-    expect(service.isHumanHandoffRequest('toi muon gap tu van vien')).toBe(true);
+    expect(
+      service.isHumanHandoffRequest('minh muon gap nhan vien ho tro'),
+    ).toBe(true);
+    expect(service.isHumanHandoffRequest('cho minh noi chuyen voi shop')).toBe(
+      true,
+    );
+    expect(service.isHumanHandoffRequest('toi muon gap tu van vien')).toBe(
+      true,
+    );
     expect(service.isHumanHandoffRequest('toi muon lien he shop')).toBe(true);
     expect(service.isHumanHandoffRequest('can nguoi that tu van')).toBe(true);
     expect(service.isHumanHandoffRequest('support that duoc khong')).toBe(true);
-    expect(service.isHumanHandoffRequest('tu van giup minh mau ban phim co')).toBe(false);
+    expect(
+      service.isHumanHandoffRequest('tu van giup minh mau ban phim co'),
+    ).toBe(false);
   });
 });

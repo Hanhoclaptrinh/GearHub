@@ -10,6 +10,6 @@ import { AiModule } from 'src/ai/ai.module';
 @Module({
   imports: [AiModule],
   providers: [ChatGateway, ChatService, ChatRepository, ChatSocketAuthGuard],
-  controllers: [ChatController, AdminChatController]
+  controllers: [ChatController, AdminChatController],
 })
 export class ChatModule {}

@@ -10,6 +10,7 @@ class ConciergeState extends Equatable {
   final bool isLoadingOlder;
   final bool isSending;
   final bool isTyping;
+  final String? typingUserId;
   final bool isConnected;
   final bool screenActive;
   final bool canStartNewRoom;
@@ -25,6 +26,7 @@ class ConciergeState extends Equatable {
     this.isLoadingOlder = false,
     this.isSending = false,
     this.isTyping = false,
+    this.typingUserId,
     this.isConnected = false,
     this.screenActive = true,
     this.canStartNewRoom = false,
@@ -45,6 +47,8 @@ class ConciergeState extends Equatable {
     bool? isLoadingOlder,
     bool? isSending,
     bool? isTyping,
+    String? typingUserId,
+    bool clearTypingUser = false,
     bool? isConnected,
     bool? screenActive,
     bool? canStartNewRoom,
@@ -61,6 +65,7 @@ class ConciergeState extends Equatable {
       isLoadingOlder: isLoadingOlder ?? this.isLoadingOlder,
       isSending: isSending ?? this.isSending,
       isTyping: isTyping ?? this.isTyping,
+      typingUserId: clearTypingUser ? null : typingUserId ?? this.typingUserId,
       isConnected: isConnected ?? this.isConnected,
       screenActive: screenActive ?? this.screenActive,
       canStartNewRoom: canStartNewRoom ?? this.canStartNewRoom,
@@ -79,6 +84,7 @@ class ConciergeState extends Equatable {
     isLoadingOlder,
     isSending,
     isTyping,
+    typingUserId,
     isConnected,
     screenActive,
     canStartNewRoom,

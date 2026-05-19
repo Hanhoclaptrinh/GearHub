@@ -155,7 +155,7 @@ class _ConciergeScreenState extends State<ConciergeScreen>
         final offset = state.nextCursor != null ? 1 : 0;
         final messageIndex = index - offset;
         if (messageIndex >= state.messages.length) {
-          return const _TypingIndicator();
+          return _TypingIndicator(typingUserId: state.typingUserId);
         }
 
         final message = state.messages[messageIndex];
@@ -253,10 +253,14 @@ class _ConciergeHeader extends StatelessWidget {
 }
 
 class _TypingIndicator extends StatelessWidget {
-  const _TypingIndicator();
+  final String? typingUserId;
+
+  const _TypingIndicator({this.typingUserId});
 
   @override
   Widget build(BuildContext context) {
+    final name = typingUserId == 'ai' ? 'GearHub AI' : 'GearHub';
+
     return Padding(
       padding: const EdgeInsets.only(left: 4, top: 8),
       child: Row(
@@ -273,7 +277,7 @@ class _TypingIndicator extends StatelessWidget {
             ),
           const SizedBox(width: 6),
           Text(
-            'GearHub đang phản hồi',
+            '$name đang phản hồi',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.36),
               fontSize: 11,

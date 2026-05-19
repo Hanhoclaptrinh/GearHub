@@ -57,7 +57,9 @@ describe('AiChatService', () => {
           content: 'GearHub đã chuyển cuộc trò chuyện sang nhân viên hỗ trợ.',
         },
       }),
-      getAiContext: jest.fn().mockResolvedValue({ summary: 'Khach can laptop.' }),
+      getAiContext: jest
+        .fn()
+        .mockResolvedValue({ summary: 'Khach can laptop.' }),
       getRecentMessages: jest.fn().mockResolvedValue([userMessage]),
       ...overrides.chatRepository,
     };
@@ -94,7 +96,9 @@ describe('AiChatService', () => {
       } as any,
     );
 
-    jest.spyOn(service as any, 'callGemini').mockResolvedValue(aiMessage.content);
+    jest
+      .spyOn(service as any, 'callGemini')
+      .mockResolvedValue(aiMessage.content);
 
     return {
       service,
@@ -130,23 +134,24 @@ describe('AiChatService', () => {
     });
   });
 
-  it.each([
-    RoomStatus.NEED_HUMAN,
-    RoomStatus.STAFF_ACTIVE,
-    RoomStatus.CLOSED,
-  ])('does not trigger AI when room status is %s', async (status) => {
-    const { service, chatRepository, callGemini } = createService();
+  it.each([RoomStatus.NEED_HUMAN, RoomStatus.STAFF_ACTIVE, RoomStatus.CLOSED])(
+    'does not trigger AI when room status is %s',
+    async (status) => {
+      const { service, chatRepository, callGemini } = createService();
 
-    const result = await service.respondToUserMessage({
-      room: { ...room, status },
-      userMessage,
-      senderRole: Role.USER,
-    });
+      const result = await service.respondToUserMessage({
+        room: { ...room, status },
+        userMessage,
+        senderRole: Role.USER,
+      });
 
-    expect(result).toBeNull();
-    expect(callGemini).not.toHaveBeenCalled();
-    expect(chatRepository.createAiMessageAndUpdateRoom).not.toHaveBeenCalled();
-  });
+      expect(result).toBeNull();
+      expect(callGemini).not.toHaveBeenCalled();
+      expect(
+        chatRepository.createAiMessageAndUpdateRoom,
+      ).not.toHaveBeenCalled();
+    },
+  );
 
   it.each([Role.STAFF, Role.ADMIN])(
     'does not trigger AI for %s messages',
@@ -161,7 +166,9 @@ describe('AiChatService', () => {
 
       expect(result).toBeNull();
       expect(callGemini).not.toHaveBeenCalled();
-      expect(chatRepository.createAiMessageAndUpdateRoom).not.toHaveBeenCalled();
+      expect(
+        chatRepository.createAiMessageAndUpdateRoom,
+      ).not.toHaveBeenCalled();
     },
   );
 
@@ -183,7 +190,10 @@ describe('AiChatService', () => {
 
     const result = await service.respondToUserMessage({
       room,
-      userMessage: { ...userMessage, content: 'Minh muon gap nhan vien ho tro' },
+      userMessage: {
+        ...userMessage,
+        content: 'Minh muon gap nhan vien ho tro',
+      },
       senderRole: Role.USER,
     });
 
@@ -284,6 +294,8 @@ describe('AiChatService', () => {
     resolveGemini('GearHub goi y laptop mong nhe.');
     await first;
 
-    expect(chatRepository.createAiMessageAndUpdateRoom).toHaveBeenCalledTimes(1);
+    expect(chatRepository.createAiMessageAndUpdateRoom).toHaveBeenCalledTimes(
+      1,
+    );
   });
 });

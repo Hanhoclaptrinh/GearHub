@@ -11,8 +11,8 @@ describe('ChatController', () => {
       controllers: [ChatController],
       providers: [
         { provide: ChatService, useValue: {} },
-        { provide: ChatGateway, useValue: {} }
-      ]
+        { provide: ChatGateway, useValue: {} },
+      ],
     }).compile();
 
     controller = module.get<ChatController>(ChatController);

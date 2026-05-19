@@ -1,6 +1,10 @@
 import { Role } from '@prisma/client';
 import { Socket } from 'socket.io';
-import { ClientToServerEvents, InterServerEvents, ServerToClientEvents } from './chat-socket-events.type';
+import {
+  ClientToServerEvents,
+  InterServerEvents,
+  ServerToClientEvents,
+} from './chat-socket-events.type';
 
 export type SocketUser = {
   id: string;

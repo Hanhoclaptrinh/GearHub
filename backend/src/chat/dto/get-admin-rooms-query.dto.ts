@@ -1,8 +1,17 @@
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 import { RoomStatus } from '@prisma/client';
 
-export const ToBoolean = () => Transform(({ value }) => ['true', '1', true, 1].includes(value));
+export const ToBoolean = () =>
+  Transform(({ value }) => ['true', '1', true, 1].includes(value));
 
 export class GetAdminRoomsQueryDto {
   @IsOptional()

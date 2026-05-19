@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile/src/features/chat/domain/entities/chat_message_entity.dart';
 import 'package:mobile/src/core/theme/app_colors.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:mobile/src/core/utils/formatter_utils.dart';
+import 'package:mobile/src/shared/models/product_model.dart';
+import 'package:mobile/src/shared/models/product_variant_model.dart';
+import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 
 class ConciergeMessageBubble extends StatelessWidget {
   final ChatMessageEntity message;
@@ -143,7 +148,189 @@ class ConciergeMessageBubble extends StatelessWidget {
               ],
             ],
           ),
+          if (message.recommendations != null &&
+              message.recommendations!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 240,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: message.recommendations!.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (context, index) {
+                  final rec = message.recommendations![index];
+                  return _buildRecommendationCard(context, rec);
+                },
+              ),
+            ),
+          ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildRecommendationCard(BuildContext context, dynamic rec) {
+    final p = rec.product;
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ProductDetailPage(
+              product: ProductModel(
+                id: p.id,
+                name: p.name,
+                tagline: '',
+                price: p.price.toDouble(),
+                image: p.thumbnailUrl ?? '',
+                description: '',
+                averageRating: p.rating?.toDouble() ?? 0.0,
+                brandName: 'GearHub',
+                variants: [
+                  ProductVariantModel(
+                    id: 'dummy',
+                    sku: 'dummy',
+                    name: p.name,
+                    price: p.price.toDouble(),
+                    stock: p.stock?.toInt() ?? 0,
+                    attributes: const {},
+                    isActive: true,
+                    imageUrl: p.thumbnailUrl,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: 140,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
+                child: Container(
+                  color: Colors.white.withValues(alpha: 0.02),
+                  width: double.infinity,
+                  child: p.thumbnailUrl != null && p.thumbnailUrl!.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: p.thumbnailUrl!,
+                          fit: BoxFit.contain,
+                          placeholder: (context, url) => const Center(
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.5,
+                                color: AppColors.brandYellow,
+                              ),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => const Icon(
+                            Icons.image_not_supported_outlined,
+                            color: Colors.white24,
+                            size: 24,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.image_not_supported_outlined,
+                          color: Colors.white24,
+                          size: 24,
+                        ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    p.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    formatVND(p.price.toDouble()),
+                    style: const TextStyle(
+                      color: AppColors.brandYellow,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (p.rating != null && p.rating! > 0) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.star,
+                          color: AppColors.brandYellow,
+                          size: 12,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          p.rating!.toStringAsFixed(1),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (rec.reason != null && rec.reason!.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      rec.reason!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 9,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.brandYellow.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Xem chi tiết',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.brandYellow,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -41,6 +41,7 @@ export class AiChatService {
     room: ChatRoomRecord;
     userMessage: ChatMessageRecord;
     senderRole: Role;
+    onStart?: () => void;
   }) {
     /// loc tin nhan khong du dieu kien
     /// tinh nang AI chat bi tat
@@ -54,7 +55,10 @@ export class AiChatService {
     /// lock
     const roomId = params.room.id;
     const messageId = params.userMessage.id;
-    if (this.roomLocks.has(roomId) || this.processingMessageIds.has(messageId)) {
+    if (
+      this.roomLocks.has(roomId) ||
+      this.processingMessageIds.has(messageId)
+    ) {
       return null;
     }
 
@@ -69,8 +73,14 @@ export class AiChatService {
       }
 
       /// user gap nhan vien ho tro
-      if (this.safetyService.isHumanHandoffRequest(params.userMessage.content)) {
+      if (
+        this.safetyService.isHumanHandoffRequest(params.userMessage.content)
+      ) {
         return this.handoffToHuman(roomId, messageId);
+      }
+
+      if (params.onStart) {
+        params.onStart();
       }
 
       /// RAG
@@ -222,7 +232,10 @@ export class AiChatService {
         work(),
         new Promise<never>((_, reject) => {
           timeout = setTimeout(
-            () => reject(new Error(`Gemini đã quá thời gian phản hồi ${timeoutMs}ms`)),
+            () =>
+              reject(
+                new Error(`Gemini đã quá thời gian phản hồi ${timeoutMs}ms`),
+              ),
             timeoutMs,
           );
         }),

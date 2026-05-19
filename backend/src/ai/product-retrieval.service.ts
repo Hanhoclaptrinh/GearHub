@@ -9,6 +9,7 @@ const publicProductSelect = {
   id: true,
   name: true,
   slug: true,
+  thumbnailUrl: true,
   tagline: true,
   description: true,
   metadata: true,
@@ -48,7 +49,10 @@ export class ProductRetrievalService {
     private readonly configService: ConfigService,
   ) { }
 
-  async retrieveProducts(query: string, topK = 5): Promise<PublicProductContext[]> {
+  async retrieveProducts(
+    query: string,
+    topK = 5,
+  ): Promise<PublicProductContext[]> {
     const maxProducts = Math.min(
       Math.max(topK, 1),
       Number(this.configService.get<string>('AI_RAG_MAX_PRODUCTS') ?? 5),
@@ -70,16 +74,28 @@ export class ProductRetrievalService {
       });
 
       const threshold = Number(
-        this.configService.get<string>('AI_RAG_SIMILARITY_THRESHOLD') ?? 0.62,
+        this.configService.get<string>('AI_RAG_SIMILARITY_THRESHOLD') ?? 0.55,
       );
 
-      return rows
+      const scoredRows = rows
         .map((row) => ({
           product: this.toPublicContext(row.product),
-          score: this.cosineSimilarity(queryEmbedding, this.toVector(row.embedding)),
+          score: this.cosineSimilarity(
+            queryEmbedding,
+            this.toVector(row.embedding),
+          ),
         }))
-        .filter((item) => item.score >= threshold)
-        .sort((a, b) => b.score - a.score)
+        .sort((a, b) => b.score - a.score);
+
+      let filtered = scoredRows.filter((item) => item.score >= threshold);
+
+      /// neu khong co san pham nao dat diem cao
+      /// set nguong 0.48
+      if (filtered.length === 0) {
+        filtered = scoredRows.filter((item) => item.score >= 0.48);
+      }
+
+      return filtered
         .slice(0, maxProducts)
         .map((item) => ({ ...item.product, score: item.score }));
     } catch (error) {
@@ -114,6 +130,7 @@ export class ProductRetrievalService {
       name: product.name,
       slug: product.slug,
       url: this.productUrl(product.slug),
+      thumbnailUrl: product.thumbnailUrl,
       brand: product.brand?.name ?? null,
       category: product.category?.name ?? null,
       tagline: product.tagline,
@@ -143,7 +160,19 @@ export class ProductRetrievalService {
       .filter((term) => term.length >= 3) /// bo di cac tu qua ngan duoi 3 ky tu
       .slice(0, 5); /// gioi han toi da 5 tu khoa
 
-    if (terms.length === 0) return [];
+    if (terms.length === 0) {
+      /// tra ve top rated neu khong co san pham nao match
+      const products = await this.prisma.product.findMany({
+        where: {
+          isActive: true,
+          variants: { some: { isActive: true } },
+        },
+        orderBy: [{ averageRating: 'desc' }, { reviewCount: 'desc' }],
+        take,
+        select: publicProductSelect,
+      });
+      return products.map((product) => this.toPublicContext(product));
+    }
 
     const products = await this.prisma.product.findMany({
       where: {
@@ -182,7 +211,9 @@ export class ProductRetrievalService {
 
   private truncate(value: string | null, maxLength: number) {
     if (!value) return null;
-    return value.length <= maxLength ? value : `${value.slice(0, maxLength)}...`;
+    return value.length <= maxLength
+      ? value
+      : `${value.slice(0, maxLength)}...`;
   }
 
   private getCommonSpecs(metadata: Prisma.JsonValue) {
