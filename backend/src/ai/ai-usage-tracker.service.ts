@@ -42,5 +42,5 @@ export class AiUsageTracker {
     this.logger.warn(`AI chat failed room=${roomId}: ${message}`);
   }
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 }

@@ -5,9 +5,10 @@ import { ProductsModule } from 'src/products/products.module';
 import { CartModule } from 'src/cart/cart.module';
 import { ActivityLogModule } from 'src/activity-log/activity-log.module';
 import { InventoriesModule } from 'src/inventories/inventories.module';
+import { PromotionModule } from 'src/promotion/promotion.module';
 
 @Module({
-  imports: [ProductsModule, CartModule, ActivityLogModule, InventoriesModule],
+  imports: [ProductsModule, CartModule, ActivityLogModule, InventoriesModule, PromotionModule],
   providers: [OrdersService],
   controllers: [OrdersController]
 })

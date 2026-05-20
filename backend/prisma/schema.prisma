@@ -32,6 +32,10 @@ model User {
   reviews               Review[]
   sentMessages          Message[]              @relation("SenderMessages")
   inventoryTransactions InventoryTransaction[]
+  rewardPoints          Int                    @default(0) @map("reward_points")
+  totalSpent            Decimal                @default(0) @map("total_spent") @db.Decimal(15, 2)
+  userVouchers          UserVoucher[]
+  pointTransactions     PointTransaction[]
 
   @@map("users")
 }
@@ -248,10 +252,17 @@ model Order {
   note            String?       @db.Text
   createdAt       DateTime      @default(now()) @map("created_at")
 
-  user        User            @relation(fields: [userId], references: [id])
-  items       OrderItem[]
-  tracking    OrderTracking[]
-  transaction Transaction?
+  user              User               @relation(fields: [userId], references: [id])
+  items             OrderItem[]
+  tracking          OrderTracking[]
+  transaction       Transaction?
+  voucherDiscount   Decimal            @default(0) @map("voucher_discount") @db.Decimal(15, 2)
+  pointsDiscount    Decimal            @default(0) @map("points_discount") @db.Decimal(15, 2)
+  pointsUsed        Int                @default(0) @map("points_used")
+  userVoucher       UserVoucher?
+  pointTransactions PointTransaction[]
+  rewardPointsEarned   Int       @default(0) @map("reward_points_earned")
+  rewardPointsEarnedAt DateTime? @map("reward_points_earned_at")
 
   @@index([userId])
   @@index([status])
@@ -526,4 +537,84 @@ enum InventoryTransactionType {
   RETURN
   DAMAGED
   ADJUSTMENT
+}
+
+// ====================== PROMOTIONS & VOUCHERS ======================
+enum VoucherType {
+  PERCENT
+  FIXED_AMOUNT
+}
+
+model Voucher {
+  id                 String        @id @default(uuid()) @db.VarChar(36)
+  code               String        @unique @db.VarChar(50)
+  name               String        @db.VarChar(255)
+  description        String?       @db.Text
+  type               VoucherType
+  value              Decimal       @db.Decimal(15, 2)
+  minOrderAmount     Decimal       @default(0) @map("min_order_amount") @db.Decimal(15, 2)
+  maxDiscountAmount  Decimal?      @map("max_discount_amount") @db.Decimal(15, 2)
+  quantity           Int
+  claimedCount       Int           @default(0) @map("claimed_count")
+  usedCount          Int           @default(0) @map("used_count")
+  startsAt           DateTime?     @map("starts_at")
+  expiresAt          DateTime?     @map("expires_at")
+  isActive           Boolean       @default(true) @map("is_active")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+
+  userVouchers       UserVoucher[]
+
+  @@map("vouchers")
+  @@index([isActive])
+  @@index([expiresAt])
+}
+
+model UserVoucher {
+  id        String    @id @default(uuid()) @db.VarChar(36)
+  userId    String    @map("user_id") @db.VarChar(36)
+  voucherId String    @map("voucher_id") @db.VarChar(36)
+  claimedAt DateTime  @default(now()) @map("claimed_at")
+  usedAt    DateTime? @map("used_at")
+  orderId   String?   @unique @map("order_id") @db.VarChar(36)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  voucher Voucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, voucherId])
+  @@map("user_vouchers")
+  @@index([userId])
+  @@index([voucherId])
+  @@index([usedAt])
+}
+
+// ====================== REWARD POINTS ======================
+enum PointTransactionType {
+  EARN
+  REDEEM
+  REFUND
+  ADJUST
+}
+
+model PointTransaction {
+  id           String               @id @default(uuid()) @db.VarChar(36)
+  userId       String               @map("user_id") @db.VarChar(36)
+  orderId      String?              @map("order_id") @db.VarChar(36)
+  type         PointTransactionType
+  points       Int
+  balanceAfter Int                  @map("balance_after")
+  description  String               @db.VarChar(255)
+  createdAt    DateTime             @default(now()) @map("created_at")
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@map("point_transactions")
+  @@index([userId])
+  @@index([orderId])
+  @@index([type])
+  @@index([createdAt])
 }

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, Logger } from '@nes
 import { VnPayGateway } from './gateway/vnpay.gateway';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { OrderStatus, PaymentMethod, PaymentStatus, TransactionStatus } from '@prisma/client';
+import { PromotionService } from 'src/promotion/promotion.service';
 
 @Injectable()
 export class PaymentService {
@@ -9,7 +10,8 @@ export class PaymentService {
 
     constructor(
         private prisma: PrismaService,
-        private vnpayGateway: VnPayGateway
+        private vnpayGateway: VnPayGateway,
+        private promotionService: PromotionService,
     ) { }
 
     async createPaymentUrl(orderId: string, ipAddr: string, platform: string = 'web') {
@@ -179,6 +181,17 @@ export class PaymentService {
                             status: OrderStatus.CONFIRMED
                         },
                     });
+
+                    const userVoucher = await tx.userVoucher.findUnique({
+                        where: { orderId: orderId }
+                    });
+                    if (userVoucher) {
+                        await this.promotionService.markVoucherUsed(order.userId, userVoucher.voucherId, orderId, tx);
+                    }
+
+                    if (order.pointsUsed > 0) {
+                        await this.promotionService.redeemPoints(order.userId, orderId, order.pointsUsed, tx);
+                    }
 
                     for (const item of order.items) {
                         if (!item.productVariant || !item.productVariant.product) continue;

@@ -37,4 +37,13 @@ export class CreateOrderDto {
     @ValidateNested({ each: true })
     @Type(() => OrderItemDto)
     items: OrderItemDto[];
+
+    @IsString()
+    @IsOptional()
+    voucherId?: string;
+
+    @IsInt()
+    @Min(1, { message: 'Điểm thưởng sử dụng phải lớn hơn hoặc bằng 1' })
+    @IsOptional()
+    pointsToUse?: number;
 }
