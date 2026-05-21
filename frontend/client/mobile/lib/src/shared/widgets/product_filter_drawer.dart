@@ -222,7 +222,7 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.brandYellow,
+                          color: AppColors.champagne,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -305,9 +305,7 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
             duration: const Duration(milliseconds: 200),
             margin: EdgeInsets.fromLTRB(16, i == 0 ? 0 : 0, 16, isLast ? 0 : 0),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? AppColors.brandYellowSoft
-                  : Colors.transparent,
+              color: isSelected ? AppColors.champagneSoft : Colors.transparent,
             ),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -315,7 +313,7 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
                 border: Border(
                   left: BorderSide(
                     color: isSelected
-                        ? AppColors.brandYellow
+                        ? AppColors.champagne
                         : Colors.transparent,
                     width: 2,
                   ),
@@ -333,12 +331,12 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
                     height: 38,
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppColors.brandYellow
+                          ? AppColors.champagne
                           : AppColors.cardSurfaceAltAlt,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isSelected
-                            ? AppColors.brandYellow
+                            ? AppColors.champagne
                             : AppColors.cardBorder,
                         width: 0.5,
                       ),
@@ -385,7 +383,7 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
                       width: 8,
                       height: 8,
                       decoration: const BoxDecoration(
-                        color: AppColors.brandYellow,
+                        color: AppColors.champagne,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -414,7 +412,7 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
                 gradient: LinearGradient(
                   colors: [
                     AppColors.cardBorder,
-                    AppColors.brandYellow.withValues(alpha: 0.5),
+                    AppColors.champagne.withValues(alpha: 0.5),
                     AppColors.cardBorder,
                   ],
                 ),
@@ -470,7 +468,7 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                   ),
-                  cursorColor: AppColors.brandYellow,
+                  cursorColor: AppColors.champagne,
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(
@@ -499,10 +497,10 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
       child: SliderTheme(
         data: const SliderThemeData(
           trackHeight: 3,
-          activeTrackColor: AppColors.brandYellow,
+          activeTrackColor: AppColors.champagne,
           inactiveTrackColor: AppColors.cardBorder,
           thumbColor: AppColors.textPrimary,
-          overlayColor: AppColors.brandYellowSoft,
+          overlayColor: AppColors.champagneSoft,
           rangeThumbShape: RoundRangeSliderThumbShape(
             enabledThumbRadius: 11,
             elevation: 6,
@@ -601,7 +599,7 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.brandYellow.withValues(alpha: 0.35),
+                      color: AppColors.champagne.withValues(alpha: 0.35),
                       blurRadius: 5,
                     ),
                   ],

@@ -144,7 +144,7 @@ class _LuxuryHeroCard extends StatelessWidget {
                       Text(
                         formatVND(product.price),
                         style: const TextStyle(
-                          color: AppColors.brandYellow,
+                          color: AppColors.champagne,
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.4,
@@ -231,7 +231,7 @@ class _LuxuryMiniCard extends StatelessWidget {
               Text(
                 formatVND(product.price),
                 style: const TextStyle(
-                  color: AppColors.brandYellow,
+                  color: AppColors.champagne,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                 ),
@@ -285,7 +285,7 @@ class _LuxuryWideCard extends StatelessWidget {
                   Text(
                     formatVND(product.price),
                     style: const TextStyle(
-                      color: AppColors.brandYellow,
+                      color: AppColors.champagne,
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),

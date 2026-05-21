@@ -15,7 +15,6 @@ import 'package:mobile/src/features/profile/presentation/widgets/ultilities_grid
 import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
 import 'package:mobile/src/features/promotions/presentation/state/my_vouchers_cubit.dart';
 
-
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
 
@@ -37,7 +36,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
       child: MultiBlocProvider(
         providers: [
           BlocProvider(
-            create: (context) => getIt<OrdersCubit>()..fetchMyOrders(status: 'ALL'),
+            create: (context) =>
+                getIt<OrdersCubit>()..fetchMyOrders(status: 'ALL'),
           ),
           BlocProvider(
             create: (context) => getIt<MyVouchersCubit>()..fetchMyVouchers(),
@@ -62,7 +62,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         height: 300,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color(0xFFFDE047).withValues(alpha: 0.03),
+                          color: AppColors.champagne.withValues(alpha: 0.03),
                         ),
                         child: BackdropFilter(
                           filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
@@ -72,13 +72,15 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     ),
 
                     RefreshIndicator(
-                      color: const Color(0xFFFDE047),
+                      color: AppColors.champagne,
                       backgroundColor: const Color(0xFF14141E),
                       strokeWidth: 2,
                       onRefresh: () async {
                         if (isLoggedIn) {
                           await Future.wait([
-                            context.read<OrdersCubit>().fetchMyOrders(status: 'ALL'),
+                            context.read<OrdersCubit>().fetchMyOrders(
+                              status: 'ALL',
+                            ),
                             context.read<MyVouchersCubit>().fetchMyVouchers(),
                           ]);
                         }
@@ -92,9 +94,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                             child: SafeArea(
                               bottom: false,
                               child: Column(
-                                children: [
-                                  ProfileHeader(user: user),
-                                ],
+                                children: [ProfileHeader(user: user)],
                               ),
                             ),
                           ),
@@ -159,7 +159,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
       ),
     );
   }
-
 
   Widget _buildQuietLogout(BuildContext context) {
     return BlocBuilder<AuthCubit, AuthState>(

@@ -113,7 +113,7 @@ class CheckoutItemsSection extends StatelessWidget {
               style: const TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 13,
-                color: AppColors.brandYellow,
+                color: AppColors.champagne,
               ),
             ),
             const SizedBox(height: 2),

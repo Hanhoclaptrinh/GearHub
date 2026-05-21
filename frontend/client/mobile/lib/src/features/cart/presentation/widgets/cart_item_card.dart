@@ -192,12 +192,12 @@ class _CartItemCardState extends State<CartItemCard>
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? AppColors.brandYellowSoft
+                              ? AppColors.champagneSoft
                               : AppColors.cardSurfaceAlt,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: isSelected
-                                ? AppColors.brandYellow.withValues(alpha: 0.4)
+                                ? AppColors.champagne.withValues(alpha: 0.4)
                                 : AppColors.borderCardStrong,
                             width: isSelected ? 1 : 0.5,
                           ),
@@ -237,7 +237,7 @@ class _CartItemCardState extends State<CartItemCard>
                             if (isSelected)
                               const Icon(
                                 LucideIcons.circleCheck,
-                                color: AppColors.brandYellow,
+                                color: AppColors.champagne,
                                 size: 22,
                               ),
                           ],
@@ -462,7 +462,7 @@ class _CartItemCardState extends State<CartItemCard>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isSelected
-              ? AppColors.brandYellow.withValues(alpha: 0.3)
+              ? AppColors.champagne.withValues(alpha: 0.3)
               : AppColors.borderCardStrong,
           width: 0.5,
         ),
@@ -500,10 +500,10 @@ class _CartItemCardState extends State<CartItemCard>
       height: 16,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isSelected ? AppColors.brandYellow : Colors.transparent,
+        color: isSelected ? AppColors.champagne : Colors.transparent,
         border: Border.all(
           color: isSelected
-              ? AppColors.brandYellow
+              ? AppColors.champagne
               : AppColors.textPrimary.withValues(alpha: 0.1),
           width: 1,
         ),

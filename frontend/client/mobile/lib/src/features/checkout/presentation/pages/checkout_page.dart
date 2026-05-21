@@ -335,9 +335,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
           final voucherDiscount = promoState.calculateVoucherDiscount(
             _subtotalWithVat,
           );
-          final total =
-              (_subtotalWithVat + _shipping - voucherDiscount)
-                  .clamp(0.0, double.infinity);
+          final total = (_subtotalWithVat + _shipping - voucherDiscount).clamp(
+            0.0,
+            double.infinity,
+          );
 
           return Container(
             padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPadding + 16),
@@ -396,11 +397,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     child: Container(
                       height: 56,
                       decoration: BoxDecoration(
-                        color: AppColors.brandYellow,
+                        color: AppColors.champagne,
                         borderRadius: BorderRadius.circular(18),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.brandYellow.withValues(alpha: 0.3),
+                            color: AppColors.champagne.withValues(alpha: 0.3),
                             blurRadius: 5,
                           ),
                         ],
@@ -520,7 +521,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
-                color: AppColors.brandYellow,
+                color: AppColors.champagne,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: const Text(
@@ -612,11 +613,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 width: double.infinity,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: AppColors.brandYellow,
+                  color: AppColors.champagne,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.brandYellow.withValues(alpha: 0.3),
+                      color: AppColors.champagne.withValues(alpha: 0.3),
                       blurRadius: 14,
                       offset: const Offset(0, 6),
                     ),

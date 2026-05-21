@@ -558,13 +558,13 @@ class _WriteReviewPageState extends State<WriteReviewPage>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.brandYellowSoft,
+                color: AppColors.champagneSoft,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
                 LucideIcons.messageSquare,
                 size: 16,
-                color: AppColors.brandYellow,
+                color: AppColors.champagne,
               ),
             ),
             const SizedBox(width: 12),

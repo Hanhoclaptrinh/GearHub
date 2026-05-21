@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/di/injection.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/features/product_review/presentation/pages/pending_reviews_page.dart';
 import 'package:mobile/src/features/product_review/presentation/state/review_cubit.dart';
 import 'package:mobile/src/features/product_review/presentation/state/review_state.dart';
@@ -159,7 +160,7 @@ class OrderStatusCard extends StatelessWidget {
                   height: 44,
                   decoration: BoxDecoration(
                     color: isActive
-                        ? const Color(0xFFFDE047).withValues(alpha: 0.05)
+                        ? AppColors.champagne.withValues(alpha: 0.05)
                         : Colors.white.withValues(alpha: 0.02),
                     shape: BoxShape.circle,
                   ),
@@ -167,7 +168,7 @@ class OrderStatusCard extends StatelessWidget {
                     icon,
                     size: 18,
                     color: isActive
-                        ? const Color(0xFFFDE047)
+                        ? AppColors.champagne
                         : Colors.white.withValues(alpha: 0.2),
                   ),
                 ),

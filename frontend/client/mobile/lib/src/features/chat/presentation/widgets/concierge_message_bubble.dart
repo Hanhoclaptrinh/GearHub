@@ -75,7 +75,7 @@ class ConciergeMessageBubble extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
             decoration: BoxDecoration(
               color: isMine
-                  ? AppColors.brandYellow
+                  ? AppColors.champagne
                   : Colors.white.withValues(alpha: 0.065),
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(18),
@@ -138,7 +138,7 @@ class ConciergeMessageBubble extends StatelessWidget {
                     child: const Text(
                       'Thử lại',
                       style: TextStyle(
-                        color: AppColors.brandYellow,
+                        color: AppColors.champagne,
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
                       ),
@@ -231,7 +231,7 @@ class ConciergeMessageBubble extends StatelessWidget {
                               height: 16,
                               child: CircularProgressIndicator(
                                 strokeWidth: 1.5,
-                                color: AppColors.brandYellow,
+                                color: AppColors.champagne,
                               ),
                             ),
                           ),
@@ -269,7 +269,7 @@ class ConciergeMessageBubble extends StatelessWidget {
                   Text(
                     formatVND(p.price.toDouble()),
                     style: const TextStyle(
-                      color: AppColors.brandYellow,
+                      color: AppColors.champagne,
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
                     ),
@@ -280,7 +280,7 @@ class ConciergeMessageBubble extends StatelessWidget {
                       children: [
                         const Icon(
                           Icons.star,
-                          color: AppColors.brandYellow,
+                          color: AppColors.champagne,
                           size: 12,
                         ),
                         const SizedBox(width: 4),
@@ -313,14 +313,14 @@ class ConciergeMessageBubble extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 6),
                     decoration: BoxDecoration(
-                      color: AppColors.brandYellow.withValues(alpha: 0.1),
+                      color: AppColors.champagne.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Text(
                       'Xem chi tiết',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: AppColors.brandYellow,
+                        color: AppColors.champagne,
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                       ),

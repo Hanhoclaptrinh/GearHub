@@ -53,8 +53,6 @@ class AppColors {
   static const Color info = Color(0xFF3B82F6);
 
   // ── brand & semantic accents ──
-  static const Color brandYellow = Color(0xFFFDE047);
-  static const Color brandYellowSoft = Color(0x1AFDE047);
   static const Color brandBlue = Color(0xFF3B82F6);
   static const Color brandIndigo = Color(0xFF6366F1);
   static const Color brandIndigoSoft = Color(0x1A6366F1);
@@ -63,10 +61,10 @@ class AppColors {
   static const Color accentGoldSoft = Color(0x18F59E0B);
   static const Color accentGoldDim = Color(0xFF1A1200);
   static const Color emerald400 = Color(0xFF34D399);
-  static const champagne = Color(0xFFD8B76A);
-  static const champagneSoft = Color(0xFFE7D4A2);
-  static const silver = Color(0xFFB8BDC7);
-  static const diamond = Color(0xFFA8D8FF);
+  static const Color champagne = Color(0xFFD8B76A);
+  static const Color champagneSoft = Color(0xFFE7D4A2);
+  static const Color silver = Color(0xFFB8BDC7);
+  static const Color diamond = Color(0xFFA8D8FF);
 
   // ── cards & containers ──
   static const Color cardSurface = Color(0xFF0E0E18);

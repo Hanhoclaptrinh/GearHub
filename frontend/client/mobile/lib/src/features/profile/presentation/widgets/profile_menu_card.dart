@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 
 class ProfileMenuCard extends StatelessWidget {
   final String groupLabel;
@@ -94,7 +95,7 @@ class _MenuItemWidget extends StatelessWidget {
                 activeTrackColor: const Color(
                   0xFFFDE047,
                 ).withValues(alpha: 0.3),
-                activeColor: const Color(0xFFFDE047),
+                activeColor: AppColors.champagne,
               ),
             ),
           ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/features/chat/presentation/widgets/concierge_entry_button.dart';
 import 'package:mobile/src/features/wishlist/presentation/pages/wishlist_page.dart';
 import 'package:mobile/src/features/wishlist/presentation/state/wishlist_cubit.dart';
@@ -140,7 +141,7 @@ class UtilitiesGrid extends StatelessWidget {
                 color: Colors.white.withValues(alpha: 0.03),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, size: 16, color: const Color(0xFFFDE047)),
+              child: Icon(icon, size: 16, color: AppColors.champagne),
             ),
             const Spacer(),
             Text(

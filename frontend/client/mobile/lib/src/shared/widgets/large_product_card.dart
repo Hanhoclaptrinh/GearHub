@@ -356,7 +356,7 @@ class _PriceCtaRow extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.brandYellow,
+                        color: AppColors.champagne,
                         letterSpacing: -0.4,
                       ),
                     ),

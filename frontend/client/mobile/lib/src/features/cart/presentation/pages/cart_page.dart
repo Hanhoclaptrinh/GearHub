@@ -116,7 +116,7 @@ class _CartPageState extends State<CartPage> {
             backgroundColor: AppColors.background,
             body: Center(
               child: CircularProgressIndicator(
-                color: AppColors.brandYellow,
+                color: AppColors.champagne,
                 strokeWidth: 2,
               ),
             ),
@@ -158,18 +158,16 @@ class _CartPageState extends State<CartPage> {
                             vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.brandYellowSoft,
+                            color: AppColors.champagneSoft,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: AppColors.brandYellow.withValues(
-                                alpha: 0.3,
-                              ),
+                              color: AppColors.champagne.withValues(alpha: 0.3),
                             ),
                           ),
                           child: const Text(
                             'Thử lại',
                             style: TextStyle(
-                              color: AppColors.brandYellow,
+                              color: AppColors.champagne,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -306,7 +304,7 @@ class _CartPageState extends State<CartPage> {
                                           : LucideIcons.circle,
                                       size: 12,
                                       color: allSelected
-                                          ? AppColors.brandYellow
+                                          ? AppColors.champagne
                                           : AppColors.slate600,
                                     ),
                                   ],
@@ -382,12 +380,6 @@ class _CartPageState extends State<CartPage> {
                         );
                       }, childCount: items.length),
                     ),
-                  ),
-
-                  // promo
-                  const SliverPadding(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    sliver: SliverToBoxAdapter(child: PromoSection()),
                   ),
 
                   // recommendations
@@ -559,7 +551,7 @@ class _CartPageState extends State<CartPage> {
                   ),
                   decoration: BoxDecoration(
                     color: hasSelection
-                        ? AppColors.brandYellow
+                        ? AppColors.champagne
                         : AppColors.textPrimary.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -592,7 +584,7 @@ class _CartPageState extends State<CartPage> {
             padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
             child: Row(
               children: [
-                Container(width: 32, height: 1.5, color: AppColors.brandYellow),
+                Container(width: 32, height: 1.5, color: AppColors.champagne),
                 const SizedBox(width: 12),
                 const Text(
                   'KHÁM PHÁ THÊM',
@@ -654,64 +646,6 @@ class _CartPageState extends State<CartPage> {
             letterSpacing: 1,
           ),
         ),
-      ),
-    );
-  }
-}
-
-class PromoSection extends StatelessWidget {
-  const PromoSection({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.borderCardStrong, width: 1),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.brandYellow.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              LucideIcons.ticketPercent,
-              color: AppColors.brandYellow,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Mã giảm giá',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Chọn hoặc nhập mã khuyến mãi',
-                  style: TextStyle(fontSize: 13, color: AppColors.slate400),
-                ),
-              ],
-            ),
-          ),
-          const Icon(
-            LucideIcons.chevronRight,
-            color: AppColors.slate600,
-            size: 20,
-          ),
-        ],
       ),
     );
   }

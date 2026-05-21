@@ -5,15 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/features/auth/domain/entities/user_entity.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-const _bg = Color(0xFF07070A);
 const _surface = Color(0xFF14141E);
 const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFFFCC00);
 const _textHigh = Color(0xFFF1F1F5);
 const _textLow = Color(0xFF4A4A62);
 
@@ -116,7 +115,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         }
       },
       child: Scaffold(
-        backgroundColor: _bg,
+        backgroundColor: AppColors.background,
         body: Stack(
           children: [
             BlocBuilder<AuthCubit, AuthState>(
@@ -179,7 +178,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Widget _buildSliverAppBar() {
     return SliverAppBar(
       pinned: true,
-      backgroundColor: _bg.withValues(alpha: 0.8),
+      backgroundColor: AppColors.background.withValues(alpha: 0.8),
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: true,
@@ -218,7 +217,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: _accent.withValues(alpha: 0.2),
+                color: AppColors.champagne.withValues(alpha: 0.2),
                 width: 1.5,
               ),
             ),
@@ -230,7 +229,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 color: _surface,
                 boxShadow: [
                   BoxShadow(
-                    color: _accent.withValues(alpha: 0.1),
+                    color: AppColors.champagne.withValues(alpha: 0.1),
                     blurRadius: 30,
                     spreadRadius: 5,
                   ),
@@ -246,7 +245,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               fit: BoxFit.cover,
                               placeholder: (context, url) => const Center(
                                 child: CircularProgressIndicator(
-                                  color: _accent,
+                                  color: AppColors.champagne,
                                   strokeWidth: 1.5,
                                 ),
                               ),
@@ -266,9 +265,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 height: 40,
                 width: 40,
                 decoration: BoxDecoration(
-                  color: _accent,
+                  color: AppColors.champagne,
                   shape: BoxShape.circle,
-                  border: Border.all(color: _bg, width: 3),
+                  border: Border.all(color: AppColors.background, width: 3),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.3),
@@ -298,7 +297,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         style: const TextStyle(
           fontSize: 42,
           fontWeight: FontWeight.w900,
-          color: _accent,
+          color: AppColors.champagne,
           letterSpacing: -2,
         ),
       ),
@@ -333,7 +332,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           child: TextField(
             controller: controller,
             keyboardType: keyboardType,
-            cursorColor: _accent,
+            cursorColor: AppColors.champagne,
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
@@ -348,7 +347,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
               prefixIcon: Icon(
                 icon,
-                color: _accent.withValues(alpha: 0.6),
+                color: AppColors.champagne.withValues(alpha: 0.6),
                 size: 18,
               ),
               border: InputBorder.none,
@@ -379,7 +378,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               20 + MediaQuery.of(context).padding.bottom,
             ),
             decoration: BoxDecoration(
-              color: _bg.withValues(alpha: 0.8),
+              color: AppColors.background.withValues(alpha: 0.8),
               border: const Border(top: BorderSide(color: _border, width: 0.5)),
             ),
             child: BlocBuilder<AuthCubit, AuthState>(
@@ -391,11 +390,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     duration: const Duration(milliseconds: 300),
                     height: 58,
                     decoration: BoxDecoration(
-                      color: _accent,
+                      color: AppColors.champagne,
                       borderRadius: BorderRadius.circular(18),
                       boxShadow: [
                         BoxShadow(
-                          color: _accent.withValues(alpha: 0.3),
+                          color: AppColors.champagne.withValues(alpha: 0.3),
                           blurRadius: 5,
                         ),
                       ],
@@ -443,7 +442,7 @@ class _SectionHeader extends StatelessWidget {
           width: 4,
           height: 14,
           decoration: BoxDecoration(
-            color: _accent,
+            color: AppColors.champagne,
             borderRadius: BorderRadius.circular(2),
           ),
         ),

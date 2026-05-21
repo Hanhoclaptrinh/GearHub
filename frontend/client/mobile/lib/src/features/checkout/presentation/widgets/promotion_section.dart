@@ -70,12 +70,12 @@ class PromotionSection extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: hasVoucher
-              ? AppColors.brandYellowSoft
+              ? AppColors.champagneSoft
               : AppColors.cardSurfaceAlt,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: hasVoucher
-                ? AppColors.brandYellow.withValues(alpha: 0.3)
+                ? AppColors.champagne.withValues(alpha: 0.3)
                 : AppColors.borderCardStrong,
             width: 0.5,
           ),
@@ -94,13 +94,13 @@ class PromotionSection extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: AppColors.brandYellowSoft,
+            color: AppColors.champagneSoft,
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(
             LucideIcons.tag,
             size: 18,
-            color: AppColors.brandYellow,
+            color: AppColors.champagne,
           ),
         ),
         const SizedBox(width: 14),
@@ -144,13 +144,13 @@ class PromotionSection extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: AppColors.brandYellow.withValues(alpha: 0.15),
+            color: AppColors.champagne.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(
             LucideIcons.tag,
             size: 18,
-            color: AppColors.brandYellow,
+            color: AppColors.champagne,
           ),
         ),
         const SizedBox(width: 14),
@@ -163,7 +163,7 @@ class PromotionSection extends StatelessWidget {
                 style: const TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 14,
-                  color: AppColors.brandYellow,
+                  color: AppColors.champagne,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -286,7 +286,7 @@ class _VoucherBottomSheet extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Row(
               children: [
-                Icon(LucideIcons.tag, size: 20, color: AppColors.brandYellow),
+                Icon(LucideIcons.tag, size: 20, color: AppColors.champagne),
                 SizedBox(width: 10),
                 Text(
                   "Chọn mã ưu đãi",
@@ -341,14 +341,14 @@ class _VoucherBottomSheet extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.brandYellowSoft
+              ? AppColors.champagneSoft
               : eligible
               ? AppColors.cardSurfaceAlt
               : AppColors.cardSurface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
-                ? AppColors.brandYellow.withValues(alpha: 0.4)
+                ? AppColors.champagne.withValues(alpha: 0.4)
                 : AppColors.borderCardStrong,
             width: isSelected ? 1.5 : 0.5,
           ),
@@ -363,7 +363,7 @@ class _VoucherBottomSheet extends StatelessWidget {
                 height: 48,
                 decoration: BoxDecoration(
                   color: v.isPercent
-                      ? AppColors.brandYellowSoft
+                      ? AppColors.champagneSoft
                       : AppColors.brandIndigoSoft,
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -376,7 +376,7 @@ class _VoucherBottomSheet extends StatelessWidget {
                       fontWeight: FontWeight.w900,
                       fontSize: v.isPercent ? 16 : 13,
                       color: v.isPercent
-                          ? AppColors.brandYellow
+                          ? AppColors.champagne
                           : AppColors.brandIndigo,
                     ),
                   ),
@@ -424,7 +424,7 @@ class _VoucherBottomSheet extends StatelessWidget {
                 const Icon(
                   LucideIcons.circleCheck,
                   size: 22,
-                  color: AppColors.brandYellow,
+                  color: AppColors.champagne,
                 ),
             ],
           ),

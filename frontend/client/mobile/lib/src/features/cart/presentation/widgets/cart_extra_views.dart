@@ -19,12 +19,12 @@ class PromoSection extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.brandYellowSoft,
+              color: AppColors.champagneSoft,
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(
               LucideIcons.ticket,
-              color: AppColors.brandYellow,
+              color: AppColors.champagne,
               size: 20,
             ),
           ),
@@ -77,17 +77,17 @@ class EmptyCartView extends StatelessWidget {
               width: 140,
               height: 140,
               decoration: BoxDecoration(
-                color: AppColors.brandYellowSoft,
+                color: AppColors.champagneSoft,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: AppColors.brandYellow.withValues(alpha: 0.15),
+                  color: AppColors.champagne.withValues(alpha: 0.15),
                   width: 1,
                 ),
               ),
               child: const Icon(
                 LucideIcons.shoppingCart,
                 size: 56,
-                color: AppColors.brandYellow,
+                color: AppColors.champagne,
               ),
             ),
             const SizedBox(height: 36),

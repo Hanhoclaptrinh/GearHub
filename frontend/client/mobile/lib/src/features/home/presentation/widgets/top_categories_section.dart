@@ -330,7 +330,7 @@ class _CategoryProductCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.brandYellow.withValues(
+                            color: AppColors.champagne.withValues(
                               alpha: isMain ? 0.5 : 0.2,
                             ),
                             letterSpacing: 1.8,

@@ -4,6 +4,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/features/home/presentation/pages/home_page.dart';
 import 'package:mobile/src/features/cart/presentation/pages/cart_page.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
@@ -255,7 +256,7 @@ class _ArchitecturalNavItem extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(3),
                   decoration: const BoxDecoration(
-                    color: Color(0xFFFDE047),
+                    color: AppColors.champagne,
                     shape: BoxShape.circle,
                   ),
                   constraints: const BoxConstraints(minWidth: 8, minHeight: 8),

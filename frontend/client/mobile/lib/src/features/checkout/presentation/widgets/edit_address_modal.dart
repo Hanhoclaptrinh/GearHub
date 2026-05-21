@@ -376,12 +376,12 @@ class _EditAddressPageState extends State<EditAddressPage> {
                                 height: 22,
                                 decoration: BoxDecoration(
                                   color: _saveAsDefault
-                                      ? AppColors.brandYellow
+                                      ? AppColors.champagne
                                       : Colors.transparent,
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(
                                     color: _saveAsDefault
-                                        ? AppColors.brandYellow
+                                        ? AppColors.champagne
                                         : AppColors.textDim,
                                     width: 2,
                                   ),
@@ -436,11 +436,11 @@ class _EditAddressPageState extends State<EditAddressPage> {
                 child: Container(
                   height: 56,
                   decoration: BoxDecoration(
-                    color: AppColors.brandYellow,
+                    color: AppColors.champagne,
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.brandYellow.withValues(alpha: 0.3),
+                        color: AppColors.champagne.withValues(alpha: 0.3),
                         blurRadius: 5,
                       ),
                     ],
@@ -498,7 +498,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
                   icon: const Icon(
                     LucideIcons.search,
                     size: 16,
-                    color: AppColors.brandYellow,
+                    color: AppColors.champagne,
                   ),
                   onPressed: () => onSubmitted(controller.text),
                 )
@@ -574,7 +574,7 @@ class _SectionLabel extends StatelessWidget {
           width: 3,
           height: 14,
           decoration: BoxDecoration(
-            color: AppColors.brandYellow,
+            color: AppColors.champagne,
             borderRadius: BorderRadius.circular(2),
           ),
         ),

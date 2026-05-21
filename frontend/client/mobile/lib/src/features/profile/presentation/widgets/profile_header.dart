@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/features/auth/domain/entities/user_entity.dart';
 import 'package:mobile/src/features/profile/presentation/pages/edit_profile_page.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
@@ -47,8 +48,8 @@ class ProfileHeader extends StatelessWidget {
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        const Color(0xFFFDE047).withValues(alpha: 0.1),
-                        const Color(0xFFFDE047).withValues(alpha: 0.0),
+                        AppColors.champagne.withValues(alpha: 0.1),
+                        AppColors.champagne.withValues(alpha: 0.0),
                       ],
                     ),
                   ),
@@ -99,7 +100,7 @@ class ProfileHeader extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: const BoxDecoration(
-                        color: Color(0xFFFDE047),
+                        color: AppColors.champagne,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -145,7 +146,7 @@ class ProfileHeader extends StatelessWidget {
                 Color tierColor = Colors.white54;
                 if (totalSpent >= 150000000.0) {
                   tierName = 'VIP PRESTIGE';
-                  tierColor = const Color(0xFFFDE047);
+                  tierColor = AppColors.champagne;
                 } else if (totalSpent >= 50000000.0) {
                   tierName = 'DIAMOND ELITE';
                   tierColor = const Color(0xFFB4CCFF);

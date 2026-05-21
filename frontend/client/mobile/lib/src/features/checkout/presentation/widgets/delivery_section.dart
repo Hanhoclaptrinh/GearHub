@@ -42,10 +42,10 @@ class DeliverySection extends StatelessWidget {
                   vertical: 7,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.brandYellow.withValues(alpha: 0.1),
+                  color: AppColors.champagne.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppColors.brandYellow.withValues(alpha: 0.25),
+                    color: AppColors.champagne.withValues(alpha: 0.25),
                     width: 0.5,
                   ),
                 ),
@@ -54,7 +54,7 @@ class DeliverySection extends StatelessWidget {
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
-                    color: AppColors.brandYellow,
+                    color: AppColors.champagne,
                   ),
                 ),
               ),

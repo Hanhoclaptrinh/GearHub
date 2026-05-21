@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -131,9 +131,15 @@ class _QuantitySelectorState extends State<QuantitySelector>
           height: 24,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: enabled ? Colors.white.withValues(alpha: 0.05) : Colors.transparent,
+            color: enabled
+                ? Colors.white.withValues(alpha: 0.05)
+                : Colors.transparent,
           ),
-          child: Icon(icon, size: 12, color: enabled ? AppColors.brandYellow : AppColors.slate600),
+          child: Icon(
+            icon,
+            size: 12,
+            color: enabled ? AppColors.champagne : AppColors.slate600,
+          ),
         ),
       ),
     );

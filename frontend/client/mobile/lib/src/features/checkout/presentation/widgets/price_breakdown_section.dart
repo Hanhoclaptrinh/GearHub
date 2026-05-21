@@ -73,7 +73,7 @@ class PriceBreakdownSection extends StatelessWidget {
                 style: const TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 22,
-                  color: AppColors.brandYellow,
+                  color: AppColors.champagne,
                   letterSpacing: -0.5,
                 ),
               ),

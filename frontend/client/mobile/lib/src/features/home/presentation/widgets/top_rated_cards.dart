@@ -176,7 +176,7 @@ class TopRatedPremiumCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.brandYellow,
+                        color: AppColors.champagne,
                         letterSpacing: -0.4,
                       ),
                     ),
