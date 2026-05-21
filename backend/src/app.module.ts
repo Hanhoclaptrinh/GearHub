@@ -33,8 +33,14 @@ import { PromotionModule } from './promotion/promotion.module';
     ThrottlerModule.forRoot({
       throttlers: [
         {
+          name: 'default',
           ttl: 60000,
           limit: 100
+        },
+        {
+          name: 'chat',
+          ttl: 60000,
+          limit: 15
         }
       ]
     }),

@@ -13,9 +13,12 @@ import {
   BadRequestException,
   HttpException,
   Logger,
+  UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import { WsThrottlerGuard } from '../../common/guards/ws-throttler.guard';
 import { Role } from '@prisma/client';
 import { Server } from 'socket.io';
 import { ChatService } from '../chat.service';
@@ -123,6 +126,8 @@ export class ChatGateway
     }
   }
 
+  @UseGuards(WsThrottlerGuard)
+  @Throttle({ chat: { limit: 8, ttl: 60000 } })
   @SubscribeMessage('message:send')
   async handleSendMessage(
     @ConnectedSocket() client: AuthenticatedSocket,
@@ -141,11 +146,23 @@ export class ChatGateway
 
       this.publishRoomUpdated(result.room);
 
+      const streamMessageId = `ai-stream-${result.room.id}-${Date.now()}`;
+      let accumulatedText = '';
+
       this.chatService.scheduleAiResponseIfEligible(
         client.data.user,
         result,
         (aiResult) => {
           if (!aiResult) return;
+          // emit chunk cho client
+          this.server.to(this.chatRoom(aiResult.room.id)).emit('message:chunk', {
+            roomId: aiResult.room.id,
+            messageId: streamMessageId,
+            chunk: '',
+            isEnd: true,
+            fullText: aiResult.message.content,
+          });
+
           this.server.to(this.chatRoom(aiResult.room.id)).emit('message:new', {
             message: aiResult.message,
             room: aiResult.room,
@@ -162,6 +179,16 @@ export class ChatGateway
           this.server.to(this.chatRoom(result.room.id)).emit('typing:stop', {
             roomId: result.room.id,
             userId: 'ai',
+          });
+        },
+        (chunk) => {
+          accumulatedText += chunk;
+          this.server.to(this.chatRoom(result.room.id)).emit('message:chunk', {
+            roomId: result.room.id,
+            messageId: streamMessageId,
+            chunk,
+            isEnd: false,
+            fullText: accumulatedText,
           });
         },
       );

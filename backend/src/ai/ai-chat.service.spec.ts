@@ -100,6 +100,15 @@ describe('AiChatService', () => {
       .spyOn(service as any, 'callGemini')
       .mockResolvedValue(aiMessage.content);
 
+    jest
+      .spyOn(service as any, 'callGeminiStream')
+      .mockImplementation(async (promptText: string, modelName: string, onChunk: (chunk: string) => void) => {
+        onChunk('Gợi ý ');
+        onChunk('laptop ');
+        onChunk('mỏng nhẹ');
+        return aiMessage.content;
+      });
+
     return {
       service,
       chatRepository,
@@ -107,6 +116,7 @@ describe('AiChatService', () => {
       promptBuilderService,
       usageTracker,
       callGemini: (service as any).callGemini as jest.Mock,
+      callGeminiStream: (service as any).callGeminiStream as jest.Mock,
     };
   }
 
@@ -120,6 +130,36 @@ describe('AiChatService', () => {
     });
 
     expect(callGemini).toHaveBeenCalledWith('bounded prompt', 'gemini-test');
+    expect(chatRepository.createAiMessageAndUpdateRoom).toHaveBeenCalledWith({
+      roomId: room.id,
+      content: aiMessage.content,
+      now: expect.any(Date),
+      tx: {},
+    });
+    expect(result?.message).toMatchObject({
+      senderId: null,
+      isAi: true,
+      type: MessageType.TEXT,
+      status: MessageStatus.SENT,
+    });
+  });
+
+  it('triggers the AI path for BOT_ONLY USER text messages with streaming', async () => {
+    const { service, chatRepository, callGeminiStream } = createService();
+    const onChunk = jest.fn();
+
+    const result = await service.respondToUserMessage({
+      room,
+      userMessage,
+      senderRole: Role.USER,
+      onChunk,
+    });
+
+    expect(callGeminiStream).toHaveBeenCalledWith('bounded prompt', 'gemini-test', onChunk);
+    expect(onChunk).toHaveBeenCalledTimes(3);
+    expect(onChunk).toHaveBeenNthCalledWith(1, 'Gợi ý ');
+    expect(onChunk).toHaveBeenNthCalledWith(2, 'laptop ');
+    expect(onChunk).toHaveBeenNthCalledWith(3, 'mỏng nhẹ');
     expect(chatRepository.createAiMessageAndUpdateRoom).toHaveBeenCalledWith({
       roomId: room.id,
       content: aiMessage.content,

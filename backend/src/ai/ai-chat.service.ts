@@ -42,6 +42,7 @@ export class AiChatService {
     userMessage: ChatMessageRecord;
     senderRole: Role;
     onStart?: () => void;
+    onChunk?: (chunk: string) => void;
   }) {
     // loc tin nhan khong du dieu kien
     // tinh nang AI chat bi tat
@@ -84,9 +85,13 @@ export class AiChatService {
       }
 
       // RAG
-      const response = await this.generateResponse(roomId, params.userMessage);
+      const response = await this.generateResponse(roomId, params.userMessage, params.onChunk);
       const content = this.safetyService.sanitizeModelOutput(response.content); // lam sach cau tra loi
       const now = new Date();
+
+      if (response.usedFallback && params.onChunk) {
+        params.onChunk(content);
+      }
 
       // chan race condition
       const result = await this.chatRepository.transaction(async (tx) => {
@@ -162,6 +167,7 @@ export class AiChatService {
   private async generateResponse(
     roomId: string,
     userMessage: ChatMessageRecord,
+    onChunk?: (chunk: string) => void,
   ) {
     const startedAt = Date.now();
     const model = this.configService.get<string>('GEMINI_CHAT_MODEL')!;
@@ -183,7 +189,12 @@ export class AiChatService {
       });
 
       // call gemini
-      const content = await this.callGemini(promptText, model);
+      let content: string;
+      if (onChunk) {
+        content = await this.callGeminiStream(promptText, model, onChunk);
+      } else {
+        content = await this.callGemini(promptText, model);
+      }
 
       return {
         content,
@@ -222,6 +233,34 @@ export class AiChatService {
       const model = genAi.getGenerativeModel({ model: modelName });
       const result = await model.generateContent(promptText);
       return result.response.text();
+    }, timeoutMs);
+  }
+
+  private async callGeminiStream(
+    promptText: string,
+    modelName: string,
+    onChunk: (chunk: string) => void,
+  ): Promise<string> {
+    const apiKey = this.configService.get<string>('GEMINI_API_KEY');
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY không được cấu hình');
+    }
+
+    const timeoutMs = Number(
+      this.configService.get<string>('AI_GEMINI_TIMEOUT_MS'),
+    );
+
+    return this.withTimeout(async () => {
+      const genAi = new GoogleGenerativeAI(apiKey);
+      const model = genAi.getGenerativeModel({ model: modelName });
+      const resultStream = await model.generateContentStream(promptText);
+      let accumulatedText = '';
+      for await (const chunk of resultStream.stream) {
+        const text = chunk.text();
+        accumulatedText += text;
+        onChunk(text);
+      }
+      return accumulatedText;
     }, timeoutMs);
   }
 

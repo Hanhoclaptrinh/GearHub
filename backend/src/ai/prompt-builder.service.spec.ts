@@ -60,7 +60,7 @@ describe('PromptBuilderService', () => {
       id: `m${index}`,
       roomId: 'r1',
       senderId: 'u1',
-      content: `message-${index}-${'x'.repeat(900)}`,
+      content: `message-${index}-${'x'.repeat(500)}`,
       type: MessageType.TEXT,
       status: MessageStatus.SENT,
       readAt: null,

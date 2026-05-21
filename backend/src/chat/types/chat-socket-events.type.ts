@@ -100,6 +100,13 @@ export interface ServerToClientEvents {
   'typing:start': (payload: TypingEventPayload) => void;
   'typing:stop': (payload: TypingEventPayload) => void;
   'messages:read': (payload: MessagesReadPayload) => void;
+  'message:chunk': (payload: {
+    roomId: string;
+    messageId: string;
+    chunk: string;
+    isEnd: boolean;
+    fullText?: string;
+  }) => void;
 }
 
 export interface InterServerEvents {}

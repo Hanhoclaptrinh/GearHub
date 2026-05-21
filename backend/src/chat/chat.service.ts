@@ -322,12 +322,14 @@ export class ChatService {
     user: SocketUser,
     result: Awaited<ReturnType<ChatRepository['createMessageAndUpdateRoom']>>,
     onStart?: () => void,
+    onChunk?: (chunk: string) => void,
   ) {
     return this.aiChatService.respondToUserMessage({
       room: result.room,
       userMessage: result.message,
       senderRole: user.role,
       onStart,
+      onChunk,
     });
   }
 
@@ -343,8 +345,9 @@ export class ChatService {
     ) => void,
     onStart?: () => void,
     onEnd?: () => void,
+    onChunk?: (chunk: string) => void,
   ) {
-    void this.respondWithAiIfEligible(user, result, onStart)
+    void this.respondWithAiIfEligible(user, result, onStart, onChunk)
       .then((aiResult) => {
         if (aiResult) {
           publish(aiResult);
