@@ -19,8 +19,8 @@ export class ActivityLogInterceptor implements NestInterceptor {
             context.getClass(),
         ]);
 
-        /// neu khong co decorator thi bo qua khong log
-        /// tiep can theo huong explicit
+        // neu khong co decorator thi bo qua khong log
+        // tiep can theo huong explicit
         if (!action) {
             return next.handle();
         }
@@ -33,12 +33,12 @@ export class ActivityLogInterceptor implements NestInterceptor {
                 try {
                     const userId = user?.userId || user?.id || null;
 
-                    /// loai bo field nhay cam
+                    // loai bo field nhay cam
                     const safeBody = { ...body };
                     const sensitiveFields = ['password', 'confirmPassword', 'oldPassword', 'newPassword', 'token'];
                     sensitiveFields.forEach(field => delete safeBody[field]);
 
-                    /// ghi log
+                    // ghi log
                     await this.activityLogService.createLog(userId, action, {
                         url,
                         method,

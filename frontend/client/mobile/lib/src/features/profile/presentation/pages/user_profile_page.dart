@@ -13,6 +13,8 @@ import 'package:mobile/src/features/profile/presentation/widgets/profile_header.
 import 'package:mobile/src/features/profile/presentation/widgets/profile_menu_card.dart';
 import 'package:mobile/src/features/profile/presentation/widgets/ultilities_grid.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
+import 'package:mobile/src/features/promotions/presentation/state/my_vouchers_cubit.dart';
+
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -32,8 +34,15 @@ class _UserProfilePageState extends State<UserProfilePage> {
           _showErrorSnackBar(context, state.message);
         }
       },
-      child: BlocProvider(
-        create: (context) => getIt<OrdersCubit>()..fetchMyOrders(status: 'ALL'),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => getIt<OrdersCubit>()..fetchMyOrders(status: 'ALL'),
+          ),
+          BlocProvider(
+            create: (context) => getIt<MyVouchersCubit>()..fetchMyVouchers(),
+          ),
+        ],
         child: AnnotatedRegion<SystemUiOverlayStyle>(
           value: SystemUiOverlayStyle.light,
           child: Scaffold(
@@ -68,9 +77,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       strokeWidth: 2,
                       onRefresh: () async {
                         if (isLoggedIn) {
-                          await context.read<OrdersCubit>().fetchMyOrders(
-                            status: 'ALL',
-                          );
+                          await Future.wait([
+                            context.read<OrdersCubit>().fetchMyOrders(status: 'ALL'),
+                            context.read<MyVouchersCubit>().fetchMyVouchers(),
+                          ]);
                         }
                       },
                       child: CustomScrollView(

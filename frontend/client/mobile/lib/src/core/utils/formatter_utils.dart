@@ -10,6 +10,18 @@ String formatVND(double price) {
   return _vndFormatter.format(price);
 }
 
+String formatCompact(double amount) {
+  if (amount >= 1000000) {
+    final m = amount / 1000000;
+    return '${m.toStringAsFixed(m.truncateToDouble() == m ? 0 : 1)}tr';
+  }
+  if (amount >= 1000) {
+    final k = amount / 1000;
+    return '${k.toStringAsFixed(k.truncateToDouble() == k ? 0 : 1)}k';
+  }
+  return '${amount.toInt()}đ';
+}
+
 String formatCompactNumber(int number) {
   if (number >= 1000000000) {
     return '${(number / 1000000000).toStringAsFixed(1).replaceAll('.0', '')}B';

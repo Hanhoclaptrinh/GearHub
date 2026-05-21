@@ -39,7 +39,7 @@ export class PaymentService {
             platform
         });
 
-        /// tao bang ghi giao dich o trang thai pending
+        // tao bang ghi giao dich o trang thai pending
         await this.prisma.transaction.upsert({
             where: {
                 orderId: order.id,

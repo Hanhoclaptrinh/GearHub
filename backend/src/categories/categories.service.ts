@@ -58,21 +58,21 @@ export class CategoriesService {
 
     async getCategoryTree() {
         return this.prisma.category.findMany({
-            where: { parentId: null }, /// chi lay parent
+            where: { parentId: null }, // chi lay parent
             include: {
                 children: {
                     include: {
                         _count: {
-                            select: { products: true } /// dem moi subcate co bao nhieu prod
+                            select: { products: true } // dem moi subcate co bao nhieu prod
                         },
                     },
                 },
                 _count: {
-                    select: { products: true } /// dem tong prod nhom cha
+                    select: { products: true } // dem tong prod nhom cha
                 },
             },
             orderBy: {
-                name: 'asc' /// theo bang chu cai
+                name: 'asc' // theo bang chu cai
             }
         })
     }
@@ -105,7 +105,7 @@ export class CategoriesService {
             throw new BadRequestException('Danh mục không thể làm cha của chính nó');
         }
 
-        /// neu cap nhat name - kiem tra slug
+        // neu cap nhat name - kiem tra slug
         if (data.name) {
             const newSlug = slugify(data.name, { lower: true, strict: true });
             const duplicate = await this.prisma.category.findFirst({
@@ -156,7 +156,7 @@ export class CategoriesService {
     }
 
     async getTopCategories(limit = 4) {
-        /// sum soldCount cua cac danh muc theo cateId
+        // sum soldCount cua cac danh muc theo cateId
         const grouped = await this.prisma.product.groupBy({
             by: ['categoryId'],
             where: {

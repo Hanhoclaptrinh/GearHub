@@ -82,9 +82,9 @@ export class BrandsService {
     });
   }
 
-  @Cron(CronExpression.EVERY_6_HOURS) /// auto chay job moi 6 tieng
+  @Cron(CronExpression.EVERY_6_HOURS) // auto chay job moi 6 tieng
   async updateBrandScores() {
-    /// lay tat ca brand va data thong ke tu prod
+    // lay tat ca brand va data thong ke tu prod
     const brands = await this.prisma.brand.findMany({
       include: {
         products: {
@@ -98,12 +98,12 @@ export class BrandsService {
     });
 
     for (const b of brands) {
-      /// chi so tong hop
-      const tSold = b.products.reduce((s, p) => s += p.soldCount, 0); /// tong sp ban duoc theo brand
-      const tViews = b.products.reduce((s, p) => s += p.viewsCount, 0); /// tong luot xem sp theo brand
+      // chi so tong hop
+      const tSold = b.products.reduce((s, p) => s += p.soldCount, 0); // tong sp ban duoc theo brand
+      const tViews = b.products.reduce((s, p) => s += p.viewsCount, 0); // tong luot xem sp theo brand
       const aRating = b.products.length > 0 ?
         b.products.reduce((s, p) => s += p.averageRating, 0) / b.products.length :
-        0; /// trung binh diem danh gia sp theo brand
+        0; // trung binh diem danh gia sp theo brand
 
       const sc = (tSold * 5) + (aRating * 10) + (tViews * 0.1);
 
@@ -135,13 +135,13 @@ export class BrandsService {
 
     if (file) {
       try {
-        /// xoa anh cu
+        // xoa anh cu
         if (brand.logoUrl) {
           const publicId = brand.logoUrl.split('/').pop()?.split('.')[0];
           if (publicId) await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);
         }
 
-        /// upload anh moi
+        // upload anh moi
         const uploadResult = await this.cloudinaryService.uploadFile(file);
         updateData.logoUrl = uploadResult.secure_url;
       } catch (error) {
@@ -175,7 +175,7 @@ export class BrandsService {
     });
     if (!brand) throw new NotFoundException('Thương hiệu không tồn tại');
 
-    /// soft delete neu co san pham
+    // soft delete neu co san pham
     if (brand._count.products > 0) {
       await this.prisma.brand.update({
         where: { id },
@@ -184,7 +184,7 @@ export class BrandsService {
       return { message: `Đã ngưng kinh doanh thương hiệu '${brand.name}' do đang có ${brand._count.products} sản phẩm` };
     }
 
-    /// hard delete neu khong co san pham
+    // hard delete neu khong co san pham
     if (brand.logoUrl) {
       const publicId = brand.logoUrl.split('/').pop()?.split('.')[0];
       if (publicId) await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);

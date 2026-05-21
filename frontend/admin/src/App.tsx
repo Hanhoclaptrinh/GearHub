@@ -15,6 +15,7 @@ import { TransactionList } from './features/transactions/TransactionList';
 import { InventoryPage } from './features/inventory/InventoryPage';
 import { ChatCenterPage } from './features/chat/ChatCenterPage';
 import { authService } from './services/auth.service';
+import { VoucherList } from './features/vouchers/VoucherList';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -122,6 +123,7 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               }
             />
+            <Route path="vouchers" element={<VoucherList />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

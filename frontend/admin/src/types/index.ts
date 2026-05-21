@@ -143,3 +143,29 @@ export interface DashboardStats {
   recentOrders: Order[];
   revenueByMonth: { month: string; amount: number }[];
 }
+
+export const VoucherType = {
+  PERCENT: 'PERCENT',
+  FIXED_AMOUNT: 'FIXED_AMOUNT',
+} as const;
+
+export type VoucherType = (typeof VoucherType)[keyof typeof VoucherType];
+
+export interface Voucher {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  type: VoucherType;
+  value: number;
+  minOrderAmount: number;
+  maxDiscountAmount?: number;
+  quantity: number;
+  claimedCount: number;
+  usedCount: number;
+  startsAt?: string;
+  expiresAt?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

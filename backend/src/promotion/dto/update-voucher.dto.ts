@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { IsEnum, IsInt, IsNumber, IsOptional, IsString, Min, IsDate } from 'class-validator';
+import { IsEnum, IsInt, IsNumber, IsOptional, IsString, Min, IsDate, IsBoolean } from 'class-validator';
 import { VoucherType } from '@prisma/client';
 
 export class UpdateVoucherDto {
@@ -49,4 +49,8 @@ export class UpdateVoucherDto {
     @Type(() => Date)
     @IsOptional()
     expiresAt?: Date;
+
+    @IsBoolean()
+    @IsOptional()
+    isActive?: boolean;
 }

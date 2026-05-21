@@ -16,8 +16,8 @@ import { AiChatResponse } from './types/ai.types';
 @Injectable()
 export class AiChatService {
   private readonly logger = new Logger(AiChatService.name);
-  /// lock theo roomid va msgid tranh trung lap tin nhan
-  /// khong sinh ra 2 cau tra loi cung luc cho 1 tin nhan - user spam
+  // lock theo roomid va msgid tranh trung lap tin nhan
+  // khong sinh ra 2 cau tra loi cung luc cho 1 tin nhan - user spam
   private readonly roomLocks = new Set<string>();
   private readonly processingMessageIds = new Set<string>();
 
@@ -30,8 +30,8 @@ export class AiChatService {
     private readonly configService: ConfigService,
   ) { }
 
-  /// kiem tra trang thai cua phong chat
-  /// chat voi staff hay voi ai
+  // kiem tra trang thai cua phong chat
+  // chat voi staff hay voi ai
   isEnabled() {
     const value = this.configService.get<string>('AI_CHAT_ENABLED');
     return ['1', 'true', 'yes', 'on'].includes((value ?? '').toLowerCase());
@@ -43,16 +43,16 @@ export class AiChatService {
     senderRole: Role;
     onStart?: () => void;
   }) {
-    /// loc tin nhan khong du dieu kien
-    /// tinh nang AI chat bi tat
-    /// sender khong phai khach hang
-    /// phong chat khong co trang thai bot-only
-    /// tin nhan rong hoac tin nhan he thong
+    // loc tin nhan khong du dieu kien
+    // tinh nang AI chat bi tat
+    // sender khong phai khach hang
+    // phong chat khong co trang thai bot-only
+    // tin nhan rong hoac tin nhan he thong
     if (!this.isStrictlyEligible(params)) {
       return null;
     }
 
-    /// lock
+    // lock
     const roomId = params.room.id;
     const messageId = params.userMessage.id;
     if (
@@ -66,13 +66,13 @@ export class AiChatService {
     this.processingMessageIds.add(messageId);
 
     try {
-      /// dam bao phong chat dang o mode bot-only va khong co ai claim
+      // dam bao phong chat dang o mode bot-only va khong co ai claim
       const room = await this.chatRepository.findRoomById(roomId);
       if (!this.canUseRoomForAi(room, params.userMessage.senderId)) {
         return null;
       }
 
-      /// user gap nhan vien ho tro
+      // user gap nhan vien ho tro
       if (
         this.safetyService.isHumanHandoffRequest(params.userMessage.content)
       ) {
@@ -83,20 +83,20 @@ export class AiChatService {
         params.onStart();
       }
 
-      /// RAG
+      // RAG
       const response = await this.generateResponse(roomId, params.userMessage);
-      const content = this.safetyService.sanitizeModelOutput(response.content); /// lam sach cau tra loi
+      const content = this.safetyService.sanitizeModelOutput(response.content); // lam sach cau tra loi
       const now = new Date();
 
-      /// chan race condition
+      // chan race condition
       const result = await this.chatRepository.transaction(async (tx) => {
         const currentRoom = await this.chatRepository.findRoomById(roomId, tx);
         if (!this.canUseRoomForAi(currentRoom, params.userMessage.senderId)) {
-          return null; /// trang thai phong bi thay doi
+          return null; // trang thai phong bi thay doi
         }
 
-        /// tin nhan cua AI khong con la tin nhan moi nhat trong phong
-        /// huy bo ket qua vua tao
+        // tin nhan cua AI khong con la tin nhan moi nhat trong phong
+        // huy bo ket qua vua tao
         const latestMessage = await this.chatRepository.getLatestMessageInRoom(
           roomId,
           tx,
@@ -113,8 +113,8 @@ export class AiChatService {
         });
       });
 
-      /// save token
-      /// giai phong lock
+      // save token
+      // giai phong lock
       if (!result) return null;
 
       await this.trackUsageBestEffort(roomId, response, content);
@@ -126,11 +126,11 @@ export class AiChatService {
     }
   }
 
-  /// chuyen cuoc hoi thoai sang nhan vien
+  // chuyen cuoc hoi thoai sang nhan vien
   private async handoffToHuman(roomId: string, triggeringMessageId: string) {
     const now = new Date();
     return this.chatRepository.transaction(async (tx) => {
-      /// chuyen giao phong chat dang o mode chatbot va chua co ai claim
+      // chuyen giao phong chat dang o mode chatbot va chua co ai claim
       const currentRoom = await this.chatRepository.findRoomById(roomId, tx);
       if (
         !currentRoom ||
@@ -140,7 +140,7 @@ export class AiChatService {
         return null;
       }
 
-      /// race condition
+      // race condition
       const latestMessage = await this.chatRepository.getLatestMessageInRoom(
         roomId,
         tx,
@@ -157,8 +157,8 @@ export class AiChatService {
     });
   }
 
-  /// RAG
-  /// su dung chat model tao phan hoi cho nguoi dung
+  // RAG
+  // su dung chat model tao phan hoi cho nguoi dung
   private async generateResponse(
     roomId: string,
     userMessage: ChatMessageRecord,
@@ -167,14 +167,14 @@ export class AiChatService {
     const model = this.configService.get<string>('GEMINI_CHAT_MODEL')!;
 
     try {
-      /// thu thap context
+      // thu thap context
       const [aiContext, recentMessages, products] = await Promise.all([
         this.chatRepository.getAiContext(roomId),
-        this.chatRepository.getRecentMessages(roomId, 12), /// lay 12 tin nhan gan nhat trong phong
-        this.productRetrievalService.retrieveProducts(userMessage.content, 5), /// thuc hien RAG tim 5 sp phu hop
+        this.chatRepository.getRecentMessages(roomId, 12), // lay 12 tin nhan gan nhat trong phong
+        this.productRetrievalService.retrieveProducts(userMessage.content, 5), // thuc hien RAG tim 5 sp phu hop
       ]);
 
-      /// cau hinh prompt cho AI khong tra loi lan man
+      // cau hinh prompt cho AI khong tra loi lan man
       const promptText = this.promptBuilderService.buildPrompt({
         aiSummary: aiContext?.summary ?? null,
         recentMessages,
@@ -182,7 +182,7 @@ export class AiChatService {
         currentUserMessage: userMessage.content,
       });
 
-      /// call gemini
+      // call gemini
       const content = await this.callGemini(promptText, model);
 
       return {
@@ -195,7 +195,7 @@ export class AiChatService {
       };
     } catch (error) {
       this.usageTracker.logError(roomId, error);
-      const content = this.safetyService.buildFallbackMessage(); /// fallback msg
+      const content = this.safetyService.buildFallbackMessage(); // fallback msg
       return {
         content,
         promptText: '',
@@ -245,44 +245,44 @@ export class AiChatService {
     }
   }
 
-  /// dieu kien kich hoat AI mode
+  // dieu kien kich hoat AI mode
   private isStrictlyEligible(params: {
     room: ChatRoomRecord;
     userMessage: ChatMessageRecord;
     senderRole: Role;
   }) {
     return (
-      this.isEnabled() && /// tinh nang AI duoc kich hoat
-      params.senderRole === Role.USER && /// sender la khach hang
-      params.room.status === RoomStatus.BOT_ONLY && /// phong chat dang o mode bot-only
-      params.room.userId === params.userMessage.senderId && /// nguoi gui tin nhan phai la khach hang dang mo phong chat
-      params.userMessage.type === MessageType.TEXT && /// chi xu ly van ban
-      params.userMessage.content.trim().length > 0 && /// tin nhan khong duoc rong
-      !params.userMessage.isAi /// khong duoc loop
+      this.isEnabled() && // tinh nang AI duoc kich hoat
+      params.senderRole === Role.USER && // sender la khach hang
+      params.room.status === RoomStatus.BOT_ONLY && // phong chat dang o mode bot-only
+      params.room.userId === params.userMessage.senderId && // nguoi gui tin nhan phai la khach hang dang mo phong chat
+      params.userMessage.type === MessageType.TEXT && // chi xu ly van ban
+      params.userMessage.content.trim().length > 0 && // tin nhan khong duoc rong
+      !params.userMessage.isAi // khong duoc loop
     );
   }
 
-  /// check trang thai phong cho ai
+  // check trang thai phong cho ai
   private canUseRoomForAi(
     room: ChatRoomRecord | null,
     senderId: string | null,
   ): room is ChatRoomRecord {
     return Boolean(
-      room && /// phong ton tai
-      room.status === RoomStatus.BOT_ONLY && /// phong o mode bot-only
-      !room.staffId && /// phong chua co ai claim
-      room.userId === senderId, /// sender la nguoi kich hoat phong
+      room && // phong ton tai
+      room.status === RoomStatus.BOT_ONLY && // phong o mode bot-only
+      !room.staffId && // phong chua co ai claim
+      room.userId === senderId, // sender la nguoi kich hoat phong
     );
   }
 
-  /// check trang thai tin nhan kich hoat
+  // check trang thai tin nhan kich hoat
   private isStillLatestTrigger(
     latestMessage: ChatMessageRecord | null,
     userMessage: ChatMessageRecord,
   ) {
     return Boolean(
       latestMessage &&
-      latestMessage.id === userMessage.id && /// id tin nhan moi nhat trong db phai === id tin nhan kich hoat ai
+      latestMessage.id === userMessage.id && // id tin nhan moi nhat trong db phai === id tin nhan kich hoat ai
       latestMessage.roomId === userMessage.roomId &&
       latestMessage.senderId === userMessage.senderId &&
       latestMessage.type === MessageType.TEXT &&
@@ -290,7 +290,7 @@ export class AiChatService {
     );
   }
 
-  /// tracking token tieu thu
+  // tracking token tieu thu
   private async trackUsageBestEffort(
     roomId: string,
     response: AiChatResponse,

@@ -52,7 +52,7 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(data.password, 10);
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    /// luu thong tin dang ky trong redis trong 10 phut
+    // luu thong tin dang ky trong redis trong 10 phut
     const pendingData = { ...data, password: hashedPassword, otp };
     await this.redisService.set(
       `pending_user:${data.email}`,
@@ -218,9 +218,9 @@ export class AuthService {
       throw new BadRequestException('Mã OTP đã được gửi, vui lòng thử lại sau 1-2 phút');
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString(); /// otp 6 chu so
+    const otp = Math.floor(100000 + Math.random() * 900000).toString(); // otp 6 chu so
 
-    await this.redisService.set(key, otp, 'EX', 300); /// luu otp vao redis 5 phut
+    await this.redisService.set(key, otp, 'EX', 300); // luu otp vao redis 5 phut
     await this.mailService.sendForgotPasswordOtp(email, otp);
 
     return { message: 'Mã OTP đã được gửi về email của bạn' };
@@ -245,7 +245,7 @@ export class AuthService {
       throw new BadRequestException('Mã OTP không chính xác hoặc đã hết hạn');
     }
 
-    await this.redisService.del(key); /// xoa otp de khong bi re-use
+    await this.redisService.del(key); // xoa otp de khong bi re-use
 
     const salt = 10;
     const hashedPassword = await bcrypt.hash(data.newPassword, salt);

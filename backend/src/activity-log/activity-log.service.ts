@@ -14,8 +14,8 @@ export class ActivityLogService {
         private readonly configService: ConfigService
     ) { }
 
-    /// ghi log hanh dong cua user
-    /// userId = null neu la hanh dong he thong hoac chua dang nhap
+    // ghi log hanh dong cua user
+    // userId = null neu la hanh dong he thong hoac chua dang nhap
     async createLog(
         userId: string | null,
         action: ActivityActionType,
@@ -30,8 +30,8 @@ export class ActivityLogService {
         });
     }
 
-    /// lay danh sach log cho admin dashboard
-    /// ho tro filter theo userId, action, khoang thoi gian va phan trang
+    // lay danh sach log cho admin dashboard
+    // ho tro filter theo userId, action, khoang thoi gian va phan trang
     async findAll(query: QueryActivityLogDto) {
         const { page = 1, limit = 20, userId, action, from, to } = query;
         const skip = (page - 1) * limit;
@@ -82,7 +82,7 @@ export class ActivityLogService {
         };
     }
 
-    /// lay lich su hoat dong cua user
+    // lay lich su hoat dong cua user
     async findByUser(userId: string, page: number = 1, limit: number = 20) {
         const skip = (page - 1) * limit;
 
@@ -112,7 +112,7 @@ export class ActivityLogService {
         }
     }
 
-    /// xoa log cu hon N ngay
+    // xoa log cu hon N ngay
     async deleteOldLogs(olderThanDays: number = 90) {
         const cutoff = new Date();
         const olderThanMs = olderThanDays * 24 * 60 * 60 * 1000;

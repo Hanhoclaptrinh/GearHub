@@ -32,7 +32,7 @@ export class ChatService {
   constructor(
     private readonly chatRepository: ChatRepository,
     private readonly aiChatService: AiChatService,
-  ) {}
+  ) { }
 
   async joinRoom(user: SocketUser, data: JoinRoomDto) {
     const room = await this.resolveRoom(user, data.roomId);
@@ -116,10 +116,10 @@ export class ChatService {
   async getLatestMyRoom(
     userId: string,
   ): Promise<LatestCustomerRoomResponseDto> {
-    /// lay phong chat cuoi cung cua user
-    /// case 1: user chua tung chat -> tao moi
-    /// case 2: user dang chat -> vao lai chinh phong chat tiep tuc chat - khong tao phong moi
-    /// case 3: room closed -> vao room closed truoc do -> hien option new chat
+    // lay phong chat cuoi cung cua user
+    // case 1: user chua tung chat -> tao moi
+    // case 2: user dang chat -> vao lai chinh phong chat tiep tuc chat - khong tao phong moi
+    // case 3: room closed -> vao room closed truoc do -> hien option new chat
     const room = await this.chatRepository.findLatestCustomerRoom(userId);
     if (!room) {
       return {
@@ -146,11 +146,11 @@ export class ChatService {
         tx,
       );
       if (activeRoom) {
-        /// neu user dang co chat chua closed -> vao chinh phong do - khong tao room moi
+        // neu user dang co chat chua closed -> vao chinh phong do - khong tao room moi
         return activeRoom;
       }
 
-      /// AI-enabled rooms start in BOT_ONLY; otherwise preserve human support flow.
+      // AI-enabled rooms start in BOT_ONLY; otherwise preserve human support flow.
       return this.chatRepository.createCustomerRoom(
         userId,
         this.aiChatService.isEnabled()
@@ -246,9 +246,9 @@ export class ChatService {
   }
 
   async claimRoom(user: SocketUser, roomId: string) {
-    this.assertStaffOrAdmin(user); /// dam bao nguoi thuc hien claim la staff hoac admin
+    this.assertStaffOrAdmin(user); // dam bao nguoi thuc hien claim la staff hoac admin
 
-    /// chi thuc hien logic khi chua co ai nhan hoac nguoi dang nhan chinh la cu
+    // chi thuc hien logic khi chua co ai nhan hoac nguoi dang nhan chinh la cu
     const result = await this.chatRepository.claimRoom({
       roomId,
       staffId: user.id,

@@ -60,6 +60,8 @@ export class ProductRetrievalService {
 
     try {
       const queryEmbedding = await this.embeddingService.embedText(query);
+      // 2-stage retrieval
+      // stage 1 - chỉ lấy id và embedding, giảm áp lực RAM và băng thông
       const rows = await this.prisma.productEmbedding.findMany({
         where: {
           product: {
@@ -69,17 +71,19 @@ export class ProductRetrievalService {
         },
         select: {
           embedding: true,
-          product: { select: publicProductSelect },
+          productId: true,
         },
       });
 
+      // ngưỡng tương đồng - chỉ lấy những sản phẩm có điểm tương đồng >= threshold
       const threshold = Number(
         this.configService.get<string>('AI_RAG_SIMILARITY_THRESHOLD') ?? 0.55,
       );
 
+      // stage 2 - tính toán ma trận cosine trên mảng id
       const scoredRows = rows
         .map((row) => ({
-          product: this.toPublicContext(row.product),
+          productId: row.productId,
           score: this.cosineSimilarity(
             queryEmbedding,
             this.toVector(row.embedding),
@@ -89,25 +93,40 @@ export class ProductRetrievalService {
 
       let filtered = scoredRows.filter((item) => item.score >= threshold);
 
-      /// neu khong co san pham nao dat diem cao
-      /// set nguong 0.48
+      // set ngưỡng chấp nhận = 0.48 nếu không có sản phẩm nào đạt ngưỡng 0.55
       if (filtered.length === 0) {
         filtered = scoredRows.filter((item) => item.score >= 0.48);
       }
 
-      return filtered
-        .slice(0, maxProducts)
-        .map((item) => ({ ...item.product, score: item.score }));
-    } catch (error) {
-      this.logger.warn(
-        `Embedding retrieval unavailable, using keyword fallback: ${this.errorMessage(error)}`,
+      // danh sách n sản phẩm tốt nhất
+      const targetItems = filtered.slice(0, maxProducts);
+      if (targetItems.length === 0) return [];
+
+      // stage 3 - truy vấn các sản phẩm được chọn
+      const targetIds = targetItems.map(item => item.productId);
+      const products = await this.prisma.product.findMany({
+        where: { id: { in: targetIds } },
+        select: publicProductSelect
+      });
+
+      // map lại score và trả về ctx
+      return products.map(p => {
+        const match = targetItems.find(item => item.productId === p.id);
+        return {
+          ...this.toPublicContext(p),
+          score: match?.score ?? 0
+        }
+      }).sort((a, b) => b.score - a.score);
+    } catch (er) {
+      this.logger.error(
+        `Embedding retrieval unavailable, using keyword fallback: ${this.errorMessage(er)}`,
       );
       return this.keywordFallback(query, maxProducts);
     }
   }
 
-  /// tinh diem tuong dong san pham va yeu cau cua khach
-  /// dua tren dinh ly cosine tinh goc giua 2 vector
+  // tinh diem tuong dong san pham va yeu cau cua khach
+  // dua tren dinh ly cosine tinh goc giua 2 vector
   cosineSimilarity(a: number[], b: number[]) {
     if (a.length === 0 || b.length === 0 || a.length !== b.length) return 0;
 
@@ -150,18 +169,18 @@ export class ProductRetrievalService {
     };
   }
 
-  /// fallback
-  /// chuyen sang tim kiem bang keyword neu api bi loi
+  // fallback
+  // chuyen sang tim kiem bang keyword neu api bi loi
   private async keywordFallback(query: string, take: number) {
     const terms = query
       .toLowerCase()
       .split(/\s+/)
       .map((term) => term.trim())
-      .filter((term) => term.length >= 3) /// bo di cac tu qua ngan duoi 3 ky tu
-      .slice(0, 5); /// gioi han toi da 5 tu khoa
+      .filter((term) => term.length >= 3) // bo di cac tu qua ngan duoi 3 ky tu
+      .slice(0, 5); // gioi han toi da 5 tu khoa
 
     if (terms.length === 0) {
-      /// tra ve top rated neu khong co san pham nao match
+      // tra ve top rated neu khong co san pham nao match
       const products = await this.prisma.product.findMany({
         where: {
           isActive: true,
@@ -178,8 +197,8 @@ export class ProductRetrievalService {
       where: {
         isActive: true,
         variants: { some: { isActive: true } },
-        /// flatmap nhan ban filter
-        /// quet toan bo thuoc tinh lien quan
+        // flatmap nhan ban filter
+        // quet toan bo thuoc tinh lien quan
         OR: terms.flatMap((term) => [
           { name: { contains: term } },
           { tagline: { contains: term } },
@@ -188,7 +207,7 @@ export class ProductRetrievalService {
           { category: { name: { contains: term } } },
         ]),
       },
-      orderBy: [{ averageRating: 'desc' }, { reviewCount: 'desc' }], /// sap xep theo avgrating va so luong danh gia
+      orderBy: [{ averageRating: 'desc' }, { reviewCount: 'desc' }], // sap xep theo avgrating va so luong danh gia
       take,
       select: publicProductSelect,
     });

@@ -14,7 +14,8 @@ import {
   User as UserIcon,
   Globe,
   CreditCard,
-  MessageSquareText
+  MessageSquareText,
+  Ticket
 } from 'lucide-react';
 import { Warehouse } from 'lucide-react';
 import { cn } from '../utils/cn';
@@ -36,9 +37,10 @@ const navigation = [
       { name: 'Nhân viên', path: '/staff' },
     ]
   },
-  { name: 'Danh mục', icon: Tag, path: '/categories', roles: ['ADMIN', 'STAFF'] },
-  { name: 'Thương hiệu', icon: Briefcase, path: '/brands', roles: ['ADMIN', 'STAFF'] },
-  { name: 'Giao dịch', icon: CreditCard, path: '/transactions', roles: ['ADMIN'] },
+  { name: 'Quản lý danh mục', icon: Tag, path: '/categories', roles: ['ADMIN', 'STAFF'] },
+  { name: 'Quản lý thương hiệu', icon: Briefcase, path: '/brands', roles: ['ADMIN', 'STAFF'] },
+  { name: 'Quản lý ưu đãi', icon: Ticket, path: '/vouchers', roles: ['ADMIN', 'STAFF'] },
+  { name: 'Quản lý giao dịch', icon: CreditCard, path: '/transactions', roles: ['ADMIN'] },
 ];
 
 export const DashboardLayout: React.FC = () => {

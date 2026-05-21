@@ -46,8 +46,7 @@ import { TypingDto } from '../dto/typing.dto';
   },
 })
 export class ChatGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
-{
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   private server: Server<
     ClientToServerEvents,
@@ -61,9 +60,9 @@ export class ChatGateway
   constructor(
     private readonly chatService: ChatService,
     private readonly socketAuthGuard: ChatSocketAuthGuard,
-  ) {}
+  ) { }
 
-  /// middleware auth cho socket
+  // middleware auth cho socket
   afterInit(
     server: Server<
       ClientToServerEvents,
@@ -83,10 +82,10 @@ export class ChatGateway
   }
 
   async handleConnection(client: AuthenticatedSocket) {
-    const user = client.data.user; /// lay user da duoc auth tu afterinit
-    this.socketUsers.set(client.id, user.id); /// luu socket id tuong ung userid
+    const user = client.data.user; // lay user da duoc auth tu afterinit
+    this.socketUsers.set(client.id, user.id); // luu socket id tuong ung userid
 
-    /// join room chat
+    // join room chat
     await client.join(this.userRoom(user.id));
     if (this.isStaff(user.role)) {
       await client.join('staff:online');
@@ -106,8 +105,8 @@ export class ChatGateway
     @MessageBody() data: JoinRoomDto,
   ) {
     try {
-      const result = await this.chatService.joinRoom(client.data.user, data); /// kiem tra user co quyen join room khong
-      await client.join(this.chatRoom(result.room.id)); /// join room
+      const result = await this.chatService.joinRoom(client.data.user, data); // kiem tra user co quyen join room khong
+      await client.join(this.chatRoom(result.room.id)); // join room
 
       client.emit('room:joined', result);
       this.publishRoomUpdated(result.room);
@@ -133,7 +132,7 @@ export class ChatGateway
       const result = await this.chatService.sendMessage(client.data.user, data);
       await client.join(this.chatRoom(result.room.id));
 
-      /// broadcast tin nhan cho nguoi trong room
+      // broadcast tin nhan cho nguoi trong room
       this.server.to(this.chatRoom(result.room.id)).emit('message:new', {
         clientMessageId: result.clientMessageId,
         message: result.message,

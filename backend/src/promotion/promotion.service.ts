@@ -18,13 +18,36 @@ export class PromotionService {
             throw new BadRequestException(`Mã ưu đãi '${dto.code}' đã tồn tại`);
         }
 
-        if (dto.value <= 0) {
-            throw new BadRequestException('Giá trị giảm phải lớn hơn 0');
-        }
+        let maxDiscountAmount: number | null = dto.maxDiscountAmount !== undefined && dto.maxDiscountAmount !== null ? dto.maxDiscountAmount : null;
 
-        // chặn phần trăm (0 < v <= 100)
-        if (dto.type === VoucherType.PERCENT && dto.value > 100) {
-            throw new BadRequestException('Giá trị giảm phần trăm không được vượt quá 100%');
+        // thực hiện kiểm tra value theo từng loại voucher
+        if (dto.type === VoucherType.PERCENT) {
+            if (dto.value < 1 || dto.value > 100) {
+                throw new BadRequestException('Giá trị giảm phần trăm phải từ 1% đến 100%');
+            }
+            if (dto.minOrderAmount === undefined || dto.minOrderAmount === null || dto.minOrderAmount <= 0) {
+                throw new BadRequestException('Giá trị đơn hàng tối thiểu cho voucher phần trăm phải lớn hơn 0');
+            }
+            if (dto.maxDiscountAmount === undefined || dto.maxDiscountAmount === null || dto.maxDiscountAmount <= 0) {
+                throw new BadRequestException('Giá trị giảm tối đa cho voucher phần trăm phải lớn hơn 0');
+            }
+            if (dto.maxDiscountAmount > dto.minOrderAmount) {
+                throw new BadRequestException('Giá trị giảm tối đa không được vượt quá giá trị đơn hàng tối thiểu');
+            }
+        } else if (dto.type === VoucherType.FIXED_AMOUNT) {
+            if (dto.value <= 0) {
+                throw new BadRequestException('Giá trị giảm tiền mặt phải lớn hơn 0');
+            }
+            if (dto.minOrderAmount === undefined || dto.minOrderAmount === null || dto.minOrderAmount <= 0) {
+                throw new BadRequestException('Giá trị đơn hàng tối thiểu cho voucher tiền mặt phải lớn hơn 0');
+            }
+            if (dto.minOrderAmount < dto.value) {
+                throw new BadRequestException('Giá trị đơn hàng tối thiểu phải lớn hơn hoặc bằng giá trị giảm');
+            }
+
+            maxDiscountAmount = null;
+        } else {
+            throw new BadRequestException('Loại voucher không hợp lệ');
         }
 
         // chặn tạo voucher hết hạn từ trước
@@ -44,12 +67,12 @@ export class PromotionService {
                 description: dto.description,
                 type: dto.type,
                 value: new Prisma.Decimal(dto.value),
-                minOrderAmount: new Prisma.Decimal(dto.minOrderAmount || 0),
-                maxDiscountAmount: dto.maxDiscountAmount ? new Prisma.Decimal(dto.maxDiscountAmount) : null,
+                minOrderAmount: new Prisma.Decimal(dto.minOrderAmount),
+                maxDiscountAmount: maxDiscountAmount !== null ? new Prisma.Decimal(maxDiscountAmount) : null,
                 quantity: dto.quantity,
                 startsAt: dto.startsAt || null,
                 expiresAt: dto.expiresAt || null,
-                isActive: true
+                isActive: dto.isActive !== undefined ? dto.isActive : true
             }
         });
     }
@@ -100,6 +123,22 @@ export class PromotionService {
 
     async updateVoucher(id: string, dto: UpdateVoucherDto) {
         const voucher = await this.findVoucherByIdAdmin(id);
+        const hasUsage = voucher.claimedCount > 0 || voucher.usedCount > 0;
+
+        if (hasUsage) {
+            if (dto.code !== undefined && dto.code !== voucher.code) {
+                throw new BadRequestException('Không thể sửa mã voucher đã có lượt nhận hoặc sử dụng');
+            }
+            if (dto.type !== undefined && dto.type !== voucher.type) {
+                throw new BadRequestException('Không thể sửa loại voucher đã có lượt nhận hoặc sử dụng');
+            }
+            if (dto.value !== undefined && dto.value !== Number(voucher.value)) {
+                throw new BadRequestException('Không thể sửa giá trị giảm của voucher đã có lượt nhận hoặc sử dụng');
+            }
+            if (dto.quantity !== undefined && dto.quantity < voucher.claimedCount) {
+                throw new BadRequestException(`Số lượng phát hành không được nhỏ hơn số lượt đã nhận (${voucher.claimedCount})`);
+            }
+        }
 
         if (dto.code && dto.code !== voucher.code) {
             const existing = await this.prisma.voucher.findUnique({
@@ -112,9 +151,35 @@ export class PromotionService {
 
         const type = dto.type || voucher.type;
         const value = dto.value !== undefined ? dto.value : Number(voucher.value);
+        const minOrderAmount = dto.minOrderAmount !== undefined ? dto.minOrderAmount : Number(voucher.minOrderAmount);
+        let maxDiscountAmount = dto.maxDiscountAmount !== undefined
+            ? dto.maxDiscountAmount
+            : (voucher.maxDiscountAmount ? Number(voucher.maxDiscountAmount) : null);
 
-        if (type === VoucherType.PERCENT && value > 100) {
-            throw new BadRequestException('Giá trị giảm phần trăm không được vượt quá 100%');
+        if (type === VoucherType.PERCENT) {
+            if (value < 1 || value > 100) {
+                throw new BadRequestException('Giá trị giảm phần trăm phải từ 1% đến 100%');
+            }
+            if (minOrderAmount <= 0) {
+                throw new BadRequestException('Giá trị đơn hàng tối thiểu cho voucher phần trăm phải lớn hơn 0');
+            }
+            if (maxDiscountAmount === undefined || maxDiscountAmount === null || maxDiscountAmount <= 0) {
+                throw new BadRequestException('Giá trị giảm tối đa cho voucher phần trăm phải lớn hơn 0');
+            }
+            if (maxDiscountAmount > minOrderAmount) {
+                throw new BadRequestException('Giá trị giảm tối đa không được vượt quá giá trị đơn hàng tối thiểu');
+            }
+        } else if (type === VoucherType.FIXED_AMOUNT) {
+            if (value <= 0) {
+                throw new BadRequestException('Giá trị giảm tiền mặt phải lớn hơn 0');
+            }
+            if (minOrderAmount <= 0) {
+                throw new BadRequestException('Giá trị đơn hàng tối thiểu cho voucher tiền mặt phải lớn hơn 0');
+            }
+            if (minOrderAmount < value) {
+                throw new BadRequestException('Giá trị đơn hàng tối thiểu phải lớn hơn hoặc bằng giá trị giảm');
+            }
+            maxDiscountAmount = null;
         }
 
         const startsAt = dto.startsAt !== undefined ? dto.startsAt : voucher.startsAt;
@@ -132,13 +197,16 @@ export class PromotionService {
                 code: dto.code,
                 name: dto.name,
                 description: dto.description,
-                type: dto.type,
+                type,
                 value: dto.value !== undefined ? new Prisma.Decimal(dto.value) : undefined,
                 minOrderAmount: dto.minOrderAmount !== undefined ? new Prisma.Decimal(dto.minOrderAmount) : undefined,
-                maxDiscountAmount: dto.maxDiscountAmount !== undefined ? (dto.maxDiscountAmount ? new Prisma.Decimal(dto.maxDiscountAmount) : null) : undefined,
+                maxDiscountAmount: maxDiscountAmount !== undefined
+                    ? (maxDiscountAmount ? new Prisma.Decimal(maxDiscountAmount) : null)
+                    : undefined,
                 quantity: dto.quantity,
                 startsAt: dto.startsAt !== undefined ? (dto.startsAt || null) : undefined,
-                expiresAt: dto.expiresAt !== undefined ? (dto.expiresAt || null) : undefined
+                expiresAt: dto.expiresAt !== undefined ? (dto.expiresAt || null) : undefined,
+                isActive: dto.isActive !== undefined ? dto.isActive : undefined
             }
         });
     }
@@ -221,8 +289,8 @@ export class PromotionService {
                 SELECT id, is_active as isActive, starts_at as startsAt, expires_at as expiresAt, quantity, claimed_count as claimedCount
                 FROM vouchers 
                 WHERE id = ${voucherId} 
-                FOR UPDATE
-                LIMIT 1;
+                LIMIT 1
+                FOR UPDATE;
             `;
 
             if (!vouchers || vouchers.length === 0) {
@@ -403,9 +471,9 @@ export class PromotionService {
     }
 
     calculatePointsDiscount(
-    pointsToUse: number, 
-    subtotal: number, 
-    maxDiscountPercent: number = 0.2 // tối đa 20% giá trị đơn
+        pointsToUse: number,
+        subtotal: number,
+        maxDiscountPercent: number = 0.2 // tối đa 20% giá trị đơn
     ): number {
         const discount = Math.floor(pointsToUse / 100) * 10000;
 

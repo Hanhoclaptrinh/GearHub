@@ -5,7 +5,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
-/// cac du lieu can duoc vector hoa
+// cac du lieu can duoc vector hoa
 const productEmbeddingSelect = {
   id: true,
   name: true,
@@ -46,9 +46,9 @@ export class EmbeddingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
-  /// vector hoa cau hoi cua KH
+  // vector hoa cau hoi cua KH
   async embedText(text: string): Promise<number[]> {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
@@ -69,7 +69,7 @@ export class EmbeddingService {
     return result.embedding.values;
   }
 
-  /// hash source text
+  // hash source text
   hashText(text: string) {
     return createHash('sha256')
       .update(
@@ -82,7 +82,7 @@ export class EmbeddingService {
       .digest('hex');
   }
 
-  /// thuc hien vector hoa cac san pham dang kinh doanh va chua co vector
+  // thuc hien vector hoa cac san pham dang kinh doanh va chua co vector
   async backfillProducts(batchSize = 50) {
     let cursor: string | undefined;
     let processed = 0;
@@ -130,7 +130,7 @@ export class EmbeddingService {
     }
   }
 
-  /// sync vector
+  // sync vector
   async syncProductEmbedding(
     productId: string,
     hydratedProduct?: ProductForEmbedding,
@@ -142,7 +142,7 @@ export class EmbeddingService {
         select: productEmbeddingSelect,
       }));
 
-    /// san pham dang kinh doanh (da co vector) nhung bi hard del hoac ngung kinh doanh thi xoa luon vector
+    // san pham dang kinh doanh (da co vector) nhung bi hard del hoac ngung kinh doanh thi xoa luon vector
     if (!product || !product.isActive) {
       await this.deleteProductEmbeddingIfTableExists(productId);
       return 'updated';
@@ -156,7 +156,7 @@ export class EmbeddingService {
       select: { textHash: true },
     });
 
-    /// skip san pham da co vector
+    // skip san pham da co vector
     if (existing?.textHash === textHash) {
       return 'skipped';
     }

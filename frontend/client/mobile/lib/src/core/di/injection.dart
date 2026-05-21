@@ -44,7 +44,13 @@ import 'package:mobile/src/features/product_review/data/datasources/review_remot
 import 'package:mobile/src/features/product_review/data/repositories/review_repository_impl.dart';
 import 'package:mobile/src/features/product_review/domain/repositories/review_repository.dart';
 import 'package:mobile/src/features/product_review/presentation/state/review_cubit.dart';
+import 'package:mobile/src/features/promotions/data/datasources/promotions_remote_datasource.dart';
+import 'package:mobile/src/features/promotions/data/repositories/promotions_repository_impl.dart';
+import 'package:mobile/src/features/promotions/domain/repositories/promotions_repository.dart';
+import 'package:mobile/src/features/promotions/presentation/state/promotions_cubit.dart';
+import 'package:mobile/src/features/promotions/presentation/state/my_vouchers_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 
 final getIt = GetIt.instance;
 
@@ -196,4 +202,21 @@ Future<void> setupDependencies() async {
   getIt.registerFactoryParam<BrandProductsCubit, BrandEntity, void>(
     (brand, _) => BrandProductsCubit(getIt<ExploreRepository>(), brand),
   );
+
+  // promotions
+  getIt.registerLazySingleton<PromotionsRemoteDatasource>(
+    () => PromotionsRemoteDatasource(dio: getIt<ApiClient>().dio),
+  );
+  getIt.registerLazySingleton<PromotionsRepository>(
+    () => PromotionsRepositoryImpl(
+      remoteDatasource: getIt<PromotionsRemoteDatasource>(),
+    ),
+  );
+  getIt.registerFactory<PromotionsCubit>(
+    () => PromotionsCubit(repository: getIt<PromotionsRepository>()),
+  );
+  getIt.registerFactory<MyVouchersCubit>(
+    () => MyVouchersCubit(repository: getIt<PromotionsRepository>()),
+  );
 }
+

@@ -65,3 +65,7 @@ CREATE TABLE `point_transactions` (
   CONSTRAINT `point_transactions_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `point_transactions_order_id_fkey` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `orders`
+ADD COLUMN `reward_points_earned` INT NOT NULL DEFAULT 0,
+ADD COLUMN `reward_points_earned_at` DATETIME(3) NULL;

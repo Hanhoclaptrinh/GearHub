@@ -5,7 +5,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class WishlistService {
     constructor(private prisma: PrismaService) { }
 
-    /// toggle wishlist
+    // toggle wishlist
     async toggleWishlist(userId: string, productId: string) {
         const existingItem = await this.prisma.wishlist.findUnique({
             where: { userId_productId: { userId, productId } }
@@ -22,7 +22,7 @@ export class WishlistService {
         return { isFavorite: true, message: 'Đã thêm vào danh sách yêu thích' };
     }
 
-    /// get wishlist
+    // get wishlist
     async getMyWishlist(userId: string, page: number = 1, limit: number = 10) {
         const skip = (page - 1) * limit;
 
@@ -58,8 +58,8 @@ export class WishlistService {
         }
     }
 
-    /// fast api for ui
-    /// api nhanh de ui hien trai tim do hay xam
+    // fast api for ui
+    // api nhanh de ui hien trai tim do hay xam
     async checkIsFavorite(userId: string, productId: string) {
         const favorite = await this.prisma.wishlist.findUnique({
             where: { userId_productId: { userId, productId } }
@@ -68,8 +68,8 @@ export class WishlistService {
         return { isFavorite: !!favorite };
     }
 
-    /// data for ai
-    /// prod duoc yeu thich nhieu nhat
+    // data for ai
+    // prod duoc yeu thich nhieu nhat
     async getMostWishlisted(limit: number = 5) {
         return this.prisma.wishlist.groupBy({
             by: ['productId'],

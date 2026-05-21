@@ -562,17 +562,6 @@ class _CartPageState extends State<CartPage> {
                         ? AppColors.brandYellow
                         : AppColors.textPrimary.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: hasSelection
-                        ? [
-                            BoxShadow(
-                              color: AppColors.brandYellow.withValues(
-                                alpha: 0.3,
-                              ),
-                              blurRadius: 20,
-                              offset: const Offset(0, 4),
-                            ),
-                          ]
-                        : [],
                   ),
                   child: Text(
                     'THANH TOÁN',

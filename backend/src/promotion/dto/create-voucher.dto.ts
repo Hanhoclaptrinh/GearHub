@@ -49,4 +49,8 @@ export class CreateVoucherDto {
     @Type(() => Date)
     @IsOptional()
     expiresAt?: Date;
+
+    @IsBoolean()
+    @IsOptional()
+    isActive?: boolean;
 }

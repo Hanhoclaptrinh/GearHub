@@ -5,11 +5,11 @@ import sharp from 'sharp';
 
 @Injectable()
 export class CloudinaryService {
-    private readonly MAX_FILE_SIZE = 10 * 1024 * 1024; /// 10MB Cloudinary Free Limit
+    private readonly MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB Cloudinary Free Limit
 
-    /// upload file tu buffer len cld
+    // upload file tu buffer len cld
     async uploadFile(file: Express.Multer.File): Promise<UploadApiResponse | UploadApiErrorResponse> {
-        /// kiem tra kich thuoc file truoc khi gui
+        // kiem tra kich thuoc file truoc khi gui
         if (file.size > this.MAX_FILE_SIZE) {
             throw new BadRequestException(
                 `Kích thước file (${(file.size / 1024 / 1024).toFixed(2)}MB) vượt quá giới hạn cho phép (10MB). ` +
@@ -19,20 +19,20 @@ export class CloudinaryService {
 
         let buffer = file.buffer;
 
-        /// nen anh neu la file hinh anh va kich thuoc > 2MB
+        // nen anh neu la file hinh anh va kich thuoc > 2MB
         if (file.mimetype.startsWith('image/') && file.size > 2 * 1024 * 1024) {
             try {
-                /// nen anh bang sharp (giu nguyen dinh dang nhung giam chat luong hoac resize neu qua lon)
+                // nen anh bang sharp (giu nguyen dinh dang nhung giam chat luong hoac resize neu qua lon)
                 const image = sharp(file.buffer);
                 const metadata = await image.metadata();
 
                 let pipeline = image;
-                /// neu anh qua lon (> 2000px), thuc hien resize de giam dung luong
+                // neu anh qua lon (> 2000px), thuc hien resize de giam dung luong
                 if (metadata.width && metadata.width > 2000) {
                     pipeline = pipeline.resize(2000);
                 }
 
-                /// nen chat luong xuong ~80%
+                // nen chat luong xuong ~80%
                 if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg') {
                     buffer = await pipeline.jpeg({ quality: 80 }).toBuffer();
                 } else if (file.mimetype === 'image/png') {
@@ -42,7 +42,7 @@ export class CloudinaryService {
                 }
             } catch (err) {
                 console.error('Lỗi khi nén ảnh bằng Sharp:', err);
-                /// neu loi thi tiep tuc voi buffer goc neu no van < 10MB
+                // neu loi thi tiep tuc voi buffer goc neu no van < 10MB
             }
         }
 
@@ -70,7 +70,7 @@ export class CloudinaryService {
                 },
             );
 
-            /// chuyen doi buffer
+            // chuyen doi buffer
             streamifier.createReadStream(buffer).pipe(upload);
         });
     }

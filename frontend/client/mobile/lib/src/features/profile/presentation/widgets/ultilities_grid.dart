@@ -5,6 +5,7 @@ import 'package:mobile/src/features/chat/presentation/widgets/concierge_entry_bu
 import 'package:mobile/src/features/wishlist/presentation/pages/wishlist_page.dart';
 import 'package:mobile/src/features/wishlist/presentation/state/wishlist_cubit.dart';
 import 'package:mobile/src/features/wishlist/presentation/state/wishlist_state.dart';
+import 'package:mobile/src/features/promotions/presentation/state/my_vouchers_cubit.dart';
 
 class UtilitiesGrid extends StatelessWidget {
   const UtilitiesGrid({super.key});
@@ -43,12 +44,19 @@ class UtilitiesGrid extends StatelessWidget {
                     onTap: () => ConciergeEntryButton.open(context),
                   ),
                   const SizedBox(height: 16),
-                  _buildEditorialTile(
-                    context,
-                    icon: LucideIcons.ticket,
-                    title: 'VOUCHERS',
-                    subtitle: '3 ACTIVE',
-                    height: 120,
+                  BlocBuilder<MyVouchersCubit, MyVouchersState>(
+                    builder: (context, state) {
+                      final count = (state is MyVouchersLoaded)
+                          ? state.vouchers.length
+                          : 0;
+                      return _buildEditorialTile(
+                        context,
+                        icon: LucideIcons.ticket,
+                        title: 'VOUCHERS',
+                        subtitle: '$count CÓ SẴN',
+                        height: 120,
+                      );
+                    },
                   ),
                 ],
               ),
