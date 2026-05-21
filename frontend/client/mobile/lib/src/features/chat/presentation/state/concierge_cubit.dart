@@ -247,6 +247,7 @@ class ConciergeCubit extends Cubit<ConciergeState> {
       _refreshAfterReconnect();
     });
     socketService.on('message:new', _handleMessageNew);
+    socketService.on('message:chunk', _handleMessageChunk);
     socketService.on('room:updated', _handleRoomUpdated);
     socketService.on('typing:start', _handleTypingStart);
     socketService.on('typing:stop', _handleTypingStop);
@@ -295,15 +296,27 @@ class ConciergeCubit extends Cubit<ConciergeState> {
     final clientMessageId = payload['clientMessageId']?.toString();
 
     final nextMessages = [...state.messages];
-    final tempIndex = clientMessageId == null
-        ? -1
-        : nextMessages.indexWhere(
-            (item) => item.clientMessageId == clientMessageId,
-          );
+    
+    int tempIndex = -1;
+    if (message.isAi) {
+      tempIndex = nextMessages.indexWhere(
+        (item) => item.id.startsWith('ai-stream-') || item.clientMessageId?.startsWith('ai-stream-') == true,
+      );
+    }
+    
+    if (tempIndex < 0) {
+      tempIndex = clientMessageId == null
+          ? -1
+          : nextMessages.indexWhere(
+              (item) => item.clientMessageId == clientMessageId,
+            );
+    }
 
     if (tempIndex >= 0) {
       nextMessages[tempIndex] = message;
-      _pendingClientIds.remove(clientMessageId);
+      if (clientMessageId != null) {
+        _pendingClientIds.remove(clientMessageId);
+      }
     } else if (!nextMessages.any((item) => item.id == message.id)) {
       nextMessages.add(message);
     }
@@ -325,6 +338,58 @@ class ConciergeCubit extends Cubit<ConciergeState> {
     );
 
     if (shouldRead) markRead();
+  }
+
+  void _handleMessageChunk(dynamic payload) {
+    if (payload is! Map) return;
+    final roomId = payload['roomId']?.toString();
+    final messageId = payload['messageId']?.toString();
+    final isEnd = payload['isEnd'] as bool? ?? false;
+    final fullText = payload['fullText']?.toString() ?? '';
+
+    final room = state.room;
+    if (room == null || roomId != room.id || messageId == null) return;
+
+    final nextMessages = [...state.messages];
+    final existingIndex = nextMessages.indexWhere((msg) => msg.id == messageId);
+
+    if (existingIndex >= 0) {
+      final existingMsg = nextMessages[existingIndex];
+      nextMessages[existingIndex] = ChatMessageEntity(
+        id: existingMsg.id,
+        roomId: existingMsg.roomId,
+        senderId: existingMsg.senderId,
+        content: fullText,
+        type: existingMsg.type,
+        status: isEnd ? 'SENT' : 'SENDING',
+        readAt: existingMsg.readAt,
+        isAi: true,
+        createdAt: existingMsg.createdAt,
+        clientMessageId: existingMsg.clientMessageId,
+        isOptimistic: false,
+        isFailed: false,
+      );
+    } else {
+      final newMsg = ChatMessageEntity(
+        id: messageId,
+        roomId: room.id,
+        senderId: null,
+        content: fullText,
+        type: 'TEXT',
+        status: 'SENDING',
+        readAt: null,
+        isAi: true,
+        createdAt: DateTime.now(),
+        clientMessageId: messageId,
+        isOptimistic: false,
+        isFailed: false,
+      );
+      nextMessages.add(newMsg);
+    }
+
+    emit(state.copyWith(
+      messages: nextMessages,
+    ));
   }
 
   void _handleRoomUpdated(dynamic payload) {

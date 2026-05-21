@@ -161,6 +161,7 @@ class _ConciergeScreenState extends State<ConciergeScreen>
         final message = state.messages[messageIndex];
         final isMine =
             !message.isSystem &&
+            !message.isAi &&
             (message.clientMessageId != null ||
                 (message.senderId != null &&
                     message.senderId != state.room?.staffId));

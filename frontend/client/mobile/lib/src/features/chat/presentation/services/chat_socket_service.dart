@@ -73,6 +73,7 @@ class ChatSocketService {
       'connect',
       'reconnect',
       'message:new',
+      'message:chunk',
       'room:updated',
       'typing:start',
       'typing:stop',

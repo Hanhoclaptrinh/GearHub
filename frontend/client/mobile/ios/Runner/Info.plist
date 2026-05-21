@@ -51,5 +51,9 @@
 		<false/>
 		<key>NSCameraUsageDescription</key>
 		<string>This application requires camera access for placing products in your room via Augmented Reality.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>GearHub requires microphone access to enable voice search and AI assistant interactions.</string>
+		<key>NSSpeechRecognitionUsageDescription</key>
+		<string>GearHub requires speech recognition access to convert your speech into searchable text.</string>
 	</dict>
 </plist>
