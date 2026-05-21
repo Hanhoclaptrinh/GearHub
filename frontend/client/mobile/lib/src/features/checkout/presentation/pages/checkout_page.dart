@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:lottie/lottie.dart';
+import 'package:mobile/src/features/checkout/presentation/state/checkout_promotion_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
@@ -10,10 +11,12 @@ import 'package:mobile/src/features/cart/domain/entities/cart_item_entity.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 import 'package:mobile/src/features/checkout/presentation/state/checkout_cubit.dart';
 import 'package:mobile/src/features/checkout/presentation/state/checkout_state.dart';
+import 'package:mobile/src/features/checkout/presentation/state/checkout_promotion_cubit.dart';
 import 'package:mobile/src/features/checkout/presentation/widgets/delivery_section.dart';
 import 'package:mobile/src/features/checkout/presentation/widgets/checkout_items_section.dart';
 import 'package:mobile/src/features/checkout/presentation/widgets/payment_selection_section.dart';
 import 'package:mobile/src/features/checkout/presentation/widgets/price_breakdown_section.dart';
+import 'package:mobile/src/features/checkout/presentation/widgets/promotion_section.dart';
 import 'package:mobile/src/features/checkout/presentation/widgets/edit_address_modal.dart';
 import 'vnpay_payment_page.dart';
 import 'package:mobile/src/features/profile/presentation/pages/order_history_page.dart';
@@ -99,16 +102,22 @@ class _CheckoutPageState extends State<CheckoutPage> {
       widget.args.items.fold(0.0, (sum, item) => sum + item.itemTotal);
 
   double get _shipping => 0.0;
-  double get _discount => 0.0;
   double get _vat => _subtotal * 0.1;
-  double get _total => _subtotal + _shipping - _discount + _vat;
+
+  /// subtotal + VAT (trước khi giảm)
+  double get _subtotalWithVat => _subtotal + _vat;
 
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return BlocProvider(
-      create: (context) => getIt<CheckoutCubit>(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => getIt<CheckoutCubit>()),
+        BlocProvider(
+          create: (_) => getIt<CheckoutPromotionCubit>()..loadPromotionData(),
+        ),
+      ],
       child: BlocConsumer<CheckoutCubit, CheckoutState>(
         listener: (context, state) async {
           if (state is OrderPlacedSuccess) {
@@ -175,37 +184,61 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Column(
-                          children: [
-                            const SizedBox(height: 12),
-                            DeliverySection(
-                              name: _nameController.text,
-                              phone: _phoneController.text,
-                              address: _addressController.text,
-                              onEdit: () => _navigateToEditAddress(),
-                            ),
-                            const SizedBox(height: 24),
-                            CheckoutItemsSection(items: widget.args.items),
-                            const SizedBox(height: 24),
-                            _buildNoteSection(),
-                            const SizedBox(height: 24),
-                            PaymentSelectionSection(
-                              selectedMethod: _selectedPaymentMethod,
-                              onMethodChanged: (method) {
-                                setState(() => _selectedPaymentMethod = method);
+                        child:
+                            BlocBuilder<
+                              CheckoutPromotionCubit,
+                              CheckoutPromotionState
+                            >(
+                              builder: (context, promoState) {
+                                final voucherDiscount = promoState
+                                    .calculateVoucherDiscount(_subtotalWithVat);
+                                final total =
+                                    (_subtotalWithVat +
+                                            _shipping -
+                                            voucherDiscount)
+                                        .clamp(0.0, double.infinity);
+
+                                return Column(
+                                  children: [
+                                    const SizedBox(height: 12),
+                                    DeliverySection(
+                                      name: _nameController.text,
+                                      phone: _phoneController.text,
+                                      address: _addressController.text,
+                                      onEdit: () => _navigateToEditAddress(),
+                                    ),
+                                    const SizedBox(height: 24),
+                                    CheckoutItemsSection(
+                                      items: widget.args.items,
+                                    ),
+                                    const SizedBox(height: 24),
+                                    _buildNoteSection(),
+                                    const SizedBox(height: 24),
+                                    PaymentSelectionSection(
+                                      selectedMethod: _selectedPaymentMethod,
+                                      onMethodChanged: (method) {
+                                        setState(
+                                          () => _selectedPaymentMethod = method,
+                                        );
+                                      },
+                                    ),
+                                    const SizedBox(height: 24),
+                                    PromotionSection(
+                                      subtotal: _subtotalWithVat,
+                                    ),
+                                    const SizedBox(height: 24),
+                                    PriceBreakdownSection(
+                                      subtotal: _subtotal,
+                                      shipping: _shipping,
+                                      vat: _vat,
+                                      voucherDiscount: voucherDiscount,
+                                      total: total,
+                                    ),
+                                    const SizedBox(height: 140),
+                                  ],
+                                );
                               },
                             ),
-                            const SizedBox(height: 24),
-                            PriceBreakdownSection(
-                              subtotal: _subtotal,
-                              shipping: _shipping,
-                              discount: _discount,
-                              vat: _vat,
-                              total: _total,
-                            ),
-                            const SizedBox(height: 140),
-                          ],
-                        ),
                       ),
                     ),
                   ],
@@ -297,101 +330,114 @@ class _CheckoutPageState extends State<CheckoutPage> {
       bottom: 0,
       left: 0,
       right: 0,
-      child: Container(
-        padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPadding + 16),
-        decoration: const BoxDecoration(
-          color: AppColors.background,
-          border: Border(
-            top: BorderSide(color: AppColors.borderCardStrong, width: 0.5),
-          ),
-        ),
-        child: Row(
-          children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: BlocBuilder<CheckoutPromotionCubit, CheckoutPromotionState>(
+        builder: (context, promoState) {
+          final voucherDiscount = promoState.calculateVoucherDiscount(
+            _subtotalWithVat,
+          );
+          final total =
+              (_subtotalWithVat + _shipping - voucherDiscount)
+                  .clamp(0.0, double.infinity);
+
+          return Container(
+            padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPadding + 16),
+            decoration: const BoxDecoration(
+              color: AppColors.background,
+              border: Border(
+                top: BorderSide(color: AppColors.borderCardStrong, width: 0.5),
+              ),
+            ),
+            child: Row(
               children: [
-                const Text(
-                  "TỔNG THANH TOÁN",
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textDim,
-                    letterSpacing: 1,
-                  ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "TỔNG THANH TOÁN",
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textDim,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      formatVND(total),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  formatVND(_total),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.textPrimary,
+                const SizedBox(width: 20),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: isLoading
+                        ? () {}
+                        : () {
+                            if (_nameController.text.trim().isEmpty ||
+                                _addressController.text.trim().isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Vui lòng thêm đầy đủ thông tin giao hàng.',
+                                  ),
+                                  backgroundColor: AppColors.accentPink,
+                                ),
+                              );
+                              return;
+                            }
+                            _showConfirmOrderDialog(context, total);
+                          },
+                    child: Container(
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: AppColors.brandYellow,
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.brandYellow.withValues(alpha: 0.3),
+                            blurRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: isLoading
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: AppColors.ctaPrimaryText,
+                                ),
+                              )
+                            : const Text(
+                                "ĐẶT HÀNG",
+                                style: TextStyle(
+                                  color: AppColors.ctaPrimaryText,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 14,
+                                ),
+                              ),
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: GestureDetector(
-                onTap: isLoading
-                    ? () {}
-                    : () {
-                        if (_nameController.text.trim().isEmpty ||
-                            _addressController.text.trim().isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Vui lòng thêm đầy đủ thông tin giao hàng.',
-                              ),
-                              backgroundColor: AppColors.accentPink,
-                            ),
-                          );
-                          return;
-                        }
-                        _showConfirmOrderDialog(context);
-                      },
-                child: Container(
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: AppColors.brandYellow,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.brandYellow.withValues(alpha: 0.3),
-                        blurRadius: 5,
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: isLoading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: AppColors.ctaPrimaryText,
-                            ),
-                          )
-                        : const Text(
-                            "ĐẶT HÀNG",
-                            style: TextStyle(
-                              color: AppColors.ctaPrimaryText,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 14,
-                            ),
-                          ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  void _showConfirmOrderDialog(BuildContext context) {
+  void _showConfirmOrderDialog(BuildContext context, double total) {
+    final promoState = context.read<CheckoutPromotionCubit>().state;
+
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -409,13 +455,40 @@ class _CheckoutPageState extends State<CheckoutPage> {
             letterSpacing: -0.5,
           ),
         ),
-        content: Text(
-          "Bạn có chắc chắn muốn đặt đơn hàng này với tổng số tiền là ${formatVND(_total)}?",
-          style: const TextStyle(
-            color: AppColors.slate400,
-            fontSize: 14,
-            height: 1.5,
-          ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Bạn có chắc chắn muốn đặt đơn hàng này với tổng số tiền là ${formatVND(total)}?",
+              style: const TextStyle(
+                color: AppColors.slate400,
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+            if (promoState.selectedVoucher != null) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.local_offer_rounded,
+                    size: 14,
+                    color: AppColors.emerald400,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    "Voucher: ${promoState.selectedVoucher!.code}",
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.emerald400,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
         ),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
@@ -441,6 +514,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 note: _noteController.text,
                 paymentMethod: _selectedPaymentMethod,
                 items: widget.args.items,
+                voucherId: promoState.selectedVoucher?.id,
               );
             },
             child: Container(

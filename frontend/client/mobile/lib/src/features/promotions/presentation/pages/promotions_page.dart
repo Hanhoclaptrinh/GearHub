@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,25 +8,10 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/features/chat/presentation/widgets/concierge_entry_button.dart';
-import 'package:mobile/src/features/promotions/data/models/reward_points_model.dart';
 import 'package:mobile/src/features/promotions/data/models/voucher_model.dart';
 import 'package:mobile/src/features/promotions/presentation/state/promotions_cubit.dart';
 import 'package:mobile/src/features/promotions/presentation/state/promotions_state.dart';
 import 'package:mobile/src/shared/widgets/glassmorphic_header.dart';
-
-const _bg = Color(0xFF070708);
-const _surface = Color(0xFF121216);
-const _surfaceSoft = Color(0xFF19191F);
-const _border = Color(0xFF2A2A31);
-
-const _champagne = Color(0xFFD8B76A);
-const _champagneSoft = Color(0xFFE7D4A2);
-const _silver = Color(0xFFB8BDC7);
-const _diamond = Color(0xFFA8D8FF);
-
-const _textHigh = Color(0xFFF4F1EA);
-const _textMid = Color(0xFFB6B2A8);
-const _textLow = Color(0xFF77736A);
 
 class PromotionsPage extends StatefulWidget {
   const PromotionsPage({super.key});
@@ -40,7 +24,7 @@ class _PromotionsPageState extends State<PromotionsPage> {
   final ScrollController _scrollController = ScrollController();
 
   double _scrollOffset = 0.0;
-  String _selectedCategory = 'TẤT CẢ';
+  final String _selectedCategory = 'TẤT CẢ';
 
   @override
   void initState() {
@@ -183,7 +167,7 @@ class _PromotionsPageState extends State<PromotionsPage> {
     return BlocProvider(
       create: (_) => getIt<PromotionsCubit>()..loadData(),
       child: Scaffold(
-        backgroundColor: _bg,
+        backgroundColor: AppColors.background,
         body: Stack(
           children: [
             BlocBuilder<PromotionsCubit, PromotionsState>(
@@ -204,8 +188,8 @@ class _PromotionsPageState extends State<PromotionsPage> {
 
                   return RefreshIndicator(
                     onRefresh: () => context.read<PromotionsCubit>().loadData(),
-                    color: _champagne,
-                    backgroundColor: _surface,
+                    color: AppColors.champagne,
+                    backgroundColor: AppColors.surface,
                     child: CustomScrollView(
                       controller: _scrollController,
                       physics: const AlwaysScrollableScrollPhysics(
@@ -213,16 +197,6 @@ class _PromotionsPageState extends State<PromotionsPage> {
                       ),
                       slivers: [
                         const SliverToBoxAdapter(child: SizedBox(height: 104)),
-
-                        SliverPadding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          sliver: SliverToBoxAdapter(
-                            child: _MembershipCard(points: state.rewardPoints),
-                          ),
-                        ),
-
-                        const SliverToBoxAdapter(child: SizedBox(height: 28)),
-
                         const SliverPadding(
                           padding: EdgeInsets.symmetric(horizontal: 20),
                           sliver: SliverToBoxAdapter(
@@ -251,20 +225,6 @@ class _PromotionsPageState extends State<PromotionsPage> {
                                   'Lưu voucher phù hợp trước khi hoàn tất đơn hàng.',
                               trailing: '${filteredVouchers.length}',
                             ),
-                          ),
-                        ),
-
-                        const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-                        SliverToBoxAdapter(
-                          child: _CategoryFilter(
-                            selectedCategory: _selectedCategory,
-                            onCategoryChanged: (cat) {
-                              HapticFeedback.selectionClick();
-                              setState(() {
-                                _selectedCategory = cat;
-                              });
-                            },
                           ),
                         ),
 
@@ -334,9 +294,9 @@ class _PromotionsPageState extends State<PromotionsPage> {
             child: Container(
               height: 210,
               decoration: BoxDecoration(
-                color: _surface,
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(32),
-                border: Border.all(color: _border),
+                border: Border.all(color: AppColors.borderCardStrong),
               ),
             ),
           ),
@@ -362,9 +322,9 @@ class _PromotionsPageState extends State<PromotionsPage> {
     return Container(
       height: 112,
       decoration: BoxDecoration(
-        color: _surface,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _border),
+        border: Border.all(color: AppColors.borderCardStrong),
       ),
       child: Row(
         children: [
@@ -419,9 +379,9 @@ class _PromotionsPageState extends State<PromotionsPage> {
               width: 68,
               height: 68,
               decoration: BoxDecoration(
-                color: _surface,
+                color: AppColors.surface,
                 shape: BoxShape.circle,
-                border: Border.all(color: _border),
+                border: Border.all(color: AppColors.borderCardStrong),
               ),
               child: const Icon(
                 LucideIcons.triangleAlert,
@@ -433,7 +393,7 @@ class _PromotionsPageState extends State<PromotionsPage> {
             const Text(
               'Không thể tải ưu đãi',
               style: TextStyle(
-                color: _textHigh,
+                color: AppColors.textPrimary,
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
               ),
@@ -442,7 +402,7 @@ class _PromotionsPageState extends State<PromotionsPage> {
             Text(
               message,
               style: const TextStyle(
-                color: _textLow,
+                color: AppColors.textMuted,
                 fontSize: 13,
                 height: 1.45,
               ),
@@ -457,7 +417,7 @@ class _PromotionsPageState extends State<PromotionsPage> {
                   vertical: 13,
                 ),
                 decoration: BoxDecoration(
-                  color: _champagne,
+                  color: AppColors.champagne,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Text(
@@ -490,19 +450,23 @@ class _PromotionsPageState extends State<PromotionsPage> {
                 width: 76,
                 height: 76,
                 decoration: BoxDecoration(
-                  color: _surface,
+                  color: AppColors.surface,
                   shape: BoxShape.circle,
-                  border: Border.all(color: _border),
+                  border: Border.all(color: AppColors.borderCardStrong),
                 ),
                 child: const Center(
-                  child: Icon(LucideIcons.ticket, color: _textLow, size: 28),
+                  child: Icon(
+                    LucideIcons.ticket,
+                    color: AppColors.textMuted,
+                    size: 28,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
               const Text(
                 'Chưa có ưu đãi phù hợp',
                 style: TextStyle(
-                  color: _textHigh,
+                  color: AppColors.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                 ),
@@ -510,7 +474,11 @@ class _PromotionsPageState extends State<PromotionsPage> {
               const SizedBox(height: 8),
               const Text(
                 'Các đặc quyền mới sẽ được cập nhật trong thời gian tới.',
-                style: TextStyle(color: _textLow, fontSize: 13, height: 1.45),
+                style: TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 13,
+                  height: 1.45,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -546,7 +514,7 @@ class _SectionHeader extends StatelessWidget {
               Text(
                 eyebrow,
                 style: const TextStyle(
-                  color: _champagne,
+                  color: AppColors.champagne,
                   fontSize: 10,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.5,
@@ -556,7 +524,7 @@ class _SectionHeader extends StatelessWidget {
               Text(
                 title,
                 style: const TextStyle(
-                  color: _textHigh,
+                  color: AppColors.textPrimary,
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.4,
@@ -566,7 +534,7 @@ class _SectionHeader extends StatelessWidget {
               Text(
                 subtitle,
                 style: const TextStyle(
-                  color: _textLow,
+                  color: AppColors.textMuted,
                   fontSize: 12,
                   height: 1.4,
                   fontWeight: FontWeight.w500,
@@ -579,275 +547,20 @@ class _SectionHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
             decoration: BoxDecoration(
-              color: _surface,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(99),
-              border: Border.all(color: _border),
+              border: Border.all(color: AppColors.borderCardStrong),
             ),
             child: Text(
               trailing!,
               style: const TextStyle(
-                color: _textMid,
+                color: AppColors.textSecondary,
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
               ),
             ),
           ),
       ],
-    );
-  }
-}
-
-class _MembershipCard extends StatelessWidget {
-  final RewardPointsModel? points;
-
-  const _MembershipCard({required this.points});
-
-  @override
-  Widget build(BuildContext context) {
-    final rewardPoints = points?.rewardPoints ?? 0;
-    final formatted = NumberFormat('#,###').format(rewardPoints);
-    final tier = points?.tierName ?? 'BẠC';
-    final progress = (points?.tierProgress ?? 0.0).clamp(0.0, 1.0);
-
-    final style = _TierStyle.fromTier(tier);
-
-    return Container(
-      height: 216,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(34),
-        gradient: style.gradient,
-        border: Border.all(color: style.color.withValues(alpha: 0.25)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
-            blurRadius: 28,
-            offset: const Offset(0, 18),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(34),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -64,
-              top: -84,
-              child: _SoftOrb(color: style.color),
-            ),
-            Positioned(
-              left: -80,
-              bottom: -100,
-              child: _SoftOrb(
-                color: Colors.white.withValues(alpha: 0.18),
-                size: 170,
-              ),
-            ),
-            Positioned.fill(
-              child: CustomPaint(
-                painter: _SubtleLinesPainter(
-                  color: Colors.white.withValues(alpha: 0.045),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      _TierPill(tier: tier, color: style.color),
-                      const Spacer(),
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.055),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.11),
-                          ),
-                        ),
-                        child: Icon(
-                          LucideIcons.gem,
-                          color: style.color,
-                          size: 17,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  const Text(
-                    'REWARDS BALANCE',
-                    style: TextStyle(
-                      color: _textLow,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.55,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        formatted,
-                        style: const TextStyle(
-                          color: _textHigh,
-                          fontSize: 36,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -1.0,
-                          height: 1,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Text(
-                          'điểm',
-                          style: TextStyle(
-                            color: style.color,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(99),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 5,
-                      backgroundColor: Colors.white.withValues(alpha: 0.09),
-                      valueColor: AlwaysStoppedAnimation<Color>(style.color),
-                    ),
-                  ),
-                  const SizedBox(height: 11),
-                  const Text(
-                    'Tích điểm sau mỗi đơn hàng để mở thêm đặc quyền thành viên.',
-                    style: TextStyle(
-                      color: _textLow,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      height: 1.35,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TierStyle {
-  final Color color;
-  final Gradient gradient;
-
-  const _TierStyle({required this.color, required this.gradient});
-
-  factory _TierStyle.fromTier(String tier) {
-    switch (tier.toUpperCase()) {
-      case 'VÀNG':
-        return const _TierStyle(
-          color: _champagne,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF2A2416), Color(0xFF11100C), Color(0xFF070708)],
-          ),
-        );
-      case 'KIM CƯƠNG':
-        return const _TierStyle(
-          color: _diamond,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF182431), Color(0xFF0D1118), Color(0xFF070708)],
-          ),
-        );
-      case 'VIP':
-        return const _TierStyle(
-          color: Color(0xFFFDE047),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF2E2810), Color(0xFF15120A), Color(0xFF070708)],
-          ),
-        );
-      default: // BẠC
-        return const _TierStyle(
-          color: _silver,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF23262C), Color(0xFF111217), Color(0xFF08080A)],
-          ),
-        );
-    }
-  }
-}
-
-class _TierPill extends StatelessWidget {
-  final String tier;
-  final Color color;
-
-  const _TierPill({required this.tier, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.11),
-        borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: color.withValues(alpha: 0.24)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(LucideIcons.shieldCheck, color: color, size: 14),
-          const SizedBox(width: 8),
-          Text(
-            tier.toUpperCase(),
-            style: TextStyle(
-              color: color,
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.1,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SoftOrb extends StatelessWidget {
-  final Color color;
-  final double size;
-
-  const _SoftOrb({required this.color, this.size = 210});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.18),
-            blurRadius: 90,
-            spreadRadius: 20,
-          ),
-        ],
-      ),
     );
   }
 }
@@ -906,9 +619,9 @@ class _PrivilegeItem extends StatelessWidget {
       width: 178,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: _surface,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _border),
+        border: Border.all(color: AppColors.borderCardStrong),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -917,17 +630,19 @@ class _PrivilegeItem extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: _champagne.withValues(alpha: 0.09),
+              color: AppColors.champagne.withValues(alpha: 0.09),
               shape: BoxShape.circle,
-              border: Border.all(color: _champagne.withValues(alpha: 0.18)),
+              border: Border.all(
+                color: AppColors.champagne.withValues(alpha: 0.18),
+              ),
             ),
-            child: Icon(icon, color: _champagneSoft, size: 17),
+            child: Icon(icon, color: AppColors.champagneSoft, size: 17),
           ),
           const Spacer(),
           Text(
             title,
             style: const TextStyle(
-              color: _textHigh,
+              color: AppColors.textPrimary,
               fontSize: 13,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.1,
@@ -937,67 +652,13 @@ class _PrivilegeItem extends StatelessWidget {
           Text(
             subtitle,
             style: const TextStyle(
-              color: _textLow,
+              color: AppColors.textMuted,
               fontSize: 11,
               height: 1.35,
               fontWeight: FontWeight.w500,
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _CategoryFilter extends StatelessWidget {
-  final String selectedCategory;
-  final ValueChanged<String> onCategoryChanged;
-
-  const _CategoryFilter({
-    required this.selectedCategory,
-    required this.onCategoryChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final categories = ['TẤT CẢ', 'GIAO HÀNG', 'THIẾT BỊ', 'THÀNH VIÊN'];
-
-    return SizedBox(
-      height: 40,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        physics: const BouncingScrollPhysics(),
-        itemCount: categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (context, index) {
-          final category = categories[index];
-          final isSelected = selectedCategory == category;
-
-          return _PressableButton(
-            onTap: () => onCategoryChanged(category),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: isSelected ? _champagne : _surface,
-                borderRadius: BorderRadius.circular(99),
-                border: Border.all(color: isSelected ? _champagne : _border),
-              ),
-              child: Text(
-                category,
-                style: TextStyle(
-                  color: isSelected ? const Color(0xFF15120A) : _textMid,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.45,
-                ),
-              ),
-            ),
-          );
-        },
       ),
     );
   }
@@ -1018,7 +679,7 @@ class _PrivilegeVoucherCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = voucher.isPercent ? _champagne : _silver;
+    final accent = voucher.isPercent ? AppColors.champagne : AppColors.silver;
     final icon = voucher.isPercent
         ? LucideIcons.badgePercent
         : LucideIcons.truck;
@@ -1029,13 +690,13 @@ class _PrivilegeVoucherCard extends StatelessWidget {
       child: CustomPaint(
         painter: _VoucherPainter(
           leftWidth: 82,
-          bgColor: _surface,
-          leftColor: _surfaceSoft,
+          bgColor: AppColors.surface,
+          leftColor: AppColors.surfaceElevated,
           borderColor: isClaimed
               ? AppColors.success.withValues(alpha: 0.36)
-              : _border,
+              : AppColors.borderCardStrong,
           dividerColor: Colors.white.withValues(alpha: 0.08),
-          notchColor: _bg,
+          notchColor: AppColors.background,
           notchRadius: 8,
           cornerRadius: 24,
         ),
@@ -1127,7 +788,7 @@ class _PrivilegeVoucherCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          color: _textHigh,
+                          color: AppColors.textPrimary,
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.15,
@@ -1139,7 +800,7 @@ class _PrivilegeVoucherCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          color: _textMid,
+                          color: AppColors.textSecondary,
                           fontSize: 11.5,
                           fontWeight: FontWeight.w500,
                           height: 1.25,
@@ -1151,14 +812,14 @@ class _PrivilegeVoucherCard extends StatelessWidget {
                           children: [
                             const Icon(
                               LucideIcons.clock3,
-                              color: _textLow,
+                              color: AppColors.textMuted,
                               size: 12,
                             ),
                             const SizedBox(width: 5),
                             Text(
                               expiryText,
                               style: const TextStyle(
-                                color: _textLow,
+                                color: AppColors.textMuted,
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -1211,8 +872,8 @@ class _ClaimButton extends StatelessWidget {
         color: isClaimed
             ? AppColors.success.withValues(alpha: 0.1)
             : isClaiming
-            ? _champagne.withValues(alpha: 0.16)
-            : _champagne,
+            ? AppColors.champagne.withValues(alpha: 0.16)
+            : AppColors.champagne,
         borderRadius: BorderRadius.circular(14),
         border: isClaimed
             ? Border.all(color: AppColors.success.withValues(alpha: 0.28))
@@ -1224,7 +885,7 @@ class _ClaimButton extends StatelessWidget {
               height: 15,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: _champagne,
+                color: AppColors.champagne,
               ),
             )
           : isClaimed
@@ -1340,32 +1001,6 @@ class _VoucherPainter extends CustomPainter {
     return oldDelegate.borderColor != borderColor ||
         oldDelegate.bgColor != bgColor ||
         oldDelegate.leftColor != leftColor;
-  }
-}
-
-class _SubtleLinesPainter extends CustomPainter {
-  final Color color;
-
-  const _SubtleLinesPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1;
-
-    for (double x = -size.height; x < size.width; x += 32) {
-      canvas.drawLine(
-        Offset(x, size.height),
-        Offset(x + size.height, 0),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_SubtleLinesPainter oldDelegate) {
-    return oldDelegate.color != color;
   }
 }
 

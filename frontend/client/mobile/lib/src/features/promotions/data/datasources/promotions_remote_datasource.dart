@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import '../models/voucher_model.dart';
-import '../models/reward_points_model.dart';
 
 class PromotionsRemoteDatasource {
   final Dio dio;
@@ -14,15 +13,6 @@ class PromotionsRemoteDatasource {
       return data
           .map((json) => VoucherModel.fromJson(json as Map<String, dynamic>))
           .toList();
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<RewardPointsModel> getMyRewardPoints() async {
-    try {
-      final response = await dio.get('/promotions/me/reward-points');
-      return RewardPointsModel.fromJson(response.data as Map<String, dynamic>);
     } catch (e) {
       rethrow;
     }

@@ -5,7 +5,7 @@ import { ProductsService } from 'src/products/products.service';
 import { ActivityLogService } from 'src/activity-log/activity-log.service';
 import { InventoriesService } from 'src/inventories/inventories.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { OrderStatus, InventoryTransactionType, Prisma, Role, PaymentStatus, PaymentMethod, TransactionStatus, PointTransactionType } from '@prisma/client';
+import { OrderStatus, InventoryTransactionType, Prisma, Role, PaymentStatus, PaymentMethod, TransactionStatus } from '@prisma/client';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { PromotionService } from 'src/promotion/promotion.service';
 
@@ -13,22 +13,14 @@ import { PromotionService } from 'src/promotion/promotion.service';
 export class OrdersService {
     constructor(
         private prisma: PrismaService,
-        private productService: ProductsService,
-        private cartService: CartService,
         private activityLogService: ActivityLogService,
         private inventoriesService: InventoriesService,
         private promotionService: PromotionService,
     ) { }
 
     async createOrder(userId: string, data: CreateOrderDto) {
-        const { items, voucherId, pointsToUse, ...shippingInfor } = data;
+        const { items, voucherId, ...shippingInfor } = data;
         const variantIds = items.map(i => i.variantId);
-
-        // kiểm tra xác thực và loại trừ
-        // chỉ áp dụng được 1 trong 2 loại ưu đãi
-        if (voucherId && pointsToUse) {
-            throw new BadRequestException('Không được áp dụng đồng thời cả voucher và điểm thưởng');
-        }
 
         return await this.prisma.$transaction(async (tx) => {
             // lây thông tin biến thể trực tiếp từ db
@@ -73,16 +65,13 @@ export class OrdersService {
 
             // tính giảm giá
             let voucherDiscount = 0;
-            let pointsDiscount = 0;
 
             if (voucherId) {
                 const voucher = await this.promotionService.validateVoucherForCheckout(userId, voucherId, subtotal);
                 voucherDiscount = this.promotionService.calculateVoucherDiscount(voucher, subtotal);
-            } else if (pointsToUse) {
-                pointsDiscount = await this.promotionService.validatePointsForCheckout(userId, pointsToUse, subtotal);
             }
 
-            const finalTotal = Math.max(0, subtotal - voucherDiscount - pointsDiscount);
+            const finalTotal = Math.max(0, subtotal - voucherDiscount);
 
             // tao order
             const order = await tx.order.create({
@@ -91,8 +80,6 @@ export class OrdersService {
                     totalAmount: new Prisma.Decimal(finalTotal),
                     ...shippingInfor,
                     voucherDiscount: new Prisma.Decimal(voucherDiscount),
-                    pointsDiscount: new Prisma.Decimal(pointsDiscount),
-                    pointsUsed: pointsToUse || 0,
                     items: {
                         create: orderItemsData
                     },
@@ -111,11 +98,9 @@ export class OrdersService {
             if (isCOD) {
                 if (voucherId) {
                     await this.promotionService.markVoucherUsed(userId, voucherId, order.id, tx);
-                } else if (pointsToUse) {
-                    await this.promotionService.redeemPoints(userId, order.id, pointsToUse, tx);
                 }
             } else {
-                // chưa trừ điểm hay voucher của user khi đang chờ thanh toán
+                // chưa trừ voucher của user khi đang chờ thanh toán
                 // user hủy giữa chừng hoặc thanh toán thất bại - trả lại điểm
                 if (voucherId) {
                     await tx.userVoucher.update({
@@ -127,7 +112,6 @@ export class OrdersService {
 
             // tru stock qua InventoryService
             for (const item of items) {
-                const variant = variants.find(v => v.id === item.variantId);
                 await this.inventoriesService.adjustStock({
                     variantId: item.variantId,
                     type: InventoryTransactionType.SALE,
@@ -340,11 +324,6 @@ export class OrdersService {
                 where: { id: orderId },
                 data: { status }
             });
-
-            // nhận điểm khi đã giao thành công
-            if (status === OrderStatus.DELIVERED) {
-                await this.promotionService.earnPointsFromDeliveredOrder(orderId, tx);
-            }
 
             if (isNewRefundStatus) {
                 if (order.paymentStatus === PaymentStatus.PAID) {
@@ -628,76 +607,6 @@ export class OrdersService {
                 where: { id: userVoucher.id },
                 data: { usedAt: null, orderId: null }
             });
-        }
-
-        // hoàn lại điểm đã dùng
-        // tìm lại giao dịch đã dùng điểm
-        const redeemTx = await tx.pointTransaction.findFirst({
-            where: { orderId, type: PointTransactionType.REDEEM }
-        });
-        if (redeemTx) {
-            const pointsToRefund = Math.abs(redeemTx.points);
-            const alreadyRefunded = await tx.pointTransaction.findFirst({
-                where: { orderId, type: PointTransactionType.REFUND }
-            });
-            if (!alreadyRefunded) {
-                const updatedUser = await tx.user.update({
-                    where: { id: userId },
-                    data: { rewardPoints: { increment: pointsToRefund } }
-                });
-                await tx.pointTransaction.create({
-                    data: {
-                        userId,
-                        orderId,
-                        type: PointTransactionType.REFUND,
-                        points: pointsToRefund,
-                        balanceAfter: updatedUser.rewardPoints,
-                        description: `Hoàn ${pointsToRefund} điểm do hủy/trả đơn hàng #${orderId.slice(0, 8)}`
-                    }
-                });
-            }
-        }
-
-        // thu hồi điểm thưởng
-        const earnTx = await tx.pointTransaction.findFirst({
-            where: { orderId, type: PointTransactionType.EARN }
-        });
-        if (earnTx) {
-            // chống lặp
-            const alreadyAdjusted = await tx.pointTransaction.findFirst({
-                where: { orderId, type: PointTransactionType.ADJUST }
-            });
-            if (!alreadyAdjusted) {
-                const pointsToDeduct = earnTx.points;
-                const updatedUser = await tx.user.update({
-                    where: { id: userId },
-                    data: {
-                        rewardPoints: { decrement: pointsToDeduct }
-                    }
-                });
-
-                // hạ mức tổng chi tiêu của user
-                const order = await tx.order.findUnique({ where: { id: orderId } });
-                if (order) {
-                    await tx.user.update({
-                        where: { id: userId },
-                        data: {
-                            totalSpent: { decrement: order.totalAmount }
-                        }
-                    });
-                }
-
-                await tx.pointTransaction.create({
-                    data: {
-                        userId,
-                        orderId,
-                        type: PointTransactionType.ADJUST,
-                        points: -pointsToDeduct,
-                        balanceAfter: updatedUser.rewardPoints,
-                        description: `Thu hồi ${pointsToDeduct} điểm tích lũy do hủy/trả đơn hàng #${orderId.slice(0, 8)}`
-                    }
-                });
-            }
         }
     }
 }

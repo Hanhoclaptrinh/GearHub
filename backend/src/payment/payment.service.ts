@@ -10,8 +10,8 @@ export class PaymentService {
 
     constructor(
         private prisma: PrismaService,
-        private vnpayGateway: VnPayGateway,
         private promotionService: PromotionService,
+        private vnpayGateway: VnPayGateway,
     ) { }
 
     async createPaymentUrl(orderId: string, ipAddr: string, platform: string = 'web') {
@@ -187,10 +187,6 @@ export class PaymentService {
                     });
                     if (userVoucher) {
                         await this.promotionService.markVoucherUsed(order.userId, userVoucher.voucherId, orderId, tx);
-                    }
-
-                    if (order.pointsUsed > 0) {
-                        await this.promotionService.redeemPoints(order.userId, orderId, order.pointsUsed, tx);
                     }
 
                     for (const item of order.items) {

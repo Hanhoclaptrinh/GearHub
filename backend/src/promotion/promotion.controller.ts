@@ -31,25 +31,6 @@ export class PromotionController {
         return this.promotionService.claimVoucher(req.user.userId, voucherId);
     }
 
-    @Get('promotions/me/reward-points')
-    @UseGuards(JwtAuthGuard)
-    async getMyRewardPoints(@Request() req) {
-        return this.promotionService.getMyRewardPoints(req.user.userId);
-    }
-
-    @Get('promotions/me/point-transactions')
-    @UseGuards(JwtAuthGuard)
-    async getMyPointTransactions(
-        @Request() req,
-        @Query('page') page?: number,
-        @Query('limit') limit?: number
-    ) {
-        return this.promotionService.getMyPointTransactions(req.user.userId, {
-            page: page ? Number(page) : 1,
-            limit: limit ? Number(limit) : 10
-        });
-    }
-
     // admin
     @Post('admin/promotions/vouchers')
     @UseGuards(JwtAuthGuard, RolesGuard)

@@ -8,14 +8,16 @@ class PriceBreakdownSection extends StatelessWidget {
   final double discount;
   final double vat;
   final double total;
+  final double voucherDiscount;
 
   const PriceBreakdownSection({
     super.key,
     required this.subtotal,
     required this.shipping,
-    required this.discount,
+    this.discount = 0,
     required this.vat,
     required this.total,
+    this.voucherDiscount = 0,
   });
 
   @override
@@ -42,6 +44,15 @@ class PriceBreakdownSection extends StatelessWidget {
           ],
           const SizedBox(height: 14),
           _priceRow("Thuế VAT (10%)", formatVND(vat)),
+          if (voucherDiscount > 0) ...[
+            const SizedBox(height: 14),
+            _priceRow(
+              "Voucher giảm",
+              "-${formatVND(voucherDiscount)}",
+              valueColor: AppColors.emerald400,
+              icon: Icons.local_offer_rounded,
+            ),
+          ],
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 18),
             child: Container(height: 1, color: AppColors.borderCardStrong),
@@ -73,13 +84,27 @@ class PriceBreakdownSection extends StatelessWidget {
     );
   }
 
-  Widget _priceRow(String label, String value, {Color? valueColor}) {
+  Widget _priceRow(
+    String label,
+    String value, {
+    Color? valueColor,
+    IconData? icon,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: const TextStyle(color: AppColors.slate400, fontSize: 14),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 14, color: valueColor ?? AppColors.slate400),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: const TextStyle(color: AppColors.slate400, fontSize: 14),
+            ),
+          ],
         ),
         Text(
           value,

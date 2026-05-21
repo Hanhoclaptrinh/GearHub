@@ -49,6 +49,7 @@ import 'package:mobile/src/features/promotions/data/repositories/promotions_repo
 import 'package:mobile/src/features/promotions/domain/repositories/promotions_repository.dart';
 import 'package:mobile/src/features/promotions/presentation/state/promotions_cubit.dart';
 import 'package:mobile/src/features/promotions/presentation/state/my_vouchers_cubit.dart';
+import 'package:mobile/src/features/checkout/presentation/state/checkout_promotion_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 
@@ -217,6 +218,9 @@ Future<void> setupDependencies() async {
   );
   getIt.registerFactory<MyVouchersCubit>(
     () => MyVouchersCubit(repository: getIt<PromotionsRepository>()),
+  );
+  getIt.registerFactory<CheckoutPromotionCubit>(
+    () => CheckoutPromotionCubit(repository: getIt<PromotionsRepository>()),
   );
 }
 

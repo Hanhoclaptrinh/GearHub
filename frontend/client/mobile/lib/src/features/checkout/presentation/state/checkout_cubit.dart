@@ -15,6 +15,7 @@ class CheckoutCubit extends Cubit<CheckoutState> {
     required String note,
     required String paymentMethod,
     required List<CartItemEntity> items,
+    String? voucherId,
   }) async {
     emit(CheckoutLoading());
     try {
@@ -24,10 +25,15 @@ class CheckoutCubit extends Cubit<CheckoutState> {
         'shippingAddress': shippingAddress,
         'note': note,
         'paymentMethod': paymentMethod,
-        'items': items.map((item) => {
-          'variantId': item.productVariant.id,
-          'quantity': item.quantity,
-        }).toList(),
+        'items': items
+            .map(
+              (item) => {
+                'variantId': item.productVariant.id,
+                'quantity': item.quantity,
+              },
+            )
+            .toList(),
+        if (voucherId != null) 'voucherId': voucherId,
       };
 
       final response = await apiClient.dio.post('/orders', data: orderPayload);
@@ -42,11 +48,13 @@ class CheckoutCubit extends Cubit<CheckoutState> {
         paymentUrl = paymentRes.data['paymentUrl'];
       }
 
-      emit(OrderPlacedSuccess(
-        orderId: orderId,
-        paymentUrl: paymentUrl,
-        paymentMethod: paymentMethod,
-      ));
+      emit(
+        OrderPlacedSuccess(
+          orderId: orderId,
+          paymentUrl: paymentUrl,
+          paymentMethod: paymentMethod,
+        ),
+      );
     } catch (e) {
       emit(CheckoutError(message: e.toString()));
     }

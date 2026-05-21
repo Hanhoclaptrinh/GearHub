@@ -27,7 +27,7 @@ class AppColors {
   // ── depth & border ──
   static const Color borderSubtle = Color(0x0FFFFFFF);
   static const Color borderLight = Color(0x14FFFFFF);
-  
+
   // ── hero section ──
   static const Color heroBg1 = Color(0xFF0B1020);
   static const Color heroBg2 = Color(0xFF111827);
@@ -63,6 +63,10 @@ class AppColors {
   static const Color accentGoldSoft = Color(0x18F59E0B);
   static const Color accentGoldDim = Color(0xFF1A1200);
   static const Color emerald400 = Color(0xFF34D399);
+  static const champagne = Color(0xFFD8B76A);
+  static const champagneSoft = Color(0xFFE7D4A2);
+  static const silver = Color(0xFFB8BDC7);
+  static const diamond = Color(0xFFA8D8FF);
 
   // ── cards & containers ──
   static const Color cardSurface = Color(0xFF0E0E18);

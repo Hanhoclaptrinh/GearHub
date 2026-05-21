@@ -32,10 +32,8 @@ model User {
   reviews               Review[]
   sentMessages          Message[]              @relation("SenderMessages")
   inventoryTransactions InventoryTransaction[]
-  rewardPoints          Int                    @default(0) @map("reward_points")
   totalSpent            Decimal                @default(0) @map("total_spent") @db.Decimal(15, 2)
   userVouchers          UserVoucher[]
-  pointTransactions     PointTransaction[]
 
   @@map("users")
 }
@@ -257,12 +255,7 @@ model Order {
   tracking          OrderTracking[]
   transaction       Transaction?
   voucherDiscount   Decimal            @default(0) @map("voucher_discount") @db.Decimal(15, 2)
-  pointsDiscount    Decimal            @default(0) @map("points_discount") @db.Decimal(15, 2)
-  pointsUsed        Int                @default(0) @map("points_used")
   userVoucher       UserVoucher?
-  pointTransactions PointTransaction[]
-  rewardPointsEarned   Int       @default(0) @map("reward_points_earned")
-  rewardPointsEarnedAt DateTime? @map("reward_points_earned_at")
 
   @@index([userId])
   @@index([status])
@@ -587,32 +580,4 @@ model UserVoucher {
   @@index([userId])
   @@index([voucherId])
   @@index([usedAt])
-}
-
-// ====================== REWARD POINTS ======================
-enum PointTransactionType {
-  EARN
-  REDEEM
-  REFUND
-  ADJUST
-}
-
-model PointTransaction {
-  id           String               @id @default(uuid()) @db.VarChar(36)
-  userId       String               @map("user_id") @db.VarChar(36)
-  orderId      String?              @map("order_id") @db.VarChar(36)
-  type         PointTransactionType
-  points       Int
-  balanceAfter Int                  @map("balance_after")
-  description  String               @db.VarChar(255)
-  createdAt    DateTime             @default(now()) @map("created_at")
-
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
-
-  @@map("point_transactions")
-  @@index([userId])
-  @@index([orderId])
-  @@index([type])
-  @@index([createdAt])
 }

@@ -213,7 +213,7 @@ class MembershipTierPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
               ],
-              // tier rules/rewards
+              // tier details
               const Text(
                 'QUYỀN LỢI TỪNG HẠNG THÀNH VIÊN',
                 style: TextStyle(
@@ -227,7 +227,7 @@ class MembershipTierPage extends StatelessWidget {
               _buildTierDetailItem(
                 'HẠNG BẠC',
                 'Dưới 15,000,000 đ',
-                'Tích lũy 0.5% giá trị đơn hàng.',
+                'Nhận các voucher phù hợp khi có chương trình mới.',
                 const Color(0xFF64748B),
                 LucideIcons.shield,
               ),
@@ -235,7 +235,7 @@ class MembershipTierPage extends StatelessWidget {
               _buildTierDetailItem(
                 'HẠNG VÀNG',
                 '15,000,000 đ - 50,000,000 đ',
-                'Tích lũy 1% giá trị đơn hàng.',
+                'Ưu tiên các voucher giá trị cao cho đơn đủ điều kiện.',
                 const Color(0xFFFFCC00),
                 LucideIcons.sparkles,
               ),
@@ -243,7 +243,7 @@ class MembershipTierPage extends StatelessWidget {
               _buildTierDetailItem(
                 'KIM CƯƠNG',
                 '50,000,000 đ - 150,000,000 đ',
-                'Tích lũy 1.5% giá trị đơn hàng.',
+                'Ưu tiên các voucher thiết bị cao cấp khi có chương trình mới.',
                 const Color(0xFF06B6D4),
                 LucideIcons.gem,
               ),
@@ -251,7 +251,7 @@ class MembershipTierPage extends StatelessWidget {
               _buildTierDetailItem(
                 'HẠNG VIP',
                 'Trên 150,000,000 đ',
-                'Tích lũy 2% giá trị đơn hàng.',
+                'Ưu tiên các voucher cao cấp và hỗ trợ tư vấn nhanh.',
                 const Color(0xFFEF4444),
                 LucideIcons.crown,
               ),
@@ -265,7 +265,7 @@ class MembershipTierPage extends StatelessWidget {
   Widget _buildTierDetailItem(
     String tierName,
     String spendingLimit,
-    String rewardDesc,
+    String benefitDesc,
     Color color,
     IconData icon,
   ) {
@@ -319,7 +319,7 @@ class MembershipTierPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  rewardDesc,
+                  benefitDesc,
                   style: const TextStyle(
                     fontSize: 12,
                     color: _textMid,

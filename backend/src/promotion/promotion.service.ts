@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateVoucherDto } from './dto/create-voucher.dto';
 import { UpdateVoucherDto } from './dto/update-voucher.dto';
 import { UpdateVoucherStatusDto } from './dto/update-voucher-status.dto';
-import { VoucherType, PointTransactionType, Prisma } from '@prisma/client';
+import { VoucherType, Prisma } from '@prisma/client';
 
 @Injectable()
 export class PromotionService {
@@ -344,47 +344,6 @@ export class PromotionService {
         });
     }
 
-    async getMyRewardPoints(userId: string) {
-        const user = await this.prisma.user.findUnique({
-            where: { id: userId },
-            select: { rewardPoints: true, totalSpent: true }
-        });
-        if (!user) {
-            throw new NotFoundException('Không tìm thấy tài khoản người dùng');
-        }
-        return {
-            rewardPoints: user.rewardPoints,
-            totalSpent: Number(user.totalSpent)
-        };
-    }
-
-    async getMyPointTransactions(userId: string, query: { page?: number; limit?: number }) {
-        const { page = 1, limit = 10 } = query;
-        const skip = (page - 1) * limit;
-
-        const [data, total] = await Promise.all([
-            this.prisma.pointTransaction.findMany({
-                where: { userId },
-                skip,
-                take: Number(limit),
-                orderBy: { createdAt: 'desc' }
-            }),
-            this.prisma.pointTransaction.count({
-                where: { userId }
-            })
-        ]);
-
-        return {
-            data,
-            meta: {
-                total,
-                page: Number(page),
-                limit: Number(limit),
-                lastPage: Math.ceil(total / Number(limit))
-            }
-        };
-    }
-
     async validateVoucherForCheckout(userId: string, voucherId: string, subtotal: number) {
         const userVoucher = await this.prisma.userVoucher.findUnique({
             where: {
@@ -442,46 +401,6 @@ export class PromotionService {
         return Math.min(discount, subtotal);
     }
 
-    async validatePointsForCheckout(userId: string, pointsToUse: number, subtotal: number) {
-        if (pointsToUse <= 0) {
-            throw new BadRequestException('Số điểm sử dụng phải lớn hơn 0');
-        }
-
-        const user = await this.prisma.user.findUnique({
-            where: { id: userId },
-            select: { rewardPoints: true }
-        });
-
-        if (!user) {
-            throw new NotFoundException('Không tìm thấy tài khoản người dùng');
-        }
-
-        if (user.rewardPoints < pointsToUse) {
-            throw new BadRequestException(
-                `Bạn không đủ điểm thưởng. Điểm hiện có: ${user.rewardPoints}, điểm cần dùng: ${pointsToUse}`
-            );
-        }
-
-        const pointsDiscount = this.calculatePointsDiscount(pointsToUse, subtotal);
-        if (pointsDiscount <= 0) {
-            throw new BadRequestException('Số điểm quy đổi phải đạt tối thiểu 100 điểm (10,000 VND)');
-        }
-
-        return pointsDiscount;
-    }
-
-    calculatePointsDiscount(
-        pointsToUse: number,
-        subtotal: number,
-        maxDiscountPercent: number = 0.2 // tối đa 20% giá trị đơn
-    ): number {
-        const discount = Math.floor(pointsToUse / 100) * 10000;
-
-        const maxAllowedDiscount = subtotal * maxDiscountPercent;
-
-        return Math.min(discount, maxAllowedDiscount, subtotal);
-    }
-
     async markVoucherUsed(userId: string, voucherId: string, orderId: string, tx: Prisma.TransactionClient) {
         const userVoucher = await tx.userVoucher.findUnique({
             where: {
@@ -507,79 +426,6 @@ export class PromotionService {
             where: { id: voucherId },
             data: {
                 usedCount: { increment: 1 }
-            }
-        });
-    }
-
-    async redeemPoints(userId: string, orderId: string, points: number, tx: Prisma.TransactionClient) {
-        const user = await tx.user.findUnique({
-            where: { id: userId },
-            select: { rewardPoints: true }
-        });
-
-        if (!user || user.rewardPoints < points) {
-            throw new BadRequestException('Người dùng không đủ điểm để thanh toán');
-        }
-
-        const updatedUser = await tx.user.update({
-            where: { id: userId },
-            data: {
-                rewardPoints: { decrement: points }
-            }
-        });
-
-        await tx.pointTransaction.create({
-            data: {
-                userId,
-                orderId,
-                type: PointTransactionType.REDEEM,
-                points: -points,
-                balanceAfter: updatedUser.rewardPoints,
-                description: `Sử dụng ${points} điểm cho đơn hàng #${orderId.slice(0, 8)}`
-            }
-        });
-    }
-
-    async earnPointsFromDeliveredOrder(orderId: string, tx: Prisma.TransactionClient) {
-        // chặn nhận trùng lặp
-        const existingEarn = await tx.pointTransaction.findFirst({
-            where: {
-                orderId,
-                type: PointTransactionType.EARN
-            }
-        });
-
-        if (existingEarn) {
-            return;
-        }
-
-        const order = await tx.order.findUnique({
-            where: { id: orderId }
-        });
-
-        if (!order) {
-            throw new NotFoundException('Không tìm thấy đơn hàng để cộng điểm thưởng');
-        }
-
-        const earnedPoints = Math.floor(Number(order.totalAmount) / 1000);
-        if (earnedPoints <= 0) return;
-
-        const updatedUser = await tx.user.update({
-            where: { id: order.userId },
-            data: {
-                rewardPoints: { increment: earnedPoints },
-                totalSpent: { increment: order.totalAmount }
-            }
-        });
-
-        await tx.pointTransaction.create({
-            data: {
-                userId: order.userId,
-                orderId,
-                type: PointTransactionType.EARN,
-                points: earnedPoints,
-                balanceAfter: updatedUser.rewardPoints,
-                description: `Tích ${earnedPoints} điểm từ đơn hàng #${orderId.slice(0, 8)}`
             }
         });
     }

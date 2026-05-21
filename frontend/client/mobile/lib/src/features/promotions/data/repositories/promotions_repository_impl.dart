@@ -1,7 +1,6 @@
 import '../datasources/promotions_remote_datasource.dart';
 import '../../domain/repositories/promotions_repository.dart';
 import '../models/voucher_model.dart';
-import '../models/reward_points_model.dart';
 
 class PromotionsRepositoryImpl implements PromotionsRepository {
   final PromotionsRemoteDatasource remoteDatasource;
@@ -12,15 +11,6 @@ class PromotionsRepositoryImpl implements PromotionsRepository {
   Future<List<VoucherModel>> getAvailableVouchers() async {
     try {
       return await remoteDatasource.getAvailableVouchers();
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  @override
-  Future<RewardPointsModel> getMyRewardPoints() async {
-    try {
-      return await remoteDatasource.getMyRewardPoints();
     } catch (e) {
       rethrow;
     }
