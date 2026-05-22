@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/core/di/injection.dart';
+import 'package:mobile/src/core/notifications/push_notification_service.dart';
 import 'package:mobile/src/core/theme/app_theme.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:mobile/src/features/home/presentation/pages/main_screen.dart';
-
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 import 'package:mobile/src/features/wishlist/presentation/state/wishlist_cubit.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +27,9 @@ void main() async {
     ),
   );
 
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await getIt<PushNotificationService>().initialize();
+
   runApp(const GearHubApp());
 }
 
@@ -39,9 +44,12 @@ class GearHubApp extends StatelessWidget {
           create: (_) => getIt<AuthCubit>()..checkAuthStatus(),
         ),
         BlocProvider<CartCubit>(create: (_) => getIt<CartCubit>()..loadCart()),
-        BlocProvider<WishlistCubit>(create: (_) => getIt<WishlistCubit>()..fetchWishlist()),
+        BlocProvider<WishlistCubit>(
+          create: (_) => getIt<WishlistCubit>()..fetchWishlist(),
+        ),
       ],
       child: MaterialApp(
+        navigatorKey: PushNotificationService.navigatorKey,
         debugShowCheckedModeBanner: false,
         title: 'GearHub',
         theme: AppTheme.theme(context),

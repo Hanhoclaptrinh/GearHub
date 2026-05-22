@@ -1,25 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/features/auth/domain/entities/user_entity.dart';
 import 'package:mobile/src/features/profile/presentation/pages/edit_profile_page.dart';
-import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
-import 'package:mobile/src/features/profile/presentation/state/orders_state.dart';
-
-import 'package:mobile/src/features/profile/presentation/pages/membership_tier_page.dart';
 
 class ProfileHeader extends StatelessWidget {
   final UserEntity? user;
   const ProfileHeader({super.key, this.user});
-
-  double _toDouble(dynamic val) {
-    if (val == null) return 0.0;
-    if (val is num) return val.toDouble();
-    if (val is String) return double.tryParse(val) ?? 0.0;
-    return 0.0;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -129,77 +116,13 @@ class ProfileHeader extends StatelessWidget {
           const SizedBox(height: 12),
 
           if (user != null)
-            BlocBuilder<OrdersCubit, OrdersState>(
-              builder: (context, state) {
-                double totalSpent = 0.0;
-                if (state is OrdersLoaded) {
-                  for (final order in state.orders) {
-                    if (order['status'] == 'DELIVERED') {
-                      totalSpent += _toDouble(
-                        order['totalAmount'] ?? order['total'],
-                      );
-                    }
-                  }
-                }
-
-                String tierName = 'STANDARD ACCESS';
-                Color tierColor = Colors.white54;
-                if (totalSpent >= 150000000.0) {
-                  tierName = 'VIP PRESTIGE';
-                  tierColor = AppColors.champagne;
-                } else if (totalSpent >= 50000000.0) {
-                  tierName = 'DIAMOND ELITE';
-                  tierColor = const Color(0xFFB4CCFF);
-                } else if (totalSpent >= 15000000.0) {
-                  tierName = 'GOLD MEMBER';
-                  tierColor = const Color(0xFFFFD700);
-                }
-
-                return GestureDetector(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            MembershipTierPage(totalSpent: totalSpent),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: tierColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: tierColor.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.verified_rounded,
-                          size: 12,
-                          color: tierColor,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          tierName,
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            color: tierColor,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+            Text(
+              user!.email,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Colors.white.withValues(alpha: 0.36),
+              ),
             )
           else
             Text(

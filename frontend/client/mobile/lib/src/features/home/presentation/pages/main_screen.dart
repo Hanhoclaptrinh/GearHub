@@ -4,6 +4,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/core/di/injection.dart';
+import 'package:mobile/src/core/notifications/push_notification_service.dart';
 import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/features/home/presentation/pages/home_page.dart';
 import 'package:mobile/src/features/cart/presentation/pages/cart_page.dart';
@@ -71,6 +73,7 @@ class MainScreenState extends State<MainScreen> {
       listener: (context, state) {
         if (state is AuthAuthenticated) {
           context.read<CartCubit>().syncCart();
+          getIt<PushNotificationService>().syncTokenIfAuthenticated();
         } else if (state is AuthUnauthenticated) {
           if (!_isBottomBarVisible) {
             setState(() => _isBottomBarVisible = true);

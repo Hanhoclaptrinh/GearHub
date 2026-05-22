@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:mobile/src/core/network/api_client.dart';
+import 'package:mobile/src/core/notifications/push_notification_service.dart';
 import 'package:mobile/src/core/storage/secure_storage_service.dart';
 import 'package:mobile/src/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:mobile/src/features/auth/data/repositories/auth_repository_impl.dart';
@@ -52,7 +53,6 @@ import 'package:mobile/src/features/promotions/presentation/state/my_vouchers_cu
 import 'package:mobile/src/features/checkout/presentation/state/checkout_promotion_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 final getIt = GetIt.instance;
 
 Future<void> setupDependencies() async {
@@ -68,6 +68,13 @@ Future<void> setupDependencies() async {
     () => ApiClient(storageService: getIt<SecureStorageService>()),
   );
 
+  getIt.registerLazySingleton<PushNotificationService>(
+    () => PushNotificationService(
+      apiClient: getIt<ApiClient>(),
+      storageService: getIt<SecureStorageService>(),
+    ),
+  );
+
   // auth
   getIt.registerLazySingleton<AuthRemoteDatasource>(
     () => AuthRemoteDatasource(dio: getIt<ApiClient>().dio),
@@ -77,6 +84,7 @@ Future<void> setupDependencies() async {
     () => AuthRepositoryImpl(
       remoteDatasource: getIt<AuthRemoteDatasource>(),
       storageService: getIt<SecureStorageService>(),
+      pushNotificationService: getIt<PushNotificationService>(),
     ),
   );
 
@@ -223,4 +231,3 @@ Future<void> setupDependencies() async {
     () => CheckoutPromotionCubit(repository: getIt<PromotionsRepository>()),
   );
 }
-

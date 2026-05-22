@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1031456190153",
+    "project_id": "gearhubonlineretail",
+    "storage_bucket": "gearhubonlineretail.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1031456190153:android:52a1798462313dfd4c2718",
+        "android_client_info": {
+          "package_name": "com.gearhub.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCX32x4lxWl8SHHf1KHlPlY_Ve_Oy3ClmE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

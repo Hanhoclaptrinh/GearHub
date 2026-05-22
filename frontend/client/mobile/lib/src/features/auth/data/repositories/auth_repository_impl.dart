@@ -1,4 +1,5 @@
 import 'package:mobile/src/core/storage/secure_storage_service.dart';
+import 'package:mobile/src/core/notifications/push_notification_service.dart';
 import 'package:mobile/src/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:mobile/src/features/auth/data/models/auth_tokens_model.dart';
 import 'package:mobile/src/features/auth/data/models/user_model.dart';
@@ -9,12 +10,15 @@ import 'package:mobile/src/features/auth/domain/repositories/auth_repository.dar
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDatasource _remoteDatasource;
   final SecureStorageService _storageService;
+  final PushNotificationService _pushNotificationService;
 
   AuthRepositoryImpl({
     required AuthRemoteDatasource remoteDatasource,
     required SecureStorageService storageService,
-  })  : _remoteDatasource = remoteDatasource,
-        _storageService = storageService;
+    required PushNotificationService pushNotificationService,
+  }) : _remoteDatasource = remoteDatasource,
+       _storageService = storageService,
+       _pushNotificationService = pushNotificationService;
 
   @override
   Future<String> requestRegister({
@@ -164,13 +168,13 @@ class AuthRepositoryImpl implements AuthRepository {
       }
       return UserModel.fromJson(response);
     }
-      return UserModel.fromJson(response);
-    
+    return UserModel.fromJson(response);
   }
 
   @override
   Future<void> logout() async {
     try {
+      await _pushNotificationService.deregisterCurrentToken();
       await _remoteDatasource.logout();
     } finally {
       await _storageService.clearAll();

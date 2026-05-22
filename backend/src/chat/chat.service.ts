@@ -24,6 +24,7 @@ import {
   LatestCustomerRoomResponseDto,
 } from './dto/chat-response.dto';
 import { AiChatService } from 'src/ai/ai-chat.service';
+import { NotificationService } from 'src/notification/notification.service';
 
 @Injectable()
 export class ChatService {
@@ -32,6 +33,7 @@ export class ChatService {
   constructor(
     private readonly chatRepository: ChatRepository,
     private readonly aiChatService: AiChatService,
+    private readonly notificationService: NotificationService,
   ) { }
 
   async joinRoom(user: SocketUser, data: JoinRoomDto) {
@@ -87,6 +89,8 @@ export class ChatService {
         tx,
       });
     });
+
+    this.sendChatNotificationIfNeeded(user, result.room, content);
 
     return {
       ...result,
@@ -407,6 +411,31 @@ export class ChatService {
         'Chỉ nhân viên hoặc quản trị viên mới truy cập vào đoạn chat',
       );
     }
+  }
+
+  private sendChatNotificationIfNeeded(
+    sender: SocketUser,
+    room: ChatRoomRecord,
+    content: string,
+  ) {
+    if (
+      sender.id === room.userId ||
+      (sender.role !== Role.ADMIN && sender.role !== Role.STAFF)
+    ) {
+      return;
+    }
+
+    void this.notificationService.sendToUser(room.userId, {
+      notification: {
+        title: 'Tin nhắn từ GearHub',
+        body: content.length > 80 ? `${content.slice(0, 77)}...` : content,
+      },
+      data: {
+        type: 'chat',
+        roomId: room.id,
+        route: '/chat',
+      },
+    });
   }
 
   private assertCanCloseRoom(user: SocketUser, room: ChatRoomRecord) {

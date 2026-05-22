@@ -6,9 +6,10 @@ import { ChatRepository } from './repositories/chat.repository';
 import { ChatSocketAuthGuard } from './guards/chat-socket-auth.guard';
 import { AdminChatController } from './admin-chat.controller';
 import { AiModule } from 'src/ai/ai.module';
+import { NotificationModule } from 'src/notification/notification.module';
 
 @Module({
-  imports: [AiModule],
+  imports: [AiModule, NotificationModule],
   providers: [ChatGateway, ChatService, ChatRepository, ChatSocketAuthGuard],
   controllers: [ChatController, AdminChatController],
 })

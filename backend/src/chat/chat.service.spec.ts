@@ -8,6 +8,7 @@ import { MessageStatus, MessageType, Role, RoomStatus } from '@prisma/client';
 import { ChatRepository } from './repositories/chat.repository';
 import { ChatService } from './chat.service';
 import { AiChatService } from 'src/ai/ai-chat.service';
+import { NotificationService } from 'src/notification/notification.service';
 
 const baseRoom = {
   id: 'room-1',
@@ -44,6 +45,7 @@ describe('ChatService', () => {
         isEnabled: jest.fn().mockReturnValue(false),
         respondToUserMessage: jest.fn(),
       } as unknown as AiChatService,
+      { sendToUser: jest.fn() } as unknown as NotificationService,
     );
   });
 
@@ -293,6 +295,7 @@ describe('ChatService', () => {
       service = new ChatService(
         repository as unknown as ChatRepository,
         aiService,
+        { sendToUser: jest.fn() } as unknown as NotificationService,
       );
 
       const publish = jest.fn();

@@ -23,6 +23,7 @@ import { ActivityLogInterceptor } from './common/interceptors/activity-log.inter
 import { ScheduleModule } from '@nestjs/schedule';
 import { InventoriesModule } from './inventories/inventories.module';
 import { PromotionModule } from './promotion/promotion.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -62,7 +63,8 @@ import { PromotionModule } from './promotion/promotion.module';
     ActivityLogModule,
     ScheduleModule.forRoot(),
     InventoriesModule,
-    PromotionModule
+    PromotionModule,
+    NotificationModule
   ],
   controllers: [AppController],
   providers: [

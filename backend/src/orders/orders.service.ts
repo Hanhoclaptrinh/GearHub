@@ -1,612 +1,730 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CartService } from 'src/cart/cart.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ProductsService } from 'src/products/products.service';
 import { ActivityLogService } from 'src/activity-log/activity-log.service';
 import { InventoriesService } from 'src/inventories/inventories.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { OrderStatus, InventoryTransactionType, Prisma, Role, PaymentStatus, PaymentMethod, TransactionStatus } from '@prisma/client';
+import {
+  OrderStatus,
+  InventoryTransactionType,
+  Prisma,
+  Role,
+  PaymentStatus,
+  PaymentMethod,
+  TransactionStatus,
+} from '@prisma/client';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { PromotionService } from 'src/promotion/promotion.service';
+import { NotificationService } from 'src/notification/notification.service';
 
 @Injectable()
 export class OrdersService {
-    constructor(
-        private prisma: PrismaService,
-        private activityLogService: ActivityLogService,
-        private inventoriesService: InventoriesService,
-        private promotionService: PromotionService,
-    ) { }
+  constructor(
+    private prisma: PrismaService,
+    private activityLogService: ActivityLogService,
+    private inventoriesService: InventoriesService,
+    private promotionService: PromotionService,
+    private notificationService: NotificationService,
+  ) {}
 
-    async createOrder(userId: string, data: CreateOrderDto) {
-        const { items, voucherId, ...shippingInfor } = data;
-        const variantIds = items.map(i => i.variantId);
+  async createOrder(userId: string, data: CreateOrderDto) {
+    const { items, voucherId, ...shippingInfor } = data;
+    const variantIds = items.map((i) => i.variantId);
 
-        return await this.prisma.$transaction(async (tx) => {
-            // lây thông tin biến thể trực tiếp từ db
-            const variants = await tx.productVariant.findMany({
-                where: { id: { in: variantIds } },
-                include: {
-                    product: { select: { name: true } }
-                }
-            });
+    return await this.prisma.$transaction(async (tx) => {
+      // lây thông tin biến thể trực tiếp từ db
+      const variants = await tx.productVariant.findMany({
+        where: { id: { in: variantIds } },
+        include: {
+          product: { select: { name: true } },
+        },
+      });
 
-            if (variants.length !== items.length) {
-                throw new NotFoundException('Một số sản phẩm không tồn tại trong hệ thống');
-            }
-
-            // tính tổng tiền và kiểm tra stock trong kho
-            let totalAmount = 0;
-            const orderItemsData = items.map(item => {
-                const variant = variants.find(v => v.id === item.variantId);
-                if (!variant) {
-                    throw new NotFoundException(`Sản phẩm với ID ${item.variantId} không tồn tại`);
-                }
-
-                // kiem tra kho
-                if (variant.stock < item.quantity) {
-                    throw new BadRequestException(`Sản phẩm ${variant.name} chỉ còn ${variant.stock} sản phẩm`);
-                }
-
-                totalAmount += Number(variant.price) * item.quantity;
-
-                return {
-                    productVariantId: item.variantId,
-                    quantity: item.quantity,
-                    priceAtPurchase: variant.price, // gia tai thoi diem mua hang
-                    productName: variant.product.name,
-                    variantName: variant.name
-                };
-            });
-
-            // tinh thue VAT 10%
-            const vatAmount = totalAmount * 0.1;
-            const subtotal = totalAmount + vatAmount;
-
-            // tính giảm giá
-            let voucherDiscount = 0;
-
-            if (voucherId) {
-                const voucher = await this.promotionService.validateVoucherForCheckout(userId, voucherId, subtotal);
-                voucherDiscount = this.promotionService.calculateVoucherDiscount(voucher, subtotal);
-            }
-
-            const finalTotal = Math.max(0, subtotal - voucherDiscount);
-
-            // tao order
-            const order = await tx.order.create({
-                data: {
-                    userId,
-                    totalAmount: new Prisma.Decimal(finalTotal),
-                    ...shippingInfor,
-                    voucherDiscount: new Prisma.Decimal(voucherDiscount),
-                    items: {
-                        create: orderItemsData
-                    },
-                    tracking: {
-                        create: {
-                            statusLabel: 'Đặt hàng thành công',
-                            description: 'Đơn hàng đã được hệ thống tiếp nhận và đang chờ xử lý'
-                        }
-                    }
-                }
-            });
-
-            // hoàn tất đơn hàng dựa trên payment method    
-            const isCOD = shippingInfor.paymentMethod === PaymentMethod.COD || !shippingInfor.paymentMethod;
-
-            if (isCOD) {
-                if (voucherId) {
-                    await this.promotionService.markVoucherUsed(userId, voucherId, order.id, tx);
-                }
-            } else {
-                // chưa trừ voucher của user khi đang chờ thanh toán
-                // user hủy giữa chừng hoặc thanh toán thất bại - trả lại điểm
-                if (voucherId) {
-                    await tx.userVoucher.update({
-                        where: { userId_voucherId: { userId, voucherId } },
-                        data: { orderId: order.id }
-                    });
-                }
-            }
-
-            // tru stock qua InventoryService
-            for (const item of items) {
-                await this.inventoriesService.adjustStock({
-                    variantId: item.variantId,
-                    type: InventoryTransactionType.SALE,
-                    quantity: item.quantity,
-                    referenceId: order.id,
-                    reason: `Trừ kho cho đơn hàng #${order.id.slice(0, 8)}`,
-                    tx,
-                });
-            }
-
-            // don gio hang
-            // xoa cac sp da mua
-            await tx.cartItem.deleteMany({
-                where: {
-                    cart: { userId },
-                    productVariantId: { in: variantIds }
-                }
-            });
-
-            return order;
-        });
-    }
-
-    async getMyOrders(userId: string, query: { page?: number; limit?: number; status?: OrderStatus }) {
-        const { page = 1, limit = 10, status } = query;
-        const skip = (page - 1) * limit;
-
-        const [orders, total] = await Promise.all([
-            this.prisma.order.findMany({
-                where: {
-                    userId,
-                    ...(status && { status }) // loc theo status
-                },
-                include: {
-                    items: {
-                        include: {
-                            productVariant: {
-                                include: {
-                                    product: {
-                                        select: {
-                                            name: true,
-                                            thumbnailUrl: true
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                orderBy: { createdAt: 'desc' },
-                skip,
-                take: Number(limit)
-            }),
-            this.prisma.order.count({ where: { userId, ...(status && { status }) } })
-        ]);
-
-        return {
-            data: orders,
-            meta: {
-                total,
-                page,
-                lastPage: Math.ceil(total / limit)
-            }
-        };
-    }
-
-    // all order admin
-    async getAllOrders(
-        query: {
-            page?: number;
-            limit?: number;
-            status?: OrderStatus;
-            search?: string;
-            userId?: string;
-        }
-    ) {
-        const {
-            page = 1,
-            limit = 10,
-            status,
-            search,
-            userId
-        } = query;
-        const skip = (page - 1) * limit;
-
-        const whereCondition: any = {
-            ...(status && { status }),
-            ...(userId && { userId }),
-            ...(search && {
-                OR: [
-                    { id: { contains: search } },
-                    { receiverName: { contains: search } },
-                    { receiverPhone: { contains: search } },
-                ]
-            })
-        };
-
-        const [orders, total] = await Promise.all([
-            this.prisma.order.findMany({
-                where: whereCondition,
-                include: {
-                    user: {
-                        select: {
-                            email: true,
-                            profile: {
-                                select: { fullName: true }
-                            }
-                        }
-                    },
-                    _count: { select: { items: true } }
-                },
-                orderBy: { createdAt: 'desc' },
-                skip,
-                take: Number(limit)
-            }),
-
-            this.prisma.order.count({ where: whereCondition })
-        ]);
-
-        return {
-            data: orders,
-            meta: {
-                total,
-                page,
-                lastPage: Math.ceil(total / limit),
-            },
-        };
-    }
-
-    async getOrderDetail(userId: string, id: string) {
-        const order = await this.prisma.order.findFirst({
-            where: {
-                id,
-                userId
-            },
-            include: {
-                items: {
-                    include: {
-                        productVariant: {
-                            include: {
-                                product: {
-                                    select: {
-                                        name: true,
-                                        thumbnailUrl: true
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                tracking: {
-                    orderBy: { createdAt: 'asc' }
-                },
-                transaction: true
-            }
-        });
-
-        if (!order) throw new NotFoundException('Không tìm thấy đơn hàng này');
-
-        return order;
-    }
-
-    async updateOrderStatus(orderId: string, data: UpdateOrderStatusDto) {
-        const { status, description } = data;
-        return await this.prisma.$transaction(async (tx) => {
-            const order = await tx.order.findUnique({
-                where: { id: orderId },
-                include: { items: true }
-            });
-            if (!order) throw new NotFoundException('Không tìm thấy đơn hàng');
-
-            // hoan kho neu don hang bi huy hoac khach tra hang hoac giao hang that bai
-            const refundStatuses: OrderStatus[] = [OrderStatus.CANCELLED, OrderStatus.RETURNED, OrderStatus.FAILED];
-            const isNewRefundStatus = refundStatuses.includes(status as OrderStatus);
-            const isCurrentRefundStatus = refundStatuses.includes(order.status as OrderStatus);
-
-            if (isNewRefundStatus && !isCurrentRefundStatus) {
-                // hoàn trả vouchers, điểm nếu có thay đổi trong đơn hàng
-                await this.rollbackPromotion(orderId, order.userId, tx);
-
-                for (const item of order.items) {
-                    const refundType = status === OrderStatus.CANCELLED || status === OrderStatus.FAILED
-                        ? InventoryTransactionType.ORDER_CANCEL
-                        : InventoryTransactionType.RETURN;
-                    await this.inventoriesService.adjustStock({
-                        variantId: item.productVariantId,
-                        type: refundType,
-                        quantity: item.quantity,
-                        referenceId: orderId,
-                        reason: `Hoàn kho từ đơn hàng #${orderId.slice(0, 8)} - ${status}`,
-                        tx,
-                    });
-                }
-            } else if (!isNewRefundStatus && isCurrentRefundStatus) {
-                // hoan lai kho neu don hang chuyen tu trang thai huy/tra ve trang thai dang xu ly
-                for (const item of order.items) {
-                    await this.inventoriesService.adjustStock({
-                        variantId: item.productVariantId,
-                        type: InventoryTransactionType.SALE,
-                        quantity: item.quantity,
-                        referenceId: orderId,
-                        reason: `Trừ lại kho khi khôi phục đơn hàng #${orderId.slice(0, 8)}`,
-                        tx,
-                    });
-                }
-            }
-
-            // cap nhat trang thai don hang
-            const updatedOrder = await tx.order.update({
-                where: { id: orderId },
-                data: { status }
-            });
-
-            if (isNewRefundStatus) {
-                if (order.paymentStatus === PaymentStatus.PAID) {
-                    await tx.order.update({
-                        where: { id: orderId },
-                        data: { paymentStatus: PaymentStatus.REFUNDED }
-                    });
-
-                    await tx.transaction.updateMany({
-                        where: { orderId: orderId },
-                        data: { status: TransactionStatus.FAILED }
-                    });
-                }
-            } else if (status === OrderStatus.DELIVERED && order.paymentMethod === PaymentMethod.COD) {
-                await tx.order.update({
-                    where: { id: orderId },
-                    data: { paymentStatus: PaymentStatus.PAID }
-                });
-
-                await tx.transaction.upsert({
-                    where: { orderId: orderId },
-                    update: {
-                        status: TransactionStatus.SUCCESS,
-                        amount: order.totalAmount,
-                        provider: 'CASH',
-                        paymentMethod: order.paymentMethod,
-                        description: `Thanh toán COD cho đơn hàng #${orderId.slice(0, 8)}`,
-                        paymentDate: new Date(),
-                    },
-                    create: {
-                        orderId: orderId,
-                        status: TransactionStatus.SUCCESS,
-                        amount: order.totalAmount,
-                        provider: 'CASH',
-                        paymentMethod: order.paymentMethod,
-                        description: `Thanh toán COD cho đơn hàng #${orderId.slice(0, 8)}`,
-                        paymentDate: new Date(),
-                    }
-                });
-            }
-
-            // tracking cho khach theo doi
-            await tx.orderTracking.create({
-                data: {
-                    orderId,
-                    statusLabel: this.mapStatusToLabel(status),
-                    description: description || `Đơn hàng đã được chuyển sang trạng thái ${status}`
-                }
-            });
-
-            return updatedOrder;
-        });
-    }
-
-    private mapStatusToLabel(status: OrderStatus): string {
-        const labels = {
-            [OrderStatus.PENDING]: 'Chờ xác nhận',
-            [OrderStatus.CONFIRMED]: 'Đã xác nhận',
-            [OrderStatus.PROCESSING]: 'Đang đóng gói',
-            [OrderStatus.SHIPPING]: 'Đang giao hàng',
-            [OrderStatus.DELIVERED]: 'Giao hàng thành công',
-            [OrderStatus.CANCELLED]: 'Đã hủy đơn',
-            [OrderStatus.RETURNED]: 'Khách trả hàng',
-            [OrderStatus.FAILED]: 'Giao hàng thất bại',
-        };
-        return labels[status] || status;
-    }
-
-    // user huy don hang
-    async cancelOrder(userId: string, id: string) {
-        return await this.prisma.$transaction(async (tx) => {
-            const order = await tx.order.findFirst({
-                where: {
-                    id, userId
-                },
-                include: { items: true }
-            });
-            if (!order) throw new NotFoundException('Đơn hàng không tồn tại');
-            if (order.status !== OrderStatus.PENDING) {
-                throw new BadRequestException('Chỉ có thể hủy đơn hàng đang chờ xác nhận');
-            }
-
-            await this.rollbackPromotion(id, userId, tx);
-
-            // hoan kho qua InventoryService
-            for (const item of order.items) {
-                await this.inventoriesService.adjustStock({
-                    variantId: item.productVariantId,
-                    type: InventoryTransactionType.ORDER_CANCEL,
-                    quantity: item.quantity,
-                    referenceId: order.id,
-                    reason: `Hoàn kho - đơn hàng bị hủy bởi người mua`,
-                    tx,
-                });
-            }
-
-            // cap nhat lai trang thai don hang
-            const updatedOrder = await tx.order.update({
-                where: { id },
-                data: { status: OrderStatus.CANCELLED }
-            });
-
-            // tracking
-            await tx.orderTracking.create({
-                data: {
-                    orderId: id,
-                    statusLabel: 'Đã hủy đơn',
-                    description: 'Đơn hàng đã được hủy bởi người mua'
-                }
-            });
-
-            return updatedOrder;
-        });
-    }
-
-    async getTopSellingProducts(limit = 5) {
-        const topItems = await this.prisma.orderItem.groupBy({
-            by: ['productVariantId'],
-            _sum: { quantity: true },
-            orderBy: {
-                _sum: { quantity: 'desc' }
-            },
-            take: limit,
-        });
-
-        const details = await Promise.all(
-            topItems.map(async (item) => {
-                const variant = await this.prisma.productVariant.findUnique({
-                    where: { id: item.productVariantId },
-                    select: { name: true, product: { select: { name: true } } }
-                });
-
-                return {
-                    ...variant,
-                    totalSold: item._sum.quantity
-                }
-            })
+      if (variants.length !== items.length) {
+        throw new NotFoundException(
+          'Một số sản phẩm không tồn tại trong hệ thống',
         );
-        return details;
-    }
+      }
 
-    async getAdminStats() {
-        const [revenue, orderCounts, userCount, lowStockVariants, latestLogs] = await Promise.all([
-            // tong doanh thu tu cac don hang da thanh toan (paymentStatus = PAID)
-            this.prisma.order.aggregate({
-                _sum: { totalAmount: true },
-                where: { paymentStatus: PaymentStatus.PAID }
-            }),
+      // tính tổng tiền và kiểm tra stock trong kho
+      let totalAmount = 0;
+      const orderItemsData = items.map((item) => {
+        const variant = variants.find((v) => v.id === item.variantId);
+        if (!variant) {
+          throw new NotFoundException(
+            `Sản phẩm với ID ${item.variantId} không tồn tại`,
+          );
+        }
 
-            // dem so luong don hang theo tung trang thai
-            this.prisma.order.groupBy({
-                by: ['status'],
-                _count: { id: true }
-            }),
+        // kiem tra kho
+        if (variant.stock < item.quantity) {
+          throw new BadRequestException(
+            `Sản phẩm ${variant.name} chỉ còn ${variant.stock} sản phẩm`,
+          );
+        }
 
-            // tong so khach hang da dang ky
-            this.prisma.user.count({
-                where: { role: Role.USER }
-            }),
-
-            // san pham sap het hang (stock < 10)
-            this.prisma.productVariant.count({
-                where: { stock: { lt: 10 } }
-            }),
-
-            // lay 7 log gan nhat
-            this.activityLogService.findAll({ page: 1, limit: 7 })
-        ]);
-
-        const formattedOrders = orderCounts.reduce((acc, curr) => {
-            acc[curr.status] = curr._count.id;
-            return acc;
-        }, {});
-
-        // fetch revenue & orders trend data (last 7 days)
-        const trends = await this.getTrends(7);
+        totalAmount += Number(variant.price) * item.quantity;
 
         return {
-            totalRevenue: revenue._sum.totalAmount || 0,
-            ordersByStatus: formattedOrders,
-            totalUsers: userCount,
-            lowStockAlert: lowStockVariants,
-            revenueTrends: trends.revenue,
-            orderTrends: trends.orders,
-            latestLogs: latestLogs.data
+          productVariantId: item.variantId,
+          quantity: item.quantity,
+          priceAtPurchase: variant.price, // gia tai thoi diem mua hang
+          productName: variant.product.name,
+          variantName: variant.name,
+        };
+      });
+
+      // tinh thue VAT 10%
+      const vatAmount = totalAmount * 0.1;
+      const subtotal = totalAmount + vatAmount;
+
+      // tính giảm giá
+      let voucherDiscount = 0;
+
+      if (voucherId) {
+        const voucher = await this.promotionService.validateVoucherForCheckout(
+          userId,
+          voucherId,
+          subtotal,
+        );
+        voucherDiscount = this.promotionService.calculateVoucherDiscount(
+          voucher,
+          subtotal,
+        );
+      }
+
+      const finalTotal = Math.max(0, subtotal - voucherDiscount);
+
+      // tao order
+      const order = await tx.order.create({
+        data: {
+          userId,
+          totalAmount: new Prisma.Decimal(finalTotal),
+          ...shippingInfor,
+          voucherDiscount: new Prisma.Decimal(voucherDiscount),
+          items: {
+            create: orderItemsData,
+          },
+          tracking: {
+            create: {
+              statusLabel: 'Đặt hàng thành công',
+              description:
+                'Đơn hàng đã được hệ thống tiếp nhận và đang chờ xử lý',
+            },
+          },
+        },
+      });
+
+      // hoàn tất đơn hàng dựa trên payment method
+      const isCOD =
+        shippingInfor.paymentMethod === PaymentMethod.COD ||
+        !shippingInfor.paymentMethod;
+
+      if (isCOD) {
+        if (voucherId) {
+          await this.promotionService.markVoucherUsed(
+            userId,
+            voucherId,
+            order.id,
+            tx,
+          );
         }
-    }
+      } else {
+        // chưa trừ voucher của user khi đang chờ thanh toán
+        // user hủy giữa chừng hoặc thanh toán thất bại - trả lại voucher
+        if (voucherId) {
+          await tx.userVoucher.update({
+            where: { userId_voucherId: { userId, voucherId } },
+            data: { orderId: order.id },
+          });
+        }
+      }
 
-    private async getTrends(days: number) {
-        const now = new Date();
-        const startDate = new Date();
-        startDate.setDate(now.getDate() - (days - 1));
-        startDate.setHours(0, 0, 0, 0);
+      // tru stock qua InventoryService
+      for (const item of items) {
+        await this.inventoriesService.adjustStock({
+          variantId: item.variantId,
+          type: InventoryTransactionType.SALE,
+          quantity: item.quantity,
+          referenceId: order.id,
+          reason: `Trừ kho cho đơn hàng #${order.id.slice(0, 8)}`,
+          tx,
+        });
+      }
 
-        // query 1 lan lay toan bo order trong khoang thoi gian
-        const allOrders = await this.prisma.order.findMany({
-            where: { createdAt: { gte: startDate } },
+      // don gio hang
+      // xoa cac sp da mua
+      await tx.cartItem.deleteMany({
+        where: {
+          cart: { userId },
+          productVariantId: { in: variantIds },
+        },
+      });
+
+      return order;
+    });
+  }
+
+  async getMyOrders(
+    userId: string,
+    query: { page?: number; limit?: number; status?: OrderStatus },
+  ) {
+    const { page = 1, limit = 10, status } = query;
+    const skip = (page - 1) * limit;
+
+    const [orders, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where: {
+          userId,
+          ...(status && { status }), // loc theo status
+        },
+        include: {
+          items: {
+            include: {
+              productVariant: {
+                include: {
+                  product: {
+                    select: {
+                      name: true,
+                      thumbnailUrl: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: Number(limit),
+      }),
+      this.prisma.order.count({ where: { userId, ...(status && { status }) } }),
+    ]);
+
+    return {
+      data: orders,
+      meta: {
+        total,
+        page,
+        lastPage: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  // all order admin
+  async getAllOrders(query: {
+    page?: number;
+    limit?: number;
+    status?: OrderStatus;
+    search?: string;
+    userId?: string;
+  }) {
+    const { page = 1, limit = 10, status, search, userId } = query;
+    const skip = (page - 1) * limit;
+
+    const whereCondition: any = {
+      ...(status && { status }),
+      ...(userId && { userId }),
+      ...(search && {
+        OR: [
+          { id: { contains: search } },
+          { receiverName: { contains: search } },
+          { receiverPhone: { contains: search } },
+        ],
+      }),
+    };
+
+    const [orders, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where: whereCondition,
+        include: {
+          user: {
             select: {
-                createdAt: true,
-                totalAmount: true,
-                paymentStatus: true
-            }
-        });
+              email: true,
+              profile: {
+                select: { fullName: true },
+              },
+            },
+          },
+          _count: { select: { items: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: Number(limit),
+      }),
 
-        // stat chua du lieu cac ngay
-        const statsMap = new Map<string, { orders: number; revenue: number }>();
+      this.prisma.order.count({ where: whereCondition }),
+    ]);
 
-        for (let i = 0; i < days; i++) {
-            const d = new Date(startDate);
-            d.setDate(d.getDate() + i);
-            const dateStr = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
-            statsMap.set(dateStr, { orders: 0, revenue: 0 });
+    return {
+      data: orders,
+      meta: {
+        total,
+        page,
+        lastPage: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async getOrderDetail(userId: string, id: string) {
+    const order = await this.prisma.order.findFirst({
+      where: {
+        id,
+        userId,
+      },
+      include: {
+        items: {
+          include: {
+            productVariant: {
+              include: {
+                product: {
+                  select: {
+                    name: true,
+                    thumbnailUrl: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        tracking: {
+          orderBy: { createdAt: 'asc' },
+        },
+        transaction: true,
+      },
+    });
+
+    if (!order) throw new NotFoundException('Không tìm thấy đơn hàng này');
+
+    return order;
+  }
+
+  async updateOrderStatus(orderId: string, data: UpdateOrderStatusDto) {
+    const { status, description } = data;
+    const result = await this.prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        include: { items: true },
+      });
+      if (!order) throw new NotFoundException('Không tìm thấy đơn hàng');
+
+      if (order.status === status) {
+        return { order, statusChanged: false };
+      }
+
+      // hoan kho neu don hang bi huy hoac khach tra hang hoac giao hang that bai
+      const refundStatuses: OrderStatus[] = [
+        OrderStatus.CANCELLED,
+        OrderStatus.RETURNED,
+        OrderStatus.FAILED,
+      ];
+      const isNewRefundStatus = refundStatuses.includes(status as OrderStatus);
+      const isCurrentRefundStatus = refundStatuses.includes(
+        order.status as OrderStatus,
+      );
+
+      if (isNewRefundStatus && !isCurrentRefundStatus) {
+        // hoàn trả voucher nếu có thay đổi trong đơn hàng
+        await this.rollbackPromotion(orderId, order.userId, tx);
+
+        for (const item of order.items) {
+          const refundType =
+            status === OrderStatus.CANCELLED || status === OrderStatus.FAILED
+              ? InventoryTransactionType.ORDER_CANCEL
+              : InventoryTransactionType.RETURN;
+          await this.inventoriesService.adjustStock({
+            variantId: item.productVariantId,
+            type: refundType,
+            quantity: item.quantity,
+            referenceId: orderId,
+            reason: `Hoàn kho từ đơn hàng #${orderId.slice(0, 8)} - ${status}`,
+            tx,
+          });
         }
+      } else if (!isNewRefundStatus && isCurrentRefundStatus) {
+        // hoan lai kho neu don hang chuyen tu trang thai huy/tra ve trang thai dang xu ly
+        for (const item of order.items) {
+          await this.inventoriesService.adjustStock({
+            variantId: item.productVariantId,
+            type: InventoryTransactionType.SALE,
+            quantity: item.quantity,
+            referenceId: orderId,
+            reason: `Trừ lại kho khi khôi phục đơn hàng #${orderId.slice(0, 8)}`,
+            tx,
+          });
+        }
+      }
 
-        // do du lieu vao map
-        allOrders.forEach(order => {
-            const dateStr = order.createdAt.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
-            if (statsMap.has(dateStr)) {
-                const current = statsMap.get(dateStr)!;
-                current.orders += 1;
-                if (order.paymentStatus === PaymentStatus.PAID) {
-                    current.revenue += Number(order.totalAmount || 0);
-                }
-                statsMap.set(dateStr, current);
-            }
+      // cap nhat trang thai don hang
+      const updatedOrder = await tx.order.update({
+        where: { id: orderId },
+        data: { status },
+      });
+
+      if (isNewRefundStatus) {
+        if (order.paymentStatus === PaymentStatus.PAID) {
+          await tx.order.update({
+            where: { id: orderId },
+            data: { paymentStatus: PaymentStatus.REFUNDED },
+          });
+
+          await tx.transaction.updateMany({
+            where: { orderId: orderId },
+            data: { status: TransactionStatus.FAILED },
+          });
+        }
+      } else if (
+        status === OrderStatus.DELIVERED &&
+        order.paymentMethod === PaymentMethod.COD
+      ) {
+        await tx.order.update({
+          where: { id: orderId },
+          data: { paymentStatus: PaymentStatus.PAID },
         });
 
-        const result = Array.from(statsMap.entries()).map(([date, data]) => ({
-            date,
-            orders: data.orders,
-            revenue: data.revenue
-        }));
+        await tx.transaction.upsert({
+          where: { orderId: orderId },
+          update: {
+            status: TransactionStatus.SUCCESS,
+            amount: order.totalAmount,
+            provider: 'CASH',
+            paymentMethod: order.paymentMethod,
+            description: `Thanh toán COD cho đơn hàng #${orderId.slice(0, 8)}`,
+            paymentDate: new Date(),
+          },
+          create: {
+            orderId: orderId,
+            status: TransactionStatus.SUCCESS,
+            amount: order.totalAmount,
+            provider: 'CASH',
+            paymentMethod: order.paymentMethod,
+            description: `Thanh toán COD cho đơn hàng #${orderId.slice(0, 8)}`,
+            paymentDate: new Date(),
+          },
+        });
+      }
+
+      // tracking cho khach theo doi
+      await tx.orderTracking.create({
+        data: {
+          orderId,
+          statusLabel: this.mapStatusToLabel(status),
+          description:
+            description || `Đơn hàng đã được chuyển sang trạng thái ${status}`,
+        },
+      });
+
+      return { order: updatedOrder, statusChanged: true };
+    });
+
+    if (result.statusChanged) {
+      this.sendOrderStatusNotification(
+        result.order.userId,
+        result.order.id,
+        status,
+      );
+    }
+
+    return result.order;
+  }
+
+  private sendOrderStatusNotification(
+    userId: string,
+    orderId: string,
+    status: OrderStatus,
+  ) {
+    const message = this.mapStatusToPushMessage(status);
+    if (!message) return;
+
+    void this.notificationService.sendToUser(userId, {
+      notification: message,
+      data: {
+        type: 'order',
+        orderId,
+        route: `/orders/${orderId}`,
+      },
+    });
+  }
+
+  private mapStatusToPushMessage(
+    status: OrderStatus,
+  ): { title: string; body: string } | null {
+    const messages: Partial<
+      Record<OrderStatus, { title: string; body: string }>
+    > = {
+      [OrderStatus.CONFIRMED]: {
+        title: 'Xác nhận đơn hàng',
+        body: 'Đơn hàng của bạn đã được xác nhận.',
+      },
+      [OrderStatus.SHIPPING]: {
+        title: 'Đơn hàng đang vận chuyển',
+        body: 'Đơn hàng của bạn đang trên đường giao.',
+      },
+      [OrderStatus.DELIVERED]: {
+        title: 'Hoàn tất đơn hàng',
+        body: 'Đơn hàng của bạn đã giao thành công.',
+      },
+      [OrderStatus.CANCELLED]: {
+        title: 'Hủy đơn hàng',
+        body: 'Đơn hàng của bạn đã bị hủy.',
+      },
+      [OrderStatus.FAILED]: {
+        title: 'Giao hàng thất bại',
+        body: 'Đơn hàng của bạn không thể tiếp tục giao.',
+      },
+    };
+
+    return messages[status] ?? null;
+  }
+
+  private mapStatusToLabel(status: OrderStatus): string {
+    const labels = {
+      [OrderStatus.PENDING]: 'Chờ xác nhận',
+      [OrderStatus.CONFIRMED]: 'Đã xác nhận',
+      [OrderStatus.PROCESSING]: 'Đang đóng gói',
+      [OrderStatus.SHIPPING]: 'Đang giao hàng',
+      [OrderStatus.DELIVERED]: 'Giao hàng thành công',
+      [OrderStatus.CANCELLED]: 'Đã hủy đơn',
+      [OrderStatus.RETURNED]: 'Khách trả hàng',
+      [OrderStatus.FAILED]: 'Giao hàng thất bại',
+    };
+    return labels[status] || status;
+  }
+
+  // user huy don hang
+  async cancelOrder(userId: string, id: string) {
+    return await this.prisma.$transaction(async (tx) => {
+      const order = await tx.order.findFirst({
+        where: {
+          id,
+          userId,
+        },
+        include: { items: true },
+      });
+      if (!order) throw new NotFoundException('Đơn hàng không tồn tại');
+      if (order.status !== OrderStatus.PENDING) {
+        throw new BadRequestException(
+          'Chỉ có thể hủy đơn hàng đang chờ xác nhận',
+        );
+      }
+
+      await this.rollbackPromotion(id, userId, tx);
+
+      // hoan kho qua InventoryService
+      for (const item of order.items) {
+        await this.inventoriesService.adjustStock({
+          variantId: item.productVariantId,
+          type: InventoryTransactionType.ORDER_CANCEL,
+          quantity: item.quantity,
+          referenceId: order.id,
+          reason: `Hoàn kho - đơn hàng bị hủy bởi người mua`,
+          tx,
+        });
+      }
+
+      // cap nhat lai trang thai don hang
+      const updatedOrder = await tx.order.update({
+        where: { id },
+        data: { status: OrderStatus.CANCELLED },
+      });
+
+      // tracking
+      await tx.orderTracking.create({
+        data: {
+          orderId: id,
+          statusLabel: 'Đã hủy đơn',
+          description: 'Đơn hàng đã được hủy bởi người mua',
+        },
+      });
+
+      return updatedOrder;
+    });
+  }
+
+  async getTopSellingProducts(limit = 5) {
+    const topItems = await this.prisma.orderItem.groupBy({
+      by: ['productVariantId'],
+      _sum: { quantity: true },
+      orderBy: {
+        _sum: { quantity: 'desc' },
+      },
+      take: limit,
+    });
+
+    const details = await Promise.all(
+      topItems.map(async (item) => {
+        const variant = await this.prisma.productVariant.findUnique({
+          where: { id: item.productVariantId },
+          select: { name: true, product: { select: { name: true } } },
+        });
 
         return {
-            orders: result.map(d => ({ date: d.date, count: d.orders })),
-            revenue: result.map(d => ({ date: d.date, value: d.revenue }))
+          ...variant,
+          totalSold: item._sum.quantity,
         };
+      }),
+    );
+    return details;
+  }
+
+  async getAdminStats() {
+    const [revenue, orderCounts, userCount, lowStockVariants, latestLogs] =
+      await Promise.all([
+        // tong doanh thu tu cac don hang da thanh toan (paymentStatus = PAID)
+        this.prisma.order.aggregate({
+          _sum: { totalAmount: true },
+          where: { paymentStatus: PaymentStatus.PAID },
+        }),
+
+        // dem so luong don hang theo tung trang thai
+        this.prisma.order.groupBy({
+          by: ['status'],
+          _count: { id: true },
+        }),
+
+        // tong so khach hang da dang ky
+        this.prisma.user.count({
+          where: { role: Role.USER },
+        }),
+
+        // san pham sap het hang (stock < 10)
+        this.prisma.productVariant.count({
+          where: { stock: { lt: 10 } },
+        }),
+
+        // lay 7 log gan nhat
+        this.activityLogService.findAll({ page: 1, limit: 7 }),
+      ]);
+
+    const formattedOrders = orderCounts.reduce((acc, curr) => {
+      acc[curr.status] = curr._count.id;
+      return acc;
+    }, {});
+
+    // fetch revenue & orders trend data (last 7 days)
+    const trends = await this.getTrends(7);
+
+    return {
+      totalRevenue: revenue._sum.totalAmount || 0,
+      ordersByStatus: formattedOrders,
+      totalUsers: userCount,
+      lowStockAlert: lowStockVariants,
+      revenueTrends: trends.revenue,
+      orderTrends: trends.orders,
+      latestLogs: latestLogs.data,
+    };
+  }
+
+  private async getTrends(days: number) {
+    const now = new Date();
+    const startDate = new Date();
+    startDate.setDate(now.getDate() - (days - 1));
+    startDate.setHours(0, 0, 0, 0);
+
+    // query 1 lan lay toan bo order trong khoang thoi gian
+    const allOrders = await this.prisma.order.findMany({
+      where: { createdAt: { gte: startDate } },
+      select: {
+        createdAt: true,
+        totalAmount: true,
+        paymentStatus: true,
+      },
+    });
+
+    // stat chua du lieu cac ngay
+    const statsMap = new Map<string, { orders: number; revenue: number }>();
+
+    for (let i = 0; i < days; i++) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + i);
+      const dateStr = d.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+      });
+      statsMap.set(dateStr, { orders: 0, revenue: 0 });
     }
 
-    async reOrder(userId: string, id: string) {
-        // lay thong tin don cu
-        const oldOrder = await this.prisma.order.findFirst({
-            where: { id, userId },
-            include: { items: true }
-        });
-        if (!oldOrder) throw new NotFoundException('Không tìm thấy đơn hàng cũ');
-
-        // chuan bi du lieu cho don hang moi
-        // lay lai danh sach variantId va quantity tu don hang cu
-        const itemsForNewOrder = oldOrder.items.map(item => ({
-            variantId: item.productVariantId,
-            quantity: item.quantity
-        }));
-
-        // tai su dung thong tin ship
-        const reOrderData: CreateOrderDto = {
-            receiverName: oldOrder.receiverName,
-            receiverPhone: oldOrder.receiverPhone,
-            shippingAddress: oldOrder.shippingAddress,
-            note: `Mua lại từ đơn hàng #${oldOrder.id.slice(0, 8)}`,
-            items: itemsForNewOrder
-        };
-
-        return this.createOrder(userId, reOrderData);
-    }
-
-    private async rollbackPromotion(orderId: string, userId: string, tx: Prisma.TransactionClient) {
-        // giải phóng voucher
-        const userVoucher = await tx.userVoucher.findFirst({
-            where: { orderId }
-        });
-        if (userVoucher) {
-            if (userVoucher.usedAt) {
-                // giảm số lượt sử dụng của voucher đi khi đã dùng thành công
-                await tx.voucher.update({
-                    where: { id: userVoucher.voucherId },
-                    data: { usedCount: { decrement: 1 } }
-                });
-            }
-            await tx.userVoucher.update({
-                where: { id: userVoucher.id },
-                data: { usedAt: null, orderId: null }
-            });
+    // do du lieu vao map
+    allOrders.forEach((order) => {
+      const dateStr = order.createdAt.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+      });
+      if (statsMap.has(dateStr)) {
+        const current = statsMap.get(dateStr)!;
+        current.orders += 1;
+        if (order.paymentStatus === PaymentStatus.PAID) {
+          current.revenue += Number(order.totalAmount || 0);
         }
+        statsMap.set(dateStr, current);
+      }
+    });
+
+    const result = Array.from(statsMap.entries()).map(([date, data]) => ({
+      date,
+      orders: data.orders,
+      revenue: data.revenue,
+    }));
+
+    return {
+      orders: result.map((d) => ({ date: d.date, count: d.orders })),
+      revenue: result.map((d) => ({ date: d.date, value: d.revenue })),
+    };
+  }
+
+  async reOrder(userId: string, id: string) {
+    // lay thong tin don cu
+    const oldOrder = await this.prisma.order.findFirst({
+      where: { id, userId },
+      include: { items: true },
+    });
+    if (!oldOrder) throw new NotFoundException('Không tìm thấy đơn hàng cũ');
+
+    // chuan bi du lieu cho don hang moi
+    // lay lai danh sach variantId va quantity tu don hang cu
+    const itemsForNewOrder = oldOrder.items.map((item) => ({
+      variantId: item.productVariantId,
+      quantity: item.quantity,
+    }));
+
+    // tai su dung thong tin ship
+    const reOrderData: CreateOrderDto = {
+      receiverName: oldOrder.receiverName,
+      receiverPhone: oldOrder.receiverPhone,
+      shippingAddress: oldOrder.shippingAddress,
+      note: `Mua lại từ đơn hàng #${oldOrder.id.slice(0, 8)}`,
+      items: itemsForNewOrder,
+    };
+
+    return this.createOrder(userId, reOrderData);
+  }
+
+  private async rollbackPromotion(
+    orderId: string,
+    userId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    // giải phóng voucher
+    const userVoucher = await tx.userVoucher.findFirst({
+      where: { orderId },
+    });
+    if (userVoucher) {
+      if (userVoucher.usedAt) {
+        // giảm số lượt sử dụng của voucher đi khi đã dùng thành công
+        await tx.voucher.update({
+          where: { id: userVoucher.voucherId },
+          data: { usedCount: { decrement: 1 } },
+        });
+      }
+      await tx.userVoucher.update({
+        where: { id: userVoucher.id },
+        data: { usedAt: null, orderId: null },
+      });
     }
+  }
 }

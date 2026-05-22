@@ -6,10 +6,18 @@ import { CartModule } from 'src/cart/cart.module';
 import { ActivityLogModule } from 'src/activity-log/activity-log.module';
 import { InventoriesModule } from 'src/inventories/inventories.module';
 import { PromotionModule } from 'src/promotion/promotion.module';
+import { NotificationModule } from 'src/notification/notification.module';
 
 @Module({
-  imports: [ProductsModule, CartModule, ActivityLogModule, InventoriesModule, PromotionModule],
+  imports: [
+    ProductsModule,
+    CartModule,
+    ActivityLogModule,
+    InventoriesModule,
+    PromotionModule,
+    NotificationModule,
+  ],
   providers: [OrdersService],
-  controllers: [OrdersController]
+  controllers: [OrdersController],
 })
-export class OrdersModule { }
+export class OrdersModule {}

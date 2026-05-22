@@ -1,49 +1,52 @@
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsOptional, IsString, IsArray, IsInt, MIN, Min, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 
 class OrderItemDto {
-    @IsString()
-    @IsNotEmpty()
-    variantId: string;
+  @IsString()
+  @IsNotEmpty()
+  variantId: string;
 
-    @IsInt()
-    @Min(1)
-    @IsNotEmpty()
-    quantity: number;
+  @IsInt()
+  @Min(1)
+  @IsNotEmpty()
+  quantity: number;
 }
 
 export class CreateOrderDto {
-    @IsString()
-    @IsNotEmpty()
-    receiverName: string;
+  @IsString()
+  @IsNotEmpty()
+  receiverName: string;
 
-    @IsString()
-    @IsNotEmpty()
-    receiverPhone: string;
+  @IsString()
+  @IsNotEmpty()
+  receiverPhone: string;
 
-    @IsString()
-    @IsNotEmpty()
-    shippingAddress: string;
+  @IsString()
+  @IsNotEmpty()
+  shippingAddress: string;
 
-    @IsString()
-    @IsOptional()
-    note?: string;
+  @IsString()
+  @IsOptional()
+  note?: string;
 
-    @IsString()
-    @IsOptional()
-    paymentMethod?: any;
+  @IsString()
+  @IsOptional()
+  paymentMethod?: any;
 
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => OrderItemDto)
-    items: OrderItemDto[];
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OrderItemDto)
+  items: OrderItemDto[];
 
-    @IsString()
-    @IsOptional()
-    voucherId?: string;
-
-    @IsInt()
-    @Min(1, { message: 'Điểm thưởng sử dụng phải lớn hơn hoặc bằng 1' })
-    @IsOptional()
-    pointsToUse?: number;
+  @IsString()
+  @IsOptional()
+  voucherId?: string;
 }
