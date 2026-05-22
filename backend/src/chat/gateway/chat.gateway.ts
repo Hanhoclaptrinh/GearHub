@@ -154,14 +154,16 @@ export class ChatGateway
         result,
         (aiResult) => {
           if (!aiResult) return;
-          // emit chunk cho client
-          this.server.to(this.chatRoom(aiResult.room.id)).emit('message:chunk', {
-            roomId: aiResult.room.id,
-            messageId: streamMessageId,
-            chunk: '',
-            isEnd: true,
-            fullText: aiResult.message.content,
-          });
+          // emit chunk cho client (chi gui neu khong phai tin nhan he thong)
+          if (aiResult.message.type !== 'SYSTEM') {
+            this.server.to(this.chatRoom(aiResult.room.id)).emit('message:chunk', {
+              roomId: aiResult.room.id,
+              messageId: streamMessageId,
+              chunk: '',
+              isEnd: true,
+              fullText: aiResult.message.content,
+            });
+          }
 
           this.server.to(this.chatRoom(aiResult.room.id)).emit('message:new', {
             message: aiResult.message,

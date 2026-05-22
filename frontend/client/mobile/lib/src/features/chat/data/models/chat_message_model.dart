@@ -38,19 +38,38 @@ class ChatMessageModel extends ChatMessageEntity {
         final parsed = jsonDecode(rawContent);
         if (parsed is Map<String, dynamic>) {
           rawContent = parsed['message']?.toString() ?? rawContent;
-          final recs = parsed['recommendations'];
-          if (recs is List && recs.isNotEmpty) {
-            recommendations = recs
-                .map(
-                  (e) => ProductRecommendationModel.fromJson(
-                    e as Map<String, dynamic>,
-                  ),
-                )
-                .toList();
-          }
+          try {
+            final recs = parsed['recommendations'];
+            if (recs is List && recs.isNotEmpty) {
+              recommendations = recs
+                  .map((e) {
+                    if (e is Map) {
+                      return ProductRecommendationModel.fromJson(
+                        Map<String, dynamic>.from(e),
+                      );
+                    }
+                    return null;
+                  })
+                  .whereType<ProductRecommendationModel>()
+                  .toList();
+            }
+          } catch (_) {}
         }
       } catch (_) {
-        // fallback
+        final regExp = RegExp(
+          r'"message"\s*:\s*"((?:[^"\\]|\\.)*)"',
+          dotAll: true,
+        );
+        final match = regExp.firstMatch(rawContent);
+        if (match != null) {
+          final extracted = match.group(1);
+          if (extracted != null) {
+            rawContent = extracted
+                .replaceAll(r'\n', '\n')
+                .replaceAll(r'\"', '"')
+                .replaceAll(r'\\', '\\');
+          }
+        }
       }
     }
 

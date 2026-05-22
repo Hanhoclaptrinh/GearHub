@@ -23,14 +23,15 @@ class RecommendedProductModel extends RecommendedProductEntity {
 }
 
 class ProductRecommendationModel extends ProductRecommendationEntity {
-  const ProductRecommendationModel({
-    required super.product,
-    super.reason,
-  });
+  const ProductRecommendationModel({required super.product, super.reason});
 
   factory ProductRecommendationModel.fromJson(Map<String, dynamic> json) {
+    final productVal = json['product'];
+    final Map<String, dynamic> productMap = productVal is Map
+        ? Map<String, dynamic>.from(productVal)
+        : const {};
     return ProductRecommendationModel(
-      product: RecommendedProductModel.fromJson(json['product'] as Map<String, dynamic>),
+      product: RecommendedProductModel.fromJson(productMap),
       reason: json['reason']?.toString(),
     );
   }
