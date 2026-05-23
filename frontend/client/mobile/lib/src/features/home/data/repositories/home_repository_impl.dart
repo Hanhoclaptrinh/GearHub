@@ -74,6 +74,21 @@ class HomeRepositoryImpl implements HomeRepository {
   }
 
   @override
+  Future<List<ProductModel>> imageSearchProducts({
+    required String imageBase64,
+    int limit = 20,
+  }) async {
+    try {
+      return await remoteDatasource.imageSearchProducts(
+        imageBase64: imageBase64,
+        limit: limit,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
   Future<void> incrementProductView(String id, String deviceId) async {
     try {
       await remoteDatasource.incrementProductView(id, deviceId);

@@ -120,6 +120,7 @@ model Product {
   vaultSpecs       Json?             @map("vault_specs")
   attributeConfig  Json?
   assets           ProductAsset[]
+  imageEmbeddings  ProductImageEmbedding[]
   productEmbedding ProductEmbedding?
   variants         ProductVariant[]
   brand            Brand?            @relation(fields: [brandId], references: [id])
@@ -164,6 +165,7 @@ model ProductVariant {
   inventoryTransactions InventoryTransaction[]
   orderItems            OrderItem[]
   assets                ProductAsset[]
+  imageEmbeddings       ProductImageEmbedding[]
   product               Product                @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([price])
@@ -186,12 +188,36 @@ model ProductAsset {
   isPrimary Boolean         @default(false) @map("is_primary")
   createdAt DateTime        @default(now()) @map("created_at")
   updatedAt DateTime        @updatedAt @map("updated_at")
+  imageEmbeddings ProductImageEmbedding[]
   product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
   variant   ProductVariant? @relation(fields: [variantId], references: [id])
 
   @@index([productId])
   @@index([variantId])
   @@map("product_assets")
+}
+
+model ProductImageEmbedding {
+  id             String                   @id @default(uuid()) @db.VarChar(36)
+  productId      String                   @map("product_id") @db.VarChar(36)
+  variantId      String?                  @map("variant_id") @db.VarChar(36)
+  assetId        String?                  @map("asset_id") @db.VarChar(36)
+  imageUrl       String                   @map("image_url") @db.VarChar(255)
+  imageHash      String                   @map("image_hash") @db.VarChar(64)
+  embedding      Json
+  sourceType     ImageEmbeddingSourceType @map("source_type")
+  createdAt      DateTime                 @default(now()) @map("created_at")
+  updatedAt      DateTime                 @updatedAt @map("updated_at")
+  product        Product                  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant        ProductVariant?          @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  asset          ProductAsset?            @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([imageHash])
+  @@index([productId])
+  @@index([variantId])
+  @@index([assetId])
+  @@index([updatedAt])
+  @@map("product_image_embeddings")
 }
 
 model Cart {
@@ -533,6 +559,12 @@ enum AssetType {
   IMAGE
   GLB
   USDZ
+}
+
+enum ImageEmbeddingSourceType {
+  PRODUCT_THUMBNAIL
+  PRODUCT_ASSET
+  VARIANT_IMAGE
 }
 
 enum UserStatus {

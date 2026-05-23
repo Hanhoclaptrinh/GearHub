@@ -2,9 +2,14 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { json, urlencoded } from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
+  const bodyLimit = process.env.HTTP_BODY_LIMIT ?? '20mb';
+
+  app.use(json({ limit: bodyLimit }));
+  app.use(urlencoded({ limit: bodyLimit, extended: true }));
 
   app.useGlobalPipes(
     new ValidationPipe({

@@ -50,7 +50,9 @@
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>
 		<key>NSCameraUsageDescription</key>
-		<string>This application requires camera access for placing products in your room via Augmented Reality.</string>
+		<string>GearHub requires camera access to capture images for product image search and AR features.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>GearHub requires photo library access to select images for product image search.</string>
 		<key>NSMicrophoneUsageDescription</key>
 		<string>GearHub requires microphone access to enable voice search and AI assistant interactions.</string>
 		<key>NSSpeechRecognitionUsageDescription</key>

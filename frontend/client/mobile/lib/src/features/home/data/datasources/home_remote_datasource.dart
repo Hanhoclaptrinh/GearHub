@@ -98,6 +98,27 @@ class HomeRemoteDatasource {
     }
   }
 
+  Future<List<ProductModel>> imageSearchProducts({
+    required String imageBase64,
+    int limit = 20,
+  }) async {
+    try {
+      final response = await dio.post(
+        '/api/v1/ai/image-search',
+        data: {
+          'imageBase64': imageBase64,
+          'limit': limit,
+        },
+      );
+      final List data = response.data['results'] ?? [];
+      return data
+          .map((json) => ProductModel.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> incrementProductView(String id, String deviceId) async {
     try {
       await dio.post(

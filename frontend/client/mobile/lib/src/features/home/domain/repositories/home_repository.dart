@@ -11,5 +11,9 @@ abstract class HomeRepository {
   Future<List<ProductModel>> getNewArrivalsProducts({int limit = 8});
   Future<List<ProductModel>> getTopRatedProducts({int limit = 5});
   Future<List<ProductModel>> getVaultProducts();
+  Future<List<ProductModel>> imageSearchProducts({
+    required String imageBase64,
+    int limit = 20,
+  });
   Future<void> incrementProductView(String id, String deviceId);
 }

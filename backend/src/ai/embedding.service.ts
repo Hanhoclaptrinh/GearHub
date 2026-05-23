@@ -5,7 +5,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
-// cac du lieu can duoc vector hoa
+// dữ liệu cần được vector hóa
 const productEmbeddingSelect = {
   id: true,
   name: true,
@@ -48,28 +48,27 @@ export class EmbeddingService {
     private readonly configService: ConfigService,
   ) { }
 
-  // vector hoa cau hoi cua KH
+  // vector hóa dữ liệu sản phẩm
   async embedText(text: string): Promise<number[]> {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
-      throw new Error('GEMINI_API_KEY không được cấu hình');
+      throw new Error('GEMINI_API_KEY chưa được cấu hình');
     }
 
-    const modelName = this.getEmbeddingModelName();
-    const outputDimensionality = this.getEmbeddingDimensions();
     const genAi = new GoogleGenerativeAI(apiKey);
-    const model = genAi.getGenerativeModel({ model: modelName });
+    const model = genAi.getGenerativeModel({
+      model: this.getEmbeddingModelName(),
+    });
     const result = await model.embedContent({
       content: { role: 'user', parts: [{ text }] },
-      ...(outputDimensionality ? { outputDimensionality } : {}),
+      outputDimensionality: this.getEmbeddingDimensions(),
     } as Parameters<typeof model.embedContent>[0] & {
-      outputDimensionality?: number;
+      outputDimensionality: number;
     });
 
     return result.embedding.values;
   }
 
-  // hash source text
   hashText(text: string) {
     return createHash('sha256')
       .update(
@@ -82,7 +81,8 @@ export class EmbeddingService {
       .digest('hex');
   }
 
-  // thuc hien vector hoa cac san pham dang kinh doanh va chua co vector
+  // vector hóa tất cả sản phẩm
+  // bỏ qua sản phẩm đã có embedding
   async backfillProducts(batchSize = 50) {
     let cursor: string | undefined;
     let processed = 0;
@@ -125,12 +125,11 @@ export class EmbeddingService {
       await this.syncProductEmbedding(productId);
     } catch (error) {
       this.logger.warn(
-        `Product embedding sync skipped for ${productId}: ${this.errorMessage(error)}`,
+        `Product text embedding sync skipped for ${productId}: ${this.errorMessage(error)}`,
       );
     }
   }
 
-  // sync vector
   async syncProductEmbedding(
     productId: string,
     hydratedProduct?: ProductForEmbedding,
@@ -142,12 +141,13 @@ export class EmbeddingService {
         select: productEmbeddingSelect,
       }));
 
-    // san pham dang kinh doanh (da co vector) nhung bi hard del hoac ngung kinh doanh thi xoa luon vector
+    // sản phẩm đang kinh doanh (đã có vector) nhưng bị hard delete hoặc ngừng kinh doanh thì xóa luôn vector
     if (!product || !product.isActive) {
       await this.deleteProductEmbeddingIfTableExists(productId);
       return 'updated';
     }
 
+    // xây dựng source text từ metadata của sản phẩm
     const sourceText = this.buildProductSourceText(product);
     const textHash = this.hashText(sourceText);
 
@@ -156,7 +156,6 @@ export class EmbeddingService {
       select: { textHash: true },
     });
 
-    // skip san pham da co vector
     if (existing?.textHash === textHash) {
       return 'skipped';
     }
@@ -207,9 +206,9 @@ export class EmbeddingService {
     return [
       `Sản phẩm: ${product.name}`,
       product.isVault
-        ? `Bộ sưu tập: GearHub Vault (Phiên bản Cao cấp / Giới hạn)`
+        ? 'Bộ sưu tập: GearHub Vault (Phiên bản Cao cấp / Giới hạn)'
         : '',
-      product.isFeatured ? `Trạng thái: Khuyên dùng / Bán chạy nhất` : '',
+      product.isFeatured ? 'Trạng thái: Khuyên dùng / Bán chạy nhất' : '',
       `Thương hiệu: ${product.brand?.name ?? 'Chưa rõ'}`,
       `Danh mục: ${product.category?.name ?? 'Chưa rõ'}`,
       product.tagline ? `Slogan: ${product.tagline}` : '',
@@ -234,7 +233,7 @@ export class EmbeddingService {
       await this.prisma.productEmbedding.deleteMany({ where: { productId } });
     } catch (error) {
       this.logger.warn(
-        `Product embedding delete skipped for ${productId}: ${this.errorMessage(error)}`,
+        `Product text embedding delete skipped for ${productId}: ${this.errorMessage(error)}`,
       );
     }
   }
@@ -245,15 +244,21 @@ export class EmbeddingService {
   }
 
   private getEmbeddingModelName() {
-    return this.configService.get<string>('GEMINI_EMBEDDING_MODEL')!;
+    const model = this.configService.get<string>('GEMINI_EMBEDDING_MODEL');
+    if (!model) {
+      throw new Error('GEMINI_EMBEDDING_MODEL chưa được cấu hình');
+    }
+
+    return model;
   }
 
   private getEmbeddingDimensions() {
-    const dimensions = Number(process.env.GEMINI_EMBEDDING_DIMENSIONS);
+    const configured =
+      this.configService.get<string>('GEMINI_EMBEDDING_DIMENSIONS') ??
+      '768';
+    const dimensions = Number(configured);
     if (!Number.isInteger(dimensions) || dimensions <= 0) {
-      throw new Error(
-        'GEMINI_EMBEDDING_DIMENSIONS phải là một số nguyên dương',
-      );
+      throw new Error('GEMINI_EMBEDDING_DIMENSIONS phải là số nguyên dương');
     }
 
     return dimensions;

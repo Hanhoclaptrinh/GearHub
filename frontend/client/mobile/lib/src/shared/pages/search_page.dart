@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -6,6 +7,7 @@ import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/features/explore/domain/repositories/explore_repository.dart';
 import 'package:mobile/src/features/home/data/datasources/home_remote_datasource.dart';
+import 'package:mobile/src/features/home/domain/repositories/home_repository.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/features/home/data/models/category_model.dart';
 import 'package:mobile/src/features/home/presentation/widgets/search_history_tags_widget.dart';
@@ -32,6 +34,7 @@ class _SearchPageState extends State<SearchPage> {
   bool _isLoading = false;
   List<ProductModel> _suggestions = [];
   bool _isFullSearchMode = false;
+  bool _isImageSearchMode = false;
   List<ProductModel> _searchResults = [];
 
   // category matching
@@ -165,6 +168,7 @@ class _SearchPageState extends State<SearchPage> {
     if (_isFullSearchMode) {
       setState(() {
         _isFullSearchMode = false;
+        _isImageSearchMode = false;
       });
     }
 
@@ -228,6 +232,7 @@ class _SearchPageState extends State<SearchPage> {
     setState(() {
       _isLoading = true;
       _isFullSearchMode = true;
+      _isImageSearchMode = false;
       // reset filter tranh xung dot
       if (keyword != null || _controller.text != q) {
         _minPrice = null;
@@ -247,11 +252,7 @@ class _SearchPageState extends State<SearchPage> {
         maxPrice: _maxPrice,
       );
 
-      if (_sortBy == 'price_asc') {
-        items.sort((a, b) => a.price.compareTo(b.price));
-      } else if (_sortBy == 'price_desc') {
-        items.sort((a, b) => b.price.compareTo(a.price));
-      }
+      _sortProducts(items);
 
       setState(() {
         _searchResults = items;
@@ -293,29 +294,142 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Future<void> _openImageSearch() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: AppColors.cardSurfaceAltAlt,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildImageSourceTile(
+                  icon: LucideIcons.camera,
+                  title: 'Chụp ảnh',
+                  subtitle: 'Mở camera để tìm sản phẩm ngay',
+                  onTap: () => Navigator.pop(context, ImageSource.camera),
+                ),
+                const SizedBox(height: 10),
+                _buildImageSourceTile(
+                  icon: LucideIcons.images,
+                  title: 'Chọn từ thư viện',
+                  subtitle: 'Dùng ảnh đã có trong máy',
+                  onTap: () => Navigator.pop(context, ImageSource.gallery),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (source == null) return;
+    await _pickAndSearchImage(source);
+  }
+
+  Widget _buildImageSourceTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      onTap: onTap,
+      leading: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: AppColors.brandIndigoSoft,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Icon(icon, color: AppColors.brandIndigo, size: 20),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(color: AppColors.textSlate, fontSize: 12),
+      ),
+    );
+  }
+
+  Future<void> _pickAndSearchImage(ImageSource source) async {
     final picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await picker.pickImage(
+      source: source,
+      imageQuality: 85,
+    );
 
-    if (image != null) {
+    if (image == null) return;
+
+    setState(() {
+      _selectedImage = File(image.path);
+      _isAnalyzingImage = true;
+    });
+
+    try {
+      final bytes = await image.readAsBytes();
+      final mimeType = image.mimeType ?? _inferImageMimeType(image.path);
+      final dataUri = 'data:$mimeType;base64,${base64Encode(bytes)}';
+      final repository = getIt<HomeRepository>();
+      final items = await repository.imageSearchProducts(
+        imageBase64: dataUri,
+        limit: 40,
+      );
+      _sortProducts(items);
+
+      if (!mounted) return;
       setState(() {
-        _selectedImage = File(image.path);
-        _isAnalyzingImage = true;
+        _isAnalyzingImage = false;
+        _isFullSearchMode = true;
+        _isImageSearchMode = true;
+        _searchResults = items;
+        _suggestions = [];
+        _controller.clear();
       });
-
-      // gia lap thoi gian phan tich anh
-      // thuc te train model nhan dien hinh anh hoac dung pre-train models
-      // search by vector
-      await Future.delayed(const Duration(seconds: 3));
-
-      if (mounted) {
-        setState(() {
-          _isAnalyzingImage = false;
-        });
-
-        // mo phong tim kiem: tim kiem cac san pham thuoc hang 'Apple' hoac 'Sony'
-        _executeFullSearch(keyword: 'Apple');
-      }
+    } catch (e) {
+      debugPrint('[Search] Image search error: $e');
+      if (!mounted) return;
+      setState(() {
+        _isAnalyzingImage = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không thể tìm kiếm bằng hình ảnh lúc này.'),
+        ),
+      );
     }
+  }
+
+  void _sortProducts(List<ProductModel> items) {
+    if (_sortBy == 'price_asc') {
+      items.sort((a, b) => a.price.compareTo(b.price));
+    } else if (_sortBy == 'price_desc') {
+      items.sort((a, b) => b.price.compareTo(a.price));
+    }
+  }
+
+  void _sortCurrentResults(String sort) {
+    setState(() {
+      _sortBy = sort;
+      _sortProducts(_searchResults);
+    });
+  }
+
+  String _inferImageMimeType(String path) {
+    final lower = path.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    return 'image/jpeg';
   }
 
   @override
@@ -449,8 +563,12 @@ class _SearchPageState extends State<SearchPage> {
                     searchResults: _searchResults,
                     currentSortBy: _sortBy,
                     onSortChanged: (sort) {
-                      setState(() => _sortBy = sort);
-                      _executeFullSearch();
+                      if (_isImageSearchMode) {
+                        _sortCurrentResults(sort);
+                      } else {
+                        setState(() => _sortBy = sort);
+                        _executeFullSearch();
+                      }
                     },
                     onShowFilters: () =>
                         _scaffoldKey.currentState?.openEndDrawer(),
