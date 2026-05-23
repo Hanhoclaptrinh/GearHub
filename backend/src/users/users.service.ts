@@ -7,10 +7,11 @@ import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 
 export interface ICreateUser {
   email: string;
-  password: string;
+  password?: string;
   fullName: string;
-  phone: string;
+  phone?: string;
   role?: Role;
+  avatarUrl?: string;
 }
 
 @Injectable()
@@ -24,7 +25,7 @@ export class UsersService {
       where: {
         OR: [
           { email: data.email },
-          { profile: { phone: data.phone } }
+          ...(data.phone ? [{ profile: { phone: data.phone } }] : [])
         ]
       },
       include: { profile: true }
@@ -40,12 +41,13 @@ export class UsersService {
     const newUser = await this.prisma.user.create({
       data: {
         email: data.email,
-        password: data.password,
+        password: data.password || '',
         role: data.role || Role.USER,
         profile: {
           create: {
             fullName: data.fullName,
-            phone: data.phone
+            phone: data.phone || null,
+            avatarUrl: data.avatarUrl || null
           }
         }
       },

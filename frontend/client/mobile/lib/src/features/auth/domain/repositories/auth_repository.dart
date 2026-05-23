@@ -22,6 +22,11 @@ abstract class AuthRepository {
     required String deviceId,
   });
 
+  Future<({UserEntity user, AuthTokens tokens})> loginWithGoogle({
+    required String idToken,
+    required String deviceId,
+  });
+
   Future<String> forgotPassword({required String email});
 
   Future<String> verifyForgotPasswordOtp({

@@ -6,6 +6,7 @@ import 'package:mobile/src/features/auth/data/datasources/auth_remote_datasource
 import 'package:mobile/src/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:mobile/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
+import 'package:mobile/src/features/auth/data/services/google_auth_service.dart';
 import 'package:mobile/src/features/home/data/datasources/home_remote_datasource.dart';
 import 'package:mobile/src/features/home/data/repositories/home_repository_impl.dart';
 import 'package:mobile/src/features/home/domain/repositories/home_repository.dart';
@@ -76,6 +77,10 @@ Future<void> setupDependencies() async {
   );
 
   // auth
+  getIt.registerLazySingleton<GoogleAuthService>(
+    () => GoogleAuthService(),
+  );
+
   getIt.registerLazySingleton<AuthRemoteDatasource>(
     () => AuthRemoteDatasource(dio: getIt<ApiClient>().dio),
   );
@@ -89,7 +94,10 @@ Future<void> setupDependencies() async {
   );
 
   getIt.registerFactory<AuthCubit>(
-    () => AuthCubit(repository: getIt<AuthRepository>()),
+    () => AuthCubit(
+      repository: getIt<AuthRepository>(),
+      googleAuthService: getIt<GoogleAuthService>(),
+    ),
   );
 
   // home

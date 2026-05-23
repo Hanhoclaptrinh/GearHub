@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, UseGuards, Request } from '@nestjs/
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { GoogleLoginDto } from './dto/google-login.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -27,6 +28,12 @@ export class AuthController {
   @LogActivity(ActivityAction.USER_LOGIN)
   async login(@Body() data: LoginDto) {
     return this.authService.login(data);
+  }
+
+  @Post('google')
+  @LogActivity(ActivityAction.USER_LOGIN)
+  async googleLogin(@Body() data: GoogleLoginDto) {
+    return this.authService.googleLogin(data);
   }
 
   @UseGuards(JwtAuthGuard)

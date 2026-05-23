@@ -54,6 +54,20 @@ class AuthRemoteDatasource {
     return response.data as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> loginWithGoogle({
+    required String idToken,
+    required String deviceId,
+  }) async {
+    final response = await _dio.post(
+      '/auth/google',
+      data: {
+        'idToken': idToken,
+        'deviceId': deviceId,
+      },
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> forgotPassword({required String email}) async {
     final response = await _dio.post(
       '/auth/forgot-password',

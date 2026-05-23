@@ -1,7 +1,13 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/core/di/injection.dart';
+import 'package:mobile/src/core/storage/secure_storage_service.dart';
+import 'package:mobile/src/core/utils/device_utils.dart';
+import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
+import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import '../widgets/social_login_button.dart';
 import '../widgets/auth_primary_button.dart';
 import 'register_page.dart';
@@ -15,28 +21,45 @@ class LoginPage extends StatelessWidget {
     final size = MediaQuery.of(context).size;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
-      child: Scaffold(
-        backgroundColor: const Color(0xFF050507),
-        body: Stack(
-          children: [
-            Positioned(
-              top: -size.height * 0.1,
-              right: -size.width * 0.2,
-              child: _buildGlow(
-                const Color(0xFFFDE047).withValues(alpha: 0.12),
-                300,
+    return BlocListener<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is AuthAuthenticated) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        } else if (state is AuthError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: const Color(0xFFFF4D4D),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
-            Positioned(
-              bottom: -size.height * 0.2,
-              left: -size.width * 0.2,
-              child: _buildGlow(
-                const Color(0xFF3B82F6).withValues(alpha: 0.08),
-                400,
+          );
+        }
+      },
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light,
+        child: Scaffold(
+          backgroundColor: const Color(0xFF050507),
+          body: Stack(
+            children: [
+              Positioned(
+                top: -size.height * 0.1,
+                right: -size.width * 0.2,
+                child: _buildGlow(
+                  const Color(0xFFFDE047).withValues(alpha: 0.12),
+                  300,
+                ),
               ),
-            ),
+              Positioned(
+                bottom: -size.height * 0.2,
+                left: -size.width * 0.2,
+                child: _buildGlow(
+                  const Color(0xFF3B82F6).withValues(alpha: 0.08),
+                  400,
+                ),
+              ),
 
             SafeArea(
               child: SingleChildScrollView(
@@ -82,7 +105,17 @@ class LoginPage extends StatelessWidget {
                       SocialLoginButton(
                         label: 'TIẾP TỤC VỚI GOOGLE',
                         iconPath: 'google',
-                        onTap: () => HapticFeedback.mediumImpact(),
+                        onTap: () async {
+                          HapticFeedback.mediumImpact();
+                          final deviceId = await DeviceUtils.getDeviceId(
+                            getIt<SecureStorageService>(),
+                          );
+                          if (context.mounted) {
+                            context.read<AuthCubit>().loginWithGoogle(
+                              deviceId: deviceId,
+                            );
+                          }
+                        },
                       ),
                       const SizedBox(height: 12),
 
@@ -115,11 +148,31 @@ class LoginPage extends StatelessWidget {
                 ),
               ),
             ),
+            Positioned.fill(
+              child: BlocBuilder<AuthCubit, AuthState>(
+                builder: (context, state) {
+                  if (state is AuthLoading) {
+                    return Container(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Color(0xFFFDE047),
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildGlow(Color color, double size) {
     return Container(

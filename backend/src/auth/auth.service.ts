@@ -10,6 +10,8 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { MailService } from 'src/mail/mail.service';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UserStatus } from '@prisma/client';
+import * as admin from 'firebase-admin';
+import { GoogleLoginDto } from './dto/google-login.dto';
 
 @Injectable()
 export class AuthService {
@@ -119,6 +121,67 @@ export class AuthService {
 
     return {
       message: 'Đăng nhập thành công',
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          fullName: user.profile?.fullName,
+          avatarUrl: user.profile?.avatarUrl
+        },
+        tokens: { accessToken: at, refreshToken: rt }
+      }
+    };
+  }
+
+  async googleLogin(data: GoogleLoginDto) {
+    if (admin.apps.length === 0) {
+      throw new BadRequestException('Firebase Admin SDK chưa được cấu hình hoặc khởi tạo.');
+    }
+
+    let decodedToken: admin.auth.DecodedIdToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(data.idToken);
+    } catch (error) {
+      throw new UnauthorizedException('Token Google không hợp lệ hoặc đã hết hạn: ' + (error instanceof Error ? error.message : String(error)));
+    }
+
+    const { email, name, picture } = decodedToken;
+
+    if (!email) {
+      throw new BadRequestException('Không lấy được email từ token Google');
+    }
+
+    let user = await this.userService.findByEmailOrPhone(email);
+
+    if (!user) {
+      const randomPassword = uuidv4();
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+      await this.userService.createNewUser({
+        email,
+        password: hashedPassword,
+        fullName: name || 'Google User',
+        phone: undefined,
+        avatarUrl: picture || undefined,
+      });
+
+      user = await this.userService.findByEmailOrPhone(email);
+      if (!user) {
+        throw new BadRequestException('Lỗi tạo tài khoản mới từ Google Sign-In');
+      }
+    }
+
+    if (user.status === UserStatus.BANNED) {
+      throw new ForbiddenException('Tài khoản đã bị khóa! Vui lòng liên hệ quản trị viên để biết thêm chi tiết.');
+    }
+
+    const [at, rt] = await Promise.all([
+      this.signAccessToken(user.id, user.email, user.role),
+      this.generateRefreshToken(user.id, data.deviceId || 'google-device')
+    ]);
+
+    return {
+      message: 'Đăng nhập bằng Google thành công',
       data: {
         user: {
           id: user.id,

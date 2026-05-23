@@ -1,14 +1,19 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/src/features/auth/data/services/google_auth_service.dart';
 import 'package:mobile/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   final AuthRepository _repository;
+  final GoogleAuthService _googleAuthService;
 
-  AuthCubit({required AuthRepository repository})
-    : _repository = repository,
-      super(const AuthInitial());
+  AuthCubit({
+    required AuthRepository repository,
+    required GoogleAuthService googleAuthService,
+  })  : _repository = repository,
+        _googleAuthService = googleAuthService,
+        super(const AuthInitial());
 
   Future<void> checkAuthStatus() async {
     try {
@@ -79,6 +84,24 @@ class AuthCubit extends Cubit<AuthState> {
         deviceId: deviceId,
       );
       // phat lenh toi state authenticated
+      emit(AuthAuthenticated(user: result.user));
+    } catch (e) {
+      emit(AuthError(message: _extractError(e)));
+    }
+  }
+
+  Future<void> loginWithGoogle({required String deviceId}) async {
+    emit(const AuthLoading());
+    try {
+      final idToken = await _googleAuthService.signInAndGetIdToken();
+      if (idToken == null) {
+        emit(const AuthUnauthenticated());
+        return;
+      }
+      final result = await _repository.loginWithGoogle(
+        idToken: idToken,
+        deviceId: deviceId,
+      );
       emit(AuthAuthenticated(user: result.user));
     } catch (e) {
       emit(AuthError(message: _extractError(e)));

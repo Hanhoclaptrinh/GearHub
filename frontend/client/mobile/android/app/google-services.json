@@ -12,7 +12,20 @@
           "package_name": "com.gearhub.mobile"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1031456190153-1uq14kvg88pedc58gj2dqaei5ianv93s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gearhub.mobile",
+            "certificate_hash": "691f8dd9fc3186111162d0a9680ce99d5c6fe362"
+          }
+        },
+        {
+          "client_id": "1031456190153-bh5nrlpvkn3kdu607r0bf21qc71agv1d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCX32x4lxWl8SHHf1KHlPlY_Ve_Oy3ClmE"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1031456190153-bh5nrlpvkn3kdu607r0bf21qc71agv1d.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
