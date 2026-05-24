@@ -13,6 +13,34 @@ import { UpdateReviewDto } from './dto/update-review.dto';
 export class ReviewsController {
     constructor(private reviewService: ReviewsService) { }
 
+    @Get()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.STAFF)
+    async getAllReviews(
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+        @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+        @Query('rating') rating?: string,
+        @Query('repliedStatus') repliedStatus?: 'replied' | 'unreplied',
+        @Query('isHidden') isHidden?: string,
+        @Query('search') search?: string,
+    ) {
+        return this.reviewService.getAllReviews(
+            page,
+            limit,
+            rating ? parseInt(rating) : undefined,
+            repliedStatus,
+            isHidden === 'true' ? true : isHidden === 'false' ? false : undefined,
+            search,
+        );
+    }
+
+    @Get('stats')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.STAFF)
+    async getReviewStats() {
+        return this.reviewService.getReviewStats();
+    }
+
     @Post()
     @UseGuards(JwtAuthGuard)
     @UseInterceptors(FilesInterceptor('files', 5))
@@ -49,12 +77,19 @@ export class ReviewsController {
 
     @Patch(':id/reply')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     async reply(
         @Param('id', ParseUUIDPipe) id: string,
         @Body() data: ReplyReviewDto,
     ) {
         return this.reviewService.replyReview(id, data);
+    }
+
+    @Post(':id/ai-reply')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.STAFF)
+    async generateAiReply(@Param('id', ParseUUIDPipe) id: string) {
+        return this.reviewService.generateAiReplyDraft(id);
     }
 
     @Patch(':id')
@@ -87,8 +122,9 @@ export class ReviewsController {
     ) {
         return this.reviewService.skipReview(req.user.userId, orderItemId);
     }
+    @Patch(':id/toggle-visibility')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.STAFF)
     async toggleVisibility(@Param('id', ParseUUIDPipe) id: string) {
         return this.reviewService.toggleVisibility(id);
     }

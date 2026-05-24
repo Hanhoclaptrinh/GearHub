@@ -15,7 +15,8 @@ import {
   Globe,
   CreditCard,
   MessageSquareText,
-  Ticket
+  Ticket,
+  Star
 } from 'lucide-react';
 import { Warehouse } from 'lucide-react';
 import { cn } from '../utils/cn';
@@ -27,6 +28,7 @@ const navigation = [
   { name: 'Quản lý sản phẩm', icon: Package, path: '/products', roles: ['ADMIN', 'STAFF'] },
   { name: 'Quản lý kho hàng', icon: Warehouse, path: '/inventory', roles: ['ADMIN', 'STAFF'] },
   { name: 'Quản lý đơn hàng', icon: ShoppingCart, path: '/orders', roles: ['ADMIN', 'STAFF'] },
+  { name: 'Quản lý đánh giá', icon: Star, path: '/reviews', roles: ['ADMIN', 'STAFF'] },
   {
     name: 'Quản trị nhân sự',
     icon: Users,

@@ -169,3 +169,28 @@ export interface Voucher {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface ReviewAsset {
+  id: string;
+  reviewId: string;
+  url: string;
+  type: 'IMAGE' | 'VIDEO' | string;
+}
+
+export interface Review {
+  id: string;
+  userId: string;
+  productId: string;
+  rating: number;
+  comment?: string;
+  reply?: string;
+  isVerifiedPurchase: boolean;
+  isHidden: boolean;
+  createdAt: string;
+  updatedAt: string;
+  orderItemId?: string;
+  assets: ReviewAsset[];
+  product?: Product;
+  user?: User;
+  variantName?: string;
+}
