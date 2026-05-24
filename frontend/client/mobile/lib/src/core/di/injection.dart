@@ -52,6 +52,10 @@ import 'package:mobile/src/features/promotions/domain/repositories/promotions_re
 import 'package:mobile/src/features/promotions/presentation/state/promotions_cubit.dart';
 import 'package:mobile/src/features/promotions/presentation/state/my_vouchers_cubit.dart';
 import 'package:mobile/src/features/checkout/presentation/state/checkout_promotion_cubit.dart';
+import 'package:mobile/src/features/notifications/data/datasources/notification_remote_datasource.dart';
+import 'package:mobile/src/features/notifications/data/repositories/notification_repository_impl.dart';
+import 'package:mobile/src/features/notifications/domain/repositories/notification_repository.dart';
+import 'package:mobile/src/features/notifications/presentation/state/notification_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final getIt = GetIt.instance;
@@ -77,9 +81,7 @@ Future<void> setupDependencies() async {
   );
 
   // auth
-  getIt.registerLazySingleton<GoogleAuthService>(
-    () => GoogleAuthService(),
-  );
+  getIt.registerLazySingleton<GoogleAuthService>(() => GoogleAuthService());
 
   getIt.registerLazySingleton<AuthRemoteDatasource>(
     () => AuthRemoteDatasource(dio: getIt<ApiClient>().dio),
@@ -237,5 +239,18 @@ Future<void> setupDependencies() async {
   );
   getIt.registerFactory<CheckoutPromotionCubit>(
     () => CheckoutPromotionCubit(repository: getIt<PromotionsRepository>()),
+  );
+
+  // notifications
+  getIt.registerLazySingleton<NotificationRemoteDatasource>(
+    () => NotificationRemoteDatasource(dio: getIt<ApiClient>().dio),
+  );
+  getIt.registerLazySingleton<NotificationRepository>(
+    () => NotificationRepositoryImpl(
+      remoteDatasource: getIt<NotificationRemoteDatasource>(),
+    ),
+  );
+  getIt.registerFactory<NotificationCubit>(
+    () => NotificationCubit(repository: getIt<NotificationRepository>()),
   );
 }

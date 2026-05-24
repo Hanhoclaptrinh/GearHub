@@ -61,118 +61,123 @@ class LoginPage extends StatelessWidget {
                 ),
               ),
 
-            SafeArea(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(28, 40, 28, bottomPadding + 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildLogo(),
-                      const SizedBox(height: 40),
+              SafeArea(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      28,
+                      40,
+                      28,
+                      bottomPadding + 20,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildLogo(),
+                        const SizedBox(height: 40),
 
-                      ShaderMask(
-                        shaderCallback: (bounds) => const LinearGradient(
-                          colors: [Colors.white, Colors.white70],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ).createShader(bounds),
-                        child: const Text(
-                          "THIẾT BỊ\nCÔNG NGHỆ\nCAO CẤP",
-                          style: TextStyle(
-                            fontSize: 44,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -1.5,
-                            height: 1.2,
+                        ShaderMask(
+                          shaderCallback: (bounds) => const LinearGradient(
+                            colors: [Colors.white, Colors.white70],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ).createShader(bounds),
+                          child: const Text(
+                            "THIẾT BỊ\nCÔNG NGHỆ\nCAO CẤP",
+                            style: TextStyle(
+                              fontSize: 44,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -1.5,
+                              height: 1.2,
+                            ),
                           ),
                         ),
-                      ),
 
-                      const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                      Text(
-                        'GearHub – Hệ sinh thái thiết bị tối thượng cho không gian sáng tạo của bạn.',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: Colors.white.withValues(alpha: 0.4),
-                          height: 1.5,
+                        Text(
+                          'GearHub – Hệ sinh thái thiết bị tối thượng cho không gian sáng tạo của bạn.',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.white.withValues(alpha: 0.4),
+                            height: 1.5,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 50),
+                        const SizedBox(height: 50),
 
-                      SocialLoginButton(
-                        label: 'TIẾP TỤC VỚI GOOGLE',
-                        iconPath: 'google',
-                        onTap: () async {
-                          HapticFeedback.mediumImpact();
-                          final deviceId = await DeviceUtils.getDeviceId(
-                            getIt<SecureStorageService>(),
-                          );
-                          if (context.mounted) {
-                            context.read<AuthCubit>().loginWithGoogle(
-                              deviceId: deviceId,
+                        SocialLoginButton(
+                          label: 'TIẾP TỤC VỚI GOOGLE',
+                          iconPath: 'google',
+                          onTap: () async {
+                            HapticFeedback.mediumImpact();
+                            final deviceId = await DeviceUtils.getDeviceId(
+                              getIt<SecureStorageService>(),
                             );
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 12),
+                            if (context.mounted) {
+                              context.read<AuthCubit>().loginWithGoogle(
+                                deviceId: deviceId,
+                              );
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 12),
 
-                      SocialLoginButton(
-                        label: 'TIẾP TỤC VỚI FACEBOOK',
-                        iconPath: 'facebook',
-                        onTap: () => HapticFeedback.mediumImpact(),
-                      ),
-                      const SizedBox(height: 32),
+                        SocialLoginButton(
+                          label: 'TIẾP TỤC VỚI FACEBOOK',
+                          iconPath: 'facebook',
+                          onTap: () => HapticFeedback.mediumImpact(),
+                        ),
+                        const SizedBox(height: 32),
 
-                      _buildDivider(),
-                      const SizedBox(height: 32),
+                        _buildDivider(),
+                        const SizedBox(height: 32),
 
-                      AuthPrimaryButton(
-                        label: 'ĐĂNG NHẬP VỚI EMAIL',
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const EmailLoginPage(),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 40),
+                        AuthPrimaryButton(
+                          label: 'ĐĂNG NHẬP',
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const EmailLoginPage(),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 40),
 
-                      _buildFooter(context),
-                    ],
+                        _buildFooter(context),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            Positioned.fill(
-              child: BlocBuilder<AuthCubit, AuthState>(
-                builder: (context, state) {
-                  if (state is AuthLoading) {
-                    return Container(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Color(0xFFFDE047),
+              Positioned.fill(
+                child: BlocBuilder<AuthCubit, AuthState>(
+                  builder: (context, state) {
+                    if (state is AuthLoading) {
+                      return Container(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xFFFDE047),
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildGlow(Color color, double size) {
     return Container(
