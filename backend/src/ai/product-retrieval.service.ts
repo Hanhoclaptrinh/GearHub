@@ -49,19 +49,33 @@ export class ProductRetrievalService {
     private readonly configService: ConfigService,
   ) { }
 
+  /**
+   * truy vấn danh sách sản phẩm liên quan từ DB dựa trên nội dung câu hỏi - RAG
+   * 
+   * quy trình xử lý đa tầng (Multi-stage Retrieval):
+   * vector hóa câu hỏi của user bằng embedding service
+   * stage 1: truy vấn toàn bộ vector và id của các sản phẩm đang kinh doanh
+   * stage 2: tính điểm cosine giữa câu hỏi và danh sách sản phẩm - tính trên RAM
+   * lọc ngưỡng: lọc theo ngưỡng tương đồng, nếu không có sp nào đạt ngưỡng -> hạ 0.48 để lấy các sp gần tương đồng
+   * stage 3: lấy danh sách top k id khớp nhất, nạp các thông tin chi tiết của sản phẩm này
+   * fallback: tìm kiếm bằng từ khóa khi có sự cố hệ thống
+   */
   async retrieveProducts(
     query: string,
     topK = 5,
   ): Promise<PublicProductContext[]> {
+    // giới hạn số lượng sản phẩm tối đa có thể trả về
     const maxProducts = Math.min(
       Math.max(topK, 1),
       Number(this.configService.get<string>('AI_RAG_MAX_PRODUCTS') ?? 5),
     );
 
     try {
+      // vector hóa câu hỏi user
       const queryEmbedding = await this.embeddingService.embedText(query);
-      // 2-stage retrieval
-      // stage 1 - chỉ lấy id và embedding, giảm áp lực RAM và băng thông
+
+      // stage 1 - chỉ lấy id và mảng vector
+      // tối ưu hiệu suất
       const rows = await this.prisma.productEmbedding.findMany({
         where: {
           product: {
@@ -75,12 +89,11 @@ export class ProductRetrievalService {
         },
       });
 
-      // ngưỡng tương đồng - chỉ lấy những sản phẩm có điểm tương đồng >= threshold
       const threshold = Number(
         this.configService.get<string>('AI_RAG_SIMILARITY_THRESHOLD') ?? 0.55,
       );
 
-      // stage 2 - tính toán ma trận cosine trên mảng id
+      // stage 2 - tính điểm cosine trên RAM và sắp xếp giảm dần
       const scoredRows = rows
         .map((row) => ({
           productId: row.productId,
@@ -91,25 +104,25 @@ export class ProductRetrievalService {
         }))
         .sort((a, b) => b.score - a.score);
 
+      // lọc theo ngưỡng
       let filtered = scoredRows.filter((item) => item.score >= threshold);
 
-      // set ngưỡng chấp nhận = 0.48 nếu không có sản phẩm nào đạt ngưỡng 0.55
+
+      // hạ ngưỡng thích ứng
       if (filtered.length === 0) {
         filtered = scoredRows.filter((item) => item.score >= 0.48);
       }
 
-      // danh sách n sản phẩm tốt nhất
       const targetItems = filtered.slice(0, maxProducts);
       if (targetItems.length === 0) return [];
 
-      // stage 3 - truy vấn các sản phẩm được chọn
+      // stage 3 - nạp thông tin chi tiết sp
       const targetIds = targetItems.map(item => item.productId);
       const products = await this.prisma.product.findMany({
         where: { id: { in: targetIds } },
         select: publicProductSelect
       });
 
-      // map lại score và trả về ctx
       return products.map(p => {
         const match = targetItems.find(item => item.productId === p.id);
         return {
@@ -118,6 +131,7 @@ export class ProductRetrievalService {
         }
       }).sort((a, b) => b.score - a.score);
     } catch (er) {
+      // fallback
       this.logger.error(
         `Embedding retrieval unavailable, using keyword fallback: ${this.errorMessage(er)}`,
       );
@@ -125,8 +139,8 @@ export class ProductRetrievalService {
     }
   }
 
-  // tinh diem tuong dong san pham va yeu cau cua khach
-  // dua tren dinh ly cosine tinh goc giua 2 vector
+  // tính điểm tương đồng cosine
+  // dựa trên định lý cosine tính góc giữa 2 vector
   cosineSimilarity(a: number[], b: number[]) {
     if (a.length === 0 || b.length === 0 || a.length !== b.length) return 0;
 
@@ -169,18 +183,25 @@ export class ProductRetrievalService {
     };
   }
 
-  // fallback
-  // chuyen sang tim kiem bang keyword neu api bi loi
+  /**
+   * fallback tìm kiếm bằng từ khóa khi hệ thống gặp sự cố
+   * 
+   * phân tách query thành các từ đơn
+   * lọc các từ quá ngắn và giới hạn 5 từ
+   * không tách được từ khóa hợp lệ nào -> trả về top rated prd
+   * tìm trong db dựa trên thông tin nhiều field
+   */
   private async keywordFallback(query: string, take: number) {
+    // tách từ khóa
     const terms = query
       .toLowerCase()
       .split(/\s+/)
       .map((term) => term.trim())
-      .filter((term) => term.length >= 3) // bo di cac tu qua ngan duoi 3 ky tu
-      .slice(0, 5); // gioi han toi da 5 tu khoa
+      .filter((term) => term.length >= 3)
+      .slice(0, 5); // giới hạn từ khóa
 
+    // fallback top rated prd
     if (terms.length === 0) {
-      // tra ve top rated neu khong co san pham nao match
       const products = await this.prisma.product.findMany({
         where: {
           isActive: true,
@@ -193,12 +214,12 @@ export class ProductRetrievalService {
       return products.map((product) => this.toPublicContext(product));
     }
 
+    // query nhiều field
     const products = await this.prisma.product.findMany({
       where: {
         isActive: true,
         variants: { some: { isActive: true } },
-        // flatmap nhan ban filter
-        // quet toan bo thuoc tinh lien quan
+        // flatmap
         OR: terms.flatMap((term) => [
           { name: { contains: term } },
           { tagline: { contains: term } },
@@ -207,7 +228,7 @@ export class ProductRetrievalService {
           { category: { name: { contains: term } } },
         ]),
       },
-      orderBy: [{ averageRating: 'desc' }, { reviewCount: 'desc' }], // sap xep theo avgrating va so luong danh gia
+      orderBy: [{ averageRating: 'desc' }, { reviewCount: 'desc' }],
       take,
       select: publicProductSelect,
     });

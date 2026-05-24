@@ -48,7 +48,7 @@ export class EmbeddingService {
     private readonly configService: ConfigService,
   ) { }
 
-  // vector hóa dữ liệu sản phẩm
+  // chuyển đổi đoạn văn bản thô thành mảng vector embedding số thực
   async embedText(text: string): Promise<number[]> {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
@@ -59,6 +59,8 @@ export class EmbeddingService {
     const model = genAi.getGenerativeModel({
       model: this.getEmbeddingModelName(),
     });
+
+    // call api sinh vector có giới hạn chiều
     const result = await model.embedContent({
       content: { role: 'user', parts: [{ text }] },
       outputDimensionality: this.getEmbeddingDimensions(),
@@ -81,8 +83,12 @@ export class EmbeddingService {
       .digest('hex');
   }
 
-  // vector hóa tất cả sản phẩm
-  // bỏ qua sản phẩm đã có embedding
+  /**
+   * đồng bộ và sinh vector embedding hàng loạt cho toàn bộ sản phẩm đang hoạt động
+   * 
+   * phân trang và chạy theo từng batch tránh overload
+   * chỉ vector hóa các sản phẩm đang được kinh doanh
+   */
   async backfillProducts(batchSize = 50) {
     let cursor: string | undefined;
     let processed = 0;
@@ -90,6 +96,7 @@ export class EmbeddingService {
     let skipped = 0;
 
     while (true) {
+      // phân trang
       const products = await this.prisma.product.findMany({
         where: { isActive: true },
         orderBy: { id: 'asc' },
@@ -100,6 +107,7 @@ export class EmbeddingService {
 
       if (products.length === 0) break;
 
+      // vector hóa các sp trong batch hiện tại
       for (const product of products) {
         const result = await this.syncProductEmbedding(product.id, product);
         processed += 1;
@@ -107,6 +115,7 @@ export class EmbeddingService {
         if (result === 'skipped') skipped += 1;
       }
 
+      // update cursor id bằng id sp cuối trong lô
       cursor = products[products.length - 1]?.id;
     }
 
@@ -130,10 +139,21 @@ export class EmbeddingService {
     }
   }
 
+  /**
+   * đồng bộ hóa vector embedding cho một sản phẩm cụ thể
+   * 
+   * thuật toán:
+   * lấy thông tin chi tiết sản phẩm (nếu chưa được cung cấp sẵn qua hydratedProduct)
+   * nếu sản phẩm bị xóa hoặc ngừng kinh doanh, tự động xóa vector cũ trong db
+   * xây dựng source text cho sản phẩm và tính text hash
+   * so sánh với text hash hiện tại trong db, bỏ qua nếu trùng khớp
+   * sinh vector mới nếu có thay đổi
+   */
   async syncProductEmbedding(
     productId: string,
     hydratedProduct?: ProductForEmbedding,
   ): Promise<'updated' | 'skipped'> {
+    // thông tin prd
     const product =
       hydratedProduct ??
       (await this.prisma.product.findUnique({
@@ -141,25 +161,27 @@ export class EmbeddingService {
         select: productEmbeddingSelect,
       }));
 
-    // sản phẩm đang kinh doanh (đã có vector) nhưng bị hard delete hoặc ngừng kinh doanh thì xóa luôn vector
+    // xóa vector cũ của sp nếu ngừng kinh doanh
     if (!product || !product.isActive) {
       await this.deleteProductEmbeddingIfTableExists(productId);
       return 'updated';
     }
 
-    // xây dựng source text từ metadata của sản phẩm
+    // build source text & text hash
     const sourceText = this.buildProductSourceText(product);
     const textHash = this.hashText(sourceText);
 
+    // lấy text hash trong db và so sánh
+    // bỏ qua nếu trùng
     const existing = await this.prisma.productEmbedding.findUnique({
       where: { productId },
       select: { textHash: true },
     });
-
     if (existing?.textHash === textHash) {
       return 'skipped';
     }
 
+    // sinh vector mới
     const embedding = await this.embedText(sourceText);
     await this.prisma.productEmbedding.upsert({
       where: { productId },
@@ -179,6 +201,7 @@ export class EmbeddingService {
     return 'updated';
   }
 
+  // xây dựng source text dựa trên thông tin sản phẩm và thuộc tính sản phẩm + biến thể
   buildProductSourceText(product: ProductForEmbedding) {
     const attributeMap = new Map<string, Set<string>>();
 

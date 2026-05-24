@@ -14,8 +14,8 @@ export class ActivityLogService {
         private readonly configService: ConfigService
     ) { }
 
-    // ghi log hanh dong cua user
-    // userId = null neu la hanh dong he thong hoac chua dang nhap
+    // ghi log
+    // userId = null nếu là hành động của hệ thống hoặc chưa đăng nhập
     async createLog(
         userId: string | null,
         action: ActivityActionType,
@@ -30,8 +30,7 @@ export class ActivityLogService {
         });
     }
 
-    // lay danh sach log cho admin dashboard
-    // ho tro filter theo userId, action, khoang thoi gian va phan trang
+    // lấy danh sách log cho admin dashboard
     async findAll(query: QueryActivityLogDto) {
         const { page = 1, limit = 20, userId, action, from, to } = query;
         const skip = (page - 1) * limit;
@@ -82,7 +81,7 @@ export class ActivityLogService {
         };
     }
 
-    // lay lich su hoat dong cua user
+    // lịch sử hoạt động của user
     async findByUser(userId: string, page: number = 1, limit: number = 20) {
         const skip = (page - 1) * limit;
 
@@ -102,6 +101,7 @@ export class ActivityLogService {
         };
     }
 
+    // cron job tự động xóa log sau n ngày vào giữa đêm mỗi ngày
     @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
     async handleLogCleanup() {
         const retentionDays = Number(this.configService.get<number>('ACTIVITY_LOG_RETENTION_DAYS', 90));
@@ -112,7 +112,6 @@ export class ActivityLogService {
         }
     }
 
-    // xoa log cu hon N ngay
     async deleteOldLogs(olderThanDays: number = 90) {
         const cutoff = new Date();
         const olderThanMs = olderThanDays * 24 * 60 * 60 * 1000;

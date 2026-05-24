@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Prisma } from '@prisma/client';
+import { Prisma, NotificationType } from '@prisma/client';
 import * as admin from 'firebase-admin';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { RegisterFcmTokenDto } from './dto/register-fcm-token.dto';
@@ -13,7 +13,7 @@ export class NotificationService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   onModuleInit() {
     this.initializeFirebase();
@@ -50,12 +50,23 @@ export class NotificationService implements OnModuleInit {
   }
 
   async sendToUser(userId: string, payload: PushPayload) {
-    if (!this.firebaseReady) {
-      this.logger.warn('Firebase Admin is not configured; push skipped');
-      return;
-    }
-
     try {
+      // lưu thông báo vào db
+      const notification = await this.prisma.notification.create({
+        data: {
+          userId,
+          title: payload.notification.title,
+          body: payload.notification.body,
+          type: payload.type || NotificationType.SYSTEM,
+          data: payload.data ? JSON.parse(JSON.stringify(payload.data)) : null,
+        },
+      });
+
+      if (!this.firebaseReady) {
+        this.logger.warn('Firebase Admin is not configured; push skipped');
+        return;
+      }
+
       const tokens = await this.prisma.fcmToken.findMany({
         where: { userId },
         select: { token: true },
@@ -64,10 +75,16 @@ export class NotificationService implements OnModuleInit {
       if (tokens.length === 0) return;
 
       const tokenValues = tokens.map((item) => item.token);
+
+      const fcmData = {
+        ...(payload.data || {}),
+        notificationId: notification.id,
+      };
+
       const response = await admin.messaging().sendEachForMulticast({
         tokens: tokenValues,
         notification: payload.notification,
-        data: this.stringifyData(payload.data),
+        data: this.stringifyData(fcmData),
         android: {
           priority: 'high',
         },
@@ -104,6 +121,80 @@ export class NotificationService implements OnModuleInit {
         `Failed to send push to user=${userId}: ${this.errorMessage(error)}`,
       );
     }
+  }
+
+  async getUserNotifications(
+    userId: string,
+    query: { page?: number; limit?: number; type?: NotificationType },
+  ) {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.NotificationWhereInput = {
+      userId,
+      ...(query.type && { type: query.type }),
+    };
+
+    const [notifications, total] = await Promise.all([
+      this.prisma.notification.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.notification.count({ where }),
+    ]);
+
+    const unreadCount = await this.prisma.notification.count({
+      where: {
+        userId,
+        isRead: false,
+        ...(query.type && { type: query.type }),
+      },
+    });
+
+    return {
+      data: notifications,
+      meta: {
+        total,
+        unreadCount,
+        page,
+        lastPage: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async markAsRead(userId: string, id: string) {
+    return await this.prisma.notification.updateMany({
+      where: { id, userId, isRead: false },
+      data: {
+        isRead: true,
+        readAt: new Date(),
+      },
+    });
+  }
+
+  async markAllAsRead(userId: string) {
+    return await this.prisma.notification.updateMany({
+      where: { userId, isRead: false },
+      data: {
+        isRead: true,
+        readAt: new Date(),
+      },
+    });
+  }
+
+  async deleteNotification(userId: string, id: string) {
+    return await this.prisma.notification.deleteMany({
+      where: { id, userId },
+    });
+  }
+
+  async clearAllNotifications(userId: string) {
+    return await this.prisma.notification.deleteMany({
+      where: { userId },
+    });
   }
 
   private initializeFirebase() {
@@ -170,4 +261,5 @@ export type PushPayload = {
     body: string;
   };
   data: Record<string, string | number | boolean>;
+  type?: NotificationType;
 };

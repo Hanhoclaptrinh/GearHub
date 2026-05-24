@@ -30,7 +30,7 @@ export class OrdersService {
     private inventoriesService: InventoriesService,
     private promotionService: PromotionService,
     private notificationService: NotificationService,
-  ) {}
+  ) { }
 
   async createOrder(userId: string, data: CreateOrderDto) {
     const { items, voucherId, ...shippingInfor } = data;

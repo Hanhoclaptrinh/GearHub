@@ -32,6 +32,7 @@ model User {
   reviews               Review[]
   userVouchers          UserVoucher[]
   wishlists             Wishlist[]
+  notifications         Notification[]
 
   @@map("users")
 }
@@ -496,6 +497,35 @@ model UserVoucher {
   @@index([voucherId])
   @@index([usedAt])
   @@map("user_vouchers")
+}
+
+model Notification {
+  id String @id @default(uuid()) @db.VarChar(36)
+  userId String @map("user_id") @db.VarChar(36)
+  title String @db.VarChar(255)
+  body String @db.Text
+  type NotificationType @default(SYSTEM)
+  data Json?
+  isRead Boolean @default(false) @map("is_read")
+  readAt DateTime? @map("read_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  ORDER
+  PAYMENT
+  VOUCHER
+  CHAT
+  SYSTEM
+  PROMOTION
 }
 
 enum Role {

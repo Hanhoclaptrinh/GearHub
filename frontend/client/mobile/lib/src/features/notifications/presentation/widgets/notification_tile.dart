@@ -45,11 +45,9 @@ class NotificationTile extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon đại diện cho nhóm thông báo
               _buildCategoryIcon(),
               const SizedBox(width: 14),
 
-              // Nội dung thông báo
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,7 +97,6 @@ class NotificationTile extends StatelessWidget {
                 ),
               ),
 
-              // Chấm đỏ chỉ báo chưa đọc
               if (!notification.isRead) ...[
                 const SizedBox(width: 10),
                 Container(

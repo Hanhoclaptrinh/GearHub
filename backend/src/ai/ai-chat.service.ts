@@ -16,8 +16,8 @@ import { AiChatResponse } from './types/ai.types';
 @Injectable()
 export class AiChatService {
   private readonly logger = new Logger(AiChatService.name);
-  // lock theo roomid va msgid tranh trung lap tin nhan
-  // khong sinh ra 2 cau tra loi cung luc cho 1 tin nhan - user spam
+  // lock theo roomid và msgid tránh trùng lặp tin nhắn
+  // không sinh ra 2 câu trả lời cùng lúc cho 1 tin nhắn - user spam
   private readonly roomLocks = new Set<string>();
   private readonly processingMessageIds = new Set<string>();
 
@@ -30,13 +30,20 @@ export class AiChatService {
     private readonly configService: ConfigService,
   ) { }
 
-  // kiem tra trang thai cua phong chat
-  // chat voi staff hay voi ai
+  // check trạng thái phòng chat
   isEnabled() {
     const value = this.configService.get<string>('AI_CHAT_ENABLED');
     return ['1', 'true', 'yes', 'on'].includes((value ?? '').toLowerCase());
   }
 
+  /**
+   * xử lý tin nhắn của người dùng trong phòng chat và sinh câu trả lời tự động bằng RAG AI
+   * 
+   * kiểm tra tính hợp lệ của tin nhắn (chỉ xử lý tin nhắn text mới nhất của khách hàng trong phòng BOT_ONLY)
+   * xử lý trùng lặp tin nhắn, tránh user spam
+   * kiểm tra yêu cầu gặp nhân viên hỗ trợ (nếu có) và chuyển giao
+   * AI RAG (streaming chunk-by-chunk)
+   */
   async respondToUserMessage(params: {
     room: ChatRoomRecord;
     userMessage: ChatMessageRecord;
@@ -44,18 +51,15 @@ export class AiChatService {
     onStart?: () => void;
     onChunk?: (chunk: string) => void;
   }) {
-    // loc tin nhan khong du dieu kien
-    // tinh nang AI chat bi tat
-    // sender khong phai khach hang
-    // phong chat khong co trang thai bot-only
-    // tin nhan rong hoac tin nhan he thong
     if (!this.isStrictlyEligible(params)) {
       return null;
     }
 
-    // lock
     const roomId = params.room.id;
     const messageId = params.userMessage.id;
+
+    // tránh race condition cục bộ
+    // bỏ qua nếu phòng chat hoặc tin nhắn này đang được xử lý song song
     if (
       this.roomLocks.has(roomId) ||
       this.processingMessageIds.has(messageId)
@@ -63,45 +67,48 @@ export class AiChatService {
       return null;
     }
 
+    // locking
     this.roomLocks.add(roomId);
     this.processingMessageIds.add(messageId);
 
     try {
-      // dam bao phong chat dang o mode bot-only va khong co ai claim
+      // kiểm tra trạng thái phòng, đảm bảo chưa bị thay đổi
       const room = await this.chatRepository.findRoomById(roomId);
       if (!this.canUseRoomForAi(room, params.userMessage.senderId)) {
         return null;
       }
 
-      // user gap nhan vien ho tro
+      // check yêu cầu chuyển giao
+      // chuyển room mode sang WAITTING nếu có yêu cầu gặp staff
       if (
         this.safetyService.isHumanHandoffRequest(params.userMessage.content)
       ) {
         return this.handoffToHuman(roomId, messageId);
       }
 
+      // callback AI typing
       if (params.onStart) {
         params.onStart();
       }
 
-      // RAG
       const response = await this.generateResponse(roomId, params.userMessage, params.onChunk);
-      const content = this.safetyService.sanitizeModelOutput(response.content); // lam sach cau tra loi
+
+      const content = this.safetyService.sanitizeModelOutput(response.content);
       const now = new Date();
 
+      // fallback
       if (response.usedFallback && params.onChunk) {
         params.onChunk(content);
       }
 
-      // chan race condition
+      // ghi db
+      // chặn race condition
       const result = await this.chatRepository.transaction(async (tx) => {
         const currentRoom = await this.chatRepository.findRoomById(roomId, tx);
         if (!this.canUseRoomForAi(currentRoom, params.userMessage.senderId)) {
-          return null; // trang thai phong bi thay doi
+          return null; // phòng đã bị nhân viên tiếp quản hoặc thay đổi trạng thái
         }
 
-        // tin nhan cua AI khong con la tin nhan moi nhat trong phong
-        // huy bo ket qua vua tao
         const latestMessage = await this.chatRepository.getLatestMessageInRoom(
           roomId,
           tx,
@@ -110,6 +117,7 @@ export class AiChatService {
           return null;
         }
 
+        // tạo tin nhắn của AI và cập nhật thông tin phòng chat
         return this.chatRepository.createAiMessageAndUpdateRoom({
           roomId: currentRoom.id,
           content,
@@ -118,10 +126,9 @@ export class AiChatService {
         });
       });
 
-      // save token
-      // giai phong lock
       if (!result) return null;
 
+      // tracking
       await this.trackUsageBestEffort(roomId, response, content);
 
       return result;
@@ -131,11 +138,17 @@ export class AiChatService {
     }
   }
 
-  // chuyen cuoc hoi thoai sang nhan vien
+  /**
+   * chuyển giao phòng chat từ AI chatbot sang nhân viên hỗ trợ
+   * 
+   * chỉ cho phép chuyển giao khi phòng ở mode BOT_ONLY và chưa có nhân viên nào nhận hỗ trợ
+   * đảm bảo không có tin nhắn nào mới hơn được gửi vào phòng sau tin nhắn kích hoạt chuyển giao
+   * cập nhật trạng thái phòng sang WAITING và thông báo cho hệ thống
+   */
   private async handoffToHuman(roomId: string, triggeringMessageId: string) {
     const now = new Date();
     return this.chatRepository.transaction(async (tx) => {
-      // chuyen giao phong chat dang o mode chatbot va chua co ai claim
+      // check trạng thái phòng mới nhất
       const currentRoom = await this.chatRepository.findRoomById(roomId, tx);
       if (
         !currentRoom ||
@@ -145,7 +158,7 @@ export class AiChatService {
         return null;
       }
 
-      // race condition
+      // check yêu cầu hỗ trợ còn là tin nhắn mới nhất không
       const latestMessage = await this.chatRepository.getLatestMessageInRoom(
         roomId,
         tx,
@@ -154,6 +167,7 @@ export class AiChatService {
         return null;
       }
 
+      // WAITTING mode
       return this.chatRepository.handoffRoomToHuman({
         roomId,
         now,
@@ -162,8 +176,14 @@ export class AiChatService {
     });
   }
 
-  // RAG
-  // su dung chat model tao phan hoi cho nguoi dung
+  /**
+   * RAG (Retrieval-Augmented Generation)
+   * 
+   * lấy thông tin tóm tắt hội thoại cũ, 12 tin nhắn gần nhất và tìm kiếm ngữ nghĩa lấy top 5 sản phẩm phù hợp nhất với câu hỏi
+   * prompt
+   * call API
+   * catch exeption
+   */
   private async generateResponse(
     roomId: string,
     userMessage: ChatMessageRecord,
@@ -173,14 +193,14 @@ export class AiChatService {
     const model = this.configService.get<string>('GEMINI_CHAT_MODEL')!;
 
     try {
-      // thu thap context
+      // thu thập đồng thời các nguồn context
       const [aiContext, recentMessages, products] = await Promise.all([
         this.chatRepository.getAiContext(roomId),
         this.chatRepository.getRecentMessages(roomId, 12), // lay 12 tin nhan gan nhat trong phong
         this.productRetrievalService.retrieveProducts(userMessage.content, 5), // thuc hien RAG tim 5 sp phu hop
       ]);
 
-      // cau hinh prompt cho AI khong tra loi lan man
+      // dựng prompt
       const promptText = this.promptBuilderService.buildPrompt({
         aiSummary: aiContext?.summary ?? null,
         recentMessages,
@@ -218,6 +238,13 @@ export class AiChatService {
     }
   }
 
+  /**
+   * call api ở norm mode để sinh text
+   * 
+   * config api key
+   * config timeout
+   * call ai -> gen response
+   */
   private async callGemini(promptText: string, modelName: string) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
@@ -228,6 +255,7 @@ export class AiChatService {
       this.configService.get<string>('AI_GEMINI_TIMEOUT_MS'),
     );
 
+    // gọi api với timeout
     return this.withTimeout(async () => {
       const genAi = new GoogleGenerativeAI(apiKey);
       const model = genAi.getGenerativeModel({ model: modelName });
@@ -236,6 +264,14 @@ export class AiChatService {
     }, timeoutMs);
   }
 
+  /**
+   * chunk-by-chunk
+   * 
+   * config
+   * streaming
+   * loop
+   * gen
+   */
   private async callGeminiStream(
     promptText: string,
     modelName: string,
@@ -253,12 +289,16 @@ export class AiChatService {
     return this.withTimeout(async () => {
       const genAi = new GoogleGenerativeAI(apiKey);
       const model = genAi.getGenerativeModel({ model: modelName });
+
+      // khởi tạo luồng sinh nội dung stream
       const resultStream = await model.generateContentStream(promptText);
       let accumulatedText = '';
+
+      // loop
       for await (const chunk of resultStream.stream) {
         const text = chunk.text();
         accumulatedText += text;
-        onChunk(text);
+        onChunk(text); // gửi chunk txt về client bằng socket/sse
       }
       return accumulatedText;
     }, timeoutMs);
@@ -284,44 +324,44 @@ export class AiChatService {
     }
   }
 
-  // dieu kien kich hoat AI mode
+  // điều kiện kích hoạt AI mode
   private isStrictlyEligible(params: {
     room: ChatRoomRecord;
     userMessage: ChatMessageRecord;
     senderRole: Role;
   }) {
     return (
-      this.isEnabled() && // tinh nang AI duoc kich hoat
-      params.senderRole === Role.USER && // sender la khach hang
-      params.room.status === RoomStatus.BOT_ONLY && // phong chat dang o mode bot-only
-      params.room.userId === params.userMessage.senderId && // nguoi gui tin nhan phai la khach hang dang mo phong chat
-      params.userMessage.type === MessageType.TEXT && // chi xu ly van ban
-      params.userMessage.content.trim().length > 0 && // tin nhan khong duoc rong
-      !params.userMessage.isAi // khong duoc loop
+      this.isEnabled() && // tính năng AI được active
+      params.senderRole === Role.USER && // sender là khách hàng
+      params.room.status === RoomStatus.BOT_ONLY && // phòng chat đang ở mode bot-only
+      params.room.userId === params.userMessage.senderId && // sender phải là khách hàng đang mở phòng chat
+      params.userMessage.type === MessageType.TEXT && // chỉ xử lý txt
+      params.userMessage.content.trim().length > 0 && // tin nhắn không được rỗng
+      !params.userMessage.isAi // không được loop
     );
   }
 
-  // check trang thai phong cho ai
+  // check trạng thái phòng cho ai
   private canUseRoomForAi(
     room: ChatRoomRecord | null,
     senderId: string | null,
   ): room is ChatRoomRecord {
     return Boolean(
-      room && // phong ton tai
-      room.status === RoomStatus.BOT_ONLY && // phong o mode bot-only
-      !room.staffId && // phong chua co ai claim
-      room.userId === senderId, // sender la nguoi kich hoat phong
+      room && // phòng tồn tại
+      room.status === RoomStatus.BOT_ONLY && // phòng ở mode bot-only
+      !room.staffId && // chưa có ai claim
+      room.userId === senderId, // sender là người active phòng
     );
   }
 
-  // check trang thai tin nhan kich hoat
+  // check trạng thái tin nhắn  active
   private isStillLatestTrigger(
     latestMessage: ChatMessageRecord | null,
     userMessage: ChatMessageRecord,
   ) {
     return Boolean(
       latestMessage &&
-      latestMessage.id === userMessage.id && // id tin nhan moi nhat trong db phai === id tin nhan kich hoat ai
+      latestMessage.id === userMessage.id &&
       latestMessage.roomId === userMessage.roomId &&
       latestMessage.senderId === userMessage.senderId &&
       latestMessage.type === MessageType.TEXT &&
@@ -329,7 +369,7 @@ export class AiChatService {
     );
   }
 
-  // tracking token tieu thu
+  // tracking token
   private async trackUsageBestEffort(
     roomId: string,
     response: AiChatResponse,

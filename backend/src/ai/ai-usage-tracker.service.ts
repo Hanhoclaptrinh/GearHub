@@ -7,11 +7,10 @@ export class AiUsageTracker {
 
   estimateTokens(...parts: string[]) {
     const chars = parts.reduce((sum, part) => sum + part.length, 0);
-    return Math.ceil(chars / 4); // 1 token/4 ky tu
+    return Math.ceil(chars / 4); // 1 token ~ 4 ký tự
   }
 
   async addUsage(roomId: string, estimatedTokens: number) {
-    // luu muc do su dung vao db
     await this.prisma.aiContext.upsert({
       where: { roomId },
       create: {
