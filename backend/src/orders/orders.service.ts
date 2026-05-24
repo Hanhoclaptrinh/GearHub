@@ -3,9 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CartService } from 'src/cart/cart.service';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { ProductsService } from 'src/products/products.service';
 import { ActivityLogService } from 'src/activity-log/activity-log.service';
 import { InventoriesService } from 'src/inventories/inventories.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -21,6 +19,7 @@ import {
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { PromotionService } from 'src/promotion/promotion.service';
 import { NotificationService } from 'src/notification/notification.service';
+import { ReviewCancelDto } from './dto/review-cancel.dto';
 
 @Injectable()
 export class OrdersService {
@@ -32,12 +31,22 @@ export class OrdersService {
     private notificationService: NotificationService,
   ) { }
 
+  /**
+   * tạo đơn hàng mới từ giỏ hàng hoặc mua trực tiếp
+   * 
+   * xác thực các biến thể sản phẩm có tồn tại và còn đủ số lượng tồn kho
+   * áp dụng voucher và tính toán tổng tiền thanh toán (bao gồm VAT)
+   * tạo bản ghi Order, OrderItem và thiết lập trạng thái theo dõi ban đầu
+   * khấu trừ số lượng tồn kho và cập nhật trạng thái sử dụng của voucher tùy theo phương thức thanh toán
+   * làm sạch giỏ hàng bằng cách loại bỏ các sản phẩm đã được thanh toán
+   */
   async createOrder(userId: string, data: CreateOrderDto) {
     const { items, voucherId, ...shippingInfor } = data;
     const variantIds = items.map((i) => i.variantId);
 
     return await this.prisma.$transaction(async (tx) => {
-      // lây thông tin biến thể trực tiếp từ db
+      // lấy thông tin giá bán và tồn kho tại thời điểm mua
+      // ngăn chặn việc gian lận hoặc thay đổi giá từ phía client
       const variants = await tx.productVariant.findMany({
         where: { id: { in: variantIds } },
         include: {
@@ -51,7 +60,7 @@ export class OrdersService {
         );
       }
 
-      // tính tổng tiền và kiểm tra stock trong kho
+      // tính tổng giá trị tạm tính và kiểm tra tồn kho để đảm bảo cửa hàng có đủ số lượng sản phẩm cung ứng
       let totalAmount = 0;
       const orderItemsData = items.map((item) => {
         const variant = variants.find((v) => v.id === item.variantId);
@@ -61,7 +70,7 @@ export class OrdersService {
           );
         }
 
-        // kiem tra kho
+        // chặn xử lý tạo đơn hàng nếu số lượng mua vượt quá số lượng tồn kho khả dụng của sản phẩm
         if (variant.stock < item.quantity) {
           throw new BadRequestException(
             `Sản phẩm ${variant.name} chỉ còn ${variant.stock} sản phẩm`,
@@ -73,19 +82,19 @@ export class OrdersService {
         return {
           productVariantId: item.variantId,
           quantity: item.quantity,
-          priceAtPurchase: variant.price, // gia tai thoi diem mua hang
+          priceAtPurchase: variant.price, // lưu lại giá tại thời điểm mua để phục vụ làm hóa đơn và đối soát sau này
           productName: variant.product.name,
           variantName: variant.name,
         };
       });
 
-      // tinh thue VAT 10%
+      // VAT
       const vatAmount = totalAmount * 0.1;
       const subtotal = totalAmount + vatAmount;
 
-      // tính giảm giá
       let voucherDiscount = 0;
 
+      // xác thực và tính toán giá trị được giảm từ voucher (nếu có áp dụng)
       if (voucherId) {
         const voucher = await this.promotionService.validateVoucherForCheckout(
           userId,
@@ -100,7 +109,7 @@ export class OrdersService {
 
       const finalTotal = Math.max(0, subtotal - voucherDiscount);
 
-      // tao order
+      // khởi tạo đơn hàng chính thức và thực hiện tracking đơn
       const order = await tx.order.create({
         data: {
           userId,
@@ -120,11 +129,13 @@ export class OrdersService {
         },
       });
 
-      // hoàn tất đơn hàng dựa trên payment method
       const isCOD =
         shippingInfor.paymentMethod === PaymentMethod.COD ||
         !shippingInfor.paymentMethod;
 
+      // với COD voucher được đánh dấu sử dụng ngay
+      // với thanh toán online, chỉ liên kết voucher vào đơn hàng tạm thời và sẽ hoàn trả lại 
+      // nếu khách hàng hủy thanh toán hoặc giao dịch thất bại giữa chừng
       if (isCOD) {
         if (voucherId) {
           await this.promotionService.markVoucherUsed(
@@ -135,8 +146,6 @@ export class OrdersService {
           );
         }
       } else {
-        // chưa trừ voucher của user khi đang chờ thanh toán
-        // user hủy giữa chừng hoặc thanh toán thất bại - trả lại voucher
         if (voucherId) {
           await tx.userVoucher.update({
             where: { userId_voucherId: { userId, voucherId } },
@@ -145,7 +154,7 @@ export class OrdersService {
         }
       }
 
-      // tru stock qua InventoryService
+      // trừ tồn kho thông qua InventoriesService để tự động ghi lại lịch sử giao dịch kho bán hàng
       for (const item of items) {
         await this.inventoriesService.adjustStock({
           variantId: item.variantId,
@@ -157,8 +166,7 @@ export class OrdersService {
         });
       }
 
-      // don gio hang
-      // xoa cac sp da mua
+      // giải phóng các item đã được mua khỏi giỏ hàng của user
       await tx.cartItem.deleteMany({
         where: {
           cart: { userId },
@@ -170,18 +178,24 @@ export class OrdersService {
     });
   }
 
+  /**
+   * lấy lịch sử đơn hàng của người dùng hiện tại
+   * dữ liệu được đính kèm chi tiết từng sản phẩm và tracking
+   */
   async getMyOrders(
     userId: string,
     query: { page?: number; limit?: number; status?: OrderStatus },
   ) {
     const { page = 1, limit = 10, status } = query;
+
     const skip = (page - 1) * limit;
 
     const [orders, total] = await Promise.all([
       this.prisma.order.findMany({
         where: {
           userId,
-          ...(status && { status }), // loc theo status
+          // lọc theo trạng thái được chọn từ các tab hiển thị trên UI
+          ...(status && { status }),
         },
         include: {
           items: {
@@ -189,6 +203,7 @@ export class OrdersService {
               productVariant: {
                 include: {
                   product: {
+                    // chỉ lấy các thông tin thiết yếu hiển thị danh sách sản phẩm trên UI
                     select: {
                       name: true,
                       thumbnailUrl: true,
@@ -197,6 +212,9 @@ export class OrdersService {
                 },
               },
             },
+          },
+          tracking: {
+            orderBy: { createdAt: 'desc' },
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -216,7 +234,10 @@ export class OrdersService {
     };
   }
 
-  // all order admin
+  /**
+   * lấy danh sách tất cả đơn hàng toàn hệ thống (admin/staff)
+   * hỗ trợ tìm kiếm động theo mã đơn hàng, tên người nhận, SĐT và lọc theo trạng thái
+   */
   async getAllOrders(query: {
     page?: number;
     limit?: number;
@@ -225,6 +246,7 @@ export class OrdersService {
     userId?: string;
   }) {
     const { page = 1, limit = 10, status, search, userId } = query;
+
     const skip = (page - 1) * limit;
 
     const whereCondition: any = {
@@ -244,6 +266,7 @@ export class OrdersService {
         where: whereCondition,
         include: {
           user: {
+            // chỉ lấy các thông tin định danh tối thiểu của user đặt mua
             select: {
               email: true,
               profile: {
@@ -251,7 +274,11 @@ export class OrdersService {
               },
             },
           },
+          // tổng số món hàng trong đơn
           _count: { select: { items: true } },
+          tracking: {
+            orderBy: { createdAt: 'desc' },
+          },
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -304,8 +331,14 @@ export class OrdersService {
     return order;
   }
 
+  /**
+   * cập nhật trạng thái đơn hàng và tự động đồng bộ hóa các tài nguyên liên quan
+   * thực hiện hoàn trả/khấu trừ kho, hoàn voucher, cập nhật hóa đơn thanh toán
+   * và gửi thông báo trạng thái đơn hàng tới client
+   */
   async updateOrderStatus(orderId: string, data: UpdateOrderStatusDto) {
     const { status, description } = data;
+
     const result = await this.prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({
         where: { id: orderId },
@@ -313,11 +346,12 @@ export class OrdersService {
       });
       if (!order) throw new NotFoundException('Không tìm thấy đơn hàng');
 
+      // bỏ qua các bước xử lý phía dưới nếu trạng thái thực tế không có sự thay đổi
       if (order.status === status) {
         return { order, statusChanged: false };
       }
 
-      // hoan kho neu don hang bi huy hoac khach tra hang hoac giao hang that bai
+      // các trạng thái được định nghĩa là hoàn trả lại tài nguyên cho hệ thống
       const refundStatuses: OrderStatus[] = [
         OrderStatus.CANCELLED,
         OrderStatus.RETURNED,
@@ -328,8 +362,8 @@ export class OrdersService {
         order.status as OrderStatus,
       );
 
+      // chuyển từ trạng thái hoạt động sang trạng thái hủy/trả hàng: cần hoàn trả kho và voucher
       if (isNewRefundStatus && !isCurrentRefundStatus) {
-        // hoàn trả voucher nếu có thay đổi trong đơn hàng
         await this.rollbackPromotion(orderId, order.userId, tx);
 
         for (const item of order.items) {
@@ -346,8 +380,9 @@ export class OrdersService {
             tx,
           });
         }
-      } else if (!isNewRefundStatus && isCurrentRefundStatus) {
-        // hoan lai kho neu don hang chuyen tu trang thai huy/tra ve trang thai dang xu ly
+      }
+      // khôi phục đơn hàng từ trạng thái hủy về hoạt động: cần thực hiện trừ lại kho hàng
+      else if (!isNewRefundStatus && isCurrentRefundStatus) {
         for (const item of order.items) {
           await this.inventoriesService.adjustStock({
             variantId: item.productVariantId,
@@ -360,12 +395,12 @@ export class OrdersService {
         }
       }
 
-      // cap nhat trang thai don hang
       const updatedOrder = await tx.order.update({
         where: { id: orderId },
         data: { status },
       });
 
+      // nếu đơn hàng bị hủy bỏ/trả hàng và khách hàng đã thanh toán online, chuyển trạng thái thanh toán sang REFUNDED
       if (isNewRefundStatus) {
         if (order.paymentStatus === PaymentStatus.PAID) {
           await tx.order.update({
@@ -378,7 +413,9 @@ export class OrdersService {
             data: { status: TransactionStatus.FAILED },
           });
         }
-      } else if (
+      }
+      // COD chỉ được xem là thanh toán thành công khi shipper báo đã giao hàng thành công (DELIVERED)
+      else if (
         status === OrderStatus.DELIVERED &&
         order.paymentMethod === PaymentMethod.COD
       ) {
@@ -409,7 +446,6 @@ export class OrdersService {
         });
       }
 
-      // tracking cho khach theo doi
       await tx.orderTracking.create({
         data: {
           orderId,
@@ -496,9 +532,16 @@ export class OrdersService {
     return labels[status] || status;
   }
 
-  // user huy don hang
-  async cancelOrder(userId: string, id: string) {
+  /**
+   * xử lý yêu cầu hủy đơn hàng từ phía client
+   * phân loại logic xử lý theo trạng thái hiện tại của đơn hàng:
+   * - PENDING / CONFIRMED: Hủy đơn tự động, tự động hoàn trả kho và voucher
+   * - PROCESSING: ghi nhận yêu cầu hủy vào tracking chờ admin duyệt
+   * - các trạng thái khác: chặn thao tác và báo lỗi
+   */
+  async cancelOrder(userId: string, id: string, reason: string) {
     return await this.prisma.$transaction(async (tx) => {
+      // xác thực quyền sở hữu đơn hàng của chính người dùng gửi yêu cầu để chặn việc can thiệp đơn hàng chéo
       const order = await tx.order.findFirst({
         where: {
           id,
@@ -507,43 +550,149 @@ export class OrdersService {
         include: { items: true },
       });
       if (!order) throw new NotFoundException('Đơn hàng không tồn tại');
-      if (order.status !== OrderStatus.PENDING) {
+
+      const allowedStatusesForInstantCancel: OrderStatus[] = [OrderStatus.PENDING, OrderStatus.CONFIRMED];
+
+      // đơn hàng chưa đóng gói / giao vận chuyển: cho phép hệ thống hủy tự động ngay lập tức
+      if (allowedStatusesForInstantCancel.includes(order.status)) {
+        await this.rollbackPromotion(id, userId, tx);
+
+        // cộng lại số lượng tồn kho khả dụng cho các biến thể sản phẩm
+        for (const item of order.items) {
+          await this.inventoriesService.adjustStock({
+            variantId: item.productVariantId,
+            type: InventoryTransactionType.ORDER_CANCEL,
+            quantity: item.quantity,
+            referenceId: order.id,
+            reason: `Hoàn kho - đơn hàng bị hủy bởi người mua`,
+            tx,
+          });
+        }
+
+        const updatedOrder = await tx.order.update({
+          where: { id },
+          data: { status: OrderStatus.CANCELLED },
+        });
+
+        // ghi lại lý do hủy cụ thể để làm báo cáo dữ liệu phân tích
+        await tx.orderTracking.create({
+          data: {
+            orderId: id,
+            statusLabel: 'Đã hủy đơn',
+            description: `Hủy bởi người mua. Lý do: ${reason}`,
+          },
+        });
+
+        return updatedOrder;
+      }
+      // đơn hàng đang đóng gói: chuyển sang cơ chế gửi yêu cầu chờ duyệt thủ công từ admin
+      else if (order.status === OrderStatus.PROCESSING) {
+        const latestTracking = await tx.orderTracking.findFirst({
+          where: { orderId: id },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        // chặn việc gửi trùng nhiều yêu cầu hủy liên tiếp làm nhiễu dữ liệu xử lý trên trang quản trị admin
+        if (latestTracking && latestTracking.statusLabel === 'Yêu cầu hủy') {
+          throw new BadRequestException('Bạn đã gửi yêu cầu hủy cho đơn hàng này rồi, vui lòng chờ Admin duyệt.');
+        }
+
+        // log yêu cầu hủy
+        await tx.orderTracking.create({
+          data: {
+            orderId: id,
+            statusLabel: 'Yêu cầu hủy',
+            description: reason,
+          },
+        });
+
+        const updatedOrder = await tx.order.findUnique({
+          where: { id },
+          include: {
+            items: true,
+            tracking: { orderBy: { createdAt: 'desc' } },
+          },
+        });
+
+        return updatedOrder;
+      } else {
         throw new BadRequestException(
-          'Chỉ có thể hủy đơn hàng đang chờ xác nhận',
+          'Đơn hàng đang ở trạng thái không thể hủy.',
         );
       }
+    });
+  }
 
-      await this.rollbackPromotion(id, userId, tx);
+  /**
+   * phê duyệt hoặc từ chối yêu cầu hủy đơn hàng từ phía khách hàng
+   * - đồng ý: chuyển đơn sang CANCELLED, kích hoạt luồng hoàn kho và hoàn voucher tự động
+   * - từ chối: tạo tracking ghi nhận từ chối và gửi thông báo đẩy giải thích lý do cho khách hàng
+   */
+  async reviewCancelRequest(id: string, data: ReviewCancelDto) {
+    const { approve, reason } = data;
 
-      // hoan kho qua InventoryService
-      for (const item of order.items) {
-        await this.inventoriesService.adjustStock({
-          variantId: item.productVariantId,
-          type: InventoryTransactionType.ORDER_CANCEL,
-          quantity: item.quantity,
-          referenceId: order.id,
-          reason: `Hoàn kho - đơn hàng bị hủy bởi người mua`,
-          tx,
-        });
-      }
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+    });
 
-      // cap nhat lai trang thai don hang
-      const updatedOrder = await tx.order.update({
-        where: { id },
-        data: { status: OrderStatus.CANCELLED },
+    if (!order) throw new NotFoundException('Đơn hàng không tồn tại');
+
+    // yêu cầu hủy chỉ hợp lệ khi đơn đang được xử lý đóng gói (PROCESSING)
+    if (order.status !== OrderStatus.PROCESSING) {
+      throw new BadRequestException('Đơn hàng không ở trạng thái Đang đóng gói');
+    }
+
+    const latestTracking = await this.prisma.orderTracking.findFirst({
+      where: { orderId: id },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // chỉ thực hiện xử lý nếu thực sự tồn tại yêu cầu hủy chưa được giải quyết gần nhất
+    if (!latestTracking || latestTracking.statusLabel !== 'Yêu cầu hủy') {
+      throw new BadRequestException('Đơn hàng không có yêu cầu hủy nào cần xử lý');
+    }
+
+    if (approve) {
+      const cancelReason = reason ? `Chấp nhận yêu cầu hủy. Lý do: ${reason}` : 'Chấp nhận yêu cầu hủy';
+
+      // chấp nhận: gọi cập nhật trạng thái sang CANCELLED để tự động kích hoạt hoàn kho, hoàn tiền và hoàn voucher
+      return this.updateOrderStatus(id, {
+        status: OrderStatus.CANCELLED,
+        description: cancelReason,
       });
+    } else {
+      const rejectReason = reason ? `Từ chối yêu cầu hủy. Lý do: ${reason}` : 'Từ chối yêu cầu hủy';
 
-      // tracking
-      await tx.orderTracking.create({
+      // từ chối: tạo bản ghi nhật trình từ chối hủy để khách hàng có thể đọc được trên app
+      await this.prisma.orderTracking.create({
         data: {
           orderId: id,
-          statusLabel: 'Đã hủy đơn',
-          description: 'Đơn hàng đã được hủy bởi người mua',
+          statusLabel: 'Từ chối hủy đơn',
+          description: rejectReason,
         },
       });
 
-      return updatedOrder;
-    });
+      // gửi thông báo đẩy về client
+      void this.notificationService.sendToUser(order.userId, {
+        notification: {
+          title: 'Yêu cầu hủy đơn bị từ chối',
+          body: `Yêu cầu hủy đơn #${order.id.slice(0, 8).toUpperCase()} đã bị cửa hàng từ chối.`,
+        },
+        data: {
+          type: 'order',
+          orderId: order.id,
+          route: `/orders/${order.id}`,
+        },
+      });
+
+      return this.prisma.order.findUnique({
+        where: { id },
+        include: {
+          items: true,
+          tracking: { orderBy: { createdAt: 'desc' } },
+        },
+      });
+    }
   }
 
   async getTopSellingProducts(limit = 5) {
@@ -572,32 +721,32 @@ export class OrdersService {
     return details;
   }
 
+  // thu thập số liệu thống kê tổng quan cho trang quản trị
   async getAdminStats() {
     const [revenue, orderCounts, userCount, lowStockVariants, latestLogs] =
       await Promise.all([
-        // tong doanh thu tu cac don hang da thanh toan (paymentStatus = PAID)
+        // chỉ tính các đơn hàng đã thanh toán thành công để phản ánh chính xác doanh thu thực tế, loại bỏ đơn ảo/hủy
         this.prisma.order.aggregate({
           _sum: { totalAmount: true },
           where: { paymentStatus: PaymentStatus.PAID },
         }),
 
-        // dem so luong don hang theo tung trang thai
+        // phân nhóm theo trạng thái để thống kê số lượng đơn ở từng bước xử lý
         this.prisma.order.groupBy({
           by: ['status'],
           _count: { id: true },
         }),
 
-        // tong so khach hang da dang ky
+        // chỉ đếm tài khoản khách hàng thực tế để đo lường quy mô và mức độ tăng trưởng tệp người dùng
         this.prisma.user.count({
           where: { role: Role.USER },
         }),
 
-        // san pham sap het hang (stock < 10)
+        // đếm các biến thể sản phẩm có số lượng tồn kho dưới 10 để đưa ra cảnh báo kịp thời cho admin nhập thêm hàng
         this.prisma.productVariant.count({
           where: { stock: { lt: 10 } },
         }),
 
-        // lay 7 log gan nhat
         this.activityLogService.findAll({ page: 1, limit: 7 }),
       ]);
 
@@ -606,7 +755,7 @@ export class OrdersService {
       return acc;
     }, {});
 
-    // fetch revenue & orders trend data (last 7 days)
+    // truy vấn dữ liệu xu hướng doanh thu và đơn hàng trong 7 ngày gần nhất để vẽ biểu đồ phân tích tăng trưởng ngắn hạn
     const trends = await this.getTrends(7);
 
     return {
@@ -620,13 +769,14 @@ export class OrdersService {
     };
   }
 
+  // tính toán dữ liệu xu hướng doanh thu và lượng đơn hàng theo ngày
   private async getTrends(days: number) {
     const now = new Date();
     const startDate = new Date();
     startDate.setDate(now.getDate() - (days - 1));
     startDate.setHours(0, 0, 0, 0);
 
-    // query 1 lan lay toan bo order trong khoang thoi gian
+    // chỉ select các trường cần thiết để giảm tải lượng dữ liệu truyền tải từ db và tiết kiệm RAM
     const allOrders = await this.prisma.order.findMany({
       where: { createdAt: { gte: startDate } },
       select: {
@@ -636,7 +786,9 @@ export class OrdersService {
       },
     });
 
-    // stat chua du lieu cac ngay
+    // khởi tạo map chứa đầy đủ các ngày trong khoảng thống kê
+    //  để tránh việc bị thiếu hụt mốc thời gian trên biểu đồ của FE 
+    // nếu ngày đó không phát sinh đơn hàng
     const statsMap = new Map<string, { orders: number; revenue: number }>();
 
     for (let i = 0; i < days; i++) {
@@ -649,7 +801,7 @@ export class OrdersService {
       statsMap.set(dateStr, { orders: 0, revenue: 0 });
     }
 
-    // do du lieu vao map
+    // phân bổ dữ liệu các đơn hàng đã truy vấn vào từng ngày tương ứng trong map
     allOrders.forEach((order) => {
       const dateStr = order.createdAt.toLocaleDateString('vi-VN', {
         day: '2-digit',
@@ -658,6 +810,7 @@ export class OrdersService {
       if (statsMap.has(dateStr)) {
         const current = statsMap.get(dateStr)!;
         current.orders += 1;
+        // chỉ cộng dồn doanh thu của các đơn đã thanh toán để tránh gây ảo báo cáo tài chính
         if (order.paymentStatus === PaymentStatus.PAID) {
           current.revenue += Number(order.totalAmount || 0);
         }
@@ -677,30 +830,34 @@ export class OrdersService {
     };
   }
 
+  /**
+   * tạo lại đơn hàng mới dựa trên thông tin của đơn hàng cũ (re-order)
+   * điền sẵn toàn bộ thông tin nhận hàng và danh sách sản phẩm cũ
+   */
   async reOrder(userId: string, id: string) {
-    // lay thong tin don cu
+    // xác thực cả userId để ngăn chặn việc xem trộm và đặt lại đơn hàng của người khác
     const oldOrder = await this.prisma.order.findFirst({
       where: { id, userId },
       include: { items: true },
     });
     if (!oldOrder) throw new NotFoundException('Không tìm thấy đơn hàng cũ');
 
-    // chuan bi du lieu cho don hang moi
-    // lay lai danh sach variantId va quantity tu don hang cu
+    // chỉ lấy id biến thể và số lượng, không lấy lại đơn giá cũ vì giá sản phẩm có thể đã thay đổi
     const itemsForNewOrder = oldOrder.items.map((item) => ({
       variantId: item.productVariantId,
       quantity: item.quantity,
     }));
 
-    // tai su dung thong tin ship
+    // tái sử dụng thông tin giao hàng để người dùng không cần nhập tay lại từ đầu
     const reOrderData: CreateOrderDto = {
       receiverName: oldOrder.receiverName,
       receiverPhone: oldOrder.receiverPhone,
       shippingAddress: oldOrder.shippingAddress,
-      note: `Mua lại từ đơn hàng #${oldOrder.id.slice(0, 8)}`,
+      note: `Mua lại từ đơn hàng #${oldOrder.id.slice(0, 8).toUpperCase()}`,
       items: itemsForNewOrder,
     };
 
+    // gọi qua createOrder gốc để chạy lại đầy đủ quy trình kiểm tra tồn kho và áp dụng các khuyến mãi hiện hành
     return this.createOrder(userId, reOrderData);
   }
 

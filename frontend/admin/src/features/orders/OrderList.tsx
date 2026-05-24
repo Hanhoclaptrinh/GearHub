@@ -34,6 +34,19 @@ export const OrderList: React.FC = () => {
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
 
+  const [showReviewCancelDialog, setShowReviewCancelDialog] = useState<boolean>(false);
+  const [reviewApprove, setReviewApprove] = useState<boolean>(true);
+  const [reviewReason, setReviewReason] = useState<string>('');
+
+  const hasCancelRequest = (order: any) => {
+    return (
+      order.status === OrderStatus.PROCESSING &&
+      order.tracking &&
+      order.tracking.length > 0 &&
+      order.tracking[0].statusLabel === 'Yêu cầu hủy'
+    );
+  };
+
   const orderIdFromUrl = searchParams.get('orderId');
   const userIdFromUrl = searchParams.get('userId');
 
@@ -64,6 +77,22 @@ export const OrderList: React.FC = () => {
     },
     onError: (error: any) => {
       const errorMsg = error?.response?.data?.message || 'Cập nhật trạng thái thất bại';
+      setErrorMessage(`${errorMsg}`);
+      setTimeout(() => setErrorMessage(null), 3000);
+    }
+  });
+
+  const reviewCancelMutation = useMutation({
+    mutationFn: ({ id, approve, reason }: { id: string; approve: boolean; reason?: string }) =>
+      orderService.reviewCancelRequest(id, { approve, reason }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order-detail', selectedOrderId] });
+      setSuccessMessage('Xử lý yêu cầu hủy đơn thành công');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    },
+    onError: (error: any) => {
+      const errorMsg = error?.response?.data?.message || 'Xử lý yêu cầu hủy đơn thất bại';
       setErrorMessage(`${errorMsg}`);
       setTimeout(() => setErrorMessage(null), 3000);
     }
@@ -221,6 +250,11 @@ export const OrderList: React.FC = () => {
                       <div className="flex flex-col">
                         <span className="font-black text-slate-900 group-hover:text-primary transition-colors">#{order.orderNumber || order.id.slice(-8).toUpperCase()}</span>
                         <span className="text-[10px] font-bold text-primary bg-primary/5 w-fit px-1.5 rounded mt-1">{order.items?.length || 0} món</span>
+                        {hasCancelRequest(order) && (
+                          <span className="text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-200/50 w-fit px-1.5 py-0.5 rounded-md mt-1 animate-pulse">
+                            YÊU CẦU HỦY
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-8 py-5">
@@ -354,6 +388,19 @@ export const OrderList: React.FC = () => {
                 </div>
               ) : orderDetail ? (
                 <>
+                  {hasCancelRequest(orderDetail) && (
+                    <div className="p-5 bg-amber-50 border border-amber-200 rounded-[24px] flex flex-col gap-3 text-amber-800 shadow-md">
+                      <div className="flex items-center gap-3">
+                        <AlertTriangle className="w-5 h-5 text-amber-600 animate-bounce" />
+                        <span className="font-extrabold text-sm uppercase tracking-wide">YÊU CẦU HỦY ĐƠN TỪ KHÁCH HÀNG</span>
+                      </div>
+                      <p className="text-sm font-medium leading-relaxed">
+                        Khách hàng yêu cầu hủy đơn hàng này với lý do:<br />
+                        <strong className="text-slate-900">"{orderDetail.tracking?.[0]?.description || 'Không có lý do cụ thể'}"</strong>
+                      </p>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-8">
                     <div className="space-y-4">
                       <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Người nhận</h4>
@@ -419,9 +466,108 @@ export const OrderList: React.FC = () => {
                   {orderDetail ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(orderDetail.totalAmount) : '...'}
                 </p>
               </div>
-              <div className="flex gap-3">
-                <Button className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest" onClick={() => setSelectedOrderId(null)}>Đóng chi tiết</Button>
+              {orderDetail && hasCancelRequest(orderDetail) ? (
+                <div className="flex flex-col gap-3 w-full">
+                  <div className="flex gap-3 w-full">
+                    <Button
+                      variant="danger"
+                      className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest"
+                      onClick={() => {
+                        setReviewApprove(true);
+                        setReviewReason('');
+                        setShowReviewCancelDialog(true);
+                      }}
+                      disabled={reviewCancelMutation.isPending}
+                    >
+                      ĐỒNG Ý HỦY ĐƠN
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest border-emerald-600 text-emerald-600 hover:bg-emerald-50"
+                      onClick={() => {
+                        setReviewApprove(false);
+                        setReviewReason('');
+                        setShowReviewCancelDialog(true);
+                      }}
+                      disabled={reviewCancelMutation.isPending}
+                    >
+                      TỪ CHỐI HỦY ĐƠN
+                    </Button>
+                  </div>
+                  <Button variant="ghost" className="h-10 rounded-xl text-slate-500 font-bold" onClick={() => setSelectedOrderId(null)}>Đóng chi tiết</Button>
+                </div>
+              ) : (
+                <div className="flex gap-3">
+                  <Button className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest" onClick={() => setSelectedOrderId(null)}>Đóng chi tiết</Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Review Cancel Dialog Prompt */}
+      {showReviewCancelDialog && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs">
+          <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
+              <div className={cn(
+                "w-10 h-10 rounded-xl flex items-center justify-center",
+                reviewApprove ? "bg-red-50 text-red-500" : "bg-emerald-50 text-emerald-500"
+              )}>
+                <AlertCircle className="w-5 h-5" />
               </div>
+              <h3 className="text-lg font-black text-slate-900">
+                {reviewApprove ? 'Xác nhận hủy đơn hàng' : 'Từ chối hủy đơn hàng'}
+              </h3>
+            </div>
+            <div className="p-6 space-y-4 font-body">
+              <p className="text-sm font-medium text-slate-500 leading-relaxed">
+                {reviewApprove
+                  ? 'Khi chấp nhận hủy đơn, hệ thống sẽ tự động hoàn kho và hoàn voucher cho khách hàng. Hành động này không thể hoàn tác.'
+                  : 'Đơn hàng sẽ tiếp tục trạng thái Đang đóng gói để vận chuyển. Khách hàng sẽ nhận được thông báo về việc từ chối hủy.'}
+              </p>
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                  Phản hồi từ cửa hàng (Tùy chọn)
+                </label>
+                <textarea
+                  className="w-full min-h-[80px] p-3 text-sm border border-slate-200 rounded-2xl focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/5 transition-all outline-none"
+                  placeholder={reviewApprove ? "Nhập lý do chấp nhận hủy..." : "Nhập lý do từ chối hủy..."}
+                  value={reviewReason}
+                  onChange={(e) => setReviewReason(e.target.value)}
+                  maxLength={150}
+                />
+              </div>
+            </div>
+            <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex justify-end gap-3 font-body">
+              <Button
+                variant="ghost"
+                className="rounded-xl font-bold"
+                onClick={() => setShowReviewCancelDialog(false)}
+              >
+                Quay lại
+              </Button>
+              <Button
+                variant={reviewApprove ? 'danger' : 'primary'}
+                className="rounded-xl font-black px-6"
+                disabled={reviewCancelMutation.isPending}
+                onClick={() => {
+                  if (selectedOrderId) {
+                    reviewCancelMutation.mutate({
+                      id: selectedOrderId,
+                      approve: reviewApprove,
+                      reason: reviewReason,
+                    }, {
+                      onSuccess: () => {
+                        setShowReviewCancelDialog(false);
+                      }
+                    });
+                  }
+                }}
+              >
+                {reviewCancelMutation.isPending ? 'Đang xử lý...' : 'Xác nhận'}
+              </Button>
             </div>
           </div>
         </div>

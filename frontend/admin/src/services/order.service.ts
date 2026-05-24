@@ -26,4 +26,9 @@ export const orderService = {
     const { data } = await api.get('/orders/top-products');
     return data;
   },
+
+  async reviewCancelRequest(id: string, payload: { approve: boolean; reason?: string }) {
+    const { data } = await api.patch<Order>(`/orders/${id}/review-cancel`, payload);
+    return data;
+  },
 };

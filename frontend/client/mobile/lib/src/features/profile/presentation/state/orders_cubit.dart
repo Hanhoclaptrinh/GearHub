@@ -27,11 +27,14 @@ class OrdersCubit extends Cubit<OrdersState> {
     }
   }
 
-  Future<void> cancelOrder(String orderId) async {
+  Future<void> cancelOrder(String orderId, String reason) async {
     emit(OrdersLoading());
     try {
-      await apiClient.dio.patch('/orders/$orderId/cancel');
-      emit(OrderActionSuccess(message: 'Hủy đơn hàng thành công!'));
+      await apiClient.dio.patch(
+        '/orders/$orderId/cancel',
+        data: {'reason': reason},
+      );
+      emit(OrderActionSuccess(message: 'Yêu cầu hủy đơn đã được gửi thành công!'));
       await fetchMyOrders();
     } catch (e) {
       emit(OrdersError(message: 'Không thể hủy đơn hàng: $e'));

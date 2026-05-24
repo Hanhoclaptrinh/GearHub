@@ -117,6 +117,15 @@ export interface OrderItem {
   sku: string;
 }
 
+export interface OrderTracking {
+  id: string;
+  orderId: string;
+  statusLabel: string | null;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Order {
   id: string;
   orderNumber: string;
@@ -133,6 +142,7 @@ export interface Order {
   receiverPhone?: string;
   paymentMethod?: 'COD' | 'ONLINE';
   paymentStatus?: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  tracking?: OrderTracking[];
 }
 
 export interface DashboardStats {

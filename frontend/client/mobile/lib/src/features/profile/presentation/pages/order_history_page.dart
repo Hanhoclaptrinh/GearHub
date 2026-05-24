@@ -270,6 +270,10 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
 
   Widget _buildOrderCard(BuildContext context, dynamic order) {
     final String status = order['status'] ?? 'PENDING';
+    final List<dynamic> trackingList = order['tracking'] ?? [];
+    final String? latestStatusLabel = trackingList.isNotEmpty
+        ? trackingList.first['statusLabel']
+        : null;
     final List<dynamic> items = order['items'] ?? [];
     double totalAmount = _toDouble(order['totalAmount'] ?? order['total']);
     if (totalAmount == 0.0) {
@@ -438,13 +442,31 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                   ),
                   Row(
                     children: [
-                      if (status == 'PENDING')
-                        _buildActionButton(
-                          context,
-                          'Hủy đơn',
-                          const Color(0xFFEF4444),
-                          () => _confirmCancelOrder(context, order['id']),
-                        ),
+                      if (status == 'PENDING' ||
+                          status == 'CONFIRMED' ||
+                          status == 'PROCESSING') ...[
+                        if (status == 'PROCESSING' &&
+                            latestStatusLabel == 'Yêu cầu hủy')
+                          _buildActionButton(
+                            context,
+                            'Đang yêu cầu hủy',
+                            AppColors.slate400,
+                            () {},
+                          )
+                        else
+                          _buildActionButton(
+                            context,
+                            status == 'PROCESSING' ? 'Yêu cầu hủy' : 'Hủy đơn',
+                            status == 'PROCESSING'
+                                ? const Color(0xFFEA580C)
+                                : const Color(0xFFEF4444),
+                            () => _showCancelOrderDialog(
+                              context,
+                              order['id'],
+                              status == 'PROCESSING',
+                            ),
+                          ),
+                      ],
                       if (status == 'DELIVERED' || status == 'CANCELLED')
                         _buildActionButton(
                           context,
@@ -457,6 +479,43 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                   ),
                 ],
               ),
+              if (status == 'SHIPPING') ...[
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 10),
+                  child: Divider(height: 1, color: AppColors.borderCardStrong),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444).withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: const Color(0xFFEF4444).withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        size: 16,
+                        color: Color(0xFFEF4444),
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "Đơn hàng đang trên đường giao, không thể hủy. Vui lòng liên hệ Hotline/Chat để được hỗ trợ hoặc từ chối nhận hàng khi shipper gọi.",
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFEF4444),
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -547,54 +606,30 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
     );
   }
 
-  void _confirmCancelOrder(BuildContext context, String orderId) {
-    showDialog(
+  void _showCancelOrderDialog(
+    BuildContext context,
+    String orderId,
+    bool isProcessing,
+  ) {
+    showDialog<String>(
       context: context,
-      builder: (dCtx) => AlertDialog(
-        backgroundColor: AppColors.cardSurfaceAlt,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(28),
-          side: const BorderSide(color: AppColors.borderCardStrong),
-        ),
-        title: const Text(
-          'Xác nhận',
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        content: const Text(
-          'Bạn có chắc chắn muốn hủy đơn hàng này không?',
-          style: TextStyle(color: AppColors.slate400),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dCtx),
-            child: const Text(
-              'Quay lại',
-              style: TextStyle(color: AppColors.textDim),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dCtx);
-              context.read<OrdersCubit>().cancelOrder(orderId);
-            },
-            child: const Text(
-              'Hủy đơn',
-              style: TextStyle(
-                color: Color(0xFFEF4444),
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ],
+      builder: (dCtx) => _CancelOrderReasonDialog(
+        orderId: orderId,
+        isProcessing: isProcessing,
       ),
-    );
+    ).then((reason) {
+      if (reason != null && context.mounted) {
+        context.read<OrdersCubit>().cancelOrder(orderId, reason);
+      }
+    });
   }
 
   void _showOrderDetailModal(BuildContext context, dynamic order) {
+    final String status = order['status'] ?? 'PENDING';
+    final List<dynamic> trackingList = order['tracking'] ?? [];
+    final String? latestStatusLabel = trackingList.isNotEmpty
+        ? trackingList.first['statusLabel']
+        : null;
     final List<dynamic> items = order['items'] ?? [];
     double subtotal = _toDouble(order['subtotal']);
     if (subtotal == 0.0) {
@@ -648,9 +683,73 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                     color: AppColors.textPrimary,
                   ),
                 ),
-                _buildStatusBadge(order['status'] ?? 'PENDING'),
+                _buildStatusBadge(status),
               ],
             ),
+            const SizedBox(height: 16),
+            if (status == 'SHIPPING') ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: const Color(0xFFEF4444).withValues(alpha: 0.2),
+                  ),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      size: 16,
+                      color: Color(0xFFEF4444),
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        "Đơn hàng đang trên đường giao, không thể hủy. Vui lòng liên hệ Hotline/Chat để được hỗ trợ hoặc từ chối nhận hàng khi shipper gọi.",
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFEF4444),
+                          height: 1.3,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            if (status == 'PROCESSING' &&
+                latestStatusLabel == 'Yêu cầu hủy') ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEA580C).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: const Color(0xFFEA580C).withValues(alpha: 0.2),
+                  ),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(LucideIcons.clock, size: 16, color: Color(0xFFEA580C)),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        "Bạn đã gửi yêu cầu hủy đơn hàng này. Vui lòng chờ phản hồi từ cửa hàng.",
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFEA580C),
+                          height: 1.3,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             const ConciergeEntryButton(label: 'Hỗ trợ đơn hàng'),
             const SizedBox(height: 16),
@@ -923,6 +1022,241 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CancelOrderReasonDialog extends StatefulWidget {
+  final String orderId;
+  final bool isProcessing;
+
+  const _CancelOrderReasonDialog({
+    required this.orderId,
+    required this.isProcessing,
+  });
+
+  @override
+  State<_CancelOrderReasonDialog> createState() =>
+      _CancelOrderReasonDialogState();
+}
+
+class _CancelOrderReasonDialogState extends State<_CancelOrderReasonDialog> {
+  int _selectedReasonIndex = -1;
+  final TextEditingController _customReasonController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  final List<String> _predefinedReasons = [
+    'Thay đổi thông tin nhận hàng (địa chỉ, số điện thoại).',
+    'Muốn thay đổi sản phẩm trong đơn (màu sắc, kích thước, thêm/bớt sản phẩm).',
+    'Quên áp dụng mã giảm giá / Tìm thấy mã giảm giá tốt hơn.',
+    'Tìm thấy cửa hàng khác bán rẻ hơn.',
+    'Không còn nhu cầu mua nữa.',
+    'Khác (Nhập lý do chi tiết)',
+  ];
+
+  @override
+  void dispose() {
+    _customReasonController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: AppColors.cardSurfaceAlt,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(28),
+        side: const BorderSide(color: AppColors.borderCardStrong),
+      ),
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.error_outline,
+                        color: Color(0xFFEF4444),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        widget.isProcessing
+                            ? 'Yêu cầu hủy đơn'
+                            : 'Hủy đơn hàng',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.textPrimary,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Vui lòng chọn lý do hủy đơn hàng của fen:',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDim,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...List.generate(_predefinedReasons.length, (index) {
+                  return Theme(
+                    data: Theme.of(context).copyWith(
+                      unselectedWidgetColor: AppColors.borderCardStrong,
+                    ),
+                    child: RadioListTile<int>(
+                      value: index,
+                      groupValue: _selectedReasonIndex,
+                      activeColor: AppColors.brandIndigo,
+                      title: Text(
+                        _predefinedReasons[index],
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      onChanged: (val) {
+                        setState(() {
+                          _selectedReasonIndex = val!;
+                        });
+                      },
+                    ),
+                  );
+                }),
+                if (_selectedReasonIndex == 5) ...[
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _customReasonController,
+                    maxLines: 3,
+                    maxLength: 150,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textPrimary,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Nhập lý do khác của fen (tối đa 150 ký tự)...',
+                      hintStyle: const TextStyle(color: AppColors.textDim),
+                      filled: true,
+                      fillColor: AppColors.cardSurfaceAltAlt,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(
+                          color: AppColors.borderCardStrong,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(
+                          color: AppColors.borderCardStrong,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(
+                          color: AppColors.brandIndigo,
+                        ),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                    validator: (value) {
+                      if (_selectedReasonIndex == 5 &&
+                          (value == null || value.trim().isEmpty)) {
+                        return 'Vui lòng nhập lý do hủy';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        'Quay lại',
+                        style: TextStyle(
+                          color: AppColors.textDim,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFEF4444),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: () {
+                        if (_selectedReasonIndex == -1) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Vui lòng chọn một lý do hủy đơn'),
+                              backgroundColor: Color(0xFFEF4444),
+                            ),
+                          );
+                          return;
+                        }
+                        if (_formKey.currentState!.validate()) {
+                          String reason = '';
+                          if (_selectedReasonIndex == 5) {
+                            reason = _customReasonController.text.trim();
+                          } else {
+                            reason =
+                                '${_selectedReasonIndex + 1}. ${_predefinedReasons[_selectedReasonIndex]}';
+                          }
+
+                          Navigator.pop(context, reason);
+                        }
+                      },
+                      child: Text(
+                        widget.isProcessing ? 'Gửi yêu cầu' : 'Hủy đơn',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

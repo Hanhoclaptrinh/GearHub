@@ -6,6 +6,8 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { OrderStatus, Role } from '@prisma/client';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { CancelOrderDto } from './dto/cancel-order.dto';
+import { ReviewCancelDto } from './dto/review-cancel.dto';
 
 @Controller('orders')
 export class OrdersController {
@@ -86,8 +88,22 @@ export class OrdersController {
 
     @Patch(':id/cancel')
     @UseGuards(JwtAuthGuard)
-    async cancelOrder(@Request() req, @Param('id') id: string) {
-        return this.orderService.cancelOrder(req.user.userId, id);
+    async cancelOrder(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() body: CancelOrderDto,
+    ) {
+        return this.orderService.cancelOrder(req.user.userId, id, body.reason);
+    }
+
+    @Patch(':id/review-cancel')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.STAFF)
+    async reviewCancelRequest(
+        @Param('id') id: string,
+        @Body() body: ReviewCancelDto,
+    ) {
+        return this.orderService.reviewCancelRequest(id, body);
     }
 
     @Post(':id/re-order')
