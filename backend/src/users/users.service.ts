@@ -20,6 +20,10 @@ export class UsersService {
     private prisma: PrismaService
   ) { }
 
+  /**
+   * tạo user mới trong hệ thống
+   * tự động check trùng email và số điện thoại, nếu trùng sẽ báo lỗi
+   */
   async createNewUser(data: ICreateUser) {
     const existingUser = await this.prisma.user.findFirst({
       where: {
@@ -68,11 +72,12 @@ export class UsersService {
     return newUser;
   }
 
+  // lấy danh sách user kèm phân trang, tìm kiếm và bộ lọc (role, status)
   async getAllUsers(query: { page?: number; limit?: number; search?: string; role?: Role, status?: UserStatus }) {
     const { page = 1, limit = 10, search, role, status } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {}; // auto filter
+    const where: any = {}; // tự động build filter
 
     if (role) {
       where.role = role;
@@ -98,7 +103,7 @@ export class UsersService {
         include: {
           profile: true,
           _count: {
-            select: { orders: true } // xem user da mua bao nhieu don
+            select: { orders: true } // xem user đã mua bao nhiêu đơn
           }
         },
         orderBy: { createdAt: 'desc' },
@@ -116,6 +121,7 @@ export class UsersService {
     };
   }
 
+  // tìm user bằng email hoặc số điện thoại
   async findByEmailOrPhone(identifier: string) {
     return await this.prisma.user.findFirst({
       where: {
@@ -128,6 +134,7 @@ export class UsersService {
     });
   }
 
+  // tìm user theo id
   async findByUserId(id: string) {
     return await this.prisma.user.findUnique({
       where: { id },
@@ -182,7 +189,6 @@ export class UsersService {
           select: {
             fullName: true,
             phone: true,
-            address: true,
             avatarUrl: true,
             preferences: true
           }
@@ -191,8 +197,12 @@ export class UsersService {
     });
   }
 
+  /**
+   * cập nhật trạng thái hoạt động của user (ACTIVE, BANNED...)
+   * chặn admin tự khóa chính mình
+   */
   async updateUserStatus(id: string, data: UpdateUserStatusDto, adminId: string) {
-    // chan admin tu khoa chinh minh
+    // chặn admin tự khóa chính mình
     if (id === adminId && data.status === UserStatus.BANNED) {
       throw new BadRequestException('Bạn không thể tự khóa tài khoản của chính mình');
     }
@@ -217,7 +227,12 @@ export class UsersService {
     });
   }
 
+  /**
+   * cập nhật quyền/vai trò của user (ADMIN, STAFF, USER)
+   * chặn admin tự hạ quyền của chính mình
+   */
   async updateUserRole(id: string, data: UpdateUserRoleDto, adminId: string) {
+    // chặn admin tự hạ quyền
     if (id === adminId && data.role !== Role.ADMIN) {
       throw new BadRequestException('Bạn không thể tự hạ quyền Admin của chính mình');
     }
@@ -241,6 +256,7 @@ export class UsersService {
       }
     });
   }
+
 
   async getUserStats() {
     const [total, active, admins, banned] = await Promise.all([
@@ -274,7 +290,7 @@ export class UsersService {
 
     if (!user) throw new NotFoundException(`Không tìm thấy người dùng với ID: ${id}`);
 
-    // tinh toan thong ke
+    // tính toán thống kê chi tiêu
     const [totalAggregate, spentAggregate] = await Promise.all([
       this.prisma.order.aggregate({
         where: { userId: id },
@@ -297,9 +313,8 @@ export class UsersService {
       stats: {
         totalSpent: spentAggregate._sum.totalAmount || 0,
         totalOrders: totalAggregate._count.id || 0,
-        successfulOrders: spentAggregate._sum.totalAmount ? spentAggregate._sum.totalAmount : 0, // day la vi du, ban co the tinh them count
+        successfulOrders: spentAggregate._sum.totalAmount ? spentAggregate._sum.totalAmount : 0,
       }
     };
   }
 }
-

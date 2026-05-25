@@ -24,6 +24,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { InventoriesModule } from './inventories/inventories.module';
 import { PromotionModule } from './promotion/promotion.module';
 import { NotificationModule } from './notification/notification.module';
+import { AddressModule } from './address/address.module';
 
 @Module({
   imports: [
@@ -64,7 +65,8 @@ import { NotificationModule } from './notification/notification.module';
     ScheduleModule.forRoot(),
     InventoriesModule,
     PromotionModule,
-    NotificationModule
+    NotificationModule,
+    AddressModule
   ],
   controllers: [AppController],
   providers: [

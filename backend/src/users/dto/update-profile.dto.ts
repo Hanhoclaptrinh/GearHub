@@ -15,10 +15,6 @@ export class UpdateProfileDto {
     @Matches(/(84|0[3|5|7|8|9])+([0-9]{8})\b/g, { message: 'Số điện thoại không hợp lệ' })
     phone?: string;
 
-    @IsString()
-    @IsOptional()
-    address?: string;
-
     @IsUrl({}, { message: 'Avatar phải là một đường dẫn URL hợp lệ' })
     @IsOptional()
     avatarUrl?: string;
