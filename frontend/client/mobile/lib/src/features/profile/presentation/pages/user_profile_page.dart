@@ -14,6 +14,7 @@ import 'package:mobile/src/features/profile/presentation/widgets/profile_menu_ca
 import 'package:mobile/src/features/profile/presentation/widgets/ultilities_grid.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
 import 'package:mobile/src/features/promotions/presentation/state/my_vouchers_cubit.dart';
+import 'package:mobile/src/features/address/presentation/pages/addresses_page.dart';
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -129,7 +130,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                     if (isLoggedIn) ...[
                                       ProfileMenuItem(
                                         title: 'Địa chỉ đã lưu',
-                                        onTap: () {},
+                                        onTap: () {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) => const AddressesPage(),
+                                            ),
+                                          );
+                                        },
                                       ),
                                       ProfileMenuItem(
                                         title: 'Phương thức thanh toán',

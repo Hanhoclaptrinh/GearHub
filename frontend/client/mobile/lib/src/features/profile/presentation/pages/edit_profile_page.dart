@@ -28,7 +28,6 @@ class EditProfilePage extends StatefulWidget {
 class _EditProfilePageState extends State<EditProfilePage> {
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
-  late final TextEditingController _addressController;
   File? _pickedImage;
 
   @override
@@ -36,14 +35,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
     super.initState();
     _nameController = TextEditingController(text: widget.user.fullName);
     _phoneController = TextEditingController(text: widget.user.phone);
-    _addressController = TextEditingController(text: widget.user.address);
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _addressController.dispose();
     super.dispose();
   }
 
@@ -70,7 +67,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
   void _saveProfile() {
     final name = _nameController.text.trim();
     final phone = _phoneController.text.trim();
-    final address = _addressController.text.trim();
 
     if (name.isEmpty) {
       _showSnackBar('Vui lòng nhập họ tên đầy đủ', isError: true);
@@ -81,7 +77,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     context.read<AuthCubit>().updateProfile(
       fullName: name,
       phone: phone.isNotEmpty ? phone : null,
-      address: address.isNotEmpty ? address : null,
       filePath: _pickedImage?.path,
     );
   }
@@ -151,13 +146,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               hint: '09xxxxxxx',
                               icon: LucideIcons.phone,
                               keyboardType: TextInputType.phone,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildFieldBlock(
-                              label: 'Địa chỉ nhận hàng',
-                              controller: _addressController,
-                              hint: 'Nhập địa chỉ của bạn',
-                              icon: LucideIcons.mapPin,
                             ),
                             const SizedBox(height: 120),
                           ],

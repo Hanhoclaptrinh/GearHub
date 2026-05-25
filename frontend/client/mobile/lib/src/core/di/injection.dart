@@ -56,6 +56,10 @@ import 'package:mobile/src/features/notifications/data/datasources/notification_
 import 'package:mobile/src/features/notifications/data/repositories/notification_repository_impl.dart';
 import 'package:mobile/src/features/notifications/domain/repositories/notification_repository.dart';
 import 'package:mobile/src/features/notifications/presentation/state/notification_cubit.dart';
+import 'package:mobile/src/features/address/data/datasources/address_remote_datasource.dart';
+import 'package:mobile/src/features/address/data/repositories/address_repository_impl.dart';
+import 'package:mobile/src/features/address/domain/repositories/address_repository.dart';
+import 'package:mobile/src/features/address/presentation/state/address_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final getIt = GetIt.instance;
@@ -252,5 +256,18 @@ Future<void> setupDependencies() async {
   );
   getIt.registerFactory<NotificationCubit>(
     () => NotificationCubit(repository: getIt<NotificationRepository>()),
+  );
+
+  // address
+  getIt.registerLazySingleton<AddressRemoteDataSource>(
+    () => AddressRemoteDataSource(dio: getIt<ApiClient>().dio),
+  );
+  getIt.registerLazySingleton<AddressRepository>(
+    () => AddressRepositoryImpl(
+      remoteDataSource: getIt<AddressRemoteDataSource>(),
+    ),
+  );
+  getIt.registerFactory<AddressCubit>(
+    () => AddressCubit(repository: getIt<AddressRepository>()),
   );
 }

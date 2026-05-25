@@ -17,10 +17,12 @@ import 'package:mobile/src/features/checkout/presentation/widgets/checkout_items
 import 'package:mobile/src/features/checkout/presentation/widgets/payment_selection_section.dart';
 import 'package:mobile/src/features/checkout/presentation/widgets/price_breakdown_section.dart';
 import 'package:mobile/src/features/checkout/presentation/widgets/promotion_section.dart';
-import 'package:mobile/src/features/checkout/presentation/widgets/edit_address_modal.dart';
 import 'vnpay_payment_page.dart';
 import 'package:mobile/src/features/profile/presentation/pages/order_history_page.dart';
 import 'package:mobile/src/core/theme/app_colors.dart';
+import 'package:mobile/src/features/address/presentation/pages/addresses_page.dart';
+import 'package:mobile/src/features/address/data/models/address_model.dart';
+import 'package:mobile/src/features/address/domain/repositories/address_repository.dart';
 
 class CheckoutArguments {
   final List<CartItemEntity> items;
@@ -45,7 +47,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   final TextEditingController _noteController = TextEditingController();
 
   String _selectedPaymentMethod = "COD";
-  bool _saveAsDefault = true;
+  final bool _saveAsDefault = true;
 
   @override
   void initState() {
@@ -54,6 +56,25 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Future<void> _loadDefaultShippingInfo() async {
+    // địa chỉ mặc định từ api
+    try {
+      final repository = getIt<AddressRepository>();
+      final addresses = await repository.getAddresses();
+      if (addresses.isNotEmpty) {
+        final defaultAddr = addresses.firstWhere(
+          (addr) => addr.isDefault,
+          orElse: () => addresses.first,
+        );
+        setState(() {
+          _nameController.text = defaultAddr.fullName;
+          _phoneController.text = defaultAddr.phone;
+          _addressController.text = defaultAddr.fullAddressText;
+        });
+        return;
+      }
+    } catch (_) {}
+
+    // fallback
     try {
       final prefs = getIt<SharedPreferences>();
       final savedName = prefs.getString('default_receiver_name');
@@ -205,7 +226,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                       name: _nameController.text,
                                       phone: _phoneController.text,
                                       address: _addressController.text,
-                                      onEdit: () => _navigateToEditAddress(),
+                                      onEdit: () => _navigateToSelectAddress(),
                                     ),
                                     const SizedBox(height: 24),
                                     CheckoutItemsSection(
@@ -539,25 +560,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  void _navigateToEditAddress() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => EditAddressPage(
-          initialName: _nameController.text,
-          initialPhone: _phoneController.text,
-          initialAddress: _addressController.text,
-          initialSaveAsDefault: _saveAsDefault,
-          onSave: (name, phone, address, saveAsDefault) {
-            setState(() {
-              _nameController.text = name;
-              _phoneController.text = phone;
-              _addressController.text = address;
-              _saveAsDefault = saveAsDefault;
-            });
-          },
-        ),
-      ),
+  Future<void> _navigateToSelectAddress() async {
+    final selectedAddress = await Navigator.of(context).push<AddressModel>(
+      MaterialPageRoute(builder: (_) => const AddressesPage(selectMode: true)),
     );
+
+    if (selectedAddress != null) {
+      setState(() {
+        _nameController.text = selectedAddress.fullName;
+        _phoneController.text = selectedAddress.phone;
+        _addressController.text = selectedAddress.fullAddressText;
+      });
+    }
   }
 
   void _showSuccessDialog() {
