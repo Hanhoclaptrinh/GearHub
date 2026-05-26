@@ -72,4 +72,18 @@ export class PaymentController {
     async getAllTransactions(@Query() query: any) {
         return this.paymentService.getAllTransactions(query);
     }
+
+    @Post('refund/:orderId')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    async refundOrder(
+        @Param('orderId') orderId: string,
+        @Request() req
+    ) {
+        const ipAddr =
+            req.headers['x-forwarded-for']?.toString() ||
+            req.socket.remoteAddress ||
+            '127.0.0.1';
+        return this.paymentService.refundOrder(orderId, req.user.email, ipAddr);
+    }
 }

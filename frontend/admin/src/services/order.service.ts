@@ -31,4 +31,9 @@ export const orderService = {
     const { data } = await api.patch<Order>(`/orders/${id}/review-cancel`, payload);
     return data;
   },
+
+  async refundOrder(id: string) {
+    const { data } = await api.post(`/payment/refund/${id}`);
+    return data;
+  },
 };

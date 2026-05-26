@@ -140,7 +140,7 @@ export interface Order {
   createdAt: string;
   receiverName?: string;
   receiverPhone?: string;
-  paymentMethod?: 'COD' | 'ONLINE';
+  paymentMethod?: 'COD' | 'ONLINE' | 'PAYMENT_GATEWAY' | 'E_WALLET' | 'BANK_TRANSFER';
   paymentStatus?: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
   tracking?: OrderTracking[];
 }

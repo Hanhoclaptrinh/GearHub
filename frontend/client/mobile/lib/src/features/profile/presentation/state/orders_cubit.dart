@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/core/network/api_client.dart';
 import 'orders_state.dart';
@@ -23,7 +24,7 @@ class OrdersCubit extends Cubit<OrdersState> {
       final List<dynamic> orders = response.data['data'] ?? [];
       emit(OrdersLoaded(orders: orders));
     } catch (e) {
-      emit(OrdersError(message: e.toString()));
+      emit(OrdersError(message: _extractErrorMessage(e, 'Không thể tải danh sách đơn hàng.')));
     }
   }
 
@@ -37,7 +38,7 @@ class OrdersCubit extends Cubit<OrdersState> {
       emit(OrderActionSuccess(message: 'Yêu cầu hủy đơn đã được gửi thành công!'));
       await fetchMyOrders();
     } catch (e) {
-      emit(OrdersError(message: 'Không thể hủy đơn hàng: $e'));
+      emit(OrdersError(message: _extractErrorMessage(e, 'Không thể hủy đơn hàng.')));
     }
   }
 
@@ -48,7 +49,17 @@ class OrdersCubit extends Cubit<OrdersState> {
       emit(OrderActionSuccess(message: 'Mua lại thành công! Đơn hàng mới đã được tạo.'));
       await fetchMyOrders();
     } catch (e) {
-      emit(OrdersError(message: 'Không thể mua lại đơn hàng: $e'));
+      emit(OrdersError(message: _extractErrorMessage(e, 'Không thể mua lại đơn hàng.')));
     }
+  }
+
+  String _extractErrorMessage(dynamic e, String defaultMessage) {
+    if (e is DioException && e.response?.data != null) {
+      final data = e.response!.data;
+      if (data is Map && data['message'] != null) {
+        return data['message'].toString();
+      }
+    }
+    return defaultMessage;
   }
 }

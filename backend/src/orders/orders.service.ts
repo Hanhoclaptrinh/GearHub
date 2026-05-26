@@ -298,12 +298,14 @@ export class OrdersService {
     };
   }
 
-  async getOrderDetail(userId: string, id: string) {
+  async getOrderDetail(userId: string, id: string, role?: Role) {
+    const whereCondition: Prisma.OrderWhereInput = { id };
+    if (role !== Role.ADMIN && role !== Role.STAFF) {
+      whereCondition.userId = userId;
+    }
+
     const order = await this.prisma.order.findFirst({
-      where: {
-        id,
-        userId,
-      },
+      where: whereCondition,
       include: {
         items: {
           include: {
@@ -555,66 +557,69 @@ export class OrdersService {
 
       // đơn hàng chưa đóng gói / giao vận chuyển: cho phép hệ thống hủy tự động ngay lập tức
       if (allowedStatusesForInstantCancel.includes(order.status)) {
-        await this.rollbackPromotion(id, userId, tx);
+        // kiểm tra nếu là đơn hàng đã thanh toán bằng cổng thanh toán
+        const isPaidGateway = order.paymentMethod === PaymentMethod.PAYMENT_GATEWAY && order.paymentStatus === PaymentStatus.PAID;
 
-        // cộng lại số lượng tồn kho khả dụng cho các biến thể sản phẩm
-        for (const item of order.items) {
-          await this.inventoriesService.adjustStock({
-            variantId: item.productVariantId,
-            type: InventoryTransactionType.ORDER_CANCEL,
-            quantity: item.quantity,
-            referenceId: order.id,
-            reason: `Hoàn kho - đơn hàng bị hủy bởi người mua`,
-            tx,
+        if (isPaidGateway) {
+          const latestTracking = await tx.orderTracking.findFirst({
+            where: { orderId: id },
+            orderBy: { createdAt: 'desc' },
           });
+
+          // chặn việc gửi trùng nhiều yêu cầu hủy liên tiếp làm nhiễu dữ liệu xử lý
+          if (latestTracking && latestTracking.statusLabel === 'Yêu cầu hủy') {
+            throw new BadRequestException('Bạn đã gửi yêu cầu hủy cho đơn hàng này rồi, vui lòng chờ Admin duyệt.');
+          }
+
+          // log yêu cầu hủy
+          await tx.orderTracking.create({
+            data: {
+              orderId: id,
+              statusLabel: 'Yêu cầu hủy',
+              description: reason,
+            },
+          });
+
+          const updatedOrder = await tx.order.findUnique({
+            where: { id },
+            include: {
+              items: true,
+              tracking: { orderBy: { createdAt: 'desc' } },
+            },
+          });
+
+          return updatedOrder;
+        } else {
+          await this.rollbackPromotion(id, userId, tx);
+
+          // cộng lại số lượng tồn kho khả dụng cho các biến thể sản phẩm
+          for (const item of order.items) {
+            await this.inventoriesService.adjustStock({
+              variantId: item.productVariantId,
+              type: InventoryTransactionType.ORDER_CANCEL,
+              quantity: item.quantity,
+              referenceId: order.id,
+              reason: `Hoàn kho - đơn hàng bị hủy bởi người mua`,
+              tx,
+            });
+          }
+
+          const updatedOrder = await tx.order.update({
+            where: { id },
+            data: { status: OrderStatus.CANCELLED },
+          });
+
+          // ghi lại lý do hủy cụ thể
+          await tx.orderTracking.create({
+            data: {
+              orderId: id,
+              statusLabel: 'Đã hủy đơn',
+              description: `Hủy bởi người mua. Lý do: ${reason}`,
+            },
+          });
+
+          return updatedOrder;
         }
-
-        const updatedOrder = await tx.order.update({
-          where: { id },
-          data: { status: OrderStatus.CANCELLED },
-        });
-
-        // ghi lại lý do hủy cụ thể để làm báo cáo dữ liệu phân tích
-        await tx.orderTracking.create({
-          data: {
-            orderId: id,
-            statusLabel: 'Đã hủy đơn',
-            description: `Hủy bởi người mua. Lý do: ${reason}`,
-          },
-        });
-
-        return updatedOrder;
-      }
-      // đơn hàng đang đóng gói: chuyển sang cơ chế gửi yêu cầu chờ duyệt thủ công từ admin
-      else if (order.status === OrderStatus.PROCESSING) {
-        const latestTracking = await tx.orderTracking.findFirst({
-          where: { orderId: id },
-          orderBy: { createdAt: 'desc' },
-        });
-
-        // chặn việc gửi trùng nhiều yêu cầu hủy liên tiếp làm nhiễu dữ liệu xử lý trên trang quản trị admin
-        if (latestTracking && latestTracking.statusLabel === 'Yêu cầu hủy') {
-          throw new BadRequestException('Bạn đã gửi yêu cầu hủy cho đơn hàng này rồi, vui lòng chờ Admin duyệt.');
-        }
-
-        // log yêu cầu hủy
-        await tx.orderTracking.create({
-          data: {
-            orderId: id,
-            statusLabel: 'Yêu cầu hủy',
-            description: reason,
-          },
-        });
-
-        const updatedOrder = await tx.order.findUnique({
-          where: { id },
-          include: {
-            items: true,
-            tracking: { orderBy: { createdAt: 'desc' } },
-          },
-        });
-
-        return updatedOrder;
       } else {
         throw new BadRequestException(
           'Đơn hàng đang ở trạng thái không thể hủy.',
@@ -637,9 +642,10 @@ export class OrdersService {
 
     if (!order) throw new NotFoundException('Đơn hàng không tồn tại');
 
-    // yêu cầu hủy chỉ hợp lệ khi đơn đang được xử lý đóng gói (PROCESSING)
-    if (order.status !== OrderStatus.PROCESSING) {
-      throw new BadRequestException('Đơn hàng không ở trạng thái Đang đóng gói');
+    // yêu cầu hủy hợp lệ đối với đơn ở trạng thái PENDING hoặc CONFIRMED
+    const allowedStatusesForCancelRequest: OrderStatus[] = [OrderStatus.PENDING, OrderStatus.CONFIRMED];
+    if (!allowedStatusesForCancelRequest.includes(order.status)) {
+      throw new BadRequestException('Đơn hàng không ở trạng thái chờ duyệt hủy');
     }
 
     const latestTracking = await this.prisma.orderTracking.findFirst({
@@ -653,9 +659,14 @@ export class OrdersService {
     }
 
     if (approve) {
+      // nếu là đơn hàng online đã thanh toán, yêu cầu sử dụng tính năng hoàn tiền VNPay để duyệt hủy
+      if (order.paymentMethod === PaymentMethod.PAYMENT_GATEWAY && order.paymentStatus === PaymentStatus.PAID) {
+        throw new BadRequestException('Vui lòng sử dụng tính năng Hoàn tiền VNPay để hủy đơn hàng này');
+      }
+
       const cancelReason = reason ? `Chấp nhận yêu cầu hủy. Lý do: ${reason}` : 'Chấp nhận yêu cầu hủy';
 
-      // chấp nhận: gọi cập nhật trạng thái sang CANCELLED để tự động kích hoạt hoàn kho, hoàn tiền và hoàn voucher
+      // chấp nhận: gọi cập nhật trạng thái sang CANCELLED để tự động kích hoạt hoàn kho và hoàn voucher
       return this.updateOrderStatus(id, {
         status: OrderStatus.CANCELLED,
         description: cancelReason,

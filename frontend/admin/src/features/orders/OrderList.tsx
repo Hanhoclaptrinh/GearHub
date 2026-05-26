@@ -37,10 +37,13 @@ export const OrderList: React.FC = () => {
   const [showReviewCancelDialog, setShowReviewCancelDialog] = useState<boolean>(false);
   const [reviewApprove, setReviewApprove] = useState<boolean>(true);
   const [reviewReason, setReviewReason] = useState<string>('');
+  const [showRefundConfirmDialog, setShowRefundConfirmDialog] = useState<boolean>(false);
 
   const hasCancelRequest = (order: any) => {
     return (
-      order.status === OrderStatus.PROCESSING &&
+      (order.status === OrderStatus.PENDING ||
+        order.status === OrderStatus.CONFIRMED ||
+        order.status === OrderStatus.PROCESSING) &&
       order.tracking &&
       order.tracking.length > 0 &&
       order.tracking[0].statusLabel === 'Yêu cầu hủy'
@@ -93,6 +96,21 @@ export const OrderList: React.FC = () => {
     },
     onError: (error: any) => {
       const errorMsg = error?.response?.data?.message || 'Xử lý yêu cầu hủy đơn thất bại';
+      setErrorMessage(`${errorMsg}`);
+      setTimeout(() => setErrorMessage(null), 3000);
+    }
+  });
+
+  const refundOrderMutation = useMutation({
+    mutationFn: (id: string) => orderService.refundOrder(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order-detail', selectedOrderId] });
+      setSuccessMessage('Yêu cầu hoàn tiền thành công');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    },
+    onError: (error: any) => {
+      const errorMsg = error?.response?.data?.message || 'Yêu cầu hoàn tiền thất bại';
       setErrorMessage(`${errorMsg}`);
       setTimeout(() => setErrorMessage(null), 3000);
     }
@@ -468,37 +486,72 @@ export const OrderList: React.FC = () => {
               </div>
               {orderDetail && hasCancelRequest(orderDetail) ? (
                 <div className="flex flex-col gap-3 w-full">
-                  <div className="flex gap-3 w-full">
-                    <Button
-                      variant="danger"
-                      className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest"
-                      onClick={() => {
-                        setReviewApprove(true);
-                        setReviewReason('');
-                        setShowReviewCancelDialog(true);
-                      }}
-                      disabled={reviewCancelMutation.isPending}
-                    >
-                      ĐỒNG Ý HỦY ĐƠN
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest border-emerald-600 text-emerald-600 hover:bg-emerald-50"
-                      onClick={() => {
-                        setReviewApprove(false);
-                        setReviewReason('');
-                        setShowReviewCancelDialog(true);
-                      }}
-                      disabled={reviewCancelMutation.isPending}
-                    >
-                      TỪ CHỐI HỦY ĐƠN
-                    </Button>
-                  </div>
+                  {orderDetail.paymentStatus === 'PAID' && orderDetail.paymentMethod === 'PAYMENT_GATEWAY' ? (
+                    <div className="flex gap-3 w-full">
+                      <Button
+                        variant="danger"
+                        className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest bg-amber-600 hover:bg-amber-700 text-white"
+                        onClick={() => setShowRefundConfirmDialog(true)}
+                        disabled={refundOrderMutation.isPending}
+                      >
+                        {refundOrderMutation.isPending ? 'Đang hoàn tiền...' : 'DUYỆT HỦY & HOÀN TIỀN'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest border-emerald-600 text-emerald-600 hover:bg-emerald-50"
+                        onClick={() => {
+                          setReviewApprove(false);
+                          setReviewReason('');
+                          setShowReviewCancelDialog(true);
+                        }}
+                        disabled={reviewCancelMutation.isPending}
+                      >
+                        TỪ CHỐI HỦY ĐƠN
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-3 w-full">
+                      <Button
+                        variant="danger"
+                        className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest"
+                        onClick={() => {
+                          setReviewApprove(true);
+                          setReviewReason('');
+                          setShowReviewCancelDialog(true);
+                        }}
+                        disabled={reviewCancelMutation.isPending}
+                      >
+                        ĐỒNG Ý HỦY ĐƠN
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest border-emerald-600 text-emerald-600 hover:bg-emerald-50"
+                        onClick={() => {
+                          setReviewApprove(false);
+                          setReviewReason('');
+                          setShowReviewCancelDialog(true);
+                        }}
+                        disabled={reviewCancelMutation.isPending}
+                      >
+                        TỪ CHỐI HỦY ĐƠN
+                      </Button>
+                    </div>
+                  )}
                   <Button variant="ghost" className="h-10 rounded-xl text-slate-500 font-bold" onClick={() => setSelectedOrderId(null)}>Đóng chi tiết</Button>
                 </div>
               ) : (
-                <div className="flex gap-3">
-                  <Button className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest" onClick={() => setSelectedOrderId(null)}>Đóng chi tiết</Button>
+                <div className="flex flex-col gap-3 w-full">
+                  {orderDetail && orderDetail.paymentStatus === 'PAID' && orderDetail.paymentMethod === 'PAYMENT_GATEWAY' && (
+                    <Button
+                      variant="danger"
+                      className="w-full h-14 rounded-2xl font-black uppercase tracking-widest bg-amber-600 hover:bg-amber-700 text-white"
+                      onClick={() => setShowRefundConfirmDialog(true)}
+                      disabled={refundOrderMutation.isPending}
+                    >
+                      {refundOrderMutation.isPending ? 'Đang gửi yêu cầu hoàn tiền...' : 'HỦY ĐƠN VÀ HOÀN TIỀN'}
+                    </Button>
+                  )}
+                  <Button className="w-full h-14 rounded-2xl font-black uppercase tracking-widest" onClick={() => setSelectedOrderId(null)}>Đóng chi tiết</Button>
                 </div>
               )}
             </div>
@@ -567,6 +620,54 @@ export const OrderList: React.FC = () => {
                 }}
               >
                 {reviewCancelMutation.isPending ? 'Đang xử lý...' : 'Xác nhận'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Refund Confirm Dialog */}
+      {showRefundConfirmDialog && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs">
+          <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-red-50 text-red-500">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-black text-slate-900">
+                Xác nhận hủy đơn và hoàn tiền
+              </h3>
+            </div>
+            <div className="p-6 space-y-4 font-body">
+              <p className="text-sm font-medium text-slate-500 leading-relaxed">
+                Hệ thống sẽ tiến hành làm thủ tục hủy đơn và hoàn trả <strong className="text-slate-900">{orderDetail ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(orderDetail.totalAmount) : '...'}</strong> của đơn hàng này.
+              </p>
+              <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200/50 rounded-xl p-3 leading-relaxed font-bold">
+                ⚠️ Cảnh báo: Giao dịch hoàn tiền trên hệ thống VNPay là không thể đảo ngược. Vui lòng xác nhận kỹ thông tin đơn hàng trước khi thực hiện.
+              </p>
+            </div>
+            <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex justify-end gap-3 font-body">
+              <Button
+                variant="ghost"
+                className="rounded-xl font-bold"
+                onClick={() => setShowRefundConfirmDialog(false)}
+              >
+                Quay lại
+              </Button>
+              <Button
+                variant="danger"
+                className="rounded-xl font-black px-6"
+                disabled={refundOrderMutation.isPending}
+                onClick={() => {
+                  if (selectedOrderId) {
+                    refundOrderMutation.mutate(selectedOrderId, {
+                      onSuccess: () => {
+                        setShowRefundConfirmDialog(false);
+                      }
+                    });
+                  }
+                }}
+              >
+                {refundOrderMutation.isPending ? 'Đang hoàn tiền...' : 'Xác nhận hoàn tiền'}
               </Button>
             </div>
           </div>

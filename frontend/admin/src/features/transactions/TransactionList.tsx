@@ -64,6 +64,12 @@ export const TransactionList: React.FC = () => {
             <XCircle className="w-3 h-3" /> Thất bại
           </span>
         );
+      case 'REFUNDED':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-100">
+            <RefreshCcw className="w-3 h-3" /> Đã hoàn tiền
+          </span>
+        );
       default:
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-orange-50 text-orange-600 border border-orange-100">
@@ -153,6 +159,7 @@ export const TransactionList: React.FC = () => {
                 <option value="SUCCESS">Thành công</option>
                 <option value="PENDING">Chờ xử lý</option>
                 <option value="FAILED">Thất bại</option>
+                <option value="REFUNDED">Đã hoàn tiền</option>
               </select>
 
               <div className="flex items-center gap-2">

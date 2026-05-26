@@ -76,7 +76,7 @@ export class OrdersController {
     @Get(':id')
     @UseGuards(JwtAuthGuard)
     async getOrderDetail(@Request() req, @Param('id') id: string) {
-        return this.orderService.getOrderDetail(req.user.userId, id);
+        return this.orderService.getOrderDetail(req.user.userId, id, req.user.role);
     }
 
     @Patch(':id')

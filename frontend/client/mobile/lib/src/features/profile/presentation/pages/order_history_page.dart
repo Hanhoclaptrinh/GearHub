@@ -270,6 +270,10 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
 
   Widget _buildOrderCard(BuildContext context, dynamic order) {
     final String status = order['status'] ?? 'PENDING';
+    final String paymentMethod = order['paymentMethod'] ?? '';
+    final String paymentStatus = order['paymentStatus'] ?? '';
+    final bool isPaidGateway =
+        paymentMethod == 'PAYMENT_GATEWAY' && paymentStatus == 'PAID';
     final List<dynamic> trackingList = order['tracking'] ?? [];
     final String? latestStatusLabel = trackingList.isNotEmpty
         ? trackingList.first['statusLabel']
@@ -442,11 +446,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                   ),
                   Row(
                     children: [
-                      if (status == 'PENDING' ||
-                          status == 'CONFIRMED' ||
-                          status == 'PROCESSING') ...[
-                        if (status == 'PROCESSING' &&
-                            latestStatusLabel == 'Yêu cầu hủy')
+                      if (status == 'PENDING' || status == 'CONFIRMED') ...[
+                        if (latestStatusLabel == 'Yêu cầu hủy')
                           _buildActionButton(
                             context,
                             'Đang yêu cầu hủy',
@@ -456,14 +457,14 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                         else
                           _buildActionButton(
                             context,
-                            status == 'PROCESSING' ? 'Yêu cầu hủy' : 'Hủy đơn',
-                            status == 'PROCESSING'
+                            isPaidGateway ? 'Yêu cầu hủy' : 'Hủy đơn',
+                            isPaidGateway
                                 ? const Color(0xFFEA580C)
                                 : const Color(0xFFEF4444),
                             () => _showCancelOrderDialog(
                               context,
                               order['id'],
-                              status == 'PROCESSING',
+                              isPaidGateway,
                             ),
                           ),
                       ],
@@ -720,7 +721,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                 ),
               ),
             ],
-            if (status == 'PROCESSING' &&
+            if ((status == 'PENDING' || status == 'CONFIRMED') &&
                 latestStatusLabel == 'Yêu cầu hủy') ...[
               Container(
                 padding: const EdgeInsets.all(12),

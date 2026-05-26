@@ -588,6 +588,7 @@ enum TransactionStatus {
   SUCCESS
   FAILED
   PENDING
+  REFUNDED
 }
 
 enum MessageType {
