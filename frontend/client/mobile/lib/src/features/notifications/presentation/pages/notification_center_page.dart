@@ -39,6 +39,11 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<NotificationCubit>().loadNotifications(type: _selectedTab);
+      }
+    });
   }
 
   @override
@@ -63,12 +68,9 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
 
-    return BlocProvider(
-      create: (context) =>
-          getIt<NotificationCubit>()..loadNotifications(type: _selectedTab),
-      child: Builder(
-        builder: (context) {
-          return Scaffold(
+    return Builder(
+      builder: (context) {
+        return Scaffold(
             backgroundColor: AppColors.background,
             body: Stack(
               children: [
@@ -180,8 +182,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
               ],
             ),
           );
-        },
-      ),
+      },
     );
   }
 

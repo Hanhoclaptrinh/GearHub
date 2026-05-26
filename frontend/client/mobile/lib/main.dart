@@ -8,6 +8,7 @@ import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:mobile/src/features/home/presentation/pages/main_screen.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
+import 'package:mobile/src/features/notifications/presentation/state/notification_cubit.dart';
 import 'package:mobile/src/features/wishlist/presentation/state/wishlist_cubit.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -46,6 +47,9 @@ class GearHubApp extends StatelessWidget {
         BlocProvider<CartCubit>(create: (_) => getIt<CartCubit>()..loadCart()),
         BlocProvider<WishlistCubit>(
           create: (_) => getIt<WishlistCubit>()..fetchWishlist(),
+        ),
+        BlocProvider<NotificationCubit>(
+          create: (_) => getIt<NotificationCubit>()..loadNotifications(),
         ),
       ],
       child: MaterialApp(

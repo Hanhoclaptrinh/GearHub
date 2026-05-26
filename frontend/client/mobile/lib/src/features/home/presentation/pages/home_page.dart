@@ -10,6 +10,8 @@ import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:mobile/src/features/chat/presentation/widgets/concierge_entry_button.dart';
 import 'package:mobile/src/shared/pages/search_page.dart';
 import 'package:mobile/src/features/notifications/presentation/pages/notification_center_page.dart';
+import 'package:mobile/src/features/notifications/presentation/state/notification_cubit.dart';
+import 'package:mobile/src/features/notifications/presentation/state/notification_state.dart';
 import 'package:mobile/src/shared/widgets/glassmorphic_header.dart';
 import '../widgets/hero_section.dart';
 import '../widgets/recently_viewed_section.dart';
@@ -130,11 +132,20 @@ class _HomePageState extends State<HomePage>
             ).push(MaterialPageRoute(builder: (_) => const SearchPage()));
           },
         ),
-        HeaderIconButton(
-          icon: LucideIcons.bell,
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const NotificationCenterPage()),
+        BlocBuilder<NotificationCubit, NotificationState>(
+          builder: (context, state) {
+            String? badgeText;
+            if (state is NotificationLoaded && state.unreadCount > 0) {
+              badgeText = state.unreadCount > 9 ? '9+' : '${state.unreadCount}';
+            }
+            return HeaderIconButton(
+              icon: LucideIcons.bell,
+              badgeText: badgeText,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const NotificationCenterPage()),
+                );
+              },
             );
           },
         ),

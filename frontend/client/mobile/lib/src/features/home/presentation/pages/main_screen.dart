@@ -16,6 +16,7 @@ import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:mobile/src/features/explore/presentation/pages/explore_page.dart';
 import 'package:mobile/src/features/promotions/presentation/pages/promotions_page.dart';
+import 'package:mobile/src/features/notifications/presentation/state/notification_cubit.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -73,6 +74,7 @@ class MainScreenState extends State<MainScreen> {
       listener: (context, state) {
         if (state is AuthAuthenticated) {
           context.read<CartCubit>().syncCart();
+          context.read<NotificationCubit>().loadNotifications();
           getIt<PushNotificationService>().syncTokenIfAuthenticated();
         } else if (state is AuthUnauthenticated) {
           if (!_isBottomBarVisible) {

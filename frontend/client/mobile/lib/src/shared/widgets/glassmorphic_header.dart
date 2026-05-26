@@ -134,23 +134,64 @@ class HeaderIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final Color? color;
+  final String? badgeText;
 
   const HeaderIconButton({
     super.key,
     required this.icon,
     required this.onTap,
     this.color,
+    this.badgeText,
   });
 
   @override
   Widget build(BuildContext context) {
+    Widget iconWidget = Icon(
+      icon,
+      size: 22,
+      color: color ?? AppColors.textPrimary,
+    );
+
+    if (badgeText != null && badgeText!.isNotEmpty) {
+      iconWidget = Stack(
+        clipBehavior: Clip.none,
+        children: [
+          iconWidget,
+          Positioned(
+            right: -6,
+            top: -6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+              child: Center(
+                child: Text(
+                  badgeText!,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                    height: 1.0,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 40,
         height: 40,
         margin: const EdgeInsets.only(left: 8),
-        child: Icon(icon, size: 22, color: color ?? AppColors.textPrimary),
+        alignment: Alignment.center,
+        child: iconWidget,
       ),
     );
   }
