@@ -42,11 +42,21 @@ class OrdersCubit extends Cubit<OrdersState> {
     }
   }
 
-  Future<void> reOrder(String orderId) async {
+  Future<void> reOrder(String orderId, List<String> orderItemIds) async {
     emit(OrdersLoading());
     try {
-      await apiClient.dio.post('/orders/$orderId/re-order');
-      emit(OrderActionSuccess(message: 'Mua lại thành công! Đơn hàng mới đã được tạo.'));
+      final response = await apiClient.dio.post(
+        '/orders/$orderId/re-order',
+        data: {'orderItemIds': orderItemIds},
+      );
+      final message = response.data['message'] ?? 'Đã thêm sản phẩm vào giỏ hàng!';
+      final List<dynamic> addedItems = response.data['addedItems'] ?? [];
+      final List<String> variantIds = addedItems
+          .map((item) => item['variantId']?.toString() ?? '')
+          .where((id) => id.isNotEmpty)
+          .toList();
+
+      emit(ReorderSuccess(message: message, variantIds: variantIds));
       await fetchMyOrders();
     } catch (e) {
       emit(OrdersError(message: _extractErrorMessage(e, 'Không thể mua lại đơn hàng.')));

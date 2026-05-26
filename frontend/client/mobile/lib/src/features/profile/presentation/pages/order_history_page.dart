@@ -8,6 +8,8 @@ import 'package:mobile/src/core/utils/formatter_utils.dart';
 import 'package:mobile/src/features/chat/presentation/widgets/concierge_entry_button.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_state.dart';
+import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
+import 'package:mobile/src/features/checkout/presentation/pages/checkout_page.dart';
 
 double _toDouble(dynamic val) {
   if (val == null) return 0.0;
@@ -28,6 +30,7 @@ class OrderHistoryPage extends StatefulWidget {
 class _OrderHistoryPageState extends State<OrderHistoryPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final Set<String> _expandedOrderIds = {};
   final List<Map<String, String>> _statusTabs = [
     {'label': 'Tất cả', 'status': 'ALL'},
     {'label': 'Chờ xác nhận', 'status': 'PENDING'},
@@ -144,6 +147,15 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
+                  } else if (state is ReorderSuccess) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: const Color(0xFF10B981),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    _handleReorderSuccess(context, state.variantIds);
                   } else if (state is OrdersError) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -292,6 +304,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
             order['createdAt'],
           ).toLocal().toString().substring(0, 16)
         : '';
+    final bool isExpanded = _expandedOrderIds.contains(order['id']);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -311,14 +324,39 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    "Mã đơn: #${order['id'].toString().substring(0, 8).toUpperCase()}",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14,
-                      color: AppColors.textPrimary,
-                      letterSpacing: -0.2,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        "Mã đơn: #${order['id'].toString().substring(0, 8).toUpperCase()}",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                          color: AppColors.textPrimary,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      if (items.length > 1) ...[
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              if (isExpanded) {
+                                _expandedOrderIds.remove(order['id']);
+                              } else {
+                                _expandedOrderIds.add(order['id']);
+                              }
+                            });
+                          },
+                          child: Icon(
+                            isExpanded
+                                ? Icons.keyboard_arrow_up_rounded
+                                : Icons.keyboard_arrow_down_rounded,
+                            size: 20,
+                            color: AppColors.textDim,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   _buildStatusBadge(status),
                 ],
@@ -337,83 +375,215 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                 child: Divider(height: 1, color: AppColors.borderCardStrong),
               ),
               if (items.isNotEmpty) ...[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 54,
-                      height: 54,
-                      decoration: BoxDecoration(
-                        color: AppColors.cardSurfaceAltAlt,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.borderCardStrong),
+                if (!isExpanded) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 54,
+                        height: 54,
+                        decoration: BoxDecoration(
+                          color: AppColors.cardSurfaceAltAlt,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.borderCardStrong),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(11),
+                          child:
+                              items.first['productVariant']?['imageUrl'] != null
+                              ? Image.network(
+                                  items.first['productVariant']['imageUrl'],
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (c, e, s) =>
+                                      const Icon(LucideIcons.package),
+                                )
+                              : items.first['productVariant']?['product']?['thumbnailUrl'] !=
+                                    null
+                              ? Image.network(
+                                  items
+                                      .first['productVariant']['product']['thumbnailUrl'],
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (c, e, s) =>
+                                      const Icon(LucideIcons.package),
+                                )
+                              : const Icon(
+                                  LucideIcons.package,
+                                  color: AppColors.textDim,
+                                ),
+                        ),
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(11),
-                        child:
-                            items.first['productVariant']?['imageUrl'] != null
-                            ? Image.network(
-                                items.first['productVariant']['imageUrl'],
-                                fit: BoxFit.cover,
-                                errorBuilder: (c, e, s) =>
-                                    const Icon(LucideIcons.package),
-                              )
-                            : items.first['productVariant']?['product']?['thumbnailUrl'] !=
-                                  null
-                            ? Image.network(
-                                items
-                                    .first['productVariant']['product']['thumbnailUrl'],
-                                fit: BoxFit.cover,
-                                errorBuilder: (c, e, s) =>
-                                    const Icon(LucideIcons.package),
-                              )
-                            : const Icon(
-                                LucideIcons.package,
-                                color: AppColors.textDim,
-                              ),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            items.first['productVariant']?['product']?['name'] ??
-                                'Sản phẩm GearHub',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 14,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "Số lượng: ${items.first['quantity']}",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
-                              color: AppColors.textDim,
-                            ),
-                          ),
-                          if (items.length > 1) ...[
-                            const SizedBox(height: 6),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              "và ${items.length - 1} sản phẩm khác...",
+                              items.first['productVariant']?['product']?['name'] ??
+                                  'Sản phẩm GearHub',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Số lượng: ${items.first['quantity']}",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
                                 fontSize: 12,
                                 color: AppColors.textDim,
-                                fontStyle: FontStyle.italic,
                               ),
                             ),
+                            if (items.length > 1) ...[
+                              const SizedBox(height: 6),
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _expandedOrderIds.add(order['id']);
+                                  });
+                                },
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      "và ${items.length - 1} sản phẩm khác (Xem thêm)...",
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.brandIndigo,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.keyboard_arrow_down_rounded,
+                                      size: 16,
+                                      color: AppColors.brandIndigo,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  ...items.map((i) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: AppColors.cardSurfaceAltAlt,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppColors.borderCardStrong,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: i['productVariant']?['imageUrl'] != null
+                                  ? Image.network(
+                                      i['productVariant']['imageUrl'],
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (c, e, s) =>
+                                          const Icon(LucideIcons.package),
+                                    )
+                                  : i['productVariant']?['product']?['thumbnailUrl'] !=
+                                        null
+                                  ? Image.network(
+                                      i['productVariant']['product']['thumbnailUrl'],
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (c, e, s) =>
+                                          const Icon(LucideIcons.package),
+                                    )
+                                  : const Icon(LucideIcons.package),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  i['productVariant']?['product']?['name'] ??
+                                      'Sản phẩm',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 13,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      formatVND(
+                                        _toDouble(
+                                          i['priceAtPurchase'] ?? i['price'],
+                                        ),
+                                      ),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13,
+                                        color: AppColors.slate400,
+                                      ),
+                                    ),
+                                    Text(
+                                      "x${i['quantity']}",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 13,
+                                        color: AppColors.textDim,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
+                    );
+                  }),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _expandedOrderIds.remove(order['id']);
+                      });
+                    },
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Thu gọn",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textDim,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Icon(
+                          Icons.keyboard_arrow_up_rounded,
+                          size: 16,
+                          color: AppColors.textDim,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 14),
                   child: Divider(height: 1, color: AppColors.borderCardStrong),
@@ -473,8 +643,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                           context,
                           'Mua lại',
                           AppColors.brandIndigo,
-                          () =>
-                              context.read<OrdersCubit>().reOrder(order['id']),
+                          () => _showReorderBottomSheet(context, order),
                         ),
                     ],
                   ),
@@ -522,6 +691,107 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
         ),
       ),
     );
+  }
+
+  void _showReorderBottomSheet(BuildContext context, dynamic order) {
+    final List<dynamic> items = order['items'] ?? [];
+    if (items.isEmpty) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (bCtx) {
+        return _ReorderBottomSheet(
+          order: order,
+          items: items,
+          parentContext: context,
+        );
+      },
+    );
+  }
+
+  Future<void> _handleReorderSuccess(
+    BuildContext context,
+    List<String> variantIds,
+  ) async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (c) => const Center(
+          child: CircularProgressIndicator(color: AppColors.brandIndigo),
+        ),
+      );
+
+      final cartCubit = context.read<CartCubit>();
+      final result = await cartCubit.repository.getCart();
+
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+
+      await result.fold(
+        (failure) async {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Không thể tải giỏ hàng: ${failure.message}'),
+                backgroundColor: const Color(0xFFEF4444),
+              ),
+            );
+          }
+        },
+        (cart) async {
+          final checkoutItems = cart.items
+              .where((item) => variantIds.contains(item.productVariant.id))
+              .toList();
+
+          if (checkoutItems.isEmpty) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Không tìm thấy sản phẩm hợp lệ trong giỏ hàng để thanh toán.',
+                  ),
+                  backgroundColor: Color(0xFFEF4444),
+                ),
+              );
+            }
+            return;
+          }
+
+          for (var item in checkoutItems) {
+            item.isSelected = true;
+          }
+
+          cartCubit.loadCart();
+
+          if (context.mounted) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => CheckoutPage(
+                  args: CheckoutArguments(
+                    items: checkoutItems,
+                    isFromCart: true,
+                  ),
+                ),
+              ),
+            );
+          }
+        },
+      );
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Có lỗi xảy ra: $e'),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildStatusBadge(String status) {
@@ -1257,6 +1527,274 @@ class _CancelOrderReasonDialogState extends State<_CancelOrderReasonDialog> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ReorderBottomSheet extends StatefulWidget {
+  final dynamic order;
+  final List<dynamic> items;
+  final BuildContext parentContext;
+
+  const _ReorderBottomSheet({
+    required this.order,
+    required this.items,
+    required this.parentContext,
+  });
+
+  @override
+  State<_ReorderBottomSheet> createState() => _ReorderBottomSheetState();
+}
+
+class _ReorderBottomSheetState extends State<_ReorderBottomSheet> {
+  final Map<String, bool> _selectedItemMap = {};
+
+  @override
+  void initState() {
+    super.initState();
+    for (var item in widget.items) {
+      final String id = item['id']?.toString() ?? '';
+      if (id.isNotEmpty) {
+        _selectedItemMap[id] = true;
+      }
+    }
+  }
+
+  bool get _isAllSelected =>
+      _selectedItemMap.values.every((isSelected) => isSelected);
+
+  int get _selectedCount =>
+      _selectedItemMap.values.where((isSelected) => isSelected).length;
+
+  void _toggleSelectAll() {
+    final bool nextValue = !_isAllSelected;
+    setState(() {
+      _selectedItemMap.updateAll((key, value) => nextValue);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.7,
+      decoration: const BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 5,
+              decoration: BoxDecoration(
+                color: AppColors.borderCardStrong,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Mua lại sản phẩm",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, color: AppColors.textDim),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            "Chọn các sản phẩm fen muốn mua lại và thêm vào giỏ hàng:",
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textDim,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Theme(
+            data: Theme.of(
+              context,
+            ).copyWith(unselectedWidgetColor: AppColors.borderCardStrong),
+            child: CheckboxListTile(
+              value: _isAllSelected,
+              activeColor: AppColors.brandIndigo,
+              checkColor: Colors.white,
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+              title: const Text(
+                "Chọn tất cả",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              onChanged: (val) {
+                _toggleSelectAll();
+              },
+            ),
+          ),
+          const Divider(color: AppColors.borderCardStrong, height: 1),
+          const SizedBox(height: 8),
+          Expanded(
+            child: ListView.builder(
+              physics: const BouncingScrollPhysics(),
+              itemCount: widget.items.length,
+              itemBuilder: (context, index) {
+                final i = widget.items[index];
+                final String itemId = i['id']?.toString() ?? '';
+                final bool isSelected = _selectedItemMap[itemId] ?? false;
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      Theme(
+                        data: Theme.of(context).copyWith(
+                          unselectedWidgetColor: AppColors.borderCardStrong,
+                        ),
+                        child: Checkbox(
+                          value: isSelected,
+                          activeColor: AppColors.brandIndigo,
+                          checkColor: Colors.white,
+                          onChanged: (val) {
+                            setState(() {
+                              _selectedItemMap[itemId] = val ?? false;
+                            });
+                          },
+                        ),
+                      ),
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: AppColors.cardSurfaceAltAlt,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.borderCardStrong),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: i['productVariant']?['imageUrl'] != null
+                              ? Image.network(
+                                  i['productVariant']['imageUrl'],
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (c, e, s) =>
+                                      const Icon(LucideIcons.package),
+                                )
+                              : i['productVariant']?['product']?['thumbnailUrl'] !=
+                                    null
+                              ? Image.network(
+                                  i['productVariant']['product']['thumbnailUrl'],
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (c, e, s) =>
+                                      const Icon(LucideIcons.package),
+                                )
+                              : const Icon(LucideIcons.package),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              i['productVariant']?['product']?['name'] ??
+                                  'Sản phẩm',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  formatVND(
+                                    _toDouble(
+                                      i['priceAtPurchase'] ?? i['price'],
+                                    ),
+                                  ),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                    color: AppColors.slate400,
+                                  ),
+                                ),
+                                Text(
+                                  "x${i['quantity']}",
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12,
+                                    color: AppColors.textDim,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.brandIndigo,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                disabledBackgroundColor: AppColors.borderCardStrong,
+              ),
+              onPressed: _selectedCount > 0
+                  ? () {
+                      final selectedIds = _selectedItemMap.entries
+                          .where((e) => e.value)
+                          .map((e) => e.key)
+                          .toList();
+                      Navigator.pop(context);
+                      widget.parentContext.read<OrdersCubit>().reOrder(
+                        widget.order['id'],
+                        selectedIds,
+                      );
+                    }
+                  : null,
+              child: Text(
+                _selectedCount > 0
+                    ? "Mua ngay ($_selectedCount)"
+                    : "Chọn ít nhất 1 sản phẩm",
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -8,6 +8,7 @@ import { OrderStatus, Role } from '@prisma/client';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { ReviewCancelDto } from './dto/review-cancel.dto';
+import { ReorderToCartDto } from './dto/reorder-to-cart.dto';
 
 @Controller('orders')
 export class OrdersController {
@@ -108,7 +109,7 @@ export class OrdersController {
 
     @Post(':id/re-order')
     @UseGuards(JwtAuthGuard)
-    async reOrder(@Request() req, @Param('id') id: string) {
-        return this.orderService.reOrder(req.user.userId, id);
+    async reorderToCart(@Request() req, @Param('id') id: string, @Body() body: ReorderToCartDto) {
+        return this.orderService.reorderToCart(req.user.userId, id, body.orderItemIds);
     }
 }

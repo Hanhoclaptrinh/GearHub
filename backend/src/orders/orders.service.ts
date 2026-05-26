@@ -842,34 +842,199 @@ export class OrdersService {
   }
 
   /**
-   * tạo lại đơn hàng mới dựa trên thông tin của đơn hàng cũ (re-order)
-   * điền sẵn toàn bộ thông tin nhận hàng và danh sách sản phẩm cũ
+   * thực hiện mua lại đơn hàng cũ bằng cách chuyển toàn bộ sản phẩm hợp lệ vào giỏ hàng
+   * 
+   * xác thực quyền sở hữu đơn hàng của người dùng để tránh truy cập trái phép
+   * kiểm tra trạng thái đơn hàng (chỉ cho phép đơn hàng đã giao thành công hoặc đã hủy)
+   * tìm hoặc khởi tạo giỏ hàng hiện tại của user
+   * duyệt qua từng sản phẩm trong đơn hàng cũ:
+   *    - chỉ được mua lại nếu biến thể / sản phẩm đó còn kinh doanh
+   *    - đối chiếu và kiểm tra stock hiện tại để tránh việc đặt quá số lượng cho phép
+   *    - tính toán số lượng có thể thêm vào giỏ hàng sau khi đã trừ đi số lượng hiện có trong giỏ
+   * thực hiện cập nhật danh mục sản phẩm vào giỏ hàng
    */
-  async reOrder(userId: string, id: string) {
-    // xác thực cả userId để ngăn chặn việc xem trộm và đặt lại đơn hàng của người khác
-    const oldOrder = await this.prisma.order.findFirst({
-      where: { id, userId },
-      include: { items: true },
+  async reorderToCart(userId: string, id: string, orderItemIds: string[]) {
+    // thực hiện toàn bộ quy trình trong transaction để đảm bảo tính nhất quán dữ liệu tại thời điểm kiểm tra tồn kho
+    return this.prisma.$transaction(async (tx) => {
+      // truy vấn đơn hàng cũ kèm danh sách chi tiết các mặt hàng
+      const oldOrder = await tx.order.findFirst({
+        where: { id, userId },
+        include: { items: true },
+      });
+
+      if (!oldOrder) {
+        throw new NotFoundException('Không tìm thấy đơn hàng cũ');
+      }
+
+      // chỉ cho phép mua lại với các đơn hàng đã hoàn tất chu kỳ
+      if (!['DELIVERED', 'CANCELLED'].includes(oldOrder.status)) {
+        throw new BadRequestException(
+          'Chỉ có thể mua lại đơn hàng đã giao hoặc đã hủy',
+        );
+      }
+
+      if (oldOrder.items.length === 0) {
+        throw new BadRequestException('Đơn hàng cũ không có sản phẩm để mua lại');
+      }
+
+      // chỉ được mua lại khi có ít nhất một sản phẩm được chọn
+      if (!orderItemIds.length) {
+        throw new BadRequestException(
+          'Vui lòng chọn ít nhất một sản phẩm để mua lại',
+        );
+      }
+
+      const selectedItems = oldOrder.items.filter((item) =>
+        orderItemIds.includes(item.id),
+      );
+
+      if (selectedItems.length === 0) {
+        throw new BadRequestException(
+          'Không có sản phẩm hợp lệ để mua lại',
+        );
+      }
+
+      // tạo giỏ hàng cho user nếu chưa có
+      const cart = await tx.cart.upsert({
+        where: { userId },
+        update: {},
+        create: { userId },
+        include: { items: true }
+      });
+
+      // list item thêm thành công - sp hợp lệ, còn hàng, đang hoạt động
+      const addedItems: {
+        orderItemId: string;
+        variantId: string;
+        productName: string;
+        quantity: number;
+      }[] = [];
+
+      // list item bỏ qua - sp hết hàng, ngưng kinh doanh, tổng trong cart đã đạt tới max stock
+      const skippedItems: {
+        orderItemId: string;
+        variantId: string;
+        reason: string;
+      }[] = [];
+
+      // lần lượt xử lý từng sản phẩm được chọn mua lại
+      for (const item of selectedItems) {
+        // sản phẩm / biến thể phải đang hoạt động
+        const variant = await tx.productVariant.findFirst({
+          where: {
+            id: item.productVariantId,
+            isActive: true,
+            product: { isActive: true },
+          },
+          select: {
+            id: true,
+            stock: true,
+            product: {
+              select: { name: true },
+            },
+          },
+        });
+
+        if (!variant) {
+          skippedItems.push({
+            orderItemId: item.id,
+            variantId: item.productVariantId,
+            reason: 'Sản phẩm không còn khả dụng',
+          });
+          continue;
+        }
+
+        if (variant.stock <= 0) {
+          skippedItems.push({
+            orderItemId: item.id,
+            variantId: item.productVariantId,
+            reason: 'Sản phẩm đã hết hàng',
+          });
+          continue;
+        }
+
+        // lấy số lượng của sản phẩm này hiện đang có trong giỏ hàng (nếu có)
+        const existingCartItem = await tx.cartItem.findUnique({
+          where: {
+            cartId_productVariantId: {
+              cartId: cart.id,
+              productVariantId: variant.id,
+            },
+          },
+          select: {
+            quantity: true,
+          },
+        });
+
+        const requestedQuantity = item.quantity;
+        const currentCartQuantity = existingCartItem?.quantity ?? 0;
+        // tính toán số lượng còn lại có thể thêm vào giỏ hàng mà không vượt quá giới hạn tồn kho
+        const availableToAdd = Math.max(variant.stock - currentCartQuantity, 0);
+
+        if (availableToAdd <= 0) {
+          skippedItems.push({
+            orderItemId: item.id,
+            variantId: variant.id,
+            reason: 'Số lượng trong giỏ hàng đã đạt tối đa tồn kho',
+          });
+          continue;
+        }
+
+        // quyết định số lượng thực tế sẽ thêm vào giỏ hàng
+        const quantityToAdd = Math.min(requestedQuantity, availableToAdd);
+        const finalQuantity = currentCartQuantity + quantityToAdd;
+
+        // cập nhật số lượng mới vào giỏ hàng
+        await tx.cartItem.upsert({
+          where: {
+            cartId_productVariantId: {
+              cartId: cart.id,
+              productVariantId: variant.id,
+            },
+          },
+          update: {
+            quantity: finalQuantity,
+          },
+          create: {
+            cartId: cart.id,
+            productVariantId: variant.id,
+            quantity: quantityToAdd,
+          },
+        });
+
+        addedItems.push({
+          orderItemId: item.id,
+          variantId: variant.id,
+          productName: variant.product.name,
+          quantity: quantityToAdd,
+        });
+
+        // nếu số lượng thêm vào nhỏ hơn số lượng yêu cầu do giới hạn tồn kho, ghi nhận cảnh báo
+        if (quantityToAdd < requestedQuantity) {
+          skippedItems.push({
+            orderItemId: item.id,
+            variantId: variant.id,
+            reason: `Chỉ thêm được ${quantityToAdd}/${requestedQuantity} sản phẩm do giới hạn tồn kho`,
+          });
+        }
+      }
+
+      // nếu không có bất kỳ sản phẩm nào thêm vào giỏ hàng thành công
+      if (addedItems.length === 0) {
+        throw new BadRequestException({
+          message: 'Không có sản phẩm nào còn khả dụng để mua lại',
+          skippedItems,
+        });
+      }
+
+      return {
+        message: 'Đã thêm sản phẩm vào giỏ hàng',
+        cartId: cart.id,
+        addedCount: addedItems.length,
+        addedItems,
+        skippedItems,
+      };
     });
-    if (!oldOrder) throw new NotFoundException('Không tìm thấy đơn hàng cũ');
-
-    // chỉ lấy id biến thể và số lượng, không lấy lại đơn giá cũ vì giá sản phẩm có thể đã thay đổi
-    const itemsForNewOrder = oldOrder.items.map((item) => ({
-      variantId: item.productVariantId,
-      quantity: item.quantity,
-    }));
-
-    // tái sử dụng thông tin giao hàng để người dùng không cần nhập tay lại từ đầu
-    const reOrderData: CreateOrderDto = {
-      receiverName: oldOrder.receiverName,
-      receiverPhone: oldOrder.receiverPhone,
-      shippingAddress: oldOrder.shippingAddress,
-      note: `Mua lại từ đơn hàng #${oldOrder.id.slice(0, 8).toUpperCase()}`,
-      items: itemsForNewOrder,
-    };
-
-    // gọi qua createOrder gốc để chạy lại đầy đủ quy trình kiểm tra tồn kho và áp dụng các khuyến mãi hiện hành
-    return this.createOrder(userId, reOrderData);
   }
 
   private async rollbackPromotion(
