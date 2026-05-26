@@ -6,7 +6,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Role, RoomStatus } from '@prisma/client';
+import { Role, RoomStatus, NotificationType } from '@prisma/client';
 import { SendMessageDto } from './dto/send-message.dto';
 import { JoinRoomDto } from './dto/join-room.dto';
 import { MarkRoomReadDto } from './dto/mark-room-read.dto';
@@ -36,10 +36,19 @@ export class ChatService {
     private readonly notificationService: NotificationService,
   ) { }
 
+  /**
+   * Cho phép người dùng hoặc nhân viên tham gia vào một phòng chat cụ thể.
+   * 
+   * xác thực và phân giải thông tin phòng chat
+   * thực hiện cập nhật trạng thái đã đọc tin nhắn trong một db transaction để bảo toàn dữ liệu
+   * trả về thông tin phòng chat đã cập nhật cùng mốc thời gian đọc
+   */
   async joinRoom(user: SocketUser, data: JoinRoomDto) {
+    // phân giải phòng chat dựa trên thông tin phiên socket, đồng thời kiểm tra quyền truy cập
     const room = await this.resolveRoom(user, data.roomId);
     const readAt = new Date();
 
+    // cập nhật trạng thái đã đọc của phòng chat dựa theo role để xóa số lượng tin nhắn chưa đọc tương ứng
     const updatedRoom = await this.chatRepository.transaction(async (tx) => {
       return this.chatRepository.markRoomAsRead({
         roomId: room.id,
@@ -55,24 +64,36 @@ export class ChatService {
     };
   }
 
+  /**
+   * gửi tin nhắn mới vào phòng chat
+   * 
+   * kiểm tra tính hợp lệ của nội dung tin nhắn
+   * xác thực quyền sở hữu và trạng thái hoạt động của phòng chat
+   * lưu tin nhắn vào db và cập nhật tin nhắn cuối cùng của phòng chat thông qua transaction
+   * gửi thông báo đẩy cho client
+   */
   async sendMessage(user: SocketUser, data: SendMessageDto) {
     const content = data.content.trim();
     if (!content) {
       throw new BadRequestException('Nội dung tin nhắn không được để trống');
     }
 
+    // kiểm tra sự tồn tại và quyền truy cập phòng chat của user
     const room = await this.resolveRoom(user, data.roomId);
+    // chặn gửi tin nhắn nếu phòng chat đã đóng
     if (room.status === RoomStatus.CLOSED) {
       throw new BadRequestException('Không thể gửi tin nhắn vì phòng đã đóng');
     }
 
     const now = new Date();
+    // thực hiện lưu tin nhắn và cập nhật thông tin phòng chat trong một transaction
     const result = await this.chatRepository.transaction(async (tx) => {
       const currentRoom = await this.chatRepository.findRoomById(room.id, tx);
       if (!currentRoom) {
         throw new NotFoundException('Không tìm thấy đoạn chat');
       }
 
+      // kiểm tra lại trạng thái phòng chat trong transaction để tránh race condition
       if (currentRoom.status === RoomStatus.CLOSED) {
         throw new BadRequestException(
           'Không thể gửi tin nhắn vì phòng đã đóng',
@@ -90,6 +111,7 @@ export class ChatService {
       });
     });
 
+    // tự động gửi thông báo đẩy đến người nhận khi cần thiết
     this.sendChatNotificationIfNeeded(user, result.room, content);
 
     return {
@@ -98,10 +120,19 @@ export class ChatService {
     };
   }
 
+  /**
+   * đánh dấu đã đọc toàn bộ tin nhắn trong phòng chat
+   * 
+   * phân giải thông tin phòng chat và kiểm tra quyền truy cập của user
+   * cập nhật trạng thái đã đọc tin nhắn trong phòng chat dựa theo role thông qua transaction
+   * trả về phòng chat đã cập nhật cùng mốc thời gian đọc
+   */
   async markRoomAsRead(user: SocketUser, data: MarkRoomReadDto) {
+    // phân giải phòng chat dựa trên thông tin phiên socket, đồng thời kiểm tra quyền truy cập
     const room = await this.resolveRoom(user, data.roomId);
     const readAt = new Date();
 
+    // cập nhật trạng thái đã đọc của phòng chat dựa theo role để xóa số lượng tin nhắn chưa đọc tương ứng
     const updatedRoom = await this.chatRepository.transaction(async (tx) => {
       return this.chatRepository.markRoomAsRead({
         roomId: room.id,
@@ -117,13 +148,19 @@ export class ChatService {
     };
   }
 
+  /**
+   * lấy thông tin phòng chat gần nhất của người dùng hiện tại
+   * 
+   * phân tích các luồng của khách hàng để quyết định có cho phép mở phòng mới hay không
+   * trả về thông tin tóm tắt của phòng chat hiện tại cùng trạng thái đóng/mở của phòng
+   */
   async getLatestMyRoom(
     userId: string,
   ): Promise<LatestCustomerRoomResponseDto> {
-    // lay phong chat cuoi cung cua user
-    // case 1: user chua tung chat -> tao moi
-    // case 2: user dang chat -> vao lai chinh phong chat tiep tuc chat - khong tao phong moi
-    // case 3: room closed -> vao room closed truoc do -> hien option new chat
+    // truy vấn tìm phòng chat được tạo gần nhất của người dùng
+    // case 1: user chưa từng chat -> tạo mới
+    // case 2: user đang chat -> vào lại chính phòng chat tiếp tục chat - không tạo phòng mới
+    // case 3: room closed -> vào room closed trước đó -> hiện option chat mới
     const room = await this.chatRepository.findLatestCustomerRoom(userId);
     if (!room) {
       return {
@@ -133,6 +170,7 @@ export class ChatService {
       };
     }
 
+    // kiểm tra xem phòng chat hiện tại đã đóng hoàn toàn hay chưa
     const isClosed = room.status === RoomStatus.CLOSED;
     return {
       room: toChatRoomSummaryResponse(room),
@@ -141,6 +179,13 @@ export class ChatService {
     };
   }
 
+  /**
+   * tạo phòng chat mới cho khách hàng
+   * 
+   * kiểm tra xem người dùng đã có phòng chat nào đang hoạt động chưa để tái sử dụng
+   * nếu chưa có, tiến hành khởi tạo phòng chat mới dựa theo cấu hình hỗ trợ AI
+   * trả về thông tin tóm tắt của phòng chat mới tạo
+   */
   async createNewCustomerRoom(
     userId: string,
   ): Promise<LatestCustomerRoomResponseDto> {
@@ -149,12 +194,12 @@ export class ChatService {
         userId,
         tx,
       );
+      // nếu người dùng đang có phòng chat hoạt động thì đi thẳng vào phòng đó, tránh tạo trùng lặp
       if (activeRoom) {
-        // neu user dang co chat chua closed -> vao chinh phong do - khong tao room moi
         return activeRoom;
       }
 
-      // AI-enabled rooms start in BOT_ONLY; otherwise preserve human support flow.
+      // khởi tạo phòng chat mới: ưu tiên chế độ BOT_ONLY nếu hệ thống AI được kích hoạt, ngược lại chuyển thẳng cho nhân viên
       return this.chatRepository.createCustomerRoom(
         userId,
         this.aiChatService.isEnabled()
@@ -249,10 +294,18 @@ export class ChatService {
     return toChatRoomSummaryResponse(room);
   }
 
+  /**
+   * tiếp nhận hỗ trợ phòng chat (admin/staff)
+   * 
+   * xác thực quyền hạn của người tiếp nhận
+   * gán nhân viên hỗ trợ cho phòng chat nếu chưa có ai tiếp nhận
+   * trả về kết quả tiếp nhận hoặc báo lỗi nếu phòng chat đã đóng hoặc đã có nhân viên khác nhận trước đó
+   */
   async claimRoom(user: SocketUser, roomId: string) {
-    this.assertStaffOrAdmin(user); // dam bao nguoi thuc hien claim la staff hoac admin
+    // đảm bảo người thực hiện nhận phòng chat phải là nhân viên hoặc admin
+    this.assertStaffOrAdmin(user);
 
-    // chi thuc hien logic khi chua co ai nhan hoac nguoi dang nhan chinh la cu
+    // thực hiện gán phòng chat cho nhân viên
     const result = await this.chatRepository.claimRoom({
       roomId,
       staffId: user.id,
@@ -262,11 +315,13 @@ export class ChatService {
       throw new NotFoundException('Không tìm thấy đoạn chat');
     }
 
+    // kiểm tra trường hợp không cập nhật được bản ghi (đã có người nhận hoặc phòng đã đóng)
     if (result.count === 0) {
       if (result.room.status === RoomStatus.CLOSED) {
         throw new BadRequestException('Không thể vào phòng đã đóng');
       }
 
+      // nếu nhân viên đang tham gia là chính người gửi yêu cầu thì vẫn cho phép tiếp tục
       if (result.room.staffId === user.id) {
         return {
           room: toChatRoomSummaryResponse(result.room),
@@ -283,16 +338,26 @@ export class ChatService {
     };
   }
 
+  /**
+   * đóng phòng chat đang hoạt động (admin/staff)
+   * 
+   * xác thực quyền hạn đóng phòng
+   * cập nhật trạng thái phòng sang CLOSED và ghi nhận tin nhắn hệ thống đóng phòng thông qua transaction
+   * trả về thông tin phòng chat đã đóng cùng tin nhắn hệ thống tương ứng
+   */
   async closeRoom(user: SocketUser, roomId: string) {
+    // đảm bảo người thực hiện đóng phòng chat phải là nhân viên hoặc admin
     this.assertStaffOrAdmin(user);
 
     const now = new Date();
+    // thực hiện cập nhật trạng thái phòng chat trong transaction
     const result = await this.chatRepository.transaction(async (tx) => {
       const room = await this.chatRepository.findRoomById(roomId, tx);
       if (!room) {
         throw new NotFoundException('Không tìm thấy đoạn chat');
       }
 
+      // nếu phòng chat đã đóng từ trước thì không làm gì thêm
       if (room.status === RoomStatus.CLOSED) {
         return {
           room,
@@ -300,6 +365,7 @@ export class ChatService {
         };
       }
 
+      // kiểm tra quyền đóng phòng (chỉ admin hoặc nhân viên đang được gán cho phòng chat đó mới có quyền đóng)
       this.assertCanCloseRoom(user, room);
 
       return this.chatRepository.closeRoom({
@@ -337,6 +403,13 @@ export class ChatService {
     });
   }
 
+  /**
+   * lên lịch và kích hoạt sinh câu trả lời tự động bằng AI trong nền
+   * 
+   * gọi hàm tạo câu trả lời AI bất đồng bộ ngoài luồng chính để tránh gây block
+   * xuất kết quả thông qua callback khi AI phản hồi thành công
+   * xử lý lỗi và thực thi callback kết thúc trong mọi trường hợp
+   */
   scheduleAiResponseIfEligible(
     user: SocketUser,
     result: Awaited<
@@ -351,18 +424,22 @@ export class ChatService {
     onEnd?: () => void,
     onChunk?: (chunk: string) => void,
   ) {
+    // sinh phản hồi từ AI
     void this.respondWithAiIfEligible(user, result, onStart, onChunk)
       .then((aiResult) => {
+        // phát phản hồi AI thông qua callback nếu kết quả sinh hợp lệ
         if (aiResult) {
           publish(aiResult);
         }
       })
       .catch((error) => {
+        // ghi nhận cảnh báo nếu quá trình AI sinh phản hồi bị bỏ qua hoặc gặp lỗi
         this.logger.warn(
           `AI response skipped for room=${result.room.id} message=${result.message.id}: ${this.errorMessage(error)}`,
         );
       })
       .finally(() => {
+        // đảm bảo callback kết thúc luôn được thực hiện khi tiến trình hoàn tất
         if (onEnd) {
           onEnd();
         }
@@ -435,6 +512,7 @@ export class ChatService {
         roomId: room.id,
         route: '/chat',
       },
+      type: NotificationType.CHAT,
     });
   }
 
