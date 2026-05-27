@@ -97,6 +97,12 @@ export class OrdersController {
         return this.orderService.cancelOrder(req.user.userId, id, body.reason);
     }
 
+    @Patch(':id/confirm')
+    @UseGuards(JwtAuthGuard)
+    async confirmOrder(@Request() req, @Param('id') id: string) {
+        return this.orderService.confirmOrder(req.user.userId, id);
+    }
+
     @Patch(':id/review-cancel')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN, Role.STAFF)

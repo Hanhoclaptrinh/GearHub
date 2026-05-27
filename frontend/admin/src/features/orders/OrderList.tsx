@@ -138,7 +138,8 @@ export const OrderList: React.FC = () => {
       CONFIRMED: 'Đã xác nhận',
       PROCESSING: 'Đang đóng gói',
       SHIPPING: 'Đang giao',
-      DELIVERED: 'Hoàn tất',
+      DELIVERED: 'Đã giao',
+      COMPLETED: 'Hoàn tất',
       CANCELLED: 'Đã hủy',
       RETURNED: 'Khách trả hàng',
       FAILED: 'Giao hàng thất bại'
@@ -157,6 +158,8 @@ export const OrderList: React.FC = () => {
       case OrderStatus.SHIPPING:
         return <Badge variant="info"><Truck className="w-3 h-3" /> Đang giao</Badge>;
       case OrderStatus.DELIVERED:
+        return <Badge variant="success"><CheckCircle className="w-3 h-3" /> Đã giao</Badge>;
+      case OrderStatus.COMPLETED:
         return <Badge variant="success"><CheckCircle className="w-3 h-3" /> Hoàn tất</Badge>;
       case OrderStatus.CANCELLED:
         return <Badge variant="danger"><XCircle className="w-3 h-3" /> Đã hủy</Badge>;
@@ -185,7 +188,8 @@ export const OrderList: React.FC = () => {
           { label: 'Đã xác nhận', value: OrderStatus.CONFIRMED, icon: CheckCircle, color: 'blue', count: statusStats[OrderStatus.CONFIRMED] || 0 },
           { label: 'Đang đóng gói', value: OrderStatus.PROCESSING, icon: RefreshCcw, color: 'indigo', count: statusStats[OrderStatus.PROCESSING] || 0 },
           { label: 'Đang giao', value: OrderStatus.SHIPPING, icon: Truck, color: 'cyan', count: statusStats[OrderStatus.SHIPPING] || 0 },
-          { label: 'Hoàn tất', value: OrderStatus.DELIVERED, icon: CheckCircle, color: 'green', count: statusStats[OrderStatus.DELIVERED] || 0 },
+          { label: 'Đã giao', value: OrderStatus.DELIVERED, icon: CheckCircle, color: 'green', count: statusStats[OrderStatus.DELIVERED] || 0 },
+          { label: 'Hoàn tất', value: OrderStatus.COMPLETED, icon: CheckCircle, color: 'green', count: statusStats[OrderStatus.COMPLETED] || 0 },
           { label: 'Đã hủy', value: OrderStatus.CANCELLED, icon: XCircle, color: 'red', count: statusStats[OrderStatus.CANCELLED] || 0 },
           { label: 'Trả hàng', value: OrderStatus.RETURNED, icon: AlertCircle, color: 'pink', count: statusStats[OrderStatus.RETURNED] || 0 },
           { label: 'Thất bại', value: OrderStatus.FAILED, icon: XCircle, color: 'orange', count: statusStats[OrderStatus.FAILED] || 0 }

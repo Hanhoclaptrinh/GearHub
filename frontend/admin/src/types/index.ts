@@ -104,6 +104,7 @@ export const OrderStatus = {
   CANCELLED: 'CANCELLED',
   RETURNED: 'RETURNED',
   FAILED: 'FAILED',
+  COMPLETED: 'COMPLETED',
 } as const;
 
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];

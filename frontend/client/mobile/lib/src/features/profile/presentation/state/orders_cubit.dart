@@ -42,6 +42,19 @@ class OrdersCubit extends Cubit<OrdersState> {
     }
   }
 
+  Future<void> confirmReceipt(String orderId) async {
+    emit(OrdersLoading());
+    try {
+      await apiClient.dio.patch(
+        '/orders/$orderId/confirm',
+      );
+      emit(OrderActionSuccess(message: 'Xác nhận nhận hàng thành công!'));
+      await fetchMyOrders();
+    } catch (e) {
+      emit(OrdersError(message: _extractErrorMessage(e, 'Không thể xác nhận nhận hàng.')));
+    }
+  }
+
   Future<void> reOrder(String orderId, List<String> orderItemIds) async {
     emit(OrdersLoading());
     try {

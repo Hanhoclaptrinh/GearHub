@@ -51,7 +51,7 @@ export class ReviewsService {
         if (orderItem.order.userId !== userId) {
             throw new BadRequestException('Bạn không có quyền đánh giá sản phẩm này');
         }
-        if (orderItem.order.status !== OrderStatus.DELIVERED) {
+        if (orderItem.order.status !== OrderStatus.COMPLETED) {
             throw new BadRequestException('Chỉ đánh giá được sau khi nhận hàng thành công');
         }
         if (orderItem.review) {
@@ -369,12 +369,12 @@ export class ReviewsService {
     }
 
     async getPendingReviews(userId: string) {
-        // lấy các đơn hàng dã giao nhưng chưa đánh giá
+        // lấy các đơn hàng đã nhận nhưng chưa đánh giá
         const pendingItems = await this.prisma.orderItem.findMany({
             where: {
                 order: {
                     userId,
-                    status: OrderStatus.DELIVERED
+                    status: OrderStatus.COMPLETED
                 },
                 review: null,
                 isReviewedSkipped: false

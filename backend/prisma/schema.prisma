@@ -567,6 +567,7 @@ enum OrderStatus {
   CANCELLED
   RETURNED
   FAILED
+  COMPLETED
 }
 
 enum PaymentMethod {

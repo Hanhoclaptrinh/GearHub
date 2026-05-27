@@ -237,14 +237,15 @@ export const UserDetailPage: React.FC = () => {
                                             <td className="px-8 py-4">
                                                 <Badge className={cn(
                                                     "rounded-full px-3 h-6 text-[10px] font-black border-none",
-                                                    order.status === 'DELIVERED' ? "bg-green-50 text-green-600" :
+                                                    order.status === 'DELIVERED' || order.status === 'COMPLETED' ? "bg-green-50 text-green-600" :
                                                         order.status === 'CANCELLED' ? "bg-slate-100 text-slate-400" :
                                                             order.status === 'PENDING' ? "bg-amber-50 text-amber-600" :
                                                                 "bg-blue-50 text-blue-600"
                                                 )}>
                                                     {order.status === 'CANCELLED' ? 'Đã hủy' :
-                                                        order.status === 'DELIVERED' ? 'Hoàn tất' :
-                                                            order.status === 'PENDING' ? 'Chờ duyệt' : order.status}
+                                                        order.status === 'DELIVERED' ? 'Đã giao' :
+                                                            order.status === 'COMPLETED' ? 'Hoàn tất' :
+                                                                order.status === 'PENDING' ? 'Chờ duyệt' : order.status}
                                                 </Badge>
                                             </td>
                                             <td className="px-8 py-4 text-center">

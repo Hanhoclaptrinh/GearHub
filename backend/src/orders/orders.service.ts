@@ -20,6 +20,7 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { PromotionService } from 'src/promotion/promotion.service';
 import { NotificationService } from 'src/notification/notification.service';
 import { ReviewCancelDto } from './dto/review-cancel.dto';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class OrdersService {
@@ -504,8 +505,12 @@ export class OrdersService {
         body: 'Đơn hàng của bạn đang trên đường giao.',
       },
       [OrderStatus.DELIVERED]: {
-        title: 'Hoàn tất đơn hàng',
-        body: 'Đơn hàng của bạn đã giao thành công.',
+        title: 'Đơn hàng đã giao',
+        body: 'Đơn hàng của bạn đã giao thành công. Vui lòng xác nhận đã nhận hàng.',
+      },
+      [OrderStatus.COMPLETED]: {
+        title: 'Đơn hàng hoàn tất',
+        body: 'Đơn hàng của bạn đã hoàn tất. Cảm ơn bạn đã mua sắm tại GearHub!',
       },
       [OrderStatus.CANCELLED]: {
         title: 'Hủy đơn hàng',
@@ -530,6 +535,7 @@ export class OrdersService {
       [OrderStatus.CANCELLED]: 'Đã hủy đơn',
       [OrderStatus.RETURNED]: 'Khách trả hàng',
       [OrderStatus.FAILED]: 'Giao hàng thất bại',
+      [OrderStatus.COMPLETED]: 'Đã hoàn thành',
     };
     return labels[status] || status;
   }
@@ -1058,6 +1064,92 @@ export class OrdersService {
         where: { id: userVoucher.id },
         data: { usedAt: null, orderId: null },
       });
+    }
+  }
+
+  async confirmOrder(userId: string, id: string) {
+    return this.prisma.$transaction(async (tx) => {
+      // tìm đơn hàng theo quyền sở hữu, tránh xác nhận chéo
+      const order = await tx.order.findFirst({
+        where: { id, userId }
+      });
+
+      if (!order) {
+        throw new NotFoundException('Không tìm thấy đơn hàng');
+      }
+
+      // chỉ cho phép xác nhận khi đơn hàng được giao thành công
+      if (order.status !== OrderStatus.DELIVERED) {
+        throw new BadRequestException('Chỉ dược xác nhận đã nhận hàng khi đơn hàng đã được giao thành công');
+      }
+
+      // cập nhận trạng thái đã nhận hàng
+      await tx.order.update({
+        where: { id },
+        data: {
+          status: OrderStatus.COMPLETED
+        }
+      });
+
+      // tracking
+      await tx.orderTracking.create({
+        data: {
+          orderId: order.id,
+          statusLabel: 'Đã nhận hàng thành công',
+          description: `Đơn hàng #${order.id.slice(0, 8)} đã được nhận`
+        }
+      });
+    });
+  }
+
+  // cron job auto confirming order after 3 days
+  @Cron(CronExpression.EVERY_WEEKEND)
+  async handleAutoConfirmOrders() {
+    const daysLimit = 3; // số ngày tối đa chờ KH xác nhận -> sau n ngày sẽ tự xác nhận vào mỗi cuối tuần
+    const thresoldDate = new Date();
+    thresoldDate.setDate(thresoldDate.getDate() - daysLimit);
+
+    // tìm tất cả các đơn hàng được giao thành công, chưa xác nhận quá n ngày
+    const orderToConfirm = await this.prisma.order.findMany({
+      where: {
+        status: OrderStatus.DELIVERED,
+        tracking: {
+          some: {
+            statusLabel: 'Giao hàng thành công',
+            createdAt: { lte: thresoldDate }
+          }
+        }
+      }
+    });
+
+    if (orderToConfirm.length === 0) {
+      return;
+    }
+
+    for (const od of orderToConfirm) {
+      try {
+        await this.prisma.$transaction(async (tx) => {
+          // thực hiện cập nhật trạng thái sang đã nhận
+          await tx.order.update({
+            where: { id: od.id },
+            data: {
+              status: OrderStatus.COMPLETED
+            }
+          });
+
+          // tracking
+          await tx.orderTracking.create({
+            data: {
+              orderId: od.id,
+              statusLabel: 'Hệ thống tự động hoàn tất',
+              description: `Đơn hàng #{${od.id.slice(0, 8)} đã được tự động xác nhận sau ${daysLimit} ngày giao hàng thành công`,
+            }
+          });
+
+          // push noti cho KH
+          this.sendOrderStatusNotification(od.userId, od.id, OrderStatus.COMPLETED);
+        })
+      } catch { }
     }
   }
 }

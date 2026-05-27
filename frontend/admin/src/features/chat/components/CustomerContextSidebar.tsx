@@ -97,7 +97,7 @@ export const CustomerContextSidebar: React.FC<CustomerContextSidebarProps> = ({ 
                         <p className="truncate text-xs font-black text-white">{order.id}</p>
                         <span className={cn(
                           'rounded-full px-2 py-0.5 text-[9px] font-black uppercase',
-                          order.status === 'DELIVERED' ? 'bg-emerald-400/10 text-emerald-200' : 'bg-white/[0.06] text-slate-300'
+                          order.status === 'DELIVERED' || order.status === 'COMPLETED' ? 'bg-emerald-400/10 text-emerald-200' : 'bg-white/[0.06] text-slate-300'
                         )}>
                           {order.status}
                         </span>

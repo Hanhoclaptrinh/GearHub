@@ -187,6 +187,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                       if (currentTab == 'PENDING') {
                         return status == 'PENDING' || status == 'CONFIRMED';
                       }
+                      if (currentTab == 'DELIVERED') {
+                        return status == 'DELIVERED' || status == 'COMPLETED';
+                      }
                       return status == currentTab;
                     }).toList();
 
@@ -638,7 +641,14 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                             ),
                           ),
                       ],
-                      if (status == 'DELIVERED' || status == 'CANCELLED')
+                      if (status == 'DELIVERED')
+                        _buildActionButton(
+                          context,
+                          'Đã nhận hàng',
+                          const Color(0xFF10B981),
+                          () => context.read<OrdersCubit>().confirmReceipt(order['id']),
+                        ),
+                      if (status == 'COMPLETED' || status == 'CANCELLED')
                         _buildActionButton(
                           context,
                           'Mua lại',
@@ -824,6 +834,11 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
         bg = const Color(0xFF10B981).withValues(alpha: 0.15);
         fg = const Color(0xFF10B981);
         text = 'Đã giao';
+        break;
+      case 'COMPLETED':
+        bg = const Color(0xFF10B981).withValues(alpha: 0.15);
+        fg = const Color(0xFF10B981);
+        text = 'Hoàn thành';
         break;
       case 'CANCELLED':
         bg = const Color(0xFFEF4444).withValues(alpha: 0.15);
