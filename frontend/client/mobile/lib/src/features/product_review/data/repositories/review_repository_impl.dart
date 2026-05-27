@@ -59,6 +59,7 @@ class ReviewRepositoryImpl implements ReviewRepository {
     required int rating,
     String? comment,
     List<String>? imagePaths,
+    bool? isAnonymous,
   }) async {
     try {
       final List<File>? images = imagePaths?.map((path) => File(path)).toList();
@@ -67,6 +68,7 @@ class ReviewRepositoryImpl implements ReviewRepository {
         rating: rating.toDouble(),
         comment: comment,
         images: images,
+        isAnonymous: isAnonymous,
       );
       return right(review);
     } catch (e) {

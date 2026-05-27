@@ -40,6 +40,7 @@ class WriteReviewPage extends StatefulWidget {
 class _WriteReviewPageState extends State<WriteReviewPage>
     with TickerProviderStateMixin {
   int _selectedRating = 0;
+  bool _isAnonymous = false;
   final TextEditingController _commentController = TextEditingController();
   final List<XFile> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
@@ -113,6 +114,7 @@ class _WriteReviewPageState extends State<WriteReviewPage>
       rating: _selectedRating,
       comment: _commentController.text.trim(),
       imagePaths: _selectedImages.map((e) => e.path).toList(),
+      isAnonymous: _isAnonymous,
     );
   }
 
@@ -205,6 +207,11 @@ class _WriteReviewPageState extends State<WriteReviewPage>
 
                       // img upload
                       _buildImageSection(),
+
+                      const SizedBox(height: 28),
+
+                      // anonymous switch
+                      _buildAnonymousSection(),
 
                       const SizedBox(height: 28),
 
@@ -667,6 +674,56 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                   ],
                 ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildAnonymousSection() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurfaceAlt,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.borderCardStrong),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            LucideIcons.hatGlasses,
+            size: 20,
+            color: AppColors.textDim,
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Đánh giá ẩn danh',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Tên tài khoản sẽ hiển thị dạng ẩn danh',
+                  style: TextStyle(fontSize: 11, color: AppColors.textDim),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: _isAnonymous,
+            onChanged: (val) {
+              setState(() {
+                _isAnonymous = val;
+              });
+            },
+            activeColor: AppColors.brandIndigo,
+          ),
+        ],
       ),
     );
   }

@@ -309,6 +309,11 @@ export const ReviewList: React.FC = () => {
                               Đã mua hàng
                             </Badge>
                           )}
+                          {review.isAnonymous && (
+                            <Badge variant="warning" className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider shadow-sm shrink-0">
+                              Ẩn danh
+                            </Badge>
+                          )}
                           {review.isHidden && (
                             <Badge variant="danger" className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider shadow-sm shrink-0">
                               Đang bị ẩn

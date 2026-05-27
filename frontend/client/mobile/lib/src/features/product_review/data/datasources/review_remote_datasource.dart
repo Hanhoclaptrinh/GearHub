@@ -34,11 +34,13 @@ class ReviewRemoteDatasource {
     required double rating,
     String? comment,
     List<File>? images,
+    bool? isAnonymous,
   }) async {
     final formData = FormData.fromMap({
       'orderItemId': orderItemId,
       'rating': rating.toInt(),
       if (comment != null) 'comment': comment,
+      if (isAnonymous != null) 'isAnonymous': isAnonymous,
     });
 
     if (images != null && images.isNotEmpty) {

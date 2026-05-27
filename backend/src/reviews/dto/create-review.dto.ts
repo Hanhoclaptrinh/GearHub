@@ -1,4 +1,4 @@
-import { IsInt, IsString, IsOptional, IsUUID, Min, Max, Length } from 'class-validator';
+import { IsInt, IsString, IsOptional, IsUUID, Min, Max, Length, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateReviewDto {
@@ -15,4 +15,9 @@ export class CreateReviewDto {
     @IsOptional()
     @Length(5, 1000)
     comment?: string;
+
+    @Type(() => Boolean)
+    @IsBoolean()
+    @IsOptional()
+    isAnonymous?: boolean;
 }

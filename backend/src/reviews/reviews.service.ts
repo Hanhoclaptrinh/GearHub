@@ -70,7 +70,8 @@ export class ReviewsService {
                     orderItemId,
                     rating,
                     comment,
-                    isVerifiedPurchase: true
+                    isVerifiedPurchase: true,
+                    isAnonymous: data.isAnonymous ?? false
                 }
             });
 
@@ -179,8 +180,21 @@ export class ReviewsService {
                     .join(', ');
             }
 
+            // định dạng trạng thái tài khoản bình luận
+            // ẩn danh / không ẩn danh
+            const formattedUser = review.isAnonymous
+                ? {
+                    id: review.user.id,
+                    profile: {
+                        fullName: 'Người dùng ẩn danh',
+                        avatarUrl: null
+                    }
+                }
+                : review.user;
+
             return {
                 ...review,
+                user: formattedUser,
                 variantName: (review.orderItem?.productVariant as any)?.attributes
                     ? Object.entries((review.orderItem?.productVariant as any).attributes)
                         .map(([key, value]) => `${key}: ${value}`)

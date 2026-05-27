@@ -38,6 +38,7 @@ class ReviewCubit extends Cubit<ReviewState> {
     required int rating,
     String? comment,
     List<String>? imagePaths,
+    bool? isAnonymous,
   }) async {
     emit(ReviewLoading());
     final result = await repository.createReview(
@@ -45,6 +46,7 @@ class ReviewCubit extends Cubit<ReviewState> {
       rating: rating,
       comment: comment,
       imagePaths: imagePaths,
+      isAnonymous: isAnonymous,
     );
 
     result.fold(

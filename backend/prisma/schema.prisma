@@ -423,6 +423,7 @@ model Review {
   reply              String?       @db.Text
   isVerifiedPurchase Boolean       @default(false) @map("is_verified_purchase")
   isHidden           Boolean       @default(false) @map("is_hidden")
+  isAnonymous        Boolean       @default(false) @map("is_anonymous")
   createdAt          DateTime      @default(now()) @map("created_at")
   updatedAt          DateTime      @updatedAt @map("updated_at")
   orderItemId        String?       @unique @map("order_item_id") @db.VarChar(36)

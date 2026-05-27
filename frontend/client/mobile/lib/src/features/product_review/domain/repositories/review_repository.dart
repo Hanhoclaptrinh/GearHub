@@ -10,6 +10,7 @@ abstract class ReviewRepository {
     required int rating,
     String? comment,
     List<String>? imagePaths,
+    bool? isAnonymous,
   });
 
   Future<Either<Failure, ReviewEntity>> updateReview({

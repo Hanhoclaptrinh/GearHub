@@ -201,6 +201,7 @@ export interface Review {
   updatedAt: string;
   orderItemId?: string;
   assets: ReviewAsset[];
+  isAnonymous?: boolean;
   product?: Product;
   user?: User;
   variantName?: string;
