@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -24,6 +25,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
   constructor(
     private prisma: PrismaService,
     private activityLogService: ActivityLogService,
@@ -1103,14 +1105,14 @@ export class OrdersService {
   }
 
   // cron job auto confirming order after 3 days
-  @Cron(CronExpression.EVERY_WEEKEND)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async handleAutoConfirmOrders() {
-    const daysLimit = 3; // số ngày tối đa chờ KH xác nhận -> sau n ngày sẽ tự xác nhận vào mỗi cuối tuần
+    const daysLimit = 3; // số ngày tối đa chờ KH xác nhận -> sau n ngày sẽ tự xác nhận vào mỗi nửa đêm
     const thresoldDate = new Date();
     thresoldDate.setDate(thresoldDate.getDate() - daysLimit);
 
     // tìm tất cả các đơn hàng được giao thành công, chưa xác nhận quá n ngày
-    const orderToConfirm = await this.prisma.order.findMany({
+    const ordersToConfirm = await this.prisma.order.findMany({
       where: {
         status: OrderStatus.DELIVERED,
         tracking: {
@@ -1119,19 +1121,23 @@ export class OrdersService {
             createdAt: { lte: thresoldDate }
           }
         }
+      },
+      select: {
+        id: true,
+        userId: true
       }
     });
 
-    if (orderToConfirm.length === 0) {
+    if (ordersToConfirm.length === 0) {
       return;
     }
 
-    for (const od of orderToConfirm) {
+    for (const od of ordersToConfirm) {
       try {
         await this.prisma.$transaction(async (tx) => {
           // thực hiện cập nhật trạng thái sang đã nhận
-          await tx.order.update({
-            where: { id: od.id },
+          await tx.order.updateMany({
+            where: { id: od.id, status: OrderStatus.DELIVERED },
             data: {
               status: OrderStatus.COMPLETED
             }
@@ -1141,15 +1147,100 @@ export class OrdersService {
           await tx.orderTracking.create({
             data: {
               orderId: od.id,
-              statusLabel: 'Hệ thống tự động hoàn tất',
-              description: `Đơn hàng #{${od.id.slice(0, 8)} đã được tự động xác nhận sau ${daysLimit} ngày giao hàng thành công`,
+              statusLabel: 'Hệ thống tự động xác nhận đã nhận hàng',
+              description: `Đơn hàng #{${od.id.slice(0, 8)} đã được tự động xác nhận sau ${daysLimit} khi giao hàng thành công`,
             }
           });
 
           // push noti cho KH
-          this.sendOrderStatusNotification(od.userId, od.id, OrderStatus.COMPLETED);
+          await this.sendOrderStatusNotification(od.userId, od.id, OrderStatus.COMPLETED);
         })
-      } catch { }
+      } catch (er) {
+        this.logger.error(
+          `Auto confirm delivered order failed orderId=${er.id}`,
+          er instanceof Error ? er.stack : String(er),
+        );
+      }
+    }
+  }
+
+  // cron job thực hiện hủy các đơn hàng chưa thanh toán trong x phút
+  // áp dụng cho cổng thanh toán
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async handleAutoCancelUnpaidOrders() {
+    const timeLimitMinutes = 10;
+    const thresholdTime = new Date(Date.now() - timeLimitMinutes * 60 * 1000);
+
+    // list các đơn hàng cần hủy
+    // đang chờ xác nhận
+    // phương thức thanh toán: cổng tt
+    // chưa được thanh toán thành công - pending
+    // quá 10 phút kể từ lúc khởi tạo đơn hàng
+    const ordersToCancel = await this.prisma.order.findMany({
+      where: {
+        status: OrderStatus.PENDING,
+        paymentMethod: PaymentMethod.PAYMENT_GATEWAY,
+        paymentStatus: PaymentStatus.PENDING,
+        createdAt: { lte: thresholdTime },
+      },
+      include: { items: true },
+    });
+
+    if (ordersToCancel.length === 0) return;
+
+    for (const order of ordersToCancel) {
+      try {
+        await this.prisma.$transaction(async (tx) => {
+          // update hàng loạt các đơn này về trạng thái hủy đơn & thanh toán thất bại
+          await tx.order.updateMany({
+            where: {
+              id: order.id,
+              status: OrderStatus.PENDING,
+              paymentStatus: PaymentStatus.PENDING,
+            },
+            data: {
+              status: OrderStatus.CANCELLED,
+              paymentStatus: PaymentStatus.FAILED,
+            },
+          });
+
+          // hoàn trả voucher nếu có áp dụng
+          await this.rollbackPromotion(order.id, order.userId, tx);
+
+          // hoàn kho cho từng item trong đơn
+          for (const item of order.items) {
+            await this.inventoriesService.adjustStock({
+              variantId: item.productVariantId,
+              type: InventoryTransactionType.ORDER_CANCEL,
+              quantity: item.quantity,
+              reason: `Tự động hoàn kho từ đơn hàng quá hạn thanh toán #${order.id.slice(0, 8)}`,
+              referenceId: order.id,
+              tx,
+            });
+          }
+
+          // tracking
+          await tx.orderTracking.create({
+            data: {
+              orderId: order.id,
+              statusLabel: 'Tự động hủy đơn',
+              description: `Đơn hàng tự động bị hủy do quá hạn thanh toán ${timeLimitMinutes} phút`,
+            },
+          });
+        });
+
+        // gửi push noti tới KH
+        await this.sendOrderStatusNotification(
+          order.userId,
+          order.id,
+          OrderStatus.CANCELLED,
+        );
+      } catch (er) {
+        this.logger.error(
+          `Auto cancel unpaid order failed orderId=${order.id}`,
+          er instanceof Error ? er.stack : String(er),
+        );
+      }
     }
   }
 }
