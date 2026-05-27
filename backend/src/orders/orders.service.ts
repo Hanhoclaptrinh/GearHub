@@ -875,7 +875,7 @@ export class OrdersService {
       }
 
       // chỉ cho phép mua lại với các đơn hàng đã hoàn tất chu kỳ
-      if (!['DELIVERED', 'CANCELLED'].includes(oldOrder.status)) {
+      if (!['DELIVERED', 'COMPLETED', 'CANCELLED'].includes(oldOrder.status)) {
         throw new BadRequestException(
           'Chỉ có thể mua lại đơn hàng đã giao hoặc đã hủy',
         );

@@ -7,20 +7,35 @@ import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/theme/app_colors.dart';
+import 'package:vietnam_provinces/vietnam_provinces.dart';
 
 class EditAddressPage extends StatefulWidget {
   final String initialName;
   final String initialPhone;
-  final String initialAddress;
+  final String? initialProvince;
+  final String? initialDistrict;
+  final String? initialWard;
+  final String? initialDetail;
   final bool initialSaveAsDefault;
-  final Function(String name, String phone, String address, bool saveAsDefault)
+  final Function(
+    String name,
+    String phone,
+    String province,
+    String district,
+    String ward,
+    String detail,
+    bool saveAsDefault,
+  )
   onSave;
 
   const EditAddressPage({
     super.key,
     required this.initialName,
     required this.initialPhone,
-    required this.initialAddress,
+    this.initialProvince,
+    this.initialDistrict,
+    this.initialWard,
+    this.initialDetail,
     required this.initialSaveAsDefault,
     required this.onSave,
   });
@@ -32,40 +47,167 @@ class EditAddressPage extends StatefulWidget {
 class _EditAddressPageState extends State<EditAddressPage> {
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
-  late TextEditingController _addressController;
   late TextEditingController _detailedAddressController;
   late bool _saveAsDefault;
   InAppWebViewController? _webViewController;
+
+  Province? _selectedProvince;
+  District? _selectedDistrict;
+  Ward? _selectedWard;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.initialName);
     _phoneController = TextEditingController(text: widget.initialPhone);
-
-    if (widget.initialAddress.contains(',')) {
-      final parts = widget.initialAddress.split(',');
-      _detailedAddressController = TextEditingController(text: parts[0].trim());
-      _addressController = TextEditingController(
-        text: parts.sublist(1).join(',').trim(),
-      );
-    } else {
-      _detailedAddressController = TextEditingController();
-      _addressController = TextEditingController(text: widget.initialAddress);
-    }
-
+    _detailedAddressController = TextEditingController(
+      text: widget.initialDetail ?? '',
+    );
     _saveAsDefault = widget.initialSaveAsDefault;
+
+    _initializeAddressDivisions();
+  }
+
+  void _initializeAddressDivisions() {
+    final provinceName = widget.initialProvince?.trim();
+    if (provinceName != null && provinceName.isNotEmpty) {
+      try {
+        final provinces = VietnamProvinces.getProvinces();
+        _selectedProvince = provinces.firstWhere(
+          (p) => p.name.trim().toLowerCase() == provinceName.toLowerCase(),
+        );
+
+        final districtName = widget.initialDistrict?.trim();
+        if (districtName != null && districtName.isNotEmpty) {
+          final districts = VietnamProvinces.getDistricts(
+            provinceCode: _selectedProvince!.code,
+          );
+          _selectedDistrict = districts.firstWhere(
+            (d) => d.name.trim().toLowerCase() == districtName.toLowerCase(),
+          );
+
+          final wardName = widget.initialWard?.trim();
+          if (wardName != null && wardName.isNotEmpty) {
+            final wards = VietnamProvinces.getWards(
+              provinceCode: _selectedProvince!.code,
+              districtCode: _selectedDistrict!.code,
+            );
+            _selectedWard = wards.firstWhere(
+              (w) => w.name.trim().toLowerCase() == wardName.toLowerCase(),
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('Error matching initial address divisions: $e');
+      }
+    }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _addressController.dispose();
     _detailedAddressController.dispose();
     super.dispose();
   }
 
+  String _normalize(String name) {
+    return name
+        .toLowerCase()
+        .replaceAll(
+          RegExp(
+            r'^(thành phố|tỉnh|quận|huyện|thị xã|phường|xã|thị trấn|phố)\s+',
+          ),
+          '',
+        )
+        .trim();
+  }
+
+  Province? _findProvince(String part) {
+    final provinces = VietnamProvinces.getProvinces();
+    final normPart = _normalize(part);
+    for (var p in provinces) {
+      if (_normalize(p.name) == normPart ||
+          p.name.toLowerCase().contains(normPart) ||
+          normPart.contains(_normalize(p.name))) {
+        return p;
+      }
+    }
+    return null;
+  }
+
+  District? _findDistrict(Province province, String part) {
+    final districts = VietnamProvinces.getDistricts(
+      provinceCode: province.code,
+    );
+    final normPart = _normalize(part);
+    for (var d in districts) {
+      if (_normalize(d.name) == normPart ||
+          d.name.toLowerCase().contains(normPart) ||
+          normPart.contains(_normalize(d.name))) {
+        return d;
+      }
+    }
+    return null;
+  }
+
+  Ward? _findWard(Province province, District district, String part) {
+    final wards = VietnamProvinces.getWards(
+      provinceCode: province.code,
+      districtCode: district.code,
+    );
+    final normPart = _normalize(part);
+    for (var w in wards) {
+      if (_normalize(w.name) == normPart ||
+          w.name.toLowerCase().contains(normPart) ||
+          normPart.contains(_normalize(w.name))) {
+        return w;
+      }
+    }
+    return null;
+  }
+
+  void _parseGeocodedAddress(String address) {
+    if (address.isEmpty) return;
+
+    try {
+      final parts = address.split(',').map((p) => p.trim()).toList();
+      if (parts.isNotEmpty && parts.last.toLowerCase() == 'việt nam') {
+        parts.removeLast();
+      }
+
+      if (parts.length < 3) {
+        _detailedAddressController.text = parts.join(', ');
+        return;
+      }
+
+      final provincePart = parts.removeLast();
+      final districtPart = parts.removeLast();
+      final wardPart = parts.removeLast();
+
+      final province = _findProvince(provincePart);
+      if (province != null) {
+        final district = _findDistrict(province, districtPart);
+        if (district != null) {
+          final ward = _findWard(province, district, wardPart);
+          setState(() {
+            _selectedProvince = province;
+            _selectedDistrict = district;
+            _selectedWard = ward;
+            _detailedAddressController.text = parts.join(', ');
+          });
+          return;
+        }
+      }
+
+      _detailedAddressController.text = address;
+    } catch (e) {
+      debugPrint('Error parsing geocoded address: $e');
+      _detailedAddressController.text = address;
+    }
+  }
+
+  // --- API Geocoding ---
   Future<String> _reverseGeocode(double lat, double lng) async {
     try {
       final dio = dio_pkg.Dio();
@@ -116,15 +258,189 @@ class _EditAddressPageState extends State<EditAddressPage> {
     return null;
   }
 
+  void _syncDropdownsToMap() async {
+    if (_selectedProvince == null) return;
+
+    final searchBuffer = [
+      if (_selectedWard != null) _selectedWard!.name,
+      if (_selectedDistrict != null) _selectedDistrict!.name,
+      _selectedProvince!.name,
+    ];
+
+    final searchStr = searchBuffer.join(', ');
+    final coords = await _forwardGeocode(searchStr);
+    if (coords != null && _webViewController != null) {
+      _webViewController?.evaluateJavascript(
+        source: 'window.updatePin(${coords['lat']}, ${coords['lng']});',
+      );
+    }
+  }
+
+  void _showSearchSelectorSheet<T>({
+    required String title,
+    required List<T> items,
+    required String Function(T item) getName,
+    required ValueChanged<T> onSelect,
+  }) {
+    String searchQ = '';
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final filteredItems = items
+                .where(
+                  (item) => getName(
+                    item,
+                  ).toLowerCase().contains(searchQ.toLowerCase()),
+                )
+                .toList();
+
+            final bottomPadding = MediaQuery.of(context).padding.bottom;
+            final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.7,
+              margin: EdgeInsets.only(bottom: keyboardHeight),
+              decoration: const BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(28),
+                  topRight: Radius.circular(28),
+                ),
+                border: Border(
+                  top: BorderSide(
+                    color: AppColors.borderCardStrong,
+                    width: 0.5,
+                  ),
+                ),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  // Handle bar
+                  Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.textDim.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Search box
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.cardSurfaceAltAlt,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.borderCardStrong,
+                          width: 0.5,
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: TextField(
+                        autofocus: true,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 14,
+                        ),
+                        decoration: const InputDecoration(
+                          hintText: 'Tìm kiếm nhanh...',
+                          hintStyle: TextStyle(
+                            color: AppColors.textDim,
+                            fontSize: 13,
+                          ),
+                          border: InputBorder.none,
+                          icon: Icon(
+                            LucideIcons.search,
+                            size: 16,
+                            color: AppColors.textDim,
+                          ),
+                        ),
+                        onChanged: (val) {
+                          setModalState(() {
+                            searchQ = val;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // List
+                  Expanded(
+                    child: ListView.builder(
+                      physics: const BouncingScrollPhysics(),
+                      padding: EdgeInsets.fromLTRB(
+                        20,
+                        0,
+                        20,
+                        20 + bottomPadding,
+                      ),
+                      itemCount: filteredItems.length,
+                      itemBuilder: (context, index) {
+                        final item = filteredItems[index];
+                        final name = getName(item);
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          title: Text(
+                            name,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          trailing: const Icon(
+                            Icons.chevron_right_rounded,
+                            size: 16,
+                            color: AppColors.textDim,
+                          ),
+                          onTap: () {
+                            onSelect(item);
+                            Navigator.pop(context);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _handleSave() {
     if (_nameController.text.trim().isEmpty ||
-        _addressController.text.trim().isEmpty) {
+        _phoneController.text.trim().isEmpty ||
+        _selectedProvince == null ||
+        _selectedDistrict == null ||
+        _selectedWard == null ||
+        _detailedAddressController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           behavior: SnackBarBehavior.floating,
           backgroundColor: AppColors.accentPink,
           content: Text(
-            'Vui lòng nhập đủ thông tin.',
+            'Vui lòng nhập và chọn đủ thông tin địa chỉ.',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
           ),
         ),
@@ -132,14 +448,13 @@ class _EditAddressPageState extends State<EditAddressPage> {
       return;
     }
 
-    String finalAddress = _detailedAddressController.text.trim().isNotEmpty
-        ? "${_detailedAddressController.text.trim()}, ${_addressController.text.trim()}"
-        : _addressController.text.trim();
-
     widget.onSave(
       _nameController.text.trim(),
       _phoneController.text.trim(),
-      finalAddress,
+      _selectedProvince!.name,
+      _selectedDistrict!.name,
+      _selectedWard!.name,
+      _detailedAddressController.text.trim(),
       _saveAsDefault,
     );
     Navigator.pop(context);
@@ -206,41 +521,73 @@ class _EditAddressPageState extends State<EditAddressPage> {
 
                       const SizedBox(height: 28),
 
-                      const _SectionLabel(text: "ĐỊA CHỈ"),
+                      const _SectionLabel(text: "ĐỊA CHỈ GIAO HÀNG"),
                       const SizedBox(height: 10),
-                      _buildTextField(
-                        _addressController,
-                        "Tìm kiếm hoặc chọn trên bản đồ",
-                        LucideIcons.mapPin,
-                        maxLines: 2,
-                        onSubmitted: (val) async {
-                          if (val.trim().isNotEmpty) {
-                            final coords = await _forwardGeocode(val.trim());
-                            if (coords != null) {
-                              _webViewController?.evaluateJavascript(
-                                source:
-                                    'window.updatePin(${coords['lat']}, ${coords['lng']});',
-                              );
-                            }
-                          }
+                      _buildSelector(
+                        label: _selectedProvince?.name ?? '',
+                        hint: "Tỉnh / Thành phố",
+                        icon: LucideIcons.map,
+                        onTap: () {
+                          final provinces = VietnamProvinces.getProvinces();
+                          _showSearchSelectorSheet<Province>(
+                            title: "Chọn Tỉnh / Thành phố",
+                            items: provinces,
+                            getName: (p) => p.name,
+                            onSelect: (p) {
+                              setState(() {
+                                _selectedProvince = p;
+                                _selectedDistrict = null;
+                                _selectedWard = null;
+                              });
+                              _syncDropdownsToMap();
+                            },
+                          );
                         },
-                        onChanged: (val) {
-                          Timer? addressDebounce;
-                          addressDebounce;
-                          addressDebounce = Timer(
-                            const Duration(milliseconds: 1000),
-                            () async {
-                              if (val.trim().isNotEmpty) {
-                                final coords = await _forwardGeocode(
-                                  val.trim(),
-                                );
-                                if (coords != null) {
-                                  _webViewController?.evaluateJavascript(
-                                    source:
-                                        'window.updatePin(${coords['lat']}, ${coords['lng']});',
-                                  );
-                                }
-                              }
+                      ),
+                      const SizedBox(height: 10),
+                      _buildSelector(
+                        label: _selectedDistrict?.name ?? '',
+                        hint: "Quận / Huyện",
+                        icon: LucideIcons.mapPin,
+                        enabled: _selectedProvince != null,
+                        onTap: () {
+                          final districts = VietnamProvinces.getDistricts(
+                            provinceCode: _selectedProvince!.code,
+                          );
+                          _showSearchSelectorSheet<District>(
+                            title: "Chọn Quận / Huyện",
+                            items: districts,
+                            getName: (d) => d.name,
+                            onSelect: (d) {
+                              setState(() {
+                                _selectedDistrict = d;
+                                _selectedWard = null;
+                              });
+                              _syncDropdownsToMap();
+                            },
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      _buildSelector(
+                        label: _selectedWard?.name ?? '',
+                        hint: "Phường / Xã",
+                        icon: LucideIcons.navigation,
+                        enabled: _selectedDistrict != null,
+                        onTap: () {
+                          final wards = VietnamProvinces.getWards(
+                            provinceCode: _selectedProvince!.code,
+                            districtCode: _selectedDistrict!.code,
+                          );
+                          _showSearchSelectorSheet<Ward>(
+                            title: "Chọn Phường / Xã",
+                            items: wards,
+                            getName: (w) => w.name,
+                            onSelect: (w) {
+                              setState(() {
+                                _selectedWard = w;
+                              });
+                              _syncDropdownsToMap();
                             },
                           );
                         },
@@ -248,14 +595,15 @@ class _EditAddressPageState extends State<EditAddressPage> {
                       const SizedBox(height: 10),
                       _buildTextField(
                         _detailedAddressController,
-                        "Số nhà, tên tòa nhà, phòng...",
+                        "Số nhà, ngõ, tên đường...",
                         LucideIcons.house,
                       ),
 
                       const SizedBox(height: 16),
 
+                      // Interactive Dark Map View
                       Container(
-                        height: 240,
+                        height: 220,
                         width: double.infinity,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
@@ -294,17 +642,22 @@ class _EditAddressPageState extends State<EditAddressPage> {
                                           lng,
                                         );
                                         if (mounted) {
-                                          setState(() {
-                                            _addressController.text = address;
-                                          });
+                                          _parseGeocodedAddress(address);
                                         }
                                       },
                                     );
                                   },
                                 );
+
+                                // Pan to initial location if available
+                                Future.delayed(
+                                  const Duration(milliseconds: 1200),
+                                  () {
+                                    _syncDropdownsToMap();
+                                  },
+                                );
                               },
                             ),
-                            // map overlay hint
                             Positioned(
                               bottom: 12,
                               left: 12,
@@ -333,7 +686,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
                                     ),
                                     SizedBox(width: 6),
                                     Text(
-                                      'Kéo để chọn vị trí',
+                                      'Kéo bản đồ để ghim vị trí',
                                       style: TextStyle(
                                         fontSize: 10,
                                         color: AppColors.slate400,
@@ -348,7 +701,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
                         ),
                       ),
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 24),
 
                       GestureDetector(
                         onTap: () {
@@ -471,8 +824,6 @@ class _EditAddressPageState extends State<EditAddressPage> {
     IconData icon, {
     int maxLines = 1,
     TextInputType? keyboardType,
-    ValueChanged<String>? onSubmitted,
-    ValueChanged<String>? onChanged,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -485,24 +836,10 @@ class _EditAddressPageState extends State<EditAddressPage> {
         controller: controller,
         maxLines: maxLines,
         keyboardType: keyboardType,
-        onSubmitted: onSubmitted,
-        onChanged: onChanged,
         style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
-        textInputAction: onSubmitted != null
-            ? TextInputAction.search
-            : TextInputAction.next,
+        textInputAction: TextInputAction.next,
         decoration: InputDecoration(
           icon: Icon(icon, size: 18, color: AppColors.textDim),
-          suffixIcon: onSubmitted != null
-              ? IconButton(
-                  icon: const Icon(
-                    LucideIcons.search,
-                    size: 16,
-                    color: AppColors.champagne,
-                  ),
-                  onPressed: () => onSubmitted(controller.text),
-                )
-              : null,
           hintText: hint,
           hintStyle: const TextStyle(color: AppColors.textDim, fontSize: 13),
           border: InputBorder.none,
@@ -512,54 +849,100 @@ class _EditAddressPageState extends State<EditAddressPage> {
     );
   }
 
+  Widget _buildSelector({
+    required String label,
+    required String hint,
+    required IconData icon,
+    required VoidCallback onTap,
+    bool enabled = true,
+  }) {
+    return Opacity(
+      opacity: enabled ? 1.0 : 0.5,
+      child: GestureDetector(
+        onTap: enabled ? onTap : null,
+        child: Container(
+          height: 56,
+          decoration: BoxDecoration(
+            color: AppColors.cardSurfaceAltAlt,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.borderCardStrong, width: 0.5),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: AppColors.textDim),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  label.isNotEmpty ? label : hint,
+                  style: TextStyle(
+                    color: label.isNotEmpty
+                        ? AppColors.textPrimary
+                        : AppColors.textDim,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 18,
+                color: AppColors.textDim,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   static const _mapHtml = """
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <style>
-    body { margin: 0; padding: 0; background: #0A0A10; position: relative; }
-    #map { height: 100vh; width: 100vw; }
-    .center-pin {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -100%);
-      z-index: 1000;
-      pointer-events: none;
-    }
-    .leaflet-control-attribution { display: none !important; }
-  </style>
-</head>
-<body>
-  <div class="center-pin">
-    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="#F59E0B" stroke="#0A0A10" stroke-width="2"/>
-      <circle cx="12" cy="9" r="3" fill="#0A0A10"/>
-    </svg>
-  </div>
-  <div id="map"></div>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-    var map = L.map('map', { zoomControl: false }).setView([21.028511, 105.804817], 14);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19
-    }).addTo(map);
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+      <style>
+        body { margin: 0; padding: 0; background: #0A0A10; position: relative; }
+        #map { height: 100vh; width: 100vw; }
+        .center-pin {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -100%);
+          z-index: 1000;
+          pointer-events: none;
+        }
+        .leaflet-control-attribution { display: none !important; }
+      </style>
+    </head>
+    <body>
+      <div class="center-pin">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="#F59E0B" stroke="#0A0A10" stroke-width="2"/>
+          <circle cx="12" cy="9" r="3" fill="#0A0A10"/>
+        </svg>
+      </div>
+      <div id="map"></div>
+      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+      <script>
+        var map = L.map('map', { zoomControl: false }).setView([21.028511, 105.804817], 14);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          maxZoom: 19
+        }).addTo(map);
 
-    map.on('moveend', function() {
-      var center = map.getCenter();
-      window.flutter_inappwebview.callHandler('onLocationChange', center.lat, center.lng);
-    });
+        map.on('moveend', function() {
+          var center = map.getCenter();
+          window.flutter_inappwebview.callHandler('onLocationChange', center.lat, center.lng);
+        });
 
-    window.updatePin = function(lat, lng) {
-      map.setView(new L.LatLng(lat, lng), 15);
-    };
-  </script>
-</body>
-</html>
-""";
+        window.updatePin = function(lat, lng) {
+          map.setView(new L.LatLng(lat, lng), 15);
+        };
+      </script>
+    </body>
+    </html>
+    """;
 }
 
 class _SectionLabel extends StatelessWidget {

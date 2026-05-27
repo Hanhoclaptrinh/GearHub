@@ -51,37 +51,19 @@ class _AddressesPageState extends State<AddressesPage> {
         builder: (_) => EditAddressPage(
           initialName: address?.fullName ?? '',
           initialPhone: address?.phone ?? '',
-          initialAddress: address != null
-              ? "${address.detail}, ${address.ward}, ${address.district}, ${address.province}"
-              : '',
+          initialProvince: address?.province,
+          initialDistrict: address?.district,
+          initialWard: address?.ward,
+          initialDetail: address?.detail,
           initialSaveAsDefault: address?.isDefault ?? false,
-          onSave: (name, phone, fullAddress, saveAsDefault) {
-            String detail = '';
-            String ward = '';
-            String district = '';
-            String province = '';
-
-            final parts = fullAddress.split(',');
-            if (parts.length >= 4) {
-              detail = parts[0].trim();
-              ward = parts[1].trim();
-              district = parts[2].trim();
-              province = parts.sublist(3).join(',').trim();
-            } else if (parts.length == 3) {
-              detail = parts[0].trim();
-              ward = parts[1].trim();
-              district = parts[2].trim();
-            } else {
-              detail = fullAddress;
-            }
-
+          onSave: (name, phone, province, district, ward, detail, saveAsDefault) {
             if (address == null) {
               _addressCubit.createAddress(
                 fullName: name,
                 phone: phone,
-                province: province.isEmpty ? 'Chưa xác định' : province,
-                district: district.isEmpty ? 'Chưa xác định' : district,
-                ward: ward.isEmpty ? 'Chưa xác định' : ward,
+                province: province,
+                district: district,
+                ward: ward,
                 detail: detail,
                 isDefault: saveAsDefault,
               );
@@ -90,9 +72,9 @@ class _AddressesPageState extends State<AddressesPage> {
                 id: address.id,
                 fullName: name,
                 phone: phone,
-                province: province.isEmpty ? 'Chưa xác định' : province,
-                district: district.isEmpty ? 'Chưa xác định' : district,
-                ward: ward.isEmpty ? 'Chưa xác định' : ward,
+                province: province,
+                district: district,
+                ward: ward,
                 detail: detail,
                 isDefault: saveAsDefault,
               );

@@ -11,11 +11,13 @@ import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 import 'package:mobile/src/features/notifications/presentation/state/notification_cubit.dart';
 import 'package:mobile/src/features/wishlist/presentation/state/wishlist_cubit.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:vietnam_provinces/vietnam_provinces.dart';
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await VietnamProvinces.initialize(version: AdministrativeDivisionVersion.v1);
   await setupDependencies();
 
   SystemChrome.setSystemUIOverlayStyle(
