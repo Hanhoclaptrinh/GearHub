@@ -219,18 +219,27 @@ export class PaymentService {
         return { success: true, message: 'Hoàn tiền thành công', data: refundRes };
     }
 
+    /**
+     * xử lý callback chuyển hướng từ vnpay sau khi người dùng thực hiện thanh toán
+     * 
+     * thực hiện xác thực chữ ký bảo mật (checksum) từ vnpay, kiểm tra mã đơn hàng
+     * và tiến hành cập nhật trạng thái thanh toán để hiển thị kết quả trên giao diện client
+     */
     async processVnpayReturn(query: any) {
         try {
+            // xác thực chữ ký bảo mật (secure hash) của dữ liệu callback trả về từ vnpay
             const isValid = await this.vnpayGateway.verifyReturn(query);
             if (!isValid) {
                 return { success: false, message: 'Chữ ký không hợp lệ' };
             }
 
+            // trích xuất mã đơn hàng (vnp_TxnRef) để kiểm tra sự tồn tại của giao dịch
             const orderId = query['vnp_TxnRef'];
             if (!orderId) {
                 return { success: false, message: 'Thiếu thông tin đơn hàng' };
             }
 
+            // tiến hành xác nhận và cập nhật trạng thái đơn hàng
             return await this.confirmPayment(query);
         } catch (error) {
             this.logger.error(`Error in vnpayReturn: ${error.message}`, error.stack);
@@ -238,37 +247,54 @@ export class PaymentService {
         }
     }
 
+    /**
+     * xử lý webhook Instant Payment Notification (IPN) từ vnpay gửi đến (server-to-server)
+     * 
+     * dùng để cập nhật trạng thái đơn hàng tự động ngay cả khi người dùng
+     * tắt trình duyệt khi đang thanh toán. Hàm này tuân thủ quy chuẩn kiểm tra bảo mật của vnpay:
+     * xác thực chữ ký bảo mật (checksum) để tránh dữ liệu bị thay đổi trên đường truyền
+     * kiểm tra sự tồn tại của mã đơn hàng (vnp_TxnRef) trong hệ thống database
+     * so khớp số tiền thanh toán thực tế nhận từ vnpay với giá trị đơn hàng được lưu trong hệ thống (x100)
+     * kiểm tra trạng thái đơn hàng hiện tại để tránh việc cập nhật trùng lặp
+     * tiến hành lưu và cập nhật kết quả thanh toán
+     */
     async processVnpayIpn(query: any) {
         try {
+            // xác thực chữ ký bảo mật (checksum) của vnpay để đảm bảo gói tin toàn vẹn và đến từ nguồn tin cậy
             const isValid = await this.vnpayGateway.verifyReturn(query);
             if (!isValid) {
                 return { RspCode: '97', Message: 'Chữ ký không hợp lệ' };
             }
 
             const orderId = query['vnp_TxnRef'];
-            const responseCode = query['vnp_ResponseCode'];
             const vnpAmount = Number(query['vnp_Amount']);
 
+            // kiểm tra sự hiện diện của mã đơn hàng nhận từ webhook
             if (!orderId) {
                 return { RspCode: '01', Message: 'Đơn hàng không tồn tại' };
             }
 
+            // truy vấn đơn hàng từ db để đối chiếu thông tin
             const order = await this.prisma.order.findUnique({
                 where: { id: orderId },
             });
 
+            // đảm bảo đơn hàng thực sự tồn tại trong hệ thống
             if (!order) {
                 return { RspCode: '01', Message: 'Đơn hàng không tồn tại' };
             }
 
+            // kiểm tra số tiền: số tiền vnpay gửi về = tiền gốc * 100
             if (Math.floor(Number(order.totalAmount) * 100) !== vnpAmount) {
                 return { RspCode: '04', Message: 'Số tiền thanh toán không khớp' };
             }
 
+            // kiểm tra trạng thái: tránh cập nhật đè khi đơn hàng đã được xử lý thanh toán trước đó
             if (order.paymentStatus === PaymentStatus.PAID) {
                 return { RspCode: '02', Message: 'Đơn hàng đã được thanh toán' };
             }
 
+            // thực hiện cập nhật trạng thái đơn hàng, trừ kho, áp dụng voucher...
             const result = await this.confirmPayment(query);
             if (result.success) {
                 return { RspCode: '00', Message: 'Thanh toán thành công' };

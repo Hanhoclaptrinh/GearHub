@@ -344,8 +344,9 @@ export class PromotionService {
         });
     }
 
-    async validateVoucherForCheckout(userId: string, voucherId: string, subtotal: number) {
-        const userVoucher = await this.prisma.userVoucher.findUnique({
+    async validateVoucherForCheckout(userId: string, voucherId: string, subtotal: number, tx?: Prisma.TransactionClient) {
+        const prismaClient = tx || this.prisma;
+        const userVoucher = await prismaClient.userVoucher.findUnique({
             where: {
                 userId_voucherId: { userId, voucherId }
             },

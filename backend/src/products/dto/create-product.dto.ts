@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, IsBooleanString } from 'class-validator';
+import { IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, IsBooleanString, Matches } from 'class-validator';
 
 export class CreateProductDto {
     @IsString()
@@ -16,12 +16,12 @@ export class CreateProductDto {
     @IsOptional()
     sku?: string;
 
-    @IsNumberString({}, { message: 'Giá phải là một dãy số' })
     @IsOptional()
+    @Matches(/^\d+(\.\d+)?$/, { message: 'Giá phải là số dương hoặc 0' })
     price?: string;
 
-    @IsNumberString()
     @IsOptional()
+    @Matches(/^\d+$/, { message: 'Số lượng kho phải là số nguyên dương hoặc 0' })
     stock?: string;
 
     @IsOptional()

@@ -638,7 +638,11 @@ export class ProductsService {
 
         const publicId = asset.url.split('/').pop()?.split('.')[0];
         if (publicId) {
-            await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);
+            try {
+                await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);
+            } catch (cloudinaryError) {
+                console.error('Không thể xóa file asset trên Cloudinary:', cloudinaryError);
+            }
         }
 
         const productId = asset.productId;

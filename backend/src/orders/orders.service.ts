@@ -103,6 +103,7 @@ export class OrdersService {
           userId,
           voucherId,
           subtotal,
+          tx,
         );
         voucherDiscount = this.promotionService.calculateVoucherDiscount(
           voucher,

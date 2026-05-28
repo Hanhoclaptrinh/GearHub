@@ -1,13 +1,16 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   Min,
   ValidateNested,
 } from 'class-validator';
+import { PaymentMethod } from '@prisma/client';
 
 class OrderItemDto {
   @IsString()
@@ -27,6 +30,7 @@ export class CreateOrderDto {
 
   @IsString()
   @IsNotEmpty()
+  @Matches(/^(84|0[3|5|7|8|9])+([0-9]{8})$/, { message: 'Số điện thoại nhận hàng không hợp lệ' })
   receiverPhone: string;
 
   @IsString()
@@ -37,9 +41,9 @@ export class CreateOrderDto {
   @IsOptional()
   note?: string;
 
-  @IsString()
+  @IsEnum(PaymentMethod, { message: 'Phương thức thanh toán phải là COD hoặc PAYMENT_GATEWAY' })
   @IsOptional()
-  paymentMethod?: any;
+  paymentMethod?: PaymentMethod;
 
   @IsArray()
   @ValidateNested({ each: true })

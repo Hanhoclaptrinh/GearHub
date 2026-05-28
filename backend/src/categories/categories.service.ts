@@ -117,8 +117,12 @@ export class CategoriesService {
 
         if (file) {
             if (category.iconUrl) {
-                const publicId = category.iconUrl.split('/').pop()?.split('.')[0];
-                if (publicId) await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);
+                try {
+                    const publicId = category.iconUrl.split('/').pop()?.split('.')[0];
+                    if (publicId) await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);
+                } catch (cloudinaryError) {
+                    console.error('Không thể xóa icon cũ trên Cloudinary:', cloudinaryError);
+                }
             }
 
             const uploadResult = await this.cloudinaryService.uploadFile(file);
@@ -148,8 +152,12 @@ export class CategoriesService {
         }
 
         if (category.iconUrl) {
-            const publicId = category.iconUrl.split('/').pop()?.split('.')[0];
-            if (publicId) await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);
+            try {
+                const publicId = category.iconUrl.split('/').pop()?.split('.')[0];
+                if (publicId) await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);
+            } catch (cloudinaryError) {
+                console.error('Không thể xóa icon cũ trên Cloudinary:', cloudinaryError);
+            }
         }
 
         return this.prisma.category.delete({ where: { id } });
