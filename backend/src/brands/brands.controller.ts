@@ -1,7 +1,7 @@
 import {
   Controller, Get, Post, Body, Patch, Param, Delete,
   UseGuards, UseInterceptors, UploadedFile, ParseFilePipe,
-  MaxFileSizeValidator, FileTypeValidator
+  MaxFileSizeValidator, FileTypeValidator, Query
 } from '@nestjs/common';
 import { BrandsService } from './brands.service';
 import { CreateBrandDto } from './dto/create-brand.dto';
@@ -19,8 +19,14 @@ export class BrandsController {
   constructor(private brandsService: BrandsService) { }
 
   @Get()
-  async getAllBrands() {
-    return this.brandsService.getAllBrands();
+  async getAllBrands(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+  ) {
+    const pageNum = page ? parseInt(page, 10) : undefined;
+    const limitNum = limit ? parseInt(limit, 10) : undefined;
+    return this.brandsService.getAllBrands(pageNum, limitNum, search);
   }
 
   @Get('top-brands')

@@ -2,8 +2,13 @@ import api from './api';
 import type { Brand } from '../types';
 
 export const brandService = {
-  async getAllBrands() {
-    const { data } = await api.get<Brand[]>('/brands');
+  async getAllBrands(page?: number, limit?: number, search?: string) {
+    const params: any = {};
+    if (page !== undefined) params.page = page;
+    if (limit !== undefined) params.limit = limit;
+    if (search !== undefined) params.search = search;
+
+    const { data } = await api.get('/brands', { params });
     return data;
   },
 

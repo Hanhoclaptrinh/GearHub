@@ -30,6 +30,7 @@ import type { Brand } from '../../types';
 
 export const BrandList: React.FC = () => {
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -37,10 +38,20 @@ export const BrandList: React.FC = () => {
 
   const queryClient = useQueryClient();
 
-  const { data: brands, isLoading, isError } = useQuery({
-    queryKey: ['brands'],
-    queryFn: brandService.getAllBrands,
+  // 1. Fetch full list for stats cards to keep statistics accurate
+  const { data: allBrands } = useQuery({
+    queryKey: ['brands-all'],
+    queryFn: () => brandService.getAllBrands(),
   });
+
+  // 2. Fetch paginated list for the table
+  const { data: paginatedData, isLoading, isError } = useQuery({
+    queryKey: ['brands', currentPage, search],
+    queryFn: () => brandService.getAllBrands(currentPage, 10, search),
+  });
+
+  const brands = paginatedData?.data || [];
+  const meta = paginatedData?.meta;
 
   const createMutation = useMutation({
     mutationFn: (formData: FormData) => brandService.createBrand(formData),
@@ -89,9 +100,7 @@ export const BrandList: React.FC = () => {
     }
   });
 
-  const filteredBrands = brands?.filter((b: Brand) =>
-    b.name.toLowerCase().includes(search.toLowerCase())
-  ) || [];
+  const filteredBrands = brands || [];
 
   const openModal = (brand?: Brand) => {
     if (brand) setEditingBrand(brand);
@@ -112,10 +121,10 @@ export const BrandList: React.FC = () => {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
-          { label: 'Tổng thương hiệu', value: brands?.length || 0, icon: LayoutGrid, color: 'slate', trend: 'Hệ sinh thái' },
-          { label: 'Đang hoạt động', value: brands?.filter((b: Brand) => b.isActive).length || 0, icon: CheckCircle2, color: 'green', trend: 'Sẵn sàng' },
-          { label: 'Tạm ngưng', value: brands?.filter((b: Brand) => !b.isActive).length || 0, icon: EyeOff, color: 'orange', trend: 'Lưu trữ' },
-          { label: 'Tổng sản phẩm', value: brands?.reduce((acc: number, curr: Brand) => acc + (curr._count?.products || 0), 0) || 0, icon: Package, color: 'blue', trend: 'Sản lượng' }
+          { label: 'Tổng thương hiệu', value: allBrands?.length || 0, icon: LayoutGrid, color: 'slate', trend: 'Hệ sinh thái' },
+          { label: 'Đang hoạt động', value: allBrands?.filter((b: Brand) => b.isActive).length || 0, icon: CheckCircle2, color: 'green', trend: 'Sẵn sàng' },
+          { label: 'Tạm ngưng', value: allBrands?.filter((b: Brand) => !b.isActive).length || 0, icon: EyeOff, color: 'orange', trend: 'Lưu trữ' },
+          { label: 'Tổng sản phẩm', value: allBrands?.reduce((acc: number, curr: Brand) => acc + (curr._count?.products || 0), 0) || 0, icon: Package, color: 'blue', trend: 'Sản lượng' }
         ].map((stat, i) => (
           <Card key={i} className="border-none shadow-xl shadow-slate-200/40 rounded-[28px] overflow-hidden group transition-all bg-white hover:shadow-2xl hover:shadow-slate-200/60">
             <CardContent className="p-6">
@@ -171,7 +180,10 @@ export const BrandList: React.FC = () => {
                 placeholder="Tra cứu thương hiệu..."
                 className="pl-12 py-3 h-12 rounded-2xl bg-slate-50 border-none ring-0 focus:ring-4 focus:ring-primary/5 transition-all text-sm font-bold shadow-inner"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
               />
             </div>
             <Button variant="outline" className="px-6 h-12 rounded-2xl border-slate-100 hover:border-primary transition-all bg-white" onClick={() => queryClient.invalidateQueries({ queryKey: ['brands'] })}>
@@ -270,6 +282,37 @@ export const BrandList: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {meta && meta.totalPages > 1 && (
+        <div className="flex justify-between items-center bg-white px-8 py-4 rounded-[28px] shadow-xl shadow-slate-200/50 border border-slate-100 animate-in fade-in duration-300">
+          <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
+            Hiển thị {((currentPage - 1) * 10) + 1} - {Math.min(currentPage * 10, meta.total)} trong {meta.total} thương hiệu
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-10 rounded-xl font-black uppercase text-[10px] tracking-widest border-slate-100 disabled:opacity-40"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            >
+              Trước
+            </Button>
+            <span className="text-xs font-black text-slate-900 px-3 uppercase tracking-tighter">
+              Trang {currentPage} / {meta.totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-10 rounded-xl font-black uppercase text-[10px] tracking-widest border-slate-100 disabled:opacity-40"
+              disabled={currentPage === meta.totalPages}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, meta.totalPages))}
+            >
+              Sau
+            </Button>
+          </div>
+        </div>
+      )}
 
       {isError && (
         <div className="p-8 bg-red-50 border-2 border-red-100 rounded-[40px] flex items-center gap-6 text-red-600 shadow-2xl shadow-red-100/50">

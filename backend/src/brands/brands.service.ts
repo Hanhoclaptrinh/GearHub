@@ -13,7 +13,10 @@ export class BrandsService {
     private cloudinaryService: CloudinaryService
   ) { }
 
+  // tạo mới một brand
   async createBrand(data: CreateBrandDto, file?: Express.Multer.File) {
+    // slug dùng cho deeplink hoặc seo
+    // được tạo từ tên viết thường, phân cách bởi '-'
     const slug = slugify(data.name, { lower: true, strict: true });
 
     const existingSlug = await this.prisma.brand.findUnique({ where: { slug } });
@@ -21,6 +24,7 @@ export class BrandsService {
 
     let finalLogoUrl: string | null = null;
 
+    // upload logo brand lên cld
     if (file) {
       try {
         const uploadResult = await this.cloudinaryService.uploadFile(file);
@@ -44,20 +48,75 @@ export class BrandsService {
     });
   }
 
-  async getAllBrands() {
-    return this.prisma.brand.findMany({
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        logoUrl: true,
-        isActive: true,
-        quote: true,
-        philosophy: true,
-        _count: { select: { products: true } }
+  /**
+   * lấy danh sách thương hiệu
+   * 
+   * chế độ tương thích ngược (backward-compatible): nếu cả page và limit đều không được truyền vào 
+   * hệ thống sẽ trả về một mảng phẳng các thương hiệu brand[] 
+   * tránh gây lỗi cho các tính năng khác trên hệ thống (dropdowns, bộ lọc sản phẩm...)
+   */
+  async getAllBrands(page?: number, limit?: number, search?: string) {
+    const where: any = {};
+
+    // áp dụng bộ lọc tìm kiếm theo tên thương hiệu nếu có từ khóa search
+    if (search) {
+      where.name = {
+        contains: search,
+      };
+    }
+
+    // không có phân trang thì trả về toàn bộ mảng phẳng tránh crash
+    if (page === undefined && limit === undefined) {
+      return this.prisma.brand.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          logoUrl: true,
+          isActive: true,
+          quote: true,
+          philosophy: true,
+          _count: { select: { products: true } }
+        },
+        orderBy: { name: 'asc' }
+      });
+    }
+
+    // có phân trang
+    const pageNum = page || 1;
+    const limitNum = limit || 10;
+    const skip = (pageNum - 1) * limitNum;
+
+    const [total, data] = await Promise.all([
+      this.prisma.brand.count({ where }),
+      this.prisma.brand.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          logoUrl: true,
+          isActive: true,
+          quote: true,
+          philosophy: true,
+          _count: { select: { products: true } }
+        },
+        orderBy: { name: 'asc' },
+        skip,
+        take: limitNum,
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
       },
-      orderBy: { name: 'asc' }
-    });
+    };
   }
 
   async getTopBrands(limit: number = 8) {
@@ -82,41 +141,61 @@ export class BrandsService {
     });
   }
 
-  @Cron(CronExpression.EVERY_6_HOURS) // auto chay job moi 6 tieng
+  // auto chạy cron job mỗi 6 tiếng
+  // thực hiện cập nhật điểm số của brand dựa trên tổng bán, tổng view & trung bình rate
+  // hiển thị cho top brands
+  @Cron(CronExpression.EVERY_6_HOURS)
   async updateBrandScores() {
-    // lay tat ca brand va data thong ke tu prod
-    const brands = await this.prisma.brand.findMany({
-      include: {
-        products: {
-          select: {
-            soldCount: true,
-            viewsCount: true,
-            averageRating: true
-          }
-        }
-      }
+    // nhóm theo brand id để thực hiện tính toán điểm dưới db
+    const aggregations = await this.prisma.product.groupBy({
+      by: ['brandId'],
+      _sum: {
+        soldCount: true,
+        viewsCount: true,
+      },
+      _avg: {
+        averageRating: true,
+      },
+      where: {
+        brandId: { not: null },
+      },
     });
 
-    for (const b of brands) {
-      // chi so tong hop
-      const tSold = b.products.reduce((s, p) => s += p.soldCount, 0); // tong sp ban duoc theo brand
-      const tViews = b.products.reduce((s, p) => s += p.viewsCount, 0); // tong luot xem sp theo brand
-      const aRating = b.products.length > 0 ?
-        b.products.reduce((s, p) => s += p.averageRating, 0) / b.products.length :
-        0; // trung binh diem danh gia sp theo brand
+    // map data
+    const statsMap = new Map<string, { totalSold: number; totalViews: number; avgRating: number }>();
+    for (const agg of aggregations) {
+      if (agg.brandId) {
+        statsMap.set(agg.brandId, {
+          totalSold: agg._sum.soldCount || 0,
+          totalViews: agg._sum.viewsCount || 0,
+          avgRating: agg._avg.averageRating || 0,
+        });
+      }
+    }
 
-      const sc = (tSold * 5) + (aRating * 10) + (tViews * 0.1);
+    // lấy tất cả brand để tính toán điểm - kể cả brand chưa có sản phẩm nào
+    const brands = await this.prisma.brand.findMany({
+      select: { id: true }
+    });
 
-      await this.prisma.brand.update({
+    // update score cho từng brand
+    const updatePromises = brands.map((b) => {
+      const stats = statsMap.get(b.id) || { totalSold: 0, totalViews: 0, avgRating: 0 };
+      const sc = (stats.totalSold * 5) + (stats.avgRating * 10) + (stats.totalViews * 0.1);
+
+      return this.prisma.brand.update({
         where: { id: b.id },
         data: {
           score: sc,
           lastScoredAt: new Date()
         }
       });
-    }
+    });
+
+    await Promise.all(updatePromises);
   }
 
+  // cập nhật thông tin brand
   async updateBrand(id: string, data: UpdateBrandDto, file?: Express.Multer.File) {
     const brand = await this.prisma.brand.findUnique({ where: { id } });
     if (!brand) throw new NotFoundException('Thương hiệu không tồn tại');
@@ -135,13 +214,17 @@ export class BrandsService {
 
     if (file) {
       try {
-        // xoa anh cu
+        // xóa ảnh cũ ở cld
         if (brand.logoUrl) {
-          const publicId = brand.logoUrl.split('/').pop()?.split('.')[0];
-          if (publicId) await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);
+          try {
+            const publicId = brand.logoUrl.split('/').pop()?.split('.')[0];
+            if (publicId) await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);
+          } catch (cloudinaryError) {
+            console.error('Không thể xóa logo cũ trên Cloudinary:', cloudinaryError);
+          }
         }
 
-        // upload anh moi
+        // upload ảnh mới
         const uploadResult = await this.cloudinaryService.uploadFile(file);
         updateData.logoUrl = uploadResult.secure_url;
       } catch (error) {
@@ -157,14 +240,34 @@ export class BrandsService {
     const brand = await this.prisma.brand.findUnique({ where: { id } });
     if (!brand) throw new NotFoundException('Thương hiệu không tồn tại');
 
+    const nextActiveState = !brand.isActive;
+
+    // nếu brand ngưng hoạt động thì ngưng toàn sản phẩm liên quan
+    if (!nextActiveState) {
+      await this.prisma.$transaction([
+        this.prisma.brand.update({
+          where: { id },
+          data: { isActive: false }
+        }),
+        this.prisma.product.updateMany({
+          where: { brandId: id },
+          data: { isActive: false }
+        })
+      ]);
+      return {
+        message: `Đã tạm ngưng thương hiệu '${brand.name}' và tự động ẩn các sản phẩm liên quan`,
+        isActive: false
+      };
+    }
+
     const updated = await this.prisma.brand.update({
       where: { id },
-      data: { isActive: !brand.isActive }
+      data: { isActive: true }
     });
 
     return {
-      message: `Đã ${updated.isActive ? 'kích hoạt' : 'tạm ngưng'} thương hiệu '${brand.name}'`,
-      isActive: updated.isActive
+      message: `Đã kích hoạt thương hiệu '${brand.name}'`,
+      isActive: true
     };
   }
 
@@ -175,19 +278,29 @@ export class BrandsService {
     });
     if (!brand) throw new NotFoundException('Thương hiệu không tồn tại');
 
-    // soft delete neu co san pham
+    // soft delete nếu có sản phẩm: tạm ngưng kinh doanh brand và ẩn toàn bộ sản phẩm
     if (brand._count.products > 0) {
-      await this.prisma.brand.update({
-        where: { id },
-        data: { isActive: false }
-      });
-      return { message: `Đã ngưng kinh doanh thương hiệu '${brand.name}' do đang có ${brand._count.products} sản phẩm` };
+      await this.prisma.$transaction([
+        this.prisma.brand.update({
+          where: { id },
+          data: { isActive: false }
+        }),
+        this.prisma.product.updateMany({
+          where: { brandId: id },
+          data: { isActive: false }
+        })
+      ]);
+      return { message: `Đã ngưng kinh doanh thương hiệu '${brand.name}' và tạm ẩn ${brand._count.products} sản phẩm liên kết` };
     }
 
-    // hard delete neu khong co san pham
+    // hard delete nếu không có sản phẩm
     if (brand.logoUrl) {
-      const publicId = brand.logoUrl.split('/').pop()?.split('.')[0];
-      if (publicId) await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);
+      try {
+        const publicId = brand.logoUrl.split('/').pop()?.split('.')[0];
+        if (publicId) await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);
+      } catch (cloudinaryError) {
+        console.error('Không thể xóa logo cũ trên Cloudinary:', cloudinaryError);
+      }
     }
 
     await this.prisma.brand.delete({ where: { id } });
