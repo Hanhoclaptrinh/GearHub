@@ -3,6 +3,7 @@ class BrandEntity {
   final String name;
   final String? slug;
   final String logoUrl;
+  final String? bannerUrl;
   final String? quote;
   final String? philosophy;
 
@@ -11,6 +12,7 @@ class BrandEntity {
     required this.name,
     this.slug,
     required this.logoUrl,
+    this.bannerUrl,
     this.quote,
     this.philosophy,
   });

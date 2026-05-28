@@ -12,6 +12,10 @@ export class CreateBrandDto {
 
     @IsOptional()
     @IsString()
+    bannerUrl?: string;
+
+    @IsOptional()
+    @IsString()
     @MaxLength(255, { message: 'Quote tối đa 255 ký tự' })
     quote?: string;
 

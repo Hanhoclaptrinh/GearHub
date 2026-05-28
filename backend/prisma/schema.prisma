@@ -110,6 +110,7 @@ model Brand {
   name         String    @db.VarChar(100)
   slug         String    @unique @db.VarChar(100)
   logoUrl      String?   @map("logo_url") @db.VarChar(255)
+  bannerUrl    String?   @map("banner_url") @db.VarChar(255)
   isActive     Boolean   @default(true) @map("is_active")
   score        Float     @default(0)
   isFeatured   Boolean   @default(false) @map("is_featured")

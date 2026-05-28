@@ -114,6 +114,8 @@ class _BrandDetailStorytellingViewState
                 _buildIdentitySpace(size, story, t),
 
                 _RevealSection(child: _buildPhilosophySection(story)),
+                if (widget.brand.bannerUrl != null && widget.brand.bannerUrl!.isNotEmpty)
+                  _RevealSection(child: _buildBrandBannerSection(size)),
                 _RevealSection(child: _buildMasterpieceShowcase(story)),
                 _RevealSection(child: _buildCollectionHeader()),
                 _buildProductGrid(story['accent']),
@@ -267,6 +269,25 @@ class _BrandDetailStorytellingViewState
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBrandBannerSection(Size size) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48),
+      child: Container(
+        width: double.infinity,
+        height: size.width * 0.5625, // Aspect ratio chuẩn 16:9 phóng khoáng
+        color: Colors.black12,
+        child: CachedNetworkImage(
+          imageUrl: widget.brand.bannerUrl!,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => const Center(
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          errorWidget: (context, url, error) => const SizedBox.shrink(),
+        ),
       ),
     );
   }

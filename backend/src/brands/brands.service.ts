@@ -14,7 +14,7 @@ export class BrandsService {
   ) { }
 
   // tạo mới một brand
-  async createBrand(data: CreateBrandDto, file?: Express.Multer.File) {
+  async createBrand(data: CreateBrandDto, logoFile?: Express.Multer.File, bannerFile?: Express.Multer.File) {
     // slug dùng cho deeplink hoặc seo
     // được tạo từ tên viết thường, phân cách bởi '-'
     const slug = slugify(data.name, { lower: true, strict: true });
@@ -23,11 +23,12 @@ export class BrandsService {
     if (existingSlug) throw new ConflictException('Thương hiệu này đã tồn tại');
 
     let finalLogoUrl: string | null = null;
+    let finalBannerUrl: string | null = null;
 
     // upload logo brand lên cld
-    if (file) {
+    if (logoFile) {
       try {
-        const uploadResult = await this.cloudinaryService.uploadFile(file);
+        const uploadResult = await this.cloudinaryService.uploadFile(logoFile);
 
         if (uploadResult && uploadResult.secure_url) {
           finalLogoUrl = uploadResult.secure_url;
@@ -37,11 +38,25 @@ export class BrandsService {
       }
     }
 
+    // upload banner brand lên cld
+    if (bannerFile) {
+      try {
+        const uploadResult = await this.cloudinaryService.uploadFile(bannerFile);
+
+        if (uploadResult && uploadResult.secure_url) {
+          finalBannerUrl = uploadResult.secure_url;
+        }
+      } catch (error) {
+        throw new BadRequestException('Không thể tải banner lên Cloud');
+      }
+    }
+
     return this.prisma.brand.create({
       data: {
         name: data.name,
         slug: slug,
         logoUrl: finalLogoUrl,
+        bannerUrl: finalBannerUrl,
         quote: data.quote,
         philosophy: data.philosophy,
       },
@@ -74,6 +89,7 @@ export class BrandsService {
           name: true,
           slug: true,
           logoUrl: true,
+          bannerUrl: true,
           isActive: true,
           quote: true,
           philosophy: true,
@@ -97,6 +113,7 @@ export class BrandsService {
           name: true,
           slug: true,
           logoUrl: true,
+          bannerUrl: true,
           isActive: true,
           quote: true,
           philosophy: true,
@@ -135,6 +152,7 @@ export class BrandsService {
         name: true,
         slug: true,
         logoUrl: true,
+        bannerUrl: true,
         quote: true,
         philosophy: true,
       }
@@ -196,11 +214,11 @@ export class BrandsService {
   }
 
   // cập nhật thông tin brand
-  async updateBrand(id: string, data: UpdateBrandDto, file?: Express.Multer.File) {
+  async updateBrand(id: string, data: UpdateBrandDto, logoFile?: Express.Multer.File, bannerFile?: Express.Multer.File) {
     const brand = await this.prisma.brand.findUnique({ where: { id } });
     if (!brand) throw new NotFoundException('Thương hiệu không tồn tại');
 
-    const { logoUrl, ...restData } = data;
+    const { logoUrl, bannerUrl, ...restData } = data;
     const updateData: any = { ...restData };
 
     if (data.name) {
@@ -212,7 +230,7 @@ export class BrandsService {
       updateData.slug = newSlug;
     }
 
-    if (file) {
+    if (logoFile) {
       try {
         // xóa ảnh cũ ở cld
         if (brand.logoUrl) {
@@ -225,11 +243,32 @@ export class BrandsService {
         }
 
         // upload ảnh mới
-        const uploadResult = await this.cloudinaryService.uploadFile(file);
+        const uploadResult = await this.cloudinaryService.uploadFile(logoFile);
         updateData.logoUrl = uploadResult.secure_url;
       } catch (error) {
         console.log(error);
         throw new BadRequestException('Không thể tải logo mới lên Cloud');
+      }
+    }
+
+    if (bannerFile) {
+      try {
+        // xóa ảnh cũ ở cld
+        if (brand.bannerUrl) {
+          try {
+            const publicId = brand.bannerUrl.split('/').pop()?.split('.')[0];
+            if (publicId) await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);
+          } catch (cloudinaryError) {
+            console.error('Không thể xóa banner cũ trên Cloudinary:', cloudinaryError);
+          }
+        }
+
+        // upload ảnh mới
+        const uploadResult = await this.cloudinaryService.uploadFile(bannerFile);
+        updateData.bannerUrl = uploadResult.secure_url;
+      } catch (error) {
+        console.log(error);
+        throw new BadRequestException('Không thể tải banner mới lên Cloud');
       }
     }
 
@@ -300,6 +339,14 @@ export class BrandsService {
         if (publicId) await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);
       } catch (cloudinaryError) {
         console.error('Không thể xóa logo cũ trên Cloudinary:', cloudinaryError);
+      }
+    }
+    if (brand.bannerUrl) {
+      try {
+        const publicId = brand.bannerUrl.split('/').pop()?.split('.')[0];
+        if (publicId) await this.cloudinaryService.deleteFile(`gearhub/media/${publicId}`);
+      } catch (cloudinaryError) {
+        console.error('Không thể xóa banner cũ trên Cloudinary:', cloudinaryError);
       }
     }
 

@@ -1,7 +1,7 @@
 import {
   Controller, Get, Post, Body, Patch, Param, Delete,
   UseGuards, UseInterceptors, UploadedFile, ParseFilePipe,
-  MaxFileSizeValidator, FileTypeValidator, Query
+  MaxFileSizeValidator, FileTypeValidator, Query, UploadedFiles
 } from '@nestjs/common';
 import { BrandsService } from './brands.service';
 import { CreateBrandDto } from './dto/create-brand.dto';
@@ -10,7 +10,7 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { LogActivity } from 'src/common/decorators/log-activity.decorator';
 import { ActivityAction } from 'src/common/constants/activity-log.constants';
 
@@ -37,40 +37,36 @@ export class BrandsController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.STAFF)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'logo', maxCount: 1 },
+    { name: 'banner', maxCount: 1 }
+  ]))
   @LogActivity(ActivityAction.BRAND_CREATED)
   async createBrand(
     @Body() data: CreateBrandDto,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 2 }), // logo 2mb limit
-        ],
-        fileIsRequired: false,
-      }),
-    ) file?: Express.Multer.File,
+    @UploadedFiles() files?: { logo?: Express.Multer.File[], banner?: Express.Multer.File[] },
   ) {
-    return this.brandsService.createBrand(data, file);
+    const logoFile = files?.logo?.[0];
+    const bannerFile = files?.banner?.[0];
+    return this.brandsService.createBrand(data, logoFile, bannerFile);
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.STAFF)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'logo', maxCount: 1 },
+    { name: 'banner', maxCount: 1 }
+  ]))
   @LogActivity(ActivityAction.BRAND_UPDATED)
   async updateBrand(
     @Param('id') id: string,
     @Body() data: UpdateBrandDto,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 2 }),
-        ],
-        fileIsRequired: false,
-      }),
-    ) file?: Express.Multer.File,
+    @UploadedFiles() files?: { logo?: Express.Multer.File[], banner?: Express.Multer.File[] },
   ) {
-    return this.brandsService.updateBrand(id, data, file);
+    const logoFile = files?.logo?.[0];
+    const bannerFile = files?.banner?.[0];
+    return this.brandsService.updateBrand(id, data, logoFile, bannerFile);
   }
 
   @Patch(':id/toggle')

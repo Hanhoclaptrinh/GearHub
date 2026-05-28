@@ -10,6 +10,10 @@ export class UpdateBrandDto {
     @IsOptional()
     logoUrl?: string;
 
+    @IsUrl({}, { message: 'Banner URL phải là một đường dẫn URL hợp lệ' })
+    @IsOptional()
+    bannerUrl?: string;
+
     @IsOptional()
     @IsString()
     @MaxLength(255, { message: 'Quote tối đa 255 ký tự' })

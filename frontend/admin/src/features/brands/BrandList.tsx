@@ -355,14 +355,24 @@ const BrandFormModal: React.FC<ModalProps> = ({ brand, onClose, onSave, isSaving
   const [name, setName] = useState(brand?.name || '');
   const [quote, setQuote] = useState(brand?.quote || '');
   const [philosophy, setPhilosophy] = useState(brand?.philosophy || '');
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(brand?.logoUrl || null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(brand?.logoUrl || null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(brand?.bannerUrl || null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (selected) {
-      setFile(selected);
-      setPreview(URL.createObjectURL(selected));
+      setLogoFile(selected);
+      setLogoPreview(URL.createObjectURL(selected));
+    }
+  };
+
+  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0];
+    if (selected) {
+      setBannerFile(selected);
+      setBannerPreview(URL.createObjectURL(selected));
     }
   };
 
@@ -372,7 +382,8 @@ const BrandFormModal: React.FC<ModalProps> = ({ brand, onClose, onSave, isSaving
     fd.append('name', name);
     fd.append('quote', quote);
     fd.append('philosophy', philosophy);
-    if (file) fd.append('file', file);
+    if (logoFile) fd.append('logo', logoFile);
+    if (bannerFile) fd.append('banner', bannerFile);
     onSave(fd);
   };
 
@@ -386,20 +397,43 @@ const BrandFormModal: React.FC<ModalProps> = ({ brand, onClose, onSave, isSaving
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-10 space-y-8">
-          <div className="flex justify-center">
-            <div
-              className="relative w-32 h-32 rounded-[32px] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:border-primary transition-all group shadow-inner"
-              onClick={() => document.getElementById('logo-upload')?.click()}
-            >
-              {preview ? (
-                <img src={preview} alt="Preview" className="w-full h-full object-contain p-2" />
-              ) : (
-                <div className="flex flex-col items-center">
-                  <Upload className="w-8 h-8 text-slate-300 group-hover:text-primary transition-colors" />
-                  <span className="text-[10px] font-black text-slate-400 uppercase mt-2 shadow-sm">Add Logo</span>
-                </div>
-              )}
-              <input id="logo-upload" type="file" className="hidden" accept=".svg,.png,.jpg,.jpeg,.webp,image/svg+xml,image/png,image/jpeg,image/webp" onChange={handleFileChange} />
+          <div className="flex gap-6 items-center justify-center">
+            {/* Upload Logo (Square) */}
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] font-black text-slate-400 uppercase mb-2">Logo Hãng</span>
+              <div
+                className="relative w-24 h-24 rounded-[24px] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:border-primary transition-all group shadow-inner"
+                onClick={() => document.getElementById('logo-upload')?.click()}
+              >
+                {logoPreview ? (
+                  <img src={logoPreview} alt="Logo" className="w-full h-full object-contain p-2" />
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <Upload className="w-6 h-6 text-slate-300 group-hover:text-primary transition-colors" />
+                    <span className="text-[9px] font-black text-slate-400 uppercase mt-1">Logo</span>
+                  </div>
+                )}
+                <input id="logo-upload" type="file" className="hidden" accept=".svg,.png,.jpg,.jpeg,.webp" onChange={handleLogoChange} />
+              </div>
+            </div>
+
+            {/* Upload Banner (Rectangle) */}
+            <div className="flex flex-col items-center flex-1">
+              <span className="text-[10px] font-black text-slate-400 uppercase mb-2">Ảnh bìa (Banner)</span>
+              <div
+                className="relative w-full h-24 rounded-[24px] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:border-primary transition-all group shadow-inner"
+                onClick={() => document.getElementById('banner-upload')?.click()}
+              >
+                {bannerPreview ? (
+                  <img src={bannerPreview} alt="Banner" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <Upload className="w-6 h-6 text-slate-300 group-hover:text-primary transition-colors" />
+                    <span className="text-[9px] font-black text-slate-400 uppercase mt-1">Banner</span>
+                  </div>
+                )}
+                <input id="banner-upload" type="file" className="hidden" accept=".png,.jpg,.jpeg,.webp" onChange={handleBannerChange} />
+              </div>
             </div>
           </div>
 
@@ -413,7 +447,7 @@ const BrandFormModal: React.FC<ModalProps> = ({ brand, onClose, onSave, isSaving
             <Textarea label="Triết lý thương hiệu" placeholder="Kể câu chuyện về thương hiệu của bạn..." value={philosophy} onChange={(e) => setPhilosophy(e.target.value)}
               className="rounded-2xl bg-slate-50 border-none shadow-inner font-bold"
             />
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">*Slug và Metadata sẽ được khởi tạo tự động</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">*Slug và Ảnh bìa sẽ được khởi tạo tự động</p>
           </div>
 
           <div className="flex gap-4 pt-4">
