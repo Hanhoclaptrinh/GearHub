@@ -17,6 +17,8 @@ import { ChatCenterPage } from './features/chat/ChatCenterPage';
 import { authService } from './services/auth.service';
 import { VoucherList } from './features/vouchers/VoucherList';
 import { ReviewList } from './features/reviews/ReviewList';
+import { ActivityLogList } from './features/activity-logs/ActivityLogList';
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -121,6 +123,14 @@ const App: React.FC = () => {
               element={
                 <ProtectedRoute allowedRoles={['ADMIN']}>
                   <TransactionList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="activity-logs"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <ActivityLogList />
                 </ProtectedRoute>
               }
             />

@@ -124,6 +124,8 @@ export class PaymentService {
             this.logger.error(`Error parsing transaction rawResponse: ${e.message}`);
         }
 
+        // trường hợp có sự cố từ vnpay (chặn ip, 429, crash, treo, ...)
+        // tự động set trạng thái == 00, không cần chạy qua flow hoàn tiên thật của server
         let refundRes: any;
         const isMockRefund = this.configService.get<string>('VNP_REFUND_MOCK') === 'true';
 
@@ -134,7 +136,8 @@ export class PaymentService {
                 vnp_Message: 'Mock refund success'
             };
         } else {
-            // gửi yêu cầu hoàn tiền toàn phần sang gateway
+            // gửi yêu cầu hoàn tiền thật lên server
+            // xử lý theo mã trạng thái thật
             refundRes = await this.vnpayGateway.fullRefund({
                 orderId,
                 amount: Number(order.totalAmount),

@@ -16,7 +16,8 @@ import {
   CreditCard,
   MessageSquareText,
   Ticket,
-  Star
+  Star,
+  History
 } from 'lucide-react';
 import { Warehouse } from 'lucide-react';
 import { cn } from '../utils/cn';
@@ -43,6 +44,7 @@ const navigation = [
   { name: 'Quản lý thương hiệu', icon: Briefcase, path: '/brands', roles: ['ADMIN', 'STAFF'] },
   { name: 'Quản lý ưu đãi', icon: Ticket, path: '/vouchers', roles: ['ADMIN', 'STAFF'] },
   { name: 'Quản lý giao dịch', icon: CreditCard, path: '/transactions', roles: ['ADMIN'] },
+  { name: 'Lịch sử hoạt động', icon: History, path: '/activity-logs', roles: ['ADMIN'] },
 ];
 
 export const DashboardLayout: React.FC = () => {
