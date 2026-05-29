@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -113,9 +114,17 @@ class PushNotificationService {
     await _localNotifications.initialize(
       settings: const InitializationSettings(android: android, iOS: darwin),
       onDidReceiveNotificationResponse: (response) {
-        final type = response.payload;
-        if (type == null) return;
-        _navigateByType(type, const {});
+        final payloadStr = response.payload;
+        if (payloadStr == null) return;
+        try {
+          final Map<String, dynamic> data =
+              jsonDecode(payloadStr) as Map<String, dynamic>;
+          final type = data['type'] as String?;
+          _navigateByType(type, data);
+        } catch (e) {
+          debugPrint('[Push] Error decoding payload JSON: $e');
+          _navigateByType(payloadStr, const {});
+        }
       },
     );
 
@@ -154,7 +163,7 @@ class PushNotificationService {
         ),
         iOS: DarwinNotificationDetails(),
       ),
-      payload: message.data['type'],
+      payload: jsonEncode(message.data),
     );
   }
 
@@ -167,8 +176,14 @@ class PushNotificationService {
     if (navigator == null) return;
 
     if (type == 'order') {
+      final orderId = data['orderId'] as String?;
       navigator.push(
-        MaterialPageRoute(builder: (_) => const OrderHistoryPage()),
+        MaterialPageRoute(
+          builder: (_) => OrderHistoryPage(
+            initialStatus: 'ALL',
+            initialOrderId: orderId,
+          ),
+        ),
       );
       return;
     }

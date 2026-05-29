@@ -20,8 +20,13 @@ double _toDouble(dynamic val) {
 
 class OrderHistoryPage extends StatefulWidget {
   final String initialStatus;
+  final String? initialOrderId;
 
-  const OrderHistoryPage({super.key, this.initialStatus = 'ALL'});
+  const OrderHistoryPage({
+    super.key,
+    this.initialStatus = 'ALL',
+    this.initialOrderId,
+  });
 
   @override
   State<OrderHistoryPage> createState() => _OrderHistoryPageState();
@@ -31,6 +36,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final Set<String> _expandedOrderIds = {};
+  bool _hasOpenedInitialOrder = false;
   final List<Map<String, String>> _statusTabs = [
     {'label': 'Tất cả', 'status': 'ALL'},
     {'label': 'Chờ xác nhận', 'status': 'PENDING'},
@@ -177,6 +183,24 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
 
                   if (state is OrdersLoaded) {
                     final orders = state.orders;
+
+                    if (widget.initialOrderId != null &&
+                        !_hasOpenedInitialOrder) {
+                      _hasOpenedInitialOrder = true;
+                      dynamic matchingOrder;
+                      for (var o in orders) {
+                        if (o['id'] == widget.initialOrderId) {
+                          matchingOrder = o;
+                          break;
+                        }
+                      }
+                      if (matchingOrder != null) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          _showOrderDetailModal(context, matchingOrder);
+                        });
+                      }
+                    }
+
                     final currentTab =
                         _statusTabs[_tabController.index]['status'];
 
