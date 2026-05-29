@@ -84,14 +84,14 @@ api.interceptors.response.use(
           deviceId: 'admin-cms'
         });
 
-        const { access_token, refresh_token } = data;
-        localStorage.setItem('admin_token', access_token);
-        localStorage.setItem('admin_refresh_token', refresh_token);
+        const { accessToken, refreshToken: newRefreshToken } = data;
+        localStorage.setItem('admin_token', accessToken);
+        localStorage.setItem('admin_refresh_token', newRefreshToken);
 
-        api.defaults.headers.common.Authorization = `Bearer ${access_token}`;
-        originalRequest.headers.Authorization = `Bearer ${access_token}`;
+        api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
 
-        processQueue(null, access_token);
+        processQueue(null, accessToken);
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);

@@ -46,11 +46,11 @@ export const authService = {
         deviceId: 'admin-cms'
       });
 
-      const { access_token, refresh_token } = data;
-      localStorage.setItem('admin_token', access_token);
-      localStorage.setItem('admin_refresh_token', refresh_token);
+      const { accessToken, refreshToken: newRefreshToken } = data;
+      localStorage.setItem('admin_token', accessToken);
+      localStorage.setItem('admin_refresh_token', newRefreshToken);
 
-      return access_token;
+      return accessToken;
     } catch (error) {
       this.logout();
       return null;
