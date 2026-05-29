@@ -62,6 +62,13 @@ export class ProductsController {
         return this.productsService.getVaultProducts();
     }
 
+    @Get('inventory/stats')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.STAFF)
+    async getInventoryStats() {
+        return this.productsService.getInventoryStats();
+    }
+
     @Get(':id')
     async getProduct(@Param('id') id: string) {
         return this.productsService.getProductById(id);
@@ -207,12 +214,5 @@ export class ProductsController {
     @Roles(Role.ADMIN, Role.STAFF)
     async increaseStock(@Param('variantId') variantId: string, @Body('quantity') quantity: number) {
         return this.productsService.increaseStock(variantId, quantity);
-    }
-
-    @Get('inventory/stats')
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN, Role.STAFF)
-    async getInventoryStats() {
-        return this.productsService.getInventoryStats();
     }
 }

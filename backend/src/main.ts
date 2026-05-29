@@ -27,7 +27,26 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  app.enableCors();
+  // app.enableCors();
+
+  const allowedOrigins = process.env.CORS_ORIGINS ?
+    process.env.CORS_ORIGINS.split(',') :
+    [process.env.FRONTEND_URL ?? 'http://localhost:5173', 'http://localhost:5174'];
+
+  app.enableCors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const isAllowed = allowedOrigins.includes(origin);
+      const isDev = process.env.NODE_ENV !== 'production';
+      if (isAllowed || isDev) {
+        callback(null, true);
+      } else {
+        callback(new Error('Blocked by CORS policy'));
+      }
+    },
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true
+  });
 
   await app.listen(process.env.PORT ?? 3000);
 }
