@@ -35,6 +35,16 @@ import { AddressModule } from './address/address.module';
     ThrottlerModule.forRoot({
       throttlers: [
         {
+          name: 'auth',
+          ttl: 60000,
+          limit: 5
+        },
+        {
+          name: 'login',
+          ttl: 60000,
+          limit: 15
+        },
+        {
           name: 'default',
           ttl: 60000,
           limit: 100
