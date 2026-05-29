@@ -5,6 +5,7 @@ import { OrderStatus, PaymentMethod, PaymentStatus, TransactionStatus, Notificat
 import { PromotionService } from 'src/promotion/promotion.service';
 import { NotificationService } from 'src/notification/notification.service';
 import { InventoriesService } from 'src/inventories/inventories.service';
+import { ConfigService } from '@nestjs/config';
 import moment from 'moment';
 
 @Injectable()
@@ -17,7 +18,9 @@ export class PaymentService {
         private vnpayGateway: VnPayGateway,
         private notificationService: NotificationService,
         private inventoriesService: InventoriesService,
+        private configService: ConfigService,
     ) { }
+
 
     /**
      * tạo đường dẫn thanh toán vnpay cho đơn hàng
@@ -121,21 +124,33 @@ export class PaymentService {
             this.logger.error(`Error parsing transaction rawResponse: ${e.message}`);
         }
 
-        // gửi yêu cầu hoàn tiền toàn phần sang gateway
-        const refundRes = await this.vnpayGateway.fullRefund({
-            orderId,
-            amount: Number(order.totalAmount),
-            ipAddr,
-            transactionNo: transaction.providerTransactionId || '',
-            transactionDate,
-            createBy: adminEmail
-        });
+        let refundRes: any;
+        const isMockRefund = this.configService.get<string>('VNP_REFUND_MOCK') === 'true';
+
+        if (isMockRefund) {
+            this.logger.log(`Mocking VNPay refund for order ${orderId} (VNP_REFUND_MOCK is true)`);
+            refundRes = {
+                vnp_ResponseCode: '00',
+                vnp_Message: 'Mock refund success'
+            };
+        } else {
+            // gửi yêu cầu hoàn tiền toàn phần sang gateway
+            refundRes = await this.vnpayGateway.fullRefund({
+                orderId,
+                amount: Number(order.totalAmount),
+                ipAddr,
+                transactionNo: transaction.providerTransactionId || '',
+                transactionDate,
+                createBy: adminEmail
+            });
+        }
 
         // kiểm tra mã phản hồi trả về từ cổng thanh toán vnpay
         const responseCode = refundRes['vnp_ResponseCode'];
         if (responseCode !== '00') {
             throw new BadRequestException(`Yêu cầu hoàn tiền VNPay thất bại: ${refundRes['vnp_Message'] || responseCode}`);
         }
+
 
         await this.prisma.$transaction(async (tx) => {
             // hoàn trả voucher cho user
