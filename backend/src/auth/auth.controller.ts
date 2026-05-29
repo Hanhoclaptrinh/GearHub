@@ -73,7 +73,7 @@ export class AuthController {
   @Post('logout')
   @LogActivity(ActivityAction.USER_LOGOUT)
   async logout(@Request() req) {
-    return this.authService.logout(req.user.userId);
+    return this.authService.logout(req.user.userId, req.user.deviceId);
   }
 
   @UseGuards(JwtAuthGuard)

@@ -21,7 +21,12 @@ export const authService = {
     return data.data;
   },
 
-  logout() {
+  async logout() {
+    try {
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Failed to log out from backend:', error);
+    }
     localStorage.removeItem('admin_token');
     localStorage.removeItem('admin_refresh_token');
     localStorage.removeItem('admin_user');

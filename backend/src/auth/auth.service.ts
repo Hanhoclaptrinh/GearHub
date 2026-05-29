@@ -22,11 +22,12 @@ export class AuthService {
     private mailService: MailService
   ) { }
 
-  private async signAccessToken(userId: string, email: string, role: string) {
+  private async signAccessToken(userId: string, email: string, role: string, deviceId: string = 'default') {
     return this.jwtService.sign({
       sub: userId,
       email: email,
-      role: role
+      role: role,
+      deviceId: deviceId
     }, { expiresIn: '4h' });
   }
 
@@ -86,7 +87,7 @@ export class AuthService {
     await this.redisService.del(key);
 
     const [at, rt] = await Promise.all([
-      this.signAccessToken(newUser.id, newUser.email, newUser.role),
+      this.signAccessToken(newUser.id, newUser.email, newUser.role, userData.deviceId),
       this.generateRefreshToken(newUser.id, userData.deviceId)
     ]);
 
@@ -115,7 +116,7 @@ export class AuthService {
     }
 
     const [at, rt] = await Promise.all([
-      this.signAccessToken(user.id, user.email, user.role),
+      this.signAccessToken(user.id, user.email, user.role, data.deviceId),
       this.generateRefreshToken(user.id, data.deviceId)
     ]);
 
@@ -176,7 +177,7 @@ export class AuthService {
     }
 
     const [at, rt] = await Promise.all([
-      this.signAccessToken(user.id, user.email, user.role),
+      this.signAccessToken(user.id, user.email, user.role, data.deviceId || 'google-device'),
       this.generateRefreshToken(user.id, data.deviceId || 'google-device')
     ]);
 
@@ -220,11 +221,7 @@ export class AuthService {
     }
 
     const [at, rt] = await Promise.all([
-      this.signAccessToken(
-        user.id,
-        user.email,
-        user.role
-      ),
+      this.signAccessToken(user.id, user.email, user.role, data.deviceId || 'current-session'),
       this.generateRefreshToken(user.id, data.deviceId || 'current-session')
     ]);
 
@@ -256,11 +253,7 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('Người dùng không tồn tại');
 
     const [nat, nrt] = await Promise.all([
-      this.signAccessToken(
-        user.id,
-        user.email,
-        user.role
-      ),
+      this.signAccessToken(user.id, user.email, user.role, deviceId),
       this.generateRefreshToken(user.id, deviceId)
     ]);
 
