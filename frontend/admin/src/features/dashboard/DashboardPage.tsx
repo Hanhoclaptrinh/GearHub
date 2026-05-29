@@ -124,14 +124,14 @@ export const DashboardPage: React.FC = () => {
           value={totalOrders}
           icon={ShoppingCart}
           color="bg-blue-500"
-          trend="+12%"
+          trend={stats?.ordersTrend}
         />
         <StatCard
           title="Doanh thu"
           value={formatCurrency(stats?.totalRevenue ?? 0)}
           icon={DollarSign}
           color="bg-emerald-500"
-          trend="+8.5%"
+          trend={stats?.revenueTrend}
         />
         <StatCard
           title="Sắp hết hàng"
@@ -144,7 +144,7 @@ export const DashboardPage: React.FC = () => {
           value={stats?.totalUsers ?? 0}
           icon={Users}
           color="bg-indigo-500"
-          trend="+24"
+          trend={stats?.usersTrend}
         />
       </div>
 

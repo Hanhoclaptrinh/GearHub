@@ -778,6 +778,69 @@ export class OrdersService {
     // truy vấn dữ liệu xu hướng doanh thu và đơn hàng trong 7 ngày gần nhất để vẽ biểu đồ phân tích tăng trưởng ngắn hạn
     const trends = await this.getTrends(7);
 
+    // tính toán tỷ lệ tăng trưởng của 7 ngày gần nhất và 7 ngày trước đó
+    const now = new Date();
+
+    // kì a
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(now.getDate() - 7);
+
+    // kì b
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(now.getDate() - 14);
+
+    const [
+      ordersCountA,
+      ordersCountB,
+      revenueA,
+      revenueB,
+      usersCountA,
+      usersCountB,
+    ] = await Promise.all([
+      // số lượng đơn hàng
+      this.prisma.order.count({
+        where: { createdAt: { gte: sevenDaysAgo } }
+      }),
+      this.prisma.order.count({
+        where: { createdAt: { gte: fourteenDaysAgo, lt: sevenDaysAgo } }
+      }),
+      // tổng doanh thu thực tế
+      this.prisma.order.aggregate({
+        _sum: { totalAmount: true },
+        where: { paymentStatus: PaymentStatus.PAID, createdAt: { gte: sevenDaysAgo } }
+      }),
+      this.prisma.order.aggregate({
+        _sum: { totalAmount: true },
+        where: { paymentStatus: PaymentStatus.PAID, createdAt: { gte: fourteenDaysAgo, lt: sevenDaysAgo } }
+      }),
+      // lượng khách hàng đăng ký mới
+      this.prisma.user.count({
+        where: { role: Role.USER, createdAt: { gte: sevenDaysAgo } }
+      }),
+      this.prisma.user.count({
+        where: { role: Role.USER, createdAt: { gte: fourteenDaysAgo, lt: sevenDaysAgo } }
+      })
+    ]);
+
+    // tính tăng trưởng phần trăm
+    const calculatePercentageChange = (current: number, previous: number): string => {
+      if (previous === 0) {
+        return current > 0 ? '+100%' : '0%';
+      }
+      const change = ((current - previous) / previous) * 100;
+      const sign = change >= 0 ? '+' : '';
+      return `${sign}${change.toFixed(1)}%`;
+    };
+
+    const ordersTrend = calculatePercentageChange(ordersCountA, ordersCountB);
+    const revenueTrend = calculatePercentageChange(
+      Number(revenueA._sum.totalAmount || 0),
+      Number(revenueB._sum.totalAmount || 0)
+    );
+    // số lượng tài khoản mới
+    const diffUsers = usersCountA - usersCountB;
+    const usersTrend = diffUsers >= 0 ? `+${diffUsers}` : `${diffUsers}`;
+
     return {
       totalRevenue: revenue._sum.totalAmount || 0,
       ordersByStatus: formattedOrders,
@@ -786,6 +849,9 @@ export class OrdersService {
       revenueTrends: trends.revenue,
       orderTrends: trends.orders,
       latestLogs: latestLogs.data,
+      ordersTrend,
+      revenueTrend,
+      usersTrend,
     };
   }
 
