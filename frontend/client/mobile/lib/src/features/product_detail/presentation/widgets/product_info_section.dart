@@ -19,6 +19,7 @@ class ProductInfoSection extends StatefulWidget {
   final VoidCallback onLongPressIncrement;
   final VoidCallback onLongPressDecrement;
   final VoidCallback onLongPressEnd;
+  final VoidCallback? onComparePressed;
 
   const ProductInfoSection({
     super.key,
@@ -34,6 +35,7 @@ class ProductInfoSection extends StatefulWidget {
     required this.onLongPressIncrement,
     required this.onLongPressDecrement,
     required this.onLongPressEnd,
+    this.onComparePressed,
   });
 
   @override
@@ -107,6 +109,13 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
             _buildSectionHeader("THÔNG SỐ KỸ THUẬT"),
             const SizedBox(height: 24),
             _buildSpecsTable(widget.product.commonSpecs!),
+            const SizedBox(height: 48),
+          ],
+          if (widget.onComparePressed != null) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: _buildCompareButton(),
+            ),
             const SizedBox(height: 48),
           ],
           // desc config
@@ -343,6 +352,49 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildCompareButton() {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        widget.onComparePressed?.call();
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        ),
+        child: const Row(
+          children: [
+            Icon(
+              Icons.compare_arrows_rounded,
+              color: AppColors.textPrimary,
+              size: 22,
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Thêm sản phẩm vào so sánh',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            Icon(
+              LucideIcons.chevronRight,
+              color: AppColors.textSlate,
+              size: 18,
+            ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -17,6 +17,10 @@ import 'package:mobile/src/features/product_detail/data/datasources/product_deta
 import 'package:mobile/src/features/product_detail/data/repositories/product_detail_repository_impl.dart';
 import 'package:mobile/src/features/product_detail/domain/repositories/product_detail_repository.dart';
 import 'package:mobile/src/features/product_detail/presentation/state/product_detail_cubit.dart';
+import 'package:mobile/src/features/product_compare/data/datasources/product_compare_remote_datasource.dart';
+import 'package:mobile/src/features/product_compare/data/repositories/product_compare_repository_impl.dart';
+import 'package:mobile/src/features/product_compare/domain/repositories/product_compare_repository.dart';
+import 'package:mobile/src/features/product_compare/presentation/state/product_compare_cubit.dart';
 import 'package:mobile/src/features/cart/data/datasources/cart_remote_datasource.dart'
     as mobile_cart_remote;
 import 'package:mobile/src/features/cart/data/datasources/cart_local_datasource.dart'
@@ -132,6 +136,21 @@ Future<void> setupDependencies() async {
 
   getIt.registerFactory<ProductDetailCubit>(
     () => ProductDetailCubit(repository: getIt<ProductDetailRepository>()),
+  );
+
+  // product compare
+  getIt.registerLazySingleton<ProductCompareRemoteDatasource>(
+    () => ProductCompareRemoteDatasource(dio: getIt<ApiClient>().dio),
+  );
+
+  getIt.registerLazySingleton<ProductCompareRepository>(
+    () => ProductCompareRepositoryImpl(
+      remoteDatasource: getIt<ProductCompareRemoteDatasource>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<ProductCompareCubit>(
+    () => ProductCompareCubit(repository: getIt<ProductCompareRepository>()),
   );
 
   // cart

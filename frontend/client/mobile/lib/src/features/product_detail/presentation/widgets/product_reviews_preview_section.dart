@@ -49,7 +49,7 @@ class ProductReviewsPreviewSection extends StatelessWidget {
                               textBaseline: TextBaseline.alphabetic,
                               children: [
                                 Text(
-                                  '${product.averageRating}',
+                                  '${product.averageRating.toStringAsFixed(1)}',
                                   style: const TextStyle(
                                     fontSize: 32,
                                     fontWeight: FontWeight.w300,

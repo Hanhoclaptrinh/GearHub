@@ -9,6 +9,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { UpdateVariantDto } from './dto/update-variant.dto';
+import { CompareProductsDto } from './dto/compare-products.dto';
 import { LogActivity } from 'src/common/decorators/log-activity.decorator';
 import { ActivityAction } from 'src/common/constants/activity-log.constants';
 
@@ -67,6 +68,11 @@ export class ProductsController {
     @Roles(Role.ADMIN, Role.STAFF)
     async getInventoryStats() {
         return this.productsService.getInventoryStats();
+    }
+
+    @Post('compare')
+    async compareProducts(@Body() data: CompareProductsDto) {
+        return this.productsService.compareProducts(data.productIds, data.variantIds);
     }
 
     @Get(':id')

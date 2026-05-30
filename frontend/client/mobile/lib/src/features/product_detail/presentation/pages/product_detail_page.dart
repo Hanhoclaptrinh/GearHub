@@ -7,6 +7,7 @@ import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/core/utils/brand_identity_helper.dart';
 import 'package:mobile/src/features/chat/presentation/widgets/concierge_entry_button.dart';
+import 'package:mobile/src/features/product_compare/presentation/pages/product_compare_page.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/models/product_variant_model.dart';
 import '../widgets/product_hero_section.dart';
@@ -309,6 +310,18 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                       onLongPressDecrement: () =>
                           _startUpdateQuantity(false, variant?.stock ?? 0),
                       onLongPressEnd: _stopUpdateQuantity,
+                      onComparePressed: () {
+                        final currentVariant = _getCurrentVariant(product);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProductComparePage(
+                              initialProduct: product,
+                              initialVariant: currentVariant,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                   SliverToBoxAdapter(

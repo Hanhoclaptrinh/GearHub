@@ -12,6 +12,21 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { InventoriesService } from 'src/inventories/inventories.service';
 import { EmbeddingService } from 'src/ai/embedding.service';
 
+type CompareCategoryNode = {
+    id: string;
+    name: string;
+    slug: string;
+    parentId: string | null;
+};
+
+type CompareKey = {
+    id: string;
+    name: string;
+    slug: string;
+    strategy: 'standalone-category' | 'strict-subcategory' | 'category-family';
+    path: { id: string; name: string; slug: string }[];
+};
+
 @Injectable()
 export class ProductsService {
     private readonly logger = new Logger(ProductsService.name);
@@ -25,6 +40,16 @@ export class ProductsService {
     ) { }
 
     // ADMIN
+    /**
+     * tạo mới sản phẩm cùng toàn bộ dữ liệu phụ thuộc trong một luồng
+     *
+     * flow:
+     * - tạo bản ghi sản phẩm cha
+     * - tạo các biến thể từ dữ liệu gửi lên
+     * - gắn asset ở cấp sản phẩm và cấp biến thể
+     * - khởi tạo tồn kho ban đầu thông qua inventory transaction
+     * - đồng bộ dữ liệu phục vụ embedding sau khi ghi thành công
+     */
     async createProduct(data: CreateProductDto, files: Express.Multer.File[]) {
         const existingProduct = await this.prisma.product.findFirst({
             where: { name: data.name }
@@ -42,9 +67,11 @@ export class ProductsService {
         const uploadedAssets: { url: string; type: AssetType; isPrimary: boolean }[] = [];
         const primaryIndex = parseInt(data.primaryIndex || '0');
 
-        // cac file chung cho san pham
+        // tách file upload theo phạm vi sở hữu để phía dưới có thể ghi đúng
+        // asset cho sản phẩm cha hoặc cho từng biến thể tương ứng
+        // các file assets dùng chung cho toàn bộ các biến thể trong sp
         const generalFiles = (files || []).filter(f => f.fieldname === 'files' || !f.fieldname);
-        // gom nhom cac file thuoc tung bien the
+        // các file riêng từng biến thể
         const variantFilesMap: Record<number, Express.Multer.File[]> = {};
 
         (files || []).forEach(f => {
@@ -68,8 +95,8 @@ export class ProductsService {
                 else if (fileName.endsWith('.usdz')) type = AssetType.USDZ;
 
 
-                // upload assets len cld
-                // xac dinh anh primary
+                // upload assets lên cld
+                // xác định ảnh primary
                 uploadedAssets.push({
                     url: upload.secure_url,
                     type,
@@ -78,7 +105,8 @@ export class ProductsService {
             }
         }
 
-        // mo transaction cho database operations
+        // toàn bộ thao tác ghi product, variant, asset và inventory phải
+        // là một khối atomic để tránh sinh dữ liệu rác
         try {
             const result = await this.prisma.$transaction(async (tx) => {
                 // build metadata with common_specs namespace
@@ -121,7 +149,9 @@ export class ProductsService {
                 // handle variants
                 if (data.variants) {
                     const variantList = JSON.parse(data.variants);
-                    // dung cache tranh upload nhieu file vao cung 1 bien the
+                    // tái sử dụng kết quả upload khi cùng một file nhị phân
+                    // được gắn cho nhiều biến thể trong cùng một request
+                    // dùng cache tránh upload nhiều file vào cùng 1 biến thể
                     const uploadedVariantFilesCache: Record<string, string> = {};
 
                     for (let idx = 0; idx < variantList.length; idx++) {
@@ -173,7 +203,7 @@ export class ProductsService {
                             }
                         });
 
-                        // tao inventory transaction cho stock khoi tao
+                        // tạo inventory transaction cho stock khởi tạo
                         if (initialStock > 0) {
                             await this.inventoriesService.adjustStock({
                                 variantId: createdVariant.id,
@@ -244,7 +274,7 @@ export class ProductsService {
                         )
                     );
 
-                    // auto-select thumbnail neu khong set
+                    // auto chọn hình ảnh đầu tiên làm thumbnail nếu không set primary
                     if (!finalThumbnailUrl) {
                         const primaryAsset = assets.find(a => a.isPrimary);
                         const firstImageAsset = assets.find(a => a.type === AssetType.IMAGE);
@@ -291,6 +321,19 @@ export class ProductsService {
         }
     }
 
+    /**
+     * cập nhật sản phẩm cha và đồng bộ lại toàn bộ cấu phần liên quan nếu có
+     * dữ liệu đi kèm trong request
+     *
+     * flow:
+     * - cập nhật thông tin sản phẩm cha
+     * - cập nhật hoặc tạo mới biến thể từ danh sách gửi lên
+     * - thêm asset mới ở cấp sản phẩm hoặc cấp biến thể
+     * - đổi primary asset và đồng bộ thumbnail
+     * - cập nhật lại embedding sau khi ghi xong
+     *
+     * không cho phép chỉnh sửa tồn kho qua flow cập nhật sản phẩm
+     */
     async updateProduct(id: string, data: UpdateProductDto, files?: Express.Multer.File[]) {
         const product = await this.prisma.product.findUnique({
             where: { id },
@@ -298,7 +341,7 @@ export class ProductsService {
         });
         if (!product) throw new NotFoundException('Sản phẩm không tồn tại');
 
-        // neu update name thi check slug
+        // nếu update name thì check slug
         if (data.name) {
             const newSlug = slugify(data.name, { lower: true, strict: true });
 
@@ -315,7 +358,8 @@ export class ProductsService {
         }
 
         const result = await this.prisma.$transaction(async (tx) => {
-            // chuan bi data cho san pham cha
+            // chuẩn bị dữ liệu patch cho sản phẩm cha trước, sau đó mới đồng bộ
+            // lại các biến thể phụ thuộc theo trạng thái mới của sản phẩm
             const updateData: any = {};
             if (data.name) {
                 updateData.name = data.name;
@@ -346,7 +390,7 @@ export class ProductsService {
                 }
             }
 
-            // merge common_specs vao metadata
+            // merge common_specs vào metadata
             if (data.commonSpecs) {
                 try {
                     const existingMeta = updateData.metadata || (product.metadata as any) || {};
@@ -366,7 +410,7 @@ export class ProductsService {
                 }
             }
 
-            // cap nhat san pham cha
+            // cập nhật sản phẩm cha
             const updatedProduct = await tx.product.update({
                 where: { id },
                 data: updateData
@@ -385,7 +429,9 @@ export class ProductsService {
                 }
             });
 
-            // cap nhat thong tin bien the
+            // có thể xử lý cả 2 flow:
+            // - cập nhật biến thể đã có
+            // - tạo biến thể mới nếu dữ liệu gửi lên chưa tồn tại trong db
             if (data.variants) {
                 const variants = JSON.parse(data.variants);
                 const existingVariants = await tx.productVariant.findMany({
@@ -440,7 +486,6 @@ export class ProductsService {
                                 sku: sku,
                                 name: `${updatedProduct.name} - ${sku}`,
                                 price: price,
-                                // stock khong duoc cap nhat qua product form
                                 attributes: vData.attributes || {},
                                 imageUrl: variantFilesMap[idx]?.length ? variantImageUrl : (vData.imageUrl || null),
                                 barcode: vData.barcode ?? existing.barcode,
@@ -461,7 +506,7 @@ export class ProductsService {
                         });
                         finalVariantId = createdVariant.id;
 
-                        // tao inventory transaction cho variant moi
+                        // tạo inventory transaction cho variant mới
                         if (stock > 0) {
                             await this.inventoriesService.adjustStock({
                                 variantId: createdVariant.id,
@@ -504,8 +549,7 @@ export class ProductsService {
                     }
                 }
             } else if (data.price || data.sku || data.attributes) {
-                // fallback neu chi truyen le 1 variant (lay variant dau tien)
-                // stock khong duoc cap nhat qua product form
+                // fallback nếu chỉ truyền lên 1 biến thể
                 const firstVariant = await tx.productVariant.findFirst({
                     where: { productId: id }
                 });
@@ -529,7 +573,7 @@ export class ProductsService {
                 }
             }
 
-            // xu ly new assets
+            // xử lý new assets
             if (generalFiles && generalFiles.length > 0) {
                 for (const file of generalFiles) {
                     const upload = await this.cloudinaryService.uploadFile(file);
@@ -549,7 +593,7 @@ export class ProductsService {
                 }
             }
 
-            // xu ly primary asset
+            // xử lý primary asset
             if (data.primaryIndex !== undefined) {
                 const pIdx = parseInt(data.primaryIndex);
                 const allAssets = await tx.productAsset.findMany({
@@ -589,6 +633,11 @@ export class ProductsService {
         return result;
     }
 
+    /**
+     * thêm asset mới cho sản phẩm ở cấp product
+     *
+     * dùng ảnh đầu tiên upload làm thumbnail mặc định nếu không có thumbnail
+     */
     async addAssets(id: string, files: Express.Multer.File[]) {
         const product = await this.prisma.product.findUnique({
             where: { id },
@@ -616,7 +665,6 @@ export class ProductsService {
 
         const newAssets = await Promise.all(assetPromises);
 
-        // neu chua co anh thumnail - lay anh dau tien upload
         if (!product.thumbnailUrl) {
             const firstImageAsset = newAssets.find(a => a.type === AssetType.IMAGE);
             if (firstImageAsset) {
@@ -630,7 +678,16 @@ export class ProductsService {
         return newAssets;
     }
 
+    /**
+     * xóa một asset đã lưu của sản phẩm
+     *
+     * flow:
+     * - xóa asset trong db
+     * - xóa file tương ứng trên cloudinary
+     * - nếu asset bị xóa đang là ảnh primary thì chọn ảnh thay thế và đồng bộ lại thumbnail
+     */
     async removeAsset(assetId: string) {
+        // tiến hành tìm kiếm assets tương ứng trên cld và xóa
         const asset = await this.prisma.productAsset.findUnique({
             where: { id: assetId }
         });
@@ -647,11 +704,11 @@ export class ProductsService {
 
         const productId = asset.productId;
 
+        // thực hiện xóa assets tương ứng trong db
         return await this.prisma.$transaction(async (tx) => {
-            // xoa asset
             await tx.productAsset.delete({ where: { id: assetId } });
 
-            // neu anh primary bi xoa - tim anh khac thay the
+            // tìm ảnh khác trhay thế nếu primary bị xóa
             if (asset.isPrimary) {
                 const nextAsset = await tx.productAsset.findFirst({
                     where: { productId, type: AssetType.IMAGE },
@@ -668,7 +725,7 @@ export class ProductsService {
                         data: { thumbnailUrl: nextAsset.url }
                     });
                 } else {
-                    // set null neu khong con anh
+                    // không còn ảnh nào -> null
                     await tx.product.update({
                         where: { id: productId },
                         data: { thumbnailUrl: null }
@@ -679,6 +736,7 @@ export class ProductsService {
         });
     }
 
+    // set primary
     async setPrimaryAsset(productId: string, assetId: string) {
         const asset = await this.prisma.productAsset.findFirst({
             where: { id: assetId, productId }
@@ -686,19 +744,19 @@ export class ProductsService {
         if (!asset) throw new NotFoundException('Asset không tồn tại hoặc không thuộc sản phẩm này');
 
         return await this.prisma.$transaction(async (tx) => {
-            // tat tat ca primary hien tai cua prod
+            // tắt tất cả primary hiện tại của sản phẩm
             await tx.productAsset.updateMany({
                 where: { productId },
                 data: { isPrimary: false }
             })
 
-            // bat primary duoc chon
+            // set primary cho asset được chọn
             const updatedAsset = await tx.productAsset.update({
                 where: { id: assetId },
                 data: { isPrimary: true }
             });
 
-            // dong bo lam thumbail
+            // đồng bộ làm thumbnail
             await tx.product.update({
                 where: { id: productId },
                 data: { thumbnailUrl: updatedAsset.url }
@@ -708,6 +766,12 @@ export class ProductsService {
         });
     }
 
+    /**
+     * toggle trạng thái kinh doanh của sản phẩm
+     *
+     * khi sản phẩm cha bị tắt, toàn bộ biến thể cũng bị tắt theo để đảm bảo
+     * không còn biến thể nào ở trạng thái có thể bán trong khi sản phẩm cha bị ẩn
+     */
     async toggleStatus(id: string) {
         const product = await this.prisma.product.findUnique({
             where: { id },
@@ -717,13 +781,13 @@ export class ProductsService {
         if (!product) throw new NotFoundException('Sản phẩm không tồn tại');
 
         return await this.prisma.$transaction(async (tx) => {
-            // toggle product
+            // toggle trạng thái kinh doanh (isActive)
             const updatedProduct = await tx.product.update({
                 where: { id },
                 data: { isActive: !product.isActive }
             });
 
-            // an toan bo bien the neu sp cha ngung kinh doanh
+            // ẩn toàn bộ biến thể nếu sản phẩm cha ngừng kinh doanh
             if (!updatedProduct.isActive) {
                 await tx.productVariant.updateMany({
                     where: { productId: id },
@@ -738,6 +802,7 @@ export class ProductsService {
         });
     }
 
+    // toggle trạng thái sản phẩm nổi bật
     async toggleFeatured(id: string) {
         const product = await this.prisma.product.findUnique({
             where: { id },
@@ -746,6 +811,7 @@ export class ProductsService {
 
         if (!product) throw new NotFoundException('Sản phẩm không tồn tại');
 
+        // toggle
         const updatedProduct = await this.prisma.product.update({
             where: { id },
             data: { isFeatured: !product.isFeatured }
@@ -757,8 +823,16 @@ export class ProductsService {
         };
     }
 
+    /**
+     * xóa sản phẩm an toàn
+     *
+     * nếu chưa từng phát sinh order item trên bất kỳ biến thể nào thì được phép
+     * xóa cứng
+     * hoặc chỉ chuyển sản phẩm sang trạng thái inactive để giữ
+     * nguyên tính toàn vẹn cho lịch sử đơn hàng
+     */
     async removeProduct(id: string) {
-        // tim san pham bao gom bien the va so luong don hang cua tung bien the
+        // tìm sản phẩm và biến thể liên quan (bao gồm số lượng đơn hàng của từng biến thể)
         const product = await this.prisma.product.findUnique({
             where: { id },
             include: {
@@ -774,12 +848,12 @@ export class ProductsService {
 
         if (!product) throw new NotFoundException('Không tìm thấy sản phẩm để xóa');
 
-        // tong so don hang cua tat ca bien the
-        // bien the da co don hang khong xoa prod cha
+        // tổng số đơn hàng của tất cả biến thể
+        // không được xóa cứng sp cha nếu biến thể có đơn hàng
         const totalOrders = product.variants.reduce((sum, variant) => sum + variant._count.orderItems, 0);
 
         if (totalOrders > 0) {
-            // neu co nguoi mua chi an san pham
+            // ẩn sản phẩm
             return this.prisma.product.update({
                 where: { id },
                 data: { isActive: false }
@@ -799,6 +873,17 @@ export class ProductsService {
     }
 
     // CLIENT
+    /**
+     * lấy danh sách sản phẩm có phân trang và áp dụng đầy đủ các điều kiện lọc (admin + client)
+     *
+     * điều kiện:
+     * - phân trang
+     * - tìm kiếm theo tên sản phẩm, brand, category
+     * - lọc theo category, brand, khoảng giá
+     * - lọc theo trạng thái hiển thị và trạng thái hoạt động của biến thể
+     * - lọc theo tồn kho
+     * - lọc theo loại asset (2D hoặc 3D)
+     */
     async getAllProducts(
         query: {
             page?: number;
@@ -832,7 +917,7 @@ export class ProductsService {
 
         const skip = (page - 1) * limit;
 
-        // de quy qua category
+        // đệ quy qua category lấy sản phẩm trong cấp subcate
         let categoryIds: string[] | undefined = undefined;
         if (categoryId) {
             const currentCategory = await this.prisma.category.findUnique({
@@ -842,35 +927,32 @@ export class ProductsService {
             categoryIds = currentCategory ? [currentCategory.id, ...currentCategory.children.map(c => c.id)] : [categoryId];
         }
 
-        // dieu kien loc
         let whereCondition: any = {
             categoryId: categoryIds ? { in: categoryIds } : undefined,
             brandId: brandId || undefined,
         };
 
-        // xu ly logic isActive vs showInactiveOnly vs showActiveOnly
+        // xử lý logic isActive vs showInactiveOnly vs showActiveOnly
         if (showInactiveOnly) {
-            // hien thi san pham inactive hoac san pham active co variants inactive
+            // hiển thị sản phẩm đang bị tắt hoặc sản phẩm còn bật nhưng có biến thể bị tắt
             whereCondition.OR = [
                 { isActive: false },
                 { variants: { some: { isActive: false } } }
             ];
         } else if (showActiveOnly) {
-            // hien thi san pham dang kinh doanh
             whereCondition.isActive = true;
             whereCondition.variants = {
                 some: { isActive: true }
             };
         } else {
-            // hien thi san pham active cho client
+            // hiển thị sản phẩm đang hoạt động cho client
             whereCondition.isActive = isAdmin ? undefined : true;
         }
 
         if (search) {
             const words = search.trim().split(/\s+/).filter(w => w.length > 0);
             if (words.length > 0) {
-                // cho phep tim kiem sau hon
-                // khong phu thuoc viet hoa viet thuong
+                // tìm kiếm sâu hơn, không phụ thuộc viết hoa/thường
                 const searchConditions = words.map(word => {
                     return {
                         OR: [
@@ -883,7 +965,7 @@ export class ProductsService {
                 });
 
                 if (showInactiveOnly && whereCondition.OR) {
-                    // merge search conditions vao OR da co san pham inactive
+                    // merge search conditions vào OR đã có sản phẩm inactive
                     whereCondition.AND = [
                         { OR: whereCondition.OR },
                         ...searchConditions
@@ -896,7 +978,7 @@ export class ProductsService {
         }
 
 
-        // loc gia qua variant
+        // lọc giá qua biến thể
         if (minPrice || maxPrice) {
             whereCondition.variants = {
                 some: {
@@ -908,7 +990,7 @@ export class ProductsService {
             };
         }
 
-        // loc theo ton kho
+        // lọc theo tồn kho
         if (inventoryStatus && inventoryStatus !== 'all') {
             if (inventoryStatus === 'out_of_stock') {
                 whereCondition.variants = {
@@ -928,7 +1010,7 @@ export class ProductsService {
             }
         }
 
-        // loc theo loai asset
+        // lọc theo assets
         if (assetType && assetType !== 'all') {
             if (assetType === 'has_3d') {
                 whereCondition.assets = {
@@ -941,7 +1023,6 @@ export class ProductsService {
             }
         }
 
-        // query db
         const [items, total] = await Promise.all([
             this.prisma.product.findMany({
                 where: whereCondition,
@@ -975,7 +1056,7 @@ export class ProductsService {
     }
 
     async getProductById(idOrSlug: string) {
-        // regex uuid hop le
+        // regex uuid hợp lệ
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
 
         const product = await this.prisma.product.findUnique({
@@ -995,6 +1076,127 @@ export class ProductsService {
         return product;
     }
 
+    /**
+     * thực hiện so sánh tối đa 3 sản phẩm đang hoạt động trong cùng một nhóm compare
+     *
+     * flow:
+     * - kiểm tra list id
+     * - lấy sản phẩm và chỉ giữ lại biến thể được chọn nếu có id biến thể (chỉ chọn biến thể để so sánh)
+     * - chặn việc so sánh khác nhóm danh mục
+     *
+     * so sánh dựa trên thông số và chi tiết của biến thể được chọn thay vì dùng sản phẩm cha
+     */
+    async compareProducts(productIds: string[], variantIds?: string[]) {
+        if (!Array.isArray(productIds) || productIds.length === 0) {
+            throw new BadRequestException('productIds không được rỗng');
+        }
+
+        if (productIds.length < 2) {
+            throw new BadRequestException('Cần ít nhất 2 sản phẩm để tiến hành so sánh');
+        }
+
+        if (productIds.length > 3) {
+            throw new BadRequestException('Chỉ được so sánh tối đa 3 sản phẩm');
+        }
+
+        const normalizedProductIds = productIds.map((id) => id.trim()).filter(Boolean);
+        if (normalizedProductIds.length !== productIds.length) {
+            throw new BadRequestException('productId không hợp lệ');
+        }
+
+        const uniqueProductIds = new Set(normalizedProductIds);
+        if (uniqueProductIds.size !== normalizedProductIds.length) {
+            throw new BadRequestException('Không được so sánh chung loại sản phẩm');
+        }
+
+        const products = await this.prisma.product.findMany({
+            where: { id: { in: normalizedProductIds }, isActive: true },
+            include: {
+                brand: { select: { name: true, logoUrl: true } },
+                category: { include: { parent: { select: { id: true, name: true } } } },
+                variants: {
+                    where: { isActive: true },
+                    orderBy: { price: 'asc' },
+                    include: { assets: true },
+                },
+                assets: true,
+            },
+        });
+
+        if (products.length !== normalizedProductIds.length) {
+            const foundIds = new Set(products.map((product) => product.id));
+            const missingIds = normalizedProductIds.filter((id) => !foundIds.has(id));
+            throw new NotFoundException(`Không tìm thấy productId: ${missingIds.join(', ')}`);
+        }
+
+        // thu hẹp mỗi sản phẩm về đúng biến thể người gọi chọn để giá và
+        // thông số trả về phản ánh đúng cấu hình đang được so sánh
+        const variantIdSet = new Set(variantIds ?? []);
+        products.forEach((product) => {
+            const selectedVariant = product.variants.find((v) => variantIdSet.has(v.id));
+            if (selectedVariant) {
+                product.variants = [selectedVariant];
+            } else {
+                if (product.variants.length > 0) {
+                    product.variants = [product.variants[0]];
+                }
+            }
+        });
+
+        const categories = await this.prisma.category.findMany({
+            select: {
+                id: true,
+                name: true,
+                slug: true,
+                parentId: true,
+            },
+        });
+        const categoryById = new Map(categories.map((category) => [category.id, category]));
+        const childrenByParentId = categories.reduce((acc, category) => {
+            if (!category.parentId) return acc;
+            const children = acc.get(category.parentId) ?? [];
+            children.push(category);
+            acc.set(category.parentId, children);
+            return acc;
+        }, new Map<string, CompareCategoryNode[]>());
+
+        const compareKeys = products.map((product) => ({
+            productId: product.id,
+            productName: product.name,
+            key: this.resolveCompareKey(
+                product.name,
+                product.categoryId,
+                categoryById,
+                childrenByParentId,
+            ),
+        }));
+
+        const firstCompareKey = compareKeys[0].key;
+        const mismatched = compareKeys.filter(({ key }) => key.id !== firstCompareKey.id);
+
+        if (mismatched.length > 0) {
+            throw new BadRequestException({
+                message: 'Các sản phẩm không cùng danh mục',
+                compareKey: firstCompareKey,
+                products: compareKeys.map(({ productId, productName, key }) => ({
+                    productId,
+                    productName,
+                    compareKey: key,
+                })),
+            });
+        }
+
+        const productById = new Map(products.map((product) => [product.id, product]));
+        const orderedProducts = normalizedProductIds.map((id) => productById.get(id)!);
+
+        return {
+            compareKey: firstCompareKey,
+            products: orderedProducts,
+            specRows: this.buildCompareSpecRows(orderedProducts),
+        };
+    }
+
+    // lấy danh sách sản phẩm nổi bật
     async getFeaturedProducts() {
         const limit = 5;
         return await this.prisma.product.findMany({
@@ -1039,6 +1241,11 @@ export class ProductsService {
         });
     }
 
+    /**
+     * lấy danh sách sản phẩm liên quan trong cùng danh mục với sản phẩm hiện tại
+     *
+     * kết quả loại trừ chính sản phẩm gốc và chỉ lấy các sản phẩm còn hoạt động
+     */
     async getRelatedProducts(id: string) {
         const currentProduct = await this.prisma.product.findUnique({
             where: { id },
@@ -1050,7 +1257,7 @@ export class ProductsService {
         return await this.prisma.product.findMany({
             where: {
                 categoryId: currentProduct.categoryId,
-                id: { not: id }, // khong lay chinh no
+                id: { not: id }, // không lấy chính nó
                 isActive: true,
                 variants: {
                     some: {}
@@ -1081,9 +1288,12 @@ export class ProductsService {
         });
     }
 
-    // lay nhung sp duoc danh gia cao
-    // fallback khi chua co review -> lay sp theo sold cnt
-    // debug -> lay sp vua duoc tao
+    /**
+     * lấy danh sách sản phẩm đánh giá cao
+     *
+     * ưu tiên đầu tiên là điểm rating và số lượng review đủ lớn
+     * nếu dữ liệu review chưa đủ lớn thì dùng top bán chạy và độ mới thay thế
+     */
     async getTopRatedProducts(limit: number = 5) {
         const productSelect = {
             id: true,
@@ -1114,7 +1324,7 @@ export class ProductsService {
             }
         } satisfies Prisma.ProductSelect;
 
-        // layer 1: lay sp theo top rating & review cnt
+        // layer 1: lấy sp theo top rating & review cnt
         let products = await this.prisma.product.findMany({
             where: {
                 isActive: true,
@@ -1136,8 +1346,8 @@ export class ProductsService {
                 },
                 select: productSelect,
                 orderBy: [
-                    { soldCount: 'desc' }, // l2
-                    { createdAt: 'desc' } // l3: debug
+                    { soldCount: 'desc' }, // l2 : lấy các sp có lượt bán cao nhất
+                    { createdAt: 'desc' } // l3: lây theo độ mới
                 ],
                 take: limit
             });
@@ -1146,7 +1356,7 @@ export class ProductsService {
         return products;
     }
 
-    // lay cac san pham provip
+    // vault
     async getVaultProducts() {
         const products = await this.prisma.product.findMany({
             where: {
@@ -1183,12 +1393,14 @@ export class ProductsService {
         return products;
     }
 
+    // thêm biến thể mới cho sp cha đã tồn tại
     async addVariant(id: string, data: CreateVariantDto) {
         const product = await this.prisma.product.findUnique({
             where: { id }
         });
         if (!product) throw new NotFoundException('Sản phẩm cha không tồn tại');
 
+        // đảm bảo biến thể chưa có trong db
         const existingSku = await this.prisma.productVariant.findUnique({
             where: { sku: data.sku }
         })
@@ -1198,6 +1410,7 @@ export class ProductsService {
 
         const parsedAttributes = data.attributes ? JSON.parse(data.attributes) : {};
 
+        // thêm mới biến thể
         const variant = await this.prisma.productVariant.create({
             data: {
                 productId: id,
@@ -1212,6 +1425,16 @@ export class ProductsService {
         return variant;
     }
 
+    /**
+     * tổng hợp các chỉ số tồn kho cho dashboard
+     *
+     * bao gồm:
+     * - tổng số SKU
+     * - tổng tồn kho
+     * - số SKU sắp hết hàng
+     * - working capital
+     * - thống kê trạng thái đang hoạt động và ngừng hoạt động ở cả mức variant và product
+     */
     async getInventoryStats() {
         const [totalSKUs, totalStock, lowStockCount, workingCapital, activeVariants, inactiveVariants, inactiveProducts] = await Promise.all([
             this.prisma.productVariant.count(),
@@ -1224,7 +1447,7 @@ export class ProductsService {
             this.prisma.productVariant.findMany({
                 select: { price: true, stock: true }
             }),
-            // active variants (of active products)
+            // các biến thể đang hoạt động của những sản phẩm đang hoạt động
             this.prisma.productVariant.findMany({
                 where: {
                     isActive: true,
@@ -1232,12 +1455,12 @@ export class ProductsService {
                 },
                 select: { price: true, stock: true }
             }),
-            // inactive variants
+            // các biến thể đang bị tắt
             this.prisma.productVariant.findMany({
                 where: { isActive: false },
                 include: { product: { select: { name: true } } }
             }),
-            // inactive products
+            // các sản phẩm đang bị tắt
             this.prisma.product.findMany({
                 where: { isActive: false },
                 select: { id: true, name: true, slug: true }
@@ -1248,20 +1471,19 @@ export class ProductsService {
             return acc + (Number(curr.price) * curr.stock);
         }, 0);
 
-        // actual (active only)
+        // giá trị thực tế chỉ tính trên phần đang hoạt động
         const actualStock = activeVariants.reduce((acc, curr) => acc + curr.stock, 0);
         const actualCapital = activeVariants.reduce((acc, curr) => {
             return acc + (Number(curr.price) * curr.stock);
         }, 0);
 
         return {
-            // totalSKUs
+            // total SKUs
             totalSKUs,
             totalStock: totalStock._sum.stock || 0,
             lowStockCount,
             workingCapital: capitalValue,
 
-            // actual (active only)
             activeSKUs: activeVariants.length,
             actualStock,
             actualCapital,
@@ -1284,6 +1506,7 @@ export class ProductsService {
         };
     }
 
+    // cập nhật biến thể và đồng bộ lại embedding
     async updateVariant(variantId: string, data: UpdateVariantDto) {
         const variant = await this.prisma.productVariant.findUnique({
             where: { id: variantId }
@@ -1292,6 +1515,7 @@ export class ProductsService {
 
         const parsedAttributes = data.attributes ? JSON.parse(data.attributes) : {};
 
+        // update biến thể
         const updatedVariant = await this.prisma.productVariant.update({
             where: { id: variantId },
             data: {
@@ -1301,10 +1525,17 @@ export class ProductsService {
                 attributes: parsedAttributes
             }
         });
+        // đồng bộ lại vector embedding
         this.queueProductEmbeddingSync(variant.productId);
         return updatedVariant;
     }
 
+    /**
+     * toggle trạng thái kinh doanh của một biến thể
+     *
+     * nếu biến thể vẫn đang nằm trong các đơn hàng chưa hoàn tất thì thao tác
+     * bị từ chối để tránh làm hỏng luồng xử lý đơn
+     */
     async toggleVariant(variantId: string) {
         const variant = await this.prisma.productVariant.findUnique({
             where: { id: variantId },
@@ -1319,9 +1550,9 @@ export class ProductsService {
 
         if (!variant) throw new NotFoundException('Biến thể không tồn tại');
 
-        // khong duoc ngung kinh doanh san pham trong dno hang chua hoan tat
+        // không được ngưng kinh doanh biến thể khi vẫn còn nằm trong luồng order chưa hoàn tất
         const activeOrders = variant.orderItems.filter(oi =>
-            !['DELIVERED', 'CANCELLED', 'RETURNED', 'FAILED'].includes(oi.order.status)
+            !['DELIVERED', 'CANCELLED', 'RETURNED', 'FAILED', 'COMPLETED'].includes(oi.order.status)
         );
 
         if (activeOrders.length > 0) {
@@ -1335,7 +1566,7 @@ export class ProductsService {
                 data: { isActive: !variant.isActive }
             });
 
-            // ngung kinh doanh -> xoa khoi gio hang
+            // ngưng kinh doanh -> xóa khỏi giỏ hàng
             if (!updatedVariant.isActive) {
                 await tx.cartItem.deleteMany({
                     where: { productVariantId: variantId }
@@ -1351,7 +1582,7 @@ export class ProductsService {
         return result;
     }
 
-    // giam stock khi khach hang chot don
+    // giảm stock khi đơn hàng dược chốt
     async decreaseStock(variantId: string, quantity: number) {
         const variant = await this.prisma.productVariant.findUnique({ where: { id: variantId } });
         if (!variant) throw new NotFoundException('Biến thể không tồn tại');
@@ -1368,8 +1599,7 @@ export class ProductsService {
         return updatedVariant;
     }
 
-    // khach hang huy don hoac thanh toan that bai
-    // tra lai stock cho don hang
+    // hoàn trả stock khi đơn hàng bị hủy, hoàn trả hoặc thanh toán thất bại
     async increaseStock(variantId: string, quantity: number) {
         const variant = await this.prisma.productVariant.findUnique({
             where: { id: variantId },
@@ -1388,21 +1618,20 @@ export class ProductsService {
         return updatedVariant;
     }
 
-    // tang view san pham
+    // tăng view sản phẩm
     async incrementView(id: string, deviceId: string = 'default') {
         const cacheKey = `view_check:${id}:${deviceId}`;
         const isViewed = await this.redisService.get(cacheKey);
 
         if (!isViewed) {
-            // danh dau key tranh spam trong 30p
+            // đánh dấu đã xem tránh spam view
             await this.redisService.set(cacheKey, '1', 'EX', 1800);
-            // tong view moi chua luu vao db
+            // tổng view mới chưa được thêm vào db
             await this.redisService.incr(`product_views_buffer:${id}`);
         }
     }
 
-    // su dung cron auto cong don view sau moi 10 phutt
-    // tranh nghen co chai neu co nhieu user truy cap dong thoi vao 1 item
+    // cron job thực hiện cộng dồn view vào db sau mỗi 10 phút
     @Cron(CronExpression.EVERY_10_MINUTES)
     async syncViewsToDb() {
         const keys = await this.redisService.keys('product_views_buffer:*');
@@ -1424,7 +1653,7 @@ export class ProductsService {
         }
     }
 
-    // SKU engine
+    // auto sinh sku
     private generateSKU(slug: string, attributes?: Record<string, any>): string {
         const slugPart = slug
             .split('-')
@@ -1446,19 +1675,172 @@ export class ProductsService {
         return `${slugPart}-${attrPart}`;
     }
 
+    /**
+     * xác định category node nào sẽ đóng vai trò compareKey của sản phẩm
+     *
+     * gói toàn bộ quy tắc phân nhóm compare theo cây danh mục, bao gồm
+     * cả trường hợp so sánh theo category gốc của một family
+     */
+    private resolveCompareKey(
+        productName: string,
+        categoryId: string | null,
+        categoryById: Map<string, CompareCategoryNode>,
+        childrenByParentId: Map<string, CompareCategoryNode[]>,
+    ): CompareKey {
+        if (!categoryId) {
+            throw new BadRequestException(`Sản phẩm "${productName}" chưa có danh mục để so sánh`);
+        }
+
+        const path = this.buildCategoryPath(categoryId, categoryById);
+        if (path.length === 0) {
+            throw new BadRequestException(`Không tìm thấy danh mục của sản phẩm "${productName}"`);
+        }
+
+        // cate hiện tại - cate cha
+        const currentCategory = path[path.length - 1];
+        // subcate
+        const currentChildren = childrenByParentId.get(currentCategory.id) ?? [];
+
+        if (path.length === 1) {
+            if (currentChildren.length > 0) {
+                throw new BadRequestException(
+                    `Sản phẩm "${productName}" đang ở danh mục cha "${currentCategory.name}". ` +
+                    'Cần gán danh mục con trước khi so sánh',
+                );
+            }
+
+            return {
+                ...this.toCompareKeyNode(currentCategory),
+                strategy: 'standalone-category',
+                path: path.map((category) => this.toCompareKeyNode(category)),
+            };
+        }
+
+        // luôn sử dụng danh mục gốc làm khóa so sánh để cho phép so sánh giữa các subcate
+        const keyCategory = path[0];
+
+        return {
+            ...this.toCompareKeyNode(keyCategory),
+            strategy: 'category-family',
+            path: path.map((category) => this.toCompareKeyNode(category)),
+        };
+    }
+
+    /**
+     * dựng đầy đủ đường đi của một cate từ node hiện tại lên gốc
+     *
+     * chặn trường hợp dữ liệu cate bị lỗi vòng lặp
+     */
+    private buildCategoryPath(
+        categoryId: string,
+        categoryById: Map<string, CompareCategoryNode>,
+    ): CompareCategoryNode[] {
+        const path: CompareCategoryNode[] = [];
+        const visited = new Set<string>();
+        let current = categoryById.get(categoryId);
+
+        while (current) {
+            // loop
+            if (visited.has(current.id)) {
+                throw new BadRequestException('Cây danh mục không hợp lệ');
+            }
+
+            visited.add(current.id);
+            path.unshift(current);
+            current = current.parentId ? categoryById.get(current.parentId) : undefined;
+        }
+
+        return path;
+    }
+
+    // nguồn dữ liệu so sánh được lấy từ common specs và attribute config
+    private buildCompareSpecRows(products: any[]) {
+        const labels = new Set<string>();
+        const valueByProductId: Record<string, Record<string, string>> = {};
+
+        for (const product of products) {
+            const values: Record<string, string> = {};
+            const metadata = product.metadata as Record<string, any> | null;
+            const commonSpecs = metadata?.common_specs;
+
+            // lấy common_specs từ metadata
+            if (commonSpecs && typeof commonSpecs === 'object' && !Array.isArray(commonSpecs)) {
+                for (const [key, value] of Object.entries(commonSpecs)) {
+                    const label = String(key);
+                    labels.add(label);
+                    values[label] = this.formatCompareValue(value);
+                }
+            }
+
+            // lấy attributes từ các variant
+            if (product.variants && Array.isArray(product.variants)) {
+                product.variants.forEach((variant: any) => {
+                    if (variant.attributes && typeof variant.attributes === 'object') {
+                        for (const [key, value] of Object.entries(variant.attributes)) {
+                            const label = String(key);
+                            labels.add(label);
+
+                            const strVal = this.formatCompareValue(value);
+                            if (strVal) {
+                                if (values[label]) {
+                                    const vals = new Set(values[label].split(' / ').map(v => v.trim()));
+                                    vals.add(strVal);
+                                    values[label] = Array.from(vals).join(' / ');
+                                } else {
+                                    values[label] = strVal;
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            valueByProductId[product.id] = values;
+        }
+
+        return [...labels].map((label) => {
+            const values = products.reduce((acc, product) => {
+                acc[product.id] = valueByProductId[product.id]?.[label] ?? null;
+                return acc;
+            }, {} as Record<string, string | null>);
+            const uniqueValues = new Set(Object.values(values).filter((value) => value !== null && value !== ''));
+
+            return {
+                label,
+                values,
+                isDifferent: uniqueValues.size > 1,
+            };
+        });
+    }
+
+    private formatCompareValue(value: unknown): string {
+        if (value === null || value === undefined) return '';
+        if (typeof value === 'string') return value;
+        if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+        return JSON.stringify(value);
+    }
+
+    private toCompareKeyNode(category: CompareCategoryNode) {
+        return {
+            id: category.id,
+            name: category.name,
+            slug: category.slug,
+        };
+    }
+
+    // gọi đồng bộ embedding theo kiểu bất đồng bộ, không chặn request hiện tại
     private queueProductEmbeddingSync(productId?: string | null) {
         if (!productId) return;
         void this.embeddingService.syncProductEmbeddingBestEffort(productId);
     }
 
-    // tao ma tran bien the
+    // tạo ma trận biến thể từ các trục thuộc tính theo tích descartes (ma trậ: m * n)
     async generateVariantMatrix(axes: Record<string, string[]>, productSlug?: string) {
-        // truc thuoc tinh
-        // dung de tao combo bien the
+        // trục thuộc tính dùng để tạo combo biến thể
         const keys = Object.keys(axes);
         if (keys.length === 0) return [];
 
-        // tich de-cac (cartesian product)
+        // tích đề-các (cartesian product)
         const combinations: Record<string, string>[] = keys.reduce(
             (acc, key) => {
                 const newCombos: Record<string, string>[] = [];
