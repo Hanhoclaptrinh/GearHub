@@ -246,16 +246,58 @@ export class OrdersService {
     page?: number;
     limit?: number;
     status?: OrderStatus;
+    paymentStatus?: PaymentStatus;
+    paymentMethod?: PaymentMethod;
+    createdFrom?: string;
+    createdTo?: string;
+    minTotal?: number;
+    maxTotal?: number;
+    cancelRequestOnly?: boolean;
     search?: string;
     userId?: string;
   }) {
-    const { page = 1, limit = 10, status, search, userId } = query;
+    const {
+      page = 1,
+      limit = 10,
+      status,
+      paymentStatus,
+      paymentMethod,
+      createdFrom,
+      createdTo,
+      minTotal,
+      maxTotal,
+      cancelRequestOnly,
+      search,
+      userId,
+    } = query;
 
     const skip = (page - 1) * limit;
 
-    const whereCondition: any = {
+    // điều kiện lọc
+    // lọc theo trạng thái đơn hàng, trạng thái thanh toán, phương thức thanh toán,
+    // userid, khoảng thời gian tạo đơn, khoảng giá, các đơn yêu cầu hủy và theo keyword tìm kiếm
+    const whereCondition: Prisma.OrderWhereInput = {
       ...(status && { status }),
+      ...(paymentStatus && { paymentStatus }),
+      ...(paymentMethod && { paymentMethod }),
       ...(userId && { userId }),
+      ...((createdFrom || createdTo) && {
+        createdAt: {
+          ...(createdFrom && { gte: new Date(createdFrom) }),
+          ...(createdTo && { lte: new Date(createdTo) }),
+        },
+      }),
+      ...((minTotal !== undefined || maxTotal !== undefined) && {
+        totalAmount: {
+          ...(minTotal !== undefined && { gte: minTotal }),
+          ...(maxTotal !== undefined && { lte: maxTotal }),
+        },
+      }),
+      ...(cancelRequestOnly && {
+        tracking: {
+          some: { statusLabel: 'Yêu cầu hủy' },
+        },
+      }),
       ...(search && {
         OR: [
           { id: { contains: search } },
@@ -715,35 +757,67 @@ export class OrdersService {
     }
   }
 
+  // lấy top sản phẩm bán chạy nhất (theo biến thể)
   async getTopSellingProducts(limit = 5) {
-    const topItems = await this.prisma.orderItem.groupBy({
+    // lấy tổng biến thể xuất hiện trong toàn bộ đơn hàng - gom nhóm theo id
+    const topVariants = await this.prisma.orderItem.groupBy({
       by: ['productVariantId'],
       _sum: { quantity: true },
-      orderBy: {
-        _sum: { quantity: 'desc' },
-      },
-      take: limit,
     });
 
-    const details = await Promise.all(
-      topItems.map(async (item) => {
+    const variantSales = await Promise.all(
+      topVariants.map(async (item) => {
         const variant = await this.prisma.productVariant.findUnique({
           where: { id: item.productVariantId },
-          select: { name: true, product: { select: { name: true } } },
+          select: {
+            productId: true,
+            imageUrl: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+                thumbnailUrl: true,
+              },
+            },
+          },
         });
 
+        // trả về thông tin cha của biến thể và tổng bán
         return {
-          ...variant,
-          totalSold: item._sum.quantity,
+          productId: variant?.productId,
+          productName: variant?.product?.name,
+          imageUrl: variant?.imageUrl || variant?.product?.thumbnailUrl,
+          totalSold: item._sum.quantity || 0,
         };
       }),
     );
-    return details;
+
+    const productSales: Record<
+      string,
+      { name: string; imageUrl: string | null; totalSold: number }
+    > = {};
+
+    for (const item of variantSales) {
+      if (!item.productId || !item.productName) continue;
+      const prodId = item.productId;
+      if (!productSales[prodId]) {
+        productSales[prodId] = {
+          name: item.productName,
+          imageUrl: item.imageUrl || null,
+          totalSold: 0,
+        };
+      }
+      productSales[prodId].totalSold += item.totalSold;
+    }
+
+    return Object.values(productSales)
+      .sort((a, b) => b.totalSold - a.totalSold)
+      .slice(0, limit);
   }
 
   // thu thập số liệu thống kê tổng quan cho trang quản trị
   async getAdminStats() {
-    const [revenue, orderCounts, userCount, lowStockVariants, latestLogs] =
+    const [revenue, orderCounts, refundedOrders, userCount, lowStockVariants, latestLogs] =
       await Promise.all([
         // chỉ tính các đơn hàng đã thanh toán thành công để phản ánh chính xác doanh thu thực tế, loại bỏ đơn ảo/hủy
         this.prisma.order.aggregate({
@@ -755,6 +829,11 @@ export class OrdersService {
         this.prisma.order.groupBy({
           by: ['status'],
           _count: { id: true },
+        }),
+
+        // tính các đơn hàng đã hoàn tiền
+        this.prisma.order.count({
+          where: { paymentStatus: PaymentStatus.REFUNDED },
         }),
 
         // chỉ đếm tài khoản khách hàng thực tế để đo lường quy mô và mức độ tăng trưởng tệp người dùng
@@ -844,6 +923,7 @@ export class OrdersService {
     return {
       totalRevenue: revenue._sum.totalAmount || 0,
       ordersByStatus: formattedOrders,
+      refundedOrders,
       totalUsers: userCount,
       lowStockAlert: lowStockVariants,
       revenueTrends: trends.revenue,
@@ -923,9 +1003,9 @@ export class OrdersService {
    * kiểm tra trạng thái đơn hàng (chỉ cho phép đơn hàng đã giao thành công hoặc đã hủy)
    * tìm hoặc khởi tạo giỏ hàng hiện tại của user
    * duyệt qua từng sản phẩm trong đơn hàng cũ:
-   *    - chỉ được mua lại nếu biến thể / sản phẩm đó còn kinh doanh
-   *    - đối chiếu và kiểm tra stock hiện tại để tránh việc đặt quá số lượng cho phép
-   *    - tính toán số lượng có thể thêm vào giỏ hàng sau khi đã trừ đi số lượng hiện có trong giỏ
+   *  - chỉ được mua lại nếu biến thể / sản phẩm đó còn kinh doanh
+   *  - đối chiếu và kiểm tra stock hiện tại để tránh việc đặt quá số lượng cho phép
+   *  - tính toán số lượng có thể thêm vào giỏ hàng sau khi đã trừ đi số lượng hiện có trong giỏ
    * thực hiện cập nhật danh mục sản phẩm vào giỏ hàng
    */
   async reorderToCart(userId: string, id: string, orderItemIds: string[]) {

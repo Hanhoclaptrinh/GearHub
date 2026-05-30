@@ -4,7 +4,7 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { OrderStatus, Role } from '@prisma/client';
+import { OrderStatus, PaymentMethod, PaymentStatus, Role } from '@prisma/client';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { ReviewCancelDto } from './dto/review-cancel.dto';
@@ -62,6 +62,13 @@ export class OrdersController {
         @Query('page') page?: number,
         @Query('limit') limit?: number,
         @Query('status') status?: OrderStatus,
+        @Query('paymentStatus') paymentStatus?: PaymentStatus,
+        @Query('paymentMethod') paymentMethod?: PaymentMethod,
+        @Query('createdFrom') createdFrom?: string,
+        @Query('createdTo') createdTo?: string,
+        @Query('minTotal') minTotal?: string,
+        @Query('maxTotal') maxTotal?: string,
+        @Query('cancelRequestOnly') cancelRequestOnly?: string,
         @Query('search') search?: string,
         @Query('userId') userId?: string
     ) {
@@ -69,6 +76,13 @@ export class OrdersController {
             page: page ? Number(page) : 1,
             limit: limit ? Number(limit) : 10,
             status,
+            paymentStatus,
+            paymentMethod,
+            createdFrom,
+            createdTo,
+            minTotal: minTotal ? Number(minTotal) : undefined,
+            maxTotal: maxTotal ? Number(maxTotal) : undefined,
+            cancelRequestOnly: cancelRequestOnly === 'true',
             search,
             userId
         });

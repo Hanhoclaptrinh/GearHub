@@ -641,7 +641,7 @@ export class ReviewsService {
 
     // lấy thống kê đánh giá toàn hệ thống
     async getReviewStats() {
-        const [total, avgRating, unreplied, hidden] = await Promise.all([
+        const [total, avgRating, unreplied, hidden, replied, ratingGroups] = await Promise.all([
             this.prisma.review.count(),
             this.prisma.review.aggregate({
                 _avg: { rating: true }
@@ -651,14 +651,29 @@ export class ReviewsService {
             }),
             this.prisma.review.count({
                 where: { isHidden: true }
+            }),
+            this.prisma.review.count({
+                where: { reply: { not: null } }
+            }),
+            this.prisma.review.groupBy({
+                by: ['rating'],
+                _count: { id: true }
             })
         ]);
+
+        // phân phối rating theo số sao 1-5
+        const ratingDistribution: Record<string, number> = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
+        ratingGroups.forEach(group => {
+            ratingDistribution[String(group.rating)] = group._count.id;
+        });
 
         return {
             total,
             average: Number((avgRating._avg.rating || 0).toFixed(1)),
             unreplied,
-            hidden
+            replied,
+            hidden,
+            ratingDistribution
         };
     }
 }
