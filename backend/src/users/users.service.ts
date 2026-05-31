@@ -111,8 +111,39 @@ export class UsersService {
       this.prisma.user.count({ where }),
     ]);
 
+    // lấy tổng chi tiêu cho từng user trong trang
+    // các đơn có trạng thái thanh toán là PAID || trạng thái đơn là DELIVERED || COMPLETED
+    const userIds = users.map((u) => u.id);
+    // thực hiện gom nhóm theo user id tránh n+1
+    const spentGroups = userIds.length > 0
+      ? await this.prisma.order.groupBy({
+        by: ['userId'],
+        where: {
+          userId: { in: userIds },
+          OR: [
+            { paymentStatus: 'PAID' },
+            { status: 'DELIVERED' },
+            { status: 'COMPLETED' },
+          ],
+        },
+        _sum: { totalAmount: true },
+      })
+      : [];
+
+    // map userId -> totalSpent
+    const spentMap = new Map(
+      spentGroups.map((g) => [g.userId, g._sum.totalAmount ?? 0])
+    );
+
+    // map về dạng k-v
+    // user : spent
+    const usersWithSpent = users.map((u) => ({
+      ...u,
+      totalSpent: spentMap.get(u.id) ?? 0,
+    }));
+
     return {
-      data: users,
+      data: usersWithSpent,
       meta: {
         total,
         page: Number(page),
@@ -258,15 +289,45 @@ export class UsersService {
   }
 
 
+  // lấy stats user cho trang admin
   async getUserStats() {
-    const [total, active, admins, banned] = await Promise.all([
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const [
+      total,
+      active,
+      admins,
+      banned,
+      customers,
+      activeCustomers,
+      inactiveCustomers,
+      bannedCustomers,
+      newCustomersThisMonth,
+    ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.user.count({ where: { status: UserStatus.ACTIVE } }),
       this.prisma.user.count({ where: { role: Role.ADMIN } }),
       this.prisma.user.count({ where: { status: UserStatus.BANNED } }),
+      this.prisma.user.count({ where: { role: Role.USER } }),
+      this.prisma.user.count({ where: { role: Role.USER, status: UserStatus.ACTIVE } }),
+      this.prisma.user.count({ where: { role: Role.USER, status: UserStatus.INACTIVE } }),
+      this.prisma.user.count({ where: { role: Role.USER, status: UserStatus.BANNED } }),
+      this.prisma.user.count({ where: { role: Role.USER, createdAt: { gte: startOfMonth } } }),
     ]);
 
-    return { total, active, admins, banned };
+    return {
+      total,
+      active,
+      admins,
+      banned,
+      customers,
+      activeCustomers,
+      inactiveCustomers,
+      bannedCustomers,
+      newCustomersThisMonth,
+    };
   }
 
   async getDetailedUser(id: string) {

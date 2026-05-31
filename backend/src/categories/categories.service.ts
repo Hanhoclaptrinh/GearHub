@@ -42,12 +42,17 @@ export class CategoriesService {
         return this.prisma.category.findMany({
             where: { parentId: null },
             include: {
+                _count: { select: { products: true, children: true } },
                 children: {
                     select: {
                         id: true,
                         name: true,
                         slug: true,
+                        description: true,
+                        parentId: true,
                         iconUrl: true,
+                        createdAt: true,
+                        updatedAt: true,
                         _count: { select: { products: true } }
                     }
                 }

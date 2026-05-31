@@ -13,6 +13,22 @@ export class BrandsService {
     private cloudinaryService: CloudinaryService
   ) { }
 
+  private readonly brandSelect = {
+    id: true,
+    name: true,
+    slug: true,
+    logoUrl: true,
+    bannerUrl: true,
+    isActive: true,
+    isFeatured: true,
+    score: true,
+    createdAt: true,
+    updatedAt: true,
+    quote: true,
+    philosophy: true,
+    _count: { select: { products: true } }
+  };
+
   // tạo mới một brand
   async createBrand(data: CreateBrandDto, logoFile?: Express.Multer.File, bannerFile?: Express.Multer.File) {
     // slug dùng cho deeplink hoặc seo
@@ -84,17 +100,7 @@ export class BrandsService {
     if (page === undefined && limit === undefined) {
       return this.prisma.brand.findMany({
         where,
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          logoUrl: true,
-          bannerUrl: true,
-          isActive: true,
-          quote: true,
-          philosophy: true,
-          _count: { select: { products: true } }
-        },
+        select: this.brandSelect,
         orderBy: { name: 'asc' }
       });
     }
@@ -108,17 +114,7 @@ export class BrandsService {
       this.prisma.brand.count({ where }),
       this.prisma.brand.findMany({
         where,
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          logoUrl: true,
-          bannerUrl: true,
-          isActive: true,
-          quote: true,
-          philosophy: true,
-          _count: { select: { products: true } }
-        },
+        select: this.brandSelect,
         orderBy: { name: 'asc' },
         skip,
         take: limitNum,
@@ -307,6 +303,24 @@ export class BrandsService {
     return {
       message: `Đã kích hoạt thương hiệu '${brand.name}'`,
       isActive: true
+    };
+  }
+
+  async toggleFeatured(id: string) {
+    const brand = await this.prisma.brand.findUnique({ where: { id } });
+    if (!brand) throw new NotFoundException('Thương hiệu không tồn tại');
+
+    const updated = await this.prisma.brand.update({
+      where: { id },
+      data: { isFeatured: !brand.isFeatured },
+      select: this.brandSelect
+    });
+
+    return {
+      message: updated.isFeatured
+        ? `Đã đánh dấu '${updated.name}' là thương hiệu nổi bật`
+        : `Đã gỡ '${updated.name}' khỏi nhóm nổi bật`,
+      brand: updated
     };
   }
 

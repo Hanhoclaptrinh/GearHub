@@ -77,6 +77,14 @@ export class BrandsController {
     return this.brandsService.toggleStatus(id);
   }
 
+  @Patch(':id/featured')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.STAFF)
+  @LogActivity(ActivityAction.BRAND_UPDATED)
+  async toggleFeatured(@Param('id') id: string) {
+    return this.brandsService.toggleFeatured(id);
+  }
+
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.STAFF)
