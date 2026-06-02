@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, AlertTriangle } from 'lucide-react';
+import { X, AlertTriangle } from './IconlyIcons';
 import { Button } from './Button';
 import { cn } from '../../utils/cn';
 

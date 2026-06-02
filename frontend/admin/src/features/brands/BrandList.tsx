@@ -1,36 +1,82 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  RefreshCcw,
   AlertCircle,
-  Image as ImageIcon,
-  X,
-  Upload,
-  Loader2,
   CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Edit,
   EyeOff,
-  ShieldCheck,
-  LayoutGrid,
-  Package
-} from 'lucide-react';
+  FileSpreadsheet,
+  FileText,
+  Filter,
+  Image as ImageIcon,
+  Plus,
+  Download,
+  Search,
+  Star as StarIcon,
+  Trash2,
+} from '../../components/ui/IconlyIcons';
+import {
+  Bag as IconlyBag,
+  Star as IconlyStar,
+  TickSquare as IconlyTickSquare,
+  Work as IconlyWork,
+} from 'react-iconly';
 import { toast } from 'sonner';
 import { brandService } from '../../services/brand.service';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import { Textarea } from '../../components/ui/Textarea';
-import { Card, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { Card, CardContent } from '../../components/ui/Card';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
+import { Input } from '../../components/ui/Input';
 import { cn } from '../../utils/cn';
 import type { Brand } from '../../types';
+import { BrandFormModal } from './BrandFormModal';
+
+type StatusFilter = 'all' | 'active' | 'inactive';
+type FeaturedFilter = 'all' | 'featured' | 'regular';
+type SortKey = 'name' | 'products' | 'updatedAt';
+
+const pageSizeOptions = [10, 50, 100] as const;
+
+const getProductCount = (brand: Brand) => brand._count?.products ?? 0;
+
+const formatDate = (value?: string) => {
+  if (!value) return 'Chưa cập nhật';
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(value));
+};
+
+const escapeHtml = (value: unknown) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
+const getMutationErrorMessage = (error: unknown, fallback: string) => {
+  const response = (error as { response?: { data?: { message?: string } } }).response;
+  return response?.data?.message || fallback;
+};
+
+type MutationMessage = {
+  message?: string;
+};
 
 export const BrandList: React.FC = () => {
   const [search, setSearch] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [featuredFilter, setFeaturedFilter] = useState<FeaturedFilter>('all');
+  const [sortKey, setSortKey] = useState<SortKey>('name');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<(typeof pageSizeOptions)[number]>(10);
+  const [isExportOpen, setIsExportOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -38,72 +84,167 @@ export const BrandList: React.FC = () => {
 
   const queryClient = useQueryClient();
 
-  // 1. Fetch full list for stats cards to keep statistics accurate
-  const { data: allBrands } = useQuery({
-    queryKey: ['brands-all'],
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['brands'],
     queryFn: () => brandService.getAllBrands(),
   });
 
-  // 2. Fetch paginated list for the table
-  const { data: paginatedData, isLoading, isError } = useQuery({
-    queryKey: ['brands', currentPage, search],
-    queryFn: () => brandService.getAllBrands(currentPage, 10, search),
-  });
-
-  const brands = paginatedData?.data || [];
-  const meta = paginatedData?.meta;
+  const brands: Brand[] = useMemo(() => (Array.isArray(data) ? data : data?.data ?? []), [data]);
 
   const createMutation = useMutation({
     mutationFn: (formData: FormData) => brandService.createBrand(formData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['brands'] });
-      toast.success('Hệ sinh thái đối tác đã được mở rộng!');
+      toast.success('Đã thêm thương hiệu mới');
       closeModal();
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Lỗi khi kích hoạt thương hiệu');
-    }
+    onError: (error: unknown) => {
+      toast.error(getMutationErrorMessage(error, 'Không thể thêm thương hiệu'));
+    },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, formData }: { id: string, formData: FormData }) => brandService.updateBrand(id, formData),
+    mutationFn: ({ id, formData }: { id: string; formData: FormData }) => brandService.updateBrand(id, formData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['brands'] });
-      toast.success('Cập nhật dữ liệu đối tác thành công');
+      toast.success('Đã cập nhật thương hiệu');
       closeModal();
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Có lỗi khi đồng bộ dữ liệu');
-    }
+    onError: (error: unknown) => {
+      toast.error(getMutationErrorMessage(error, 'Không thể cập nhật thương hiệu'));
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => brandService.deleteBrand(id),
-    onSuccess: (res: any) => {
+    onSuccess: (res: MutationMessage) => {
       queryClient.invalidateQueries({ queryKey: ['brands'] });
-      toast.success(res.message || 'Thay đổi trạng thái thương hiệu thành công');
+      toast.success(res.message || 'Đã xử lý thương hiệu');
       setIsConfirmOpen(false);
+      setBrandToDelete(null);
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Không thể thực hiện thao tác này');
-    }
+    onError: (error: unknown) => {
+      toast.error(getMutationErrorMessage(error, 'Không thể thực hiện thao tác này'));
+    },
   });
 
-  const toggleMutation = useMutation({
+  const toggleStatusMutation = useMutation({
     mutationFn: (id: string) => brandService.toggleBrand(id),
-    onSuccess: (res: any) => {
+    onSuccess: (res: MutationMessage) => {
       queryClient.invalidateQueries({ queryKey: ['brands'] });
-      toast.success(res.message || 'Cập nhật trạng thái thành công');
+      toast.success(res.message || 'Đã cập nhật trạng thái');
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Lỗi khi chuyển đổi trạng thái');
-    }
+    onError: (error: unknown) => {
+      toast.error(getMutationErrorMessage(error, 'Không thể đổi trạng thái thương hiệu'));
+    },
   });
 
-  const filteredBrands = brands || [];
+  const toggleFeaturedMutation = useMutation({
+    mutationFn: (id: string) => brandService.toggleFeaturedBrand(id),
+    onSuccess: (res: MutationMessage) => {
+      queryClient.invalidateQueries({ queryKey: ['brands'] });
+      toast.success(res.message || 'Đã cập nhật thương hiệu nổi bật');
+    },
+    onError: (error: unknown) => {
+      toast.error(getMutationErrorMessage(error, 'Không thể cập nhật nổi bật'));
+    },
+  });
+
+  const filteredBrands = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+
+    return brands
+      .filter((brand) => {
+        const matchesKeyword =
+          !keyword ||
+          brand.name.toLowerCase().includes(keyword) ||
+          brand.slug.toLowerCase().includes(keyword);
+        const matchesStatus =
+          statusFilter === 'all' ||
+          (statusFilter === 'active' && brand.isActive) ||
+          (statusFilter === 'inactive' && !brand.isActive);
+        const matchesFeatured =
+          featuredFilter === 'all' ||
+          (featuredFilter === 'featured' && brand.isFeatured) ||
+          (featuredFilter === 'regular' && !brand.isFeatured);
+
+        return matchesKeyword && matchesStatus && matchesFeatured;
+      })
+      .sort((first, second) => {
+        if (sortKey === 'products') return getProductCount(second) - getProductCount(first);
+        if (sortKey === 'updatedAt') {
+          return new Date(second.updatedAt || 0).getTime() - new Date(first.updatedAt || 0).getTime();
+        }
+        return first.name.localeCompare(second.name, 'vi');
+      });
+  }, [brands, featuredFilter, search, sortKey, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredBrands.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedBrands = filteredBrands.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const rangeStart = filteredBrands.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const rangeEnd = Math.min(currentPage * pageSize, filteredBrands.length);
+  const visiblePages = Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+    if (totalPages <= 5) return index + 1;
+    if (currentPage <= 3) return index + 1;
+    if (currentPage >= totalPages - 2) return totalPages - 4 + index;
+    return currentPage - 2 + index;
+  });
+  const totalProducts = brands.reduce((total, brand) => total + getProductCount(brand), 0);
+  const activeBrands = brands.filter((brand) => brand.isActive).length;
+  const featuredBrands = brands.filter((brand) => brand.isFeatured).length;
+  const hasActiveFilters = Boolean(search || statusFilter !== 'all' || featuredFilter !== 'all');
+
+  const statCards = [
+    {
+      label: 'Tổng thương hiệu',
+      value: brands.length,
+      icon: IconlyWork,
+      bgClass: 'bg-[#9694ff]',
+      active: statusFilter === 'all' && featuredFilter === 'all',
+      onClick: () => {
+        setStatusFilter('all');
+        setFeaturedFilter('all');
+        setPage(1);
+      },
+    },
+    {
+      label: 'Đang hoạt động',
+      value: activeBrands,
+      icon: IconlyTickSquare,
+      bgClass: 'bg-[#5ddc97]',
+      active: statusFilter === 'active',
+      onClick: () => {
+        setStatusFilter('active');
+        setPage(1);
+      },
+    },
+    {
+      label: 'Nổi bật',
+      value: featuredBrands,
+      icon: IconlyStar,
+      bgClass: 'bg-[#eaca4a]',
+      active: featuredFilter === 'featured',
+      onClick: () => {
+        setFeaturedFilter('featured');
+        setPage(1);
+      },
+    },
+    {
+      label: 'Tổng sản phẩm',
+      value: totalProducts,
+      icon: IconlyBag,
+      bgClass: 'bg-[#57caeb]',
+      active: sortKey === 'products',
+      onClick: () => {
+        setSortKey('products');
+        setPage(1);
+      },
+    },
+  ];
 
   const openModal = (brand?: Brand) => {
-    if (brand) setEditingBrand(brand);
+    setEditingBrand(brand || null);
     setIsModalOpen(true);
   };
 
@@ -112,169 +253,369 @@ export const BrandList: React.FC = () => {
     setEditingBrand(null);
   };
 
-  const handleDelete = (id: string, name: string) => {
-    setBrandToDelete({ id, name });
+  const handleDelete = (brand: Brand) => {
+    setBrandToDelete({ id: brand.id, name: brand.name });
     setIsConfirmOpen(true);
+  };
+
+  const clearFilters = () => {
+    setSearch('');
+    setStatusFilter('all');
+    setFeaturedFilter('all');
+    setPage(1);
+  };
+
+  const exportExcel = () => {
+    const header = ['ID', 'Tên thương hiệu', 'Slug', 'Trạng thái', 'Nổi bật', 'Số sản phẩm', 'Cập nhật'];
+    const rows = filteredBrands.map((brand) => [
+      brand.id,
+      brand.name,
+      brand.slug,
+      brand.isActive ? 'Đang hoạt động' : 'Tạm ngưng',
+      brand.isFeatured ? 'Có' : 'Không',
+      getProductCount(brand),
+      formatDate(brand.updatedAt),
+    ]);
+
+    const csv = [header, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `brands-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setIsExportOpen(false);
+  };
+
+  const exportPdf = () => {
+    const rows = filteredBrands.map((brand) => `
+      <tr>
+        <td>${escapeHtml(brand.id)}</td>
+        <td>${escapeHtml(brand.name)}</td>
+        <td>/${escapeHtml(brand.slug)}</td>
+        <td>${brand.isActive ? 'Đang hoạt động' : 'Tạm ngưng'}</td>
+        <td>${brand.isFeatured ? 'Có' : 'Không'}</td>
+        <td>${getProductCount(brand)}</td>
+        <td>${escapeHtml(formatDate(brand.updatedAt))}</td>
+      </tr>
+    `).join('');
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Danh sách thương hiệu</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #25396f; padding: 24px; }
+            h1 { font-size: 22px; margin-bottom: 16px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th, td { border: 1px solid #dce7f1; padding: 8px; text-align: left; }
+            th { background: #f2f7ff; }
+          </style>
+        </head>
+        <body>
+          <h1>Danh sách thương hiệu</h1>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tên thương hiệu</th>
+                <th>Slug</th>
+                <th>Trạng thái</th>
+                <th>Nổi bật</th>
+                <th>Sản phẩm</th>
+                <th>Cập nhật</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    setIsExportOpen(false);
   };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {[
-          { label: 'Tổng thương hiệu', value: allBrands?.length || 0, icon: LayoutGrid, color: 'slate', trend: 'Hệ sinh thái' },
-          { label: 'Đang hoạt động', value: allBrands?.filter((b: Brand) => b.isActive).length || 0, icon: CheckCircle2, color: 'green', trend: 'Sẵn sàng' },
-          { label: 'Tạm ngưng', value: allBrands?.filter((b: Brand) => !b.isActive).length || 0, icon: EyeOff, color: 'orange', trend: 'Lưu trữ' },
-          { label: 'Tổng sản phẩm', value: allBrands?.reduce((acc: number, curr: Brand) => acc + (curr._count?.products || 0), 0) || 0, icon: Package, color: 'blue', trend: 'Sản lượng' }
-        ].map((stat, i) => (
-          <Card key={i} className="border-none shadow-xl shadow-slate-200/40 rounded-[28px] overflow-hidden group transition-all bg-white hover:shadow-2xl hover:shadow-slate-200/60">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <div className={cn(
-                  "w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:rotate-12 duration-300",
-                  stat.color === 'slate' ? "bg-slate-50 text-slate-400" :
-                    stat.color === 'green' ? "bg-green-50 text-green-500" :
-                      stat.color === 'blue' ? "bg-blue-50 text-blue-500" :
-                        "bg-orange-50 text-orange-500"
-                )}>
-                  <stat.icon size={24} />
-                </div>
-                <span className={cn(
-                  "text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-tighter shadow-sm",
-                  stat.color === 'slate' ? "bg-slate-50 text-slate-400" :
-                    stat.color === 'green' ? "bg-green-50 text-green-500" :
-                      stat.color === 'blue' ? "bg-blue-50 text-blue-500" :
-                        "bg-orange-50 text-orange-500"
-                )}>
-                  {stat.trend}
-                </span>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                <div className="flex items-baseline gap-2">
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">{stat.value}</h3>
-                  <span className="text-[10px] font-bold text-slate-300 uppercase">{stat.color === 'blue' ? 'Món' : 'Brands'}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+        {statCards.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <button
+              key={stat.label}
+              type="button"
+              onClick={stat.onClick}
+              className={cn(
+                'group flex items-center gap-4 rounded-[12px] bg-white px-6 py-6 text-left shadow-[0_5px_15px_rgba(25,42,70,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(25,42,70,0.08)]',
+                stat.active && 'ring-2 ring-primary/15'
+              )}
+            >
+              <span className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] text-white shadow-xs transition-transform duration-300 group-hover:scale-105', stat.bgClass)}>
+                <Icon set="bold" primaryColor="currentColor" size={24} />
+              </span>
+              <span>
+                <span className="block text-sm font-semibold text-[#7e83b4]">{stat.label}</span>
+                <span className="mt-1 block text-2xl font-black leading-none text-primary">{stat.value}</span>
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 font-heading leading-tight tracking-tight">Đối tác thương hiệu</h1>
-          <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Hiển thị {filteredBrands.length} thương hiệu theo bộ lọc</p>
-        </div>
-        <Button onClick={() => openModal()} className="md:w-auto w-full group h-14 px-8 rounded-2xl shadow-xl shadow-primary/20">
-          <Plus className="w-6 h-6 mr-2 group-hover:rotate-90 transition-transform" />
-          Kích hoạt Brand mới
-        </Button>
-      </div>
-
-      <Card className="border-none shadow-xl shadow-slate-200/50 rounded-3xl">
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            <div className="relative flex-1 w-full group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
-              <Input
-                placeholder="Tra cứu thương hiệu..."
-                className="pl-12 py-3 h-12 rounded-2xl bg-slate-50 border-none ring-0 focus:ring-4 focus:ring-primary/5 transition-all text-sm font-bold shadow-inner"
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setCurrentPage(1);
-                }}
-              />
-            </div>
-            <Button variant="outline" className="px-6 h-12 rounded-2xl border-slate-100 hover:border-primary transition-all bg-white" onClick={() => queryClient.invalidateQueries({ queryKey: ['brands'] })}>
-              <RefreshCcw className={cn("w-5 h-5", isLoading && "animate-spin")} />
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="relative">
+            <Button onClick={() => openModal()} className="h-10 rounded-[6px] bg-primary px-4 text-sm font-extrabold text-white shadow-[0_5px_12px_rgba(67,94,190,0.18)] hover:bg-primary/90">
+              <Plus className="mr-2 h-5 w-5" />
+              Thêm brand
             </Button>
+            <button
+              type="button"
+              onClick={() => setIsExportOpen(!isExportOpen)}
+              className="h-10 rounded-[5px] bg-[#f2f7ff] px-4 text-sm font-extrabold text-[#607080] inline-flex items-center gap-2 hover:bg-[#e9f1ff] transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Xuất file
+              <ChevronDown className="w-4 h-4" />
+            </button>
+            {isExportOpen && (
+              <div className="absolute right-0 top-12 z-30 w-44 rounded-[8px] border border-[#dce7f1] bg-white shadow-[0_12px_24px_rgba(25,42,70,0.12)] p-1">
+                <button
+                  type="button"
+                  onClick={exportExcel}
+                  className="w-full h-9 rounded-[6px] px-3 text-left text-[12px] font-extrabold text-[#25396f] hover:bg-[#f2f7ff] inline-flex items-center gap-2"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-[#4fbe87]" />
+                  Xuất Excel
+                </button>
+                <button
+                  type="button"
+                  onClick={exportPdf}
+                  className="w-full h-9 rounded-[6px] px-3 text-left text-[12px] font-extrabold text-[#25396f] hover:bg-[#f2f7ff] inline-flex items-center gap-2"
+                >
+                  <FileText className="w-4 h-4 text-[#f3616d]" />
+                  Xuất PDF
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <Card className="rounded-[12px] border-[#f2f7ff] shadow-[0_5px_15px_rgba(25,42,70,0.06)]">
+        <CardContent className="p-5">
+          <div className="grid gap-4 xl:grid-cols-[1fr_180px_180px_180px_auto]">
+            <Input
+              icon={Search}
+              placeholder="Tìm theo tên hoặc slug..."
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
+              className="h-10 rounded-[5px] border-[#dce7f1] font-semibold text-[#25396f]"
+            />
+            <select
+              value={statusFilter}
+              onChange={(event) => {
+                setStatusFilter(event.target.value as StatusFilter);
+                setPage(1);
+              }}
+              className="h-10 rounded-[5px] border border-[#dce7f1] bg-white px-3 text-sm font-bold text-[#607080] outline-none focus:border-primary focus:ring-4 focus:ring-primary/10"
+            >
+              <option value="all">Tất cả trạng thái</option>
+              <option value="active">Đang hoạt động</option>
+              <option value="inactive">Tạm ngưng</option>
+            </select>
+            <select
+              value={featuredFilter}
+              onChange={(event) => {
+                setFeaturedFilter(event.target.value as FeaturedFilter);
+                setPage(1);
+              }}
+              className="h-10 rounded-[5px] border border-[#dce7f1] bg-white px-3 text-sm font-bold text-[#607080] outline-none focus:border-primary focus:ring-4 focus:ring-primary/10"
+            >
+              <option value="all">Tất cả hiển thị</option>
+              <option value="featured">Nổi bật</option>
+              <option value="regular">Thường</option>
+            </select>
+            <select
+              value={sortKey}
+              onChange={(event) => {
+                setSortKey(event.target.value as SortKey);
+                setPage(1);
+              }}
+              className="h-10 rounded-[5px] border border-[#dce7f1] bg-white px-3 text-sm font-bold text-[#607080] outline-none focus:border-primary focus:ring-4 focus:ring-primary/10"
+            >
+              <option value="name">Sắp xếp theo tên</option>
+              <option value="products">Nhiều sản phẩm</option>
+              <option value="updatedAt">Mới cập nhật</option>
+            </select>
+            <div className="flex gap-2">
+              <select
+                value={pageSize}
+                onChange={(event) => {
+                  setPageSize(Number(event.target.value) as (typeof pageSizeOptions)[number]);
+                  setPage(1);
+                }}
+                className="h-10 rounded-[5px] border border-[#dce7f1] bg-white px-3 text-sm font-bold text-[#607080] outline-none"
+              >
+                {pageSizeOptions.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="h-10 rounded-[5px] bg-[#f2f7ff] px-4 text-sm font-extrabold text-[#607080] inline-flex items-center gap-2 hover:bg-[#e9f1ff] disabled:opacity-50"
+                onClick={clearFilters}
+                disabled={!hasActiveFilters}
+              >
+                <Filter className="w-4 h-4" />
+                Xoá lọc
+              </button>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      <div className="bg-white rounded-[40px] shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+      {isError && (
+        <div className="flex items-center gap-4 rounded-[12px] border border-red-100 bg-red-50 p-6 text-red-600">
+          <AlertCircle className="h-6 w-6" />
+          <p className="font-bold">Không thể tải danh sách thương hiệu. Vui lòng thử lại.</p>
+        </div>
+      )}
+
+      <div className="rounded-[12px] border border-[#f2f7ff] bg-white shadow-[0_5px_15px_rgba(25,42,70,0.06)] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead className="bg-slate-50/50 border-b border-slate-100">
+          <table className="w-full min-w-[980px] text-left">
+            <thead className="bg-[#f8fbff] border-b border-[#f2f7ff]">
               <tr>
-                <th className="px-10 py-6 text-xs font-black text-slate-500 uppercase tracking-widest pl-12">Logo</th>
-                <th className="px-6 py-6 text-xs font-black text-slate-500 uppercase tracking-widest">Thương hiệu</th>
-                <th className="px-6 py-6 text-xs font-black text-slate-500 uppercase tracking-widest text-center">Sản lượng</th>
-                <th className="px-6 py-6 text-xs font-black text-slate-500 uppercase tracking-widest text-center">Trạng thái</th>
-                <th className="px-6 py-6 text-xs font-black text-slate-500 uppercase tracking-widest text-center">Thao tác</th>
+                <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-[#607080]">Thương hiệu</th>
+                <th className="px-4 py-4 text-xs font-black uppercase tracking-widest text-[#607080]">Slug</th>
+                <th className="px-4 py-4 text-center text-xs font-black uppercase tracking-widest text-[#607080]">Sản phẩm</th>
+                <th className="px-4 py-4 text-center text-xs font-black uppercase tracking-widest text-[#607080]">Điểm</th>
+                <th className="px-4 py-4 text-center text-xs font-black uppercase tracking-widest text-[#607080]">Trạng thái</th>
+                <th className="px-4 py-4 text-center text-xs font-black uppercase tracking-widest text-[#607080]">Cập nhật</th>
+                <th className="px-6 py-4 text-right text-xs font-black uppercase tracking-widest text-[#607080]">Thao tác</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 font-body">
+            <tbody className="divide-y divide-[#f2f7ff]">
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    <td colSpan={4} className="px-12 py-8 bg-slate-50/20" />
+                Array.from({ length: 5 }).map((_, index) => (
+                  <tr key={index} className="animate-pulse">
+                    <td colSpan={7} className="px-6 py-5">
+                      <div className="h-12 rounded bg-[#f2f7ff]" />
+                    </td>
                   </tr>
                 ))
-              ) : filteredBrands.length > 0 ? (
-                filteredBrands.map((brand: Brand) => (
-                  <tr key={brand.id} className="hover:bg-slate-50 transition-all group">
-                    <td className="px-10 py-6 pl-12">
-                      <div className="w-14 h-14 bg-white rounded-2xl border border-slate-200 flex items-center justify-center p-3 group-hover:scale-110 transition-transform shadow-sm overflow-hidden">
-                        {brand.logoUrl ? <img src={brand.logoUrl} alt={brand.name} className="w-full h-full object-contain" /> : <ImageIcon size={24} className="text-slate-200" />}
-                      </div>
-                    </td>
-                    <td className="px-6 py-6">
-                      <span className="font-black text-slate-900 group-hover:text-primary transition-colors text-lg tracking-tighter">{brand.name}</span>
-                    </td>
-                    <td className="px-6 py-6 text-center">
-                      <div className="flex flex-col items-center">
-                        <span className="text-xl font-black text-slate-900 tracking-tighter">{brand._count?.products || 0}</span>
-                        <span className="text-[10px] font-bold text-slate-300 uppercase">Sản phẩm</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-6 text-center">
-                      <div className="flex justify-center">
-                        {brand.isActive ? (
-                          <Badge variant="success" className="gap-1.5 h-8 px-4 rounded-full font-black uppercase text-[10px] tracking-widest shadow-sm">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Hoạt động
-                          </Badge>
-                        ) : (
-                          <Badge variant="danger" className="gap-1.5 h-8 px-4 rounded-full font-black uppercase text-[10px] tracking-widest shadow-sm">
-                            <EyeOff className="w-3.5 h-3.5" /> Tạm ngưng
-                          </Badge>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-6 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <Button
-                          variant="ghost"
-                          className={cn(
-                            "p-3 h-12 w-12 rounded-2xl border-none transition-all shadow-sm",
-                            brand.isActive ? "text-orange-500 hover:bg-orange-50" : "text-green-500 hover:bg-green-50"
+              ) : paginatedBrands.length > 0 ? (
+                paginatedBrands.map((brand) => (
+                  <tr key={brand.id} className="transition-colors hover:bg-[#fbfcff]">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-[10px] border border-[#dce7f1] bg-[#f2f7ff] flex items-center justify-center overflow-hidden shrink-0">
+                          {brand.logoUrl ? (
+                            <img src={brand.logoUrl} alt={brand.name} className="w-full h-full object-contain p-2" />
+                          ) : (
+                            <ImageIcon className="w-5 h-5 text-[#7c8db5]" />
                           )}
-                          onClick={() => toggleMutation.mutate(brand.id)}
-                          isLoading={toggleMutation.isPending && toggleMutation.variables === brand.id}
-                          title={brand.isActive ? "Ngưng hoạt động" : "Kích hoạt lại"}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="truncate text-sm font-black text-[#25396f]">{brand.name}</p>
+                            {brand.isFeatured && <StarIcon className="w-4 h-4 shrink-0 text-[#eaca4a]" />}
+                          </div>
+                          <p className="text-xs font-bold text-[#7c8db5]">ID: {brand.id.slice(0, 8)}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className="inline-flex rounded-[6px] bg-[#f2f7ff] px-2.5 py-1 text-[12px] font-bold text-[#607080]">/{brand.slug}</span>
+                    </td>
+                    <td className="px-4 py-4 text-center text-sm font-black text-primary">{getProductCount(brand)}</td>
+                    <td className="px-4 py-4 text-center">
+                      <span className="inline-flex items-center gap-1 text-sm font-bold text-[#607080]">
+                        {Math.round(brand.score ?? 0)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      {brand.isActive ? (
+                        <Badge variant="success" className="rounded-[6px] px-2.5 py-1 text-[10px] uppercase tracking-widest">
+
+                          Hoạt động
+                        </Badge>
+                      ) : (
+                        <Badge variant="danger" className="rounded-[6px] px-2.5 py-1 text-[10px] uppercase tracking-widest">
+
+                          Tạm ngưng
+                        </Badge>
+                      )}
+                    </td>
+                    <td className="px-4 py-4 text-center text-xs font-bold text-[#607080]">{formatDate(brand.updatedAt)}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          className={cn(
+                            'w-9 h-9 rounded-[6px] inline-flex items-center justify-center transition-colors',
+                            brand.isFeatured ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' : 'text-[#607080] hover:bg-amber-50 hover:text-amber-600'
+                          )}
+                          onClick={() => toggleFeaturedMutation.mutate(brand.id)}
+                          disabled={toggleFeaturedMutation.isPending && toggleFeaturedMutation.variables === brand.id}
+                          title={brand.isFeatured ? 'Bỏ nổi bật' : 'Đánh dấu nổi bật'}
                         >
-                          {brand.isActive ? <EyeOff className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
-                        </Button>
-                        <Button variant="ghost" className="p-3 h-12 w-12 text-primary hover:bg-primary/5 rounded-2xl border-none transition-all shadow-sm" onClick={() => openModal(brand)}>
-                          <Edit className="w-5 h-5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="p-3 h-12 w-12 text-red-500 hover:bg-red-50 rounded-2xl border-none transition-all shadow-sm"
-                          onClick={() => handleDelete(brand.id, brand.name)}
-                          isLoading={deleteMutation.isPending && deleteMutation.variables === brand.id}
+                          <StarIcon className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          className={cn(
+                            'w-9 h-9 rounded-[6px] inline-flex items-center justify-center transition-colors',
+                            brand.isActive ? 'text-orange-500 hover:bg-orange-50' : 'text-green-600 hover:bg-green-50'
+                          )}
+                          onClick={() => toggleStatusMutation.mutate(brand.id)}
+                          disabled={toggleStatusMutation.isPending && toggleStatusMutation.variables === brand.id}
+                          title={brand.isActive ? 'Tạm ngưng' : 'Kích hoạt'}
                         >
-                          <Trash2 className="w-5 h-5" />
-                        </Button>
+                          {brand.isActive ? <EyeOff className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                        </button>
+                        <button
+                          type="button"
+                          className="w-9 h-9 rounded-[6px] inline-flex items-center justify-center bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                          onClick={() => openModal(brand)}
+                          title="Sửa"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          className="w-9 h-9 rounded-[6px] inline-flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors"
+                          onClick={() => handleDelete(brand)}
+                          title="Xoá"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-32 text-center text-slate-300 font-black uppercase tracking-widest text-xl opacity-40">
-                    Empty Brand Library
+                  <td colSpan={7} className="px-6 py-16 text-center">
+                    <div className="mx-auto mb-4 w-16 h-16 rounded-[14px] bg-[#f2f7ff] flex items-center justify-center">
+                      <ImageIcon className="w-8 h-8 text-[#7c8db5]" />
+                    </div>
+                    <p className="text-lg font-black text-[#25396f]">Không có thương hiệu phù hợp</p>
+                    <p className="mt-1 text-sm font-semibold text-[#7c8db5]">Thử xoá bộ lọc hoặc thêm thương hiệu mới.</p>
                   </td>
                 </tr>
               )}
@@ -283,50 +624,57 @@ export const BrandList: React.FC = () => {
         </div>
       </div>
 
-      {meta && meta.totalPages > 1 && (
-        <div className="flex justify-between items-center bg-white px-8 py-4 rounded-[28px] shadow-xl shadow-slate-200/50 border border-slate-100 animate-in fade-in duration-300">
-          <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
-            Hiển thị {((currentPage - 1) * 10) + 1} - {Math.min(currentPage * 10, meta.total)} trong {meta.total} thương hiệu
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-10 rounded-xl font-black uppercase text-[10px] tracking-widest border-slate-100 disabled:opacity-40"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+      <div className="flex flex-col gap-4 rounded-b-[12px] bg-white px-6 py-5 shadow-[0_5px_15px_rgba(25,42,70,0.06)] md:flex-row md:items-center md:justify-between">
+        <p className="text-sm font-semibold text-[#a0a8c3]">
+          Hiển thị {rangeStart} tới {rangeEnd} của {filteredBrands.length} thương hiệu
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={currentPage === 1}
+            onClick={() => setPage(Math.max(currentPage - 1, 1))}
+            className="w-11 h-11 rounded-[6px] border border-[#dce7f1] bg-white text-[#7c8db5] inline-flex items-center justify-center hover:text-primary hover:border-primary disabled:opacity-40 disabled:pointer-events-none"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          {visiblePages.map((visiblePage) => (
+            <button
+              key={visiblePage}
+              type="button"
+              onClick={() => setPage(visiblePage)}
+              className={cn(
+                'w-11 h-11 rounded-[6px] text-sm font-extrabold transition-all',
+                visiblePage === currentPage
+                  ? 'bg-primary text-white shadow-[0_5px_12px_rgba(67,94,190,0.18)]'
+                  : 'bg-white border border-[#dce7f1] text-[#607080] hover:text-primary hover:border-primary'
+              )}
             >
-              Trước
-            </Button>
-            <span className="text-xs font-black text-slate-900 px-3 uppercase tracking-tighter">
-              Trang {currentPage} / {meta.totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-10 rounded-xl font-black uppercase text-[10px] tracking-widest border-slate-100 disabled:opacity-40"
-              disabled={currentPage === meta.totalPages}
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, meta.totalPages))}
-            >
-              Sau
-            </Button>
-          </div>
+              {visiblePage}
+            </button>
+          ))}
+          <button
+            type="button"
+            disabled={currentPage === totalPages}
+            onClick={() => setPage(Math.min(currentPage + 1, totalPages))}
+            className="w-11 h-11 rounded-[6px] border border-[#dce7f1] bg-white text-[#7c8db5] inline-flex items-center justify-center hover:text-primary hover:border-primary disabled:opacity-40 disabled:pointer-events-none"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
-      )}
-
-      {isError && (
-        <div className="p-8 bg-red-50 border-2 border-red-100 rounded-[40px] flex items-center gap-6 text-red-600 shadow-2xl shadow-red-100/50">
-          <AlertCircle className="w-10 h-10" />
-          <p className="text-xl font-black uppercase">Lỗi đồng bộ dữ liệu đối tác</p>
-        </div>
-      )}
+      </div>
 
       {isModalOpen && (
         <BrandFormModal
           brand={editingBrand}
-          onClose={closeModal}
-          onSave={(fd) => editingBrand ? updateMutation.mutate({ id: editingBrand.id, formData: fd }) : createMutation.mutate(fd)}
           isSaving={createMutation.isPending || updateMutation.isPending}
+          onClose={closeModal}
+          onSave={(formData) => {
+            if (editingBrand) {
+              updateMutation.mutate({ id: editingBrand.id, formData });
+              return;
+            }
+            createMutation.mutate(formData);
+          }}
         />
       )}
 
@@ -334,130 +682,12 @@ export const BrandList: React.FC = () => {
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={() => brandToDelete && deleteMutation.mutate(brandToDelete.id)}
-        title="Xác nhận xử lý"
-        message={`Bạn có chắn chắn muốn thực hiện thao tác với thương hiệu "${brandToDelete?.name}"? Hệ thống sẽ ưu tiên ngưng kinh doanh nếu đang còn sản phẩm liên kết.`}
+        title="Xác nhận xử lý thương hiệu"
+        message={`Bạn muốn xoá hoặc tạm ngưng thương hiệu "${brandToDelete?.name}"? Nếu thương hiệu còn sản phẩm, hệ thống sẽ tạm ngưng để tránh mất dữ liệu liên kết.`}
         confirmText="Xác nhận"
-        cancelText="Để tôi xem lại"
+        cancelText="Huỷ"
         isLoading={deleteMutation.isPending}
       />
-    </div>
-  );
-};
-
-interface ModalProps {
-  brand: Brand | null;
-  onClose: () => void;
-  onSave: (fd: FormData) => void;
-  isSaving: boolean;
-}
-
-const BrandFormModal: React.FC<ModalProps> = ({ brand, onClose, onSave, isSaving }) => {
-  const [name, setName] = useState(brand?.name || '');
-  const [quote, setQuote] = useState(brand?.quote || '');
-  const [philosophy, setPhilosophy] = useState(brand?.philosophy || '');
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(brand?.logoUrl || null);
-  const [bannerFile, setBannerFile] = useState<File | null>(null);
-  const [bannerPreview, setBannerPreview] = useState<string | null>(brand?.bannerUrl || null);
-
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = e.target.files?.[0];
-    if (selected) {
-      setLogoFile(selected);
-      setLogoPreview(URL.createObjectURL(selected));
-    }
-  };
-
-  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = e.target.files?.[0];
-    if (selected) {
-      setBannerFile(selected);
-      setBannerPreview(URL.createObjectURL(selected));
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const fd = new FormData();
-    fd.append('name', name);
-    fd.append('quote', quote);
-    fd.append('philosophy', philosophy);
-    if (logoFile) fd.append('logo', logoFile);
-    if (bannerFile) fd.append('banner', bannerFile);
-    onSave(fd);
-  };
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xl animate-in fade-in duration-300">
-      <div className="bg-white w-full max-w-md rounded-[48px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-white">
-        <div className="p-10 border-b border-slate-50 flex items-center justify-between">
-          <h2 className="text-2xl font-black text-slate-900 font-heading tracking-tighter uppercase">{brand ? 'Cập nhật đối tác' : 'Thiết lập brand'}</h2>
-          <button onClick={onClose} className="p-3 rounded-full hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100">
-            <X className="w-7 h-7 text-slate-400" />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-10 space-y-8">
-          <div className="flex gap-6 items-center justify-center">
-            {/* Upload Logo (Square) */}
-            <div className="flex flex-col items-center">
-              <span className="text-[10px] font-black text-slate-400 uppercase mb-2">Logo Hãng</span>
-              <div
-                className="relative w-24 h-24 rounded-[24px] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:border-primary transition-all group shadow-inner"
-                onClick={() => document.getElementById('logo-upload')?.click()}
-              >
-                {logoPreview ? (
-                  <img src={logoPreview} alt="Logo" className="w-full h-full object-contain p-2" />
-                ) : (
-                  <div className="flex flex-col items-center">
-                    <Upload className="w-6 h-6 text-slate-300 group-hover:text-primary transition-colors" />
-                    <span className="text-[9px] font-black text-slate-400 uppercase mt-1">Logo</span>
-                  </div>
-                )}
-                <input id="logo-upload" type="file" className="hidden" accept=".svg,.png,.jpg,.jpeg,.webp" onChange={handleLogoChange} />
-              </div>
-            </div>
-
-            {/* Upload Banner (Rectangle) */}
-            <div className="flex flex-col items-center flex-1">
-              <span className="text-[10px] font-black text-slate-400 uppercase mb-2">Ảnh bìa (Banner)</span>
-              <div
-                className="relative w-full h-24 rounded-[24px] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:border-primary transition-all group shadow-inner"
-                onClick={() => document.getElementById('banner-upload')?.click()}
-              >
-                {bannerPreview ? (
-                  <img src={bannerPreview} alt="Banner" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="flex flex-col items-center">
-                    <Upload className="w-6 h-6 text-slate-300 group-hover:text-primary transition-colors" />
-                    <span className="text-[9px] font-black text-slate-400 uppercase mt-1">Banner</span>
-                  </div>
-                )}
-                <input id="banner-upload" type="file" className="hidden" accept=".png,.jpg,.jpeg,.webp" onChange={handleBannerChange} />
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <Input label="Tên thương hiệu" placeholder="Ví dụ: Logitech, Samsung..." value={name} onChange={(e) => setName(e.target.value)} required
-              className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner font-black text-lg"
-            />
-            <Input label="Câu Quote thương hiệu" placeholder="Ví dụ: For Gamers. By Gamers." value={quote} onChange={(e) => setQuote(e.target.value)}
-              className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner font-black text-lg"
-            />
-            <Textarea label="Triết lý thương hiệu" placeholder="Kể câu chuyện về thương hiệu của bạn..." value={philosophy} onChange={(e) => setPhilosophy(e.target.value)}
-              className="rounded-2xl bg-slate-50 border-none shadow-inner font-bold"
-            />
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">*Slug và Ảnh bìa sẽ được khởi tạo tự động</p>
-          </div>
-
-          <div className="flex gap-4 pt-4">
-            <Button type="button" variant="outline" className="flex-1 h-14 rounded-2xl font-black uppercase text-xs border-slate-100 shadow-sm" onClick={onClose}>Huỷ bỏ</Button>
-            <Button type="submit" className="flex-1 h-14 rounded-2xl font-black uppercase text-xs shadow-xl shadow-primary/20" isLoading={isSaving}>
-              {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : (brand ? 'Cập nhật' : 'Kick-off Brand')}
-            </Button>
-          </div>
-        </form>
-      </div>
     </div>
   );
 };

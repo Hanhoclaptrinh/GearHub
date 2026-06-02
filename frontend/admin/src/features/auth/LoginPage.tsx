@@ -3,10 +3,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
-import { Package, Lock, Mail, ArrowRight } from 'lucide-react';
-import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
+import { Lock, Mail } from '../../components/ui/IconlyIcons';
 import { authService } from '../../services/auth.service';
+import { toast } from 'sonner';
+import authBg from '../../assets/auth-bg.jpg';
 
 const loginSchema = z.object({
   identifier: z.string().min(1, 'Email hoặc số điện thoại là bắt buộc'),
@@ -14,8 +14,6 @@ const loginSchema = z.object({
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
-
-import { toast } from 'sonner';
 
 export const LoginPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -43,63 +41,120 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-from),_var(--tw-gradient-to))] from-primary/5 via-transparent to-transparent">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center p-4 bg-primary rounded-2xl shadow-xl shadow-primary/20 mb-6 group transition-transform hover:scale-105 duration-300">
-            <Package className="text-white w-10 h-10 group-hover:rotate-6 transition-transform" />
-          </div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2 font-heading tracking-tight">GearHub <span className="text-cta">CMS</span></h1>
-          <p className="text-slate-500 font-medium">Hệ thống quản lý dành cho quản trị và nhân viên</p>
-        </div>
-
-        <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-primary/10 transition-colors" />
-
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 relative z-10">
-            <div className="relative group/field">
-              <div className="absolute left-4 top-[42px] z-10 text-slate-400 group-focus-within/field:text-primary transition-colors">
-                <Mail className="w-5 h-5" />
-              </div>
-              <Input
-                label="Email / Số điện thoại"
-                placeholder="admin@gearhub.com"
-                className="pl-12"
-                {...register('identifier')}
-                error={errors.identifier?.message}
-              />
+    <div className="min-h-screen bg-white flex w-full font-sans overflow-x-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-12 w-full min-h-screen">
+        {/* Left Form Column */}
+        <div className="col-span-1 lg:col-span-5 flex flex-col justify-center py-12 px-8 sm:px-16 md:px-24 lg:px-16 xl:px-24">
+          <div className="w-full max-w-md mx-auto lg:mx-0">
+            {/* Logo */}
+            <div className="flex items-center gap-3 mb-16">
+              {/* <div className="bg-primary p-2.5 rounded-xl shadow-md">
+                <Package className="text-white w-6 h-6" />
+              </div> */}
+              <span className="text-4xl font-extrabold text-[#25396f] tracking-tight">
+                GearHub <span className="text-[#f97316]">CMS</span>
+              </span>
             </div>
 
-            <div className="relative group/field">
-              <div className="absolute left-4 top-[42px] z-10 text-slate-400 group-focus-within/field:text-primary transition-colors">
-                <Lock className="w-5 h-5" />
-              </div>
-              <Input
-                label="Mật khẩu"
-                type="password"
-                placeholder="••••••••"
-                className="pl-12"
-                {...register('password')}
-                error={errors.password?.message}
-              />
-            </div>
+            {/* Titles */}
+            <h1 className="text-6xl font-extrabold text-[#25396f] mb-3 leading-tight tracking-tight">
+              Đăng nhập
+            </h1>
+            <p className="text-lg font-semibold text-[#a8aebb] mb-10 leading-relaxed">
+              Đăng nhập bằng thông tin tài khoản đã được cung cấp để truy cập hệ thống quản trị.
+            </p>
 
-            <div className="pt-2">
-              <Button
+            {/* Form */}
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              {/* Email / Username field */}
+              <div className="space-y-1">
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#7c8db5] transition-colors">
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Email hoặc số điện thoại"
+                    className={`w-full py-4 pl-12 pr-4 border ${errors.identifier ? 'border-red-400 focus:ring-red-100' : 'border-[#dce7f1] focus:border-primary'
+                      } rounded-xl text-base font-semibold text-[#607080] placeholder-[#adb5bd] outline-none transition-all focus:ring-4 focus:ring-primary/20 bg-white`}
+                    {...register('identifier')}
+                  />
+                </div>
+                {errors.identifier && (
+                  <p className="text-xs font-semibold text-red-500 pl-1 mt-1">
+                    {errors.identifier.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Password field */}
+              <div className="space-y-1">
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#7c8db5] transition-colors">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <input
+                    type="password"
+                    placeholder="Mật khẩu"
+                    className={`w-full py-4 pl-12 pr-4 border ${errors.password ? 'border-red-400 focus:ring-red-100' : 'border-[#dce7f1] focus:border-primary'
+                      } rounded-xl text-base font-semibold text-[#607080] placeholder-[#adb5bd] outline-none transition-all focus:ring-4 focus:ring-primary/20 bg-white`}
+                    {...register('password')}
+                  />
+                </div>
+                {errors.password && (
+                  <p className="text-xs font-semibold text-red-500 pl-1 mt-1">
+                    {errors.password.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Remember Me */}
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="keepLoggedIn"
+                  className="w-5 h-5 border-[#e1e3ea] text-primary focus:ring-primary/20 rounded-md cursor-pointer transition-all border-2"
+                />
+                <label
+                  htmlFor="keepLoggedIn"
+                  className="ml-2.5 text-base font-semibold text-[#607080] cursor-pointer select-none"
+                >
+                  Duy trì đăng nhập
+                </label>
+              </div>
+
+              {/* Submit Button */}
+              <button
                 type="submit"
-                className="w-full py-4 text-base rounded-xl group/btn overflow-hidden relative"
-                isLoading={isLoading}
+                disabled={isLoading}
+                className="w-full py-4 bg-primary hover:bg-[#3f5491] text-white text-lg font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-primary/35 transition-all duration-300 transform hover:-translate-y-0.5 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Đăng nhập
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-2 transition-transform h-min" />
-              </Button>
+                {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+              </button>
+            </form>
+
+            <div className="mt-12 text-base font-semibold text-[#607080]">
+              <p>
+                Quên mật khẩu?{' '}
+                <a href="#" className="text-primary font-bold hover:underline">
+                  Khôi phục ngay
+                </a>
+              </p>
             </div>
-          </form>
+          </div>
         </div>
 
-        <p className="mt-8 text-center text-slate-400 text-sm font-medium">
-          &copy; 2026 GearHub Management System. All rights reserved.
-        </p>
+        {/* Right Graphic Column */}
+        <div className="hidden lg:block lg:col-span-7 relative h-screen">
+          <div
+            className="absolute inset-0 animate-fade-in duration-1000"
+            style={{
+              background: `url(${authBg}), linear-gradient(90deg, #2d499d, #3f5491)`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          />
+        </div>
       </div>
     </div>
   );

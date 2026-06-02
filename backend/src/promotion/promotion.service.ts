@@ -77,24 +77,47 @@ export class PromotionService {
         });
     }
 
-    async findAllVouchersAdmin(query: { page?: number; limit?: number; search?: string }) {
-        const { page = 1, limit = 10, search } = query;
-        const skip = (page - 1) * limit;
+    async findAllVouchersAdmin(query: { page?: number; limit?: number; search?: string; status?: string; type?: string }) {
+        const { page = 1, limit = 10, search, status, type } = query;
+        const safePage = Math.max(1, Number(page) || 1);
+        const safeLimit = [10, 50, 100].includes(Number(limit)) ? Number(limit) : 10;
+        const skip = (safePage - 1) * safeLimit;
+        const now = new Date();
+        const voucherType = Object.values(VoucherType).includes(type as VoucherType) ? type as VoucherType : undefined;
 
-        const where: Prisma.VoucherWhereInput = search
-            ? {
-                OR: [
-                    { code: { contains: search } },
-                    { name: { contains: search } }
-                ]
-            }
-            : {};
+        const where: Prisma.VoucherWhereInput = {
+            ...(search
+                ? {
+                    OR: [
+                        { code: { contains: search } },
+                        { name: { contains: search } }
+                    ]
+                }
+                : {}),
+            ...(voucherType ? { type: voucherType } : {})
+        };
+
+        if (status === 'ACTIVE') {
+            where.isActive = true;
+            where.AND = [
+                { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+                { OR: [{ expiresAt: null }, { expiresAt: { gte: now } }] }
+            ];
+        } else if (status === 'DISABLED') {
+            where.isActive = false;
+        } else if (status === 'EXPIRED') {
+            where.isActive = true;
+            where.expiresAt = { lt: now };
+        } else if (status === 'UPCOMING') {
+            where.isActive = true;
+            where.startsAt = { gt: now };
+        }
 
         const [data, total] = await Promise.all([
             this.prisma.voucher.findMany({
                 where,
                 skip,
-                take: Number(limit),
+                take: safeLimit,
                 orderBy: { createdAt: 'desc' }
             }),
             this.prisma.voucher.count({ where })
@@ -104,10 +127,122 @@ export class PromotionService {
             data,
             meta: {
                 total,
-                page: Number(page),
-                limit: Number(limit),
-                lastPage: Math.ceil(total / Number(limit))
+                page: safePage,
+                limit: safeLimit,
+                lastPage: Math.max(1, Math.ceil(total / safeLimit))
             }
+        };
+    }
+
+    async getVoucherAdminAnalytics() {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(today.getDate() - 29);
+        const sevenDaysLater = new Date(today);
+        sevenDaysLater.setDate(today.getDate() + 7);
+        const formatDateKey = (date: Date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        const [vouchers, usedVouchers] = await Promise.all([
+            this.prisma.voucher.findMany({
+                select: {
+                    isActive: true,
+                    startsAt: true,
+                    expiresAt: true,
+                    quantity: true,
+                    claimedCount: true,
+                    usedCount: true,
+                },
+            }),
+            this.prisma.userVoucher.findMany({
+                where: {
+                    usedAt: { not: null },
+                },
+                select: {
+                    usedAt: true,
+                    order: {
+                        select: {
+                            voucherDiscount: true,
+                        },
+                    },
+                },
+            }),
+        ]);
+
+        const stats = vouchers.reduce(
+            (acc, voucher) => {
+                acc.total += 1;
+                acc.totalIssued += voucher.quantity;
+                acc.totalClaimed += voucher.claimedCount;
+                acc.totalUsed += voucher.usedCount;
+
+                if (!voucher.isActive) {
+                    acc.disabled += 1;
+                    return acc;
+                }
+
+                if (voucher.startsAt && voucher.startsAt > now) {
+                    acc.upcoming += 1;
+                    return acc;
+                }
+
+                if (voucher.expiresAt && voucher.expiresAt < now) {
+                    acc.expired += 1;
+                    return acc;
+                }
+
+                acc.active += 1;
+                if (voucher.expiresAt && voucher.expiresAt <= sevenDaysLater) {
+                    acc.expiringSoon += 1;
+                }
+
+                return acc;
+            },
+            {
+                total: 0,
+                active: 0,
+                disabled: 0,
+                expired: 0,
+                upcoming: 0,
+                expiringSoon: 0,
+                totalIssued: 0,
+                totalClaimed: 0,
+                totalUsed: 0,
+            },
+        );
+
+        const chartMap = new Map<string, { date: string; usedCount: number; discountAmount: number }>();
+        for (let offset = 0; offset < 30; offset += 1) {
+            const date = new Date(thirtyDaysAgo);
+            date.setDate(thirtyDaysAgo.getDate() + offset);
+            const key = formatDateKey(date);
+            chartMap.set(key, { date: key, usedCount: 0, discountAmount: 0 });
+        }
+
+        const totalDiscount = usedVouchers.reduce((sum, item) => {
+            return sum + Number(item.order?.voucherDiscount || 0);
+        }, 0);
+
+        usedVouchers.forEach((item) => {
+            if (!item.usedAt) return;
+            const key = formatDateKey(item.usedAt);
+            const current = chartMap.get(key);
+            if (!current) return;
+            current.usedCount += 1;
+            current.discountAmount += Number(item.order?.voucherDiscount || 0);
+        });
+
+        return {
+            stats: {
+                ...stats,
+                totalDiscount,
+            },
+            chart: Array.from(chartMap.values()),
         };
     }
 
@@ -378,6 +513,10 @@ export class PromotionService {
             throw new BadRequestException('Mã ưu đãi chưa được phép sử dụng');
         }
 
+        if (voucher.usedCount >= voucher.quantity) {
+            throw new BadRequestException('Mã ưu đãi đã hết lượt sử dụng');
+        }
+
         if (subtotal < Number(voucher.minOrderAmount)) {
             throw new BadRequestException(
                 `Giá trị đơn hàng (${subtotal.toLocaleString('vi-VN')}đ) chưa đạt mức tối thiểu (${Number(voucher.minOrderAmount).toLocaleString('vi-VN')}đ) để áp dụng mã này`
@@ -413,15 +552,25 @@ export class PromotionService {
             throw new BadRequestException('Không tìm thấy thông tin nhận mã ưu đãi');
         }
 
-        await tx.userVoucher.update({
+        if (userVoucher.usedAt) {
+            throw new BadRequestException('Mã ưu đãi này đã được sử dụng');
+        }
+
+        const updated = await tx.userVoucher.updateMany({
             where: {
-                userId_voucherId: { userId, voucherId }
+                userId,
+                voucherId,
+                usedAt: null,
             },
             data: {
                 usedAt: new Date(),
                 orderId: orderId
             }
         });
+
+        if (updated.count !== 1) {
+            throw new BadRequestException('Mã ưu đãi này đã được sử dụng');
+        }
 
         await tx.voucher.update({
             where: { id: voucherId },

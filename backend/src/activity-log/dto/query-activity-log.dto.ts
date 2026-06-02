@@ -21,7 +21,15 @@ export class QueryActivityLogDto {
 
     @IsOptional()
     @IsString()
+    search?: string;
+
+    @IsOptional()
+    @IsString()
     action?: activityLogConstants.ActivityActionType;
+
+    @IsOptional()
+    @IsString()
+    actionGroup?: string;
 
     @IsOptional()
     @IsDateString()

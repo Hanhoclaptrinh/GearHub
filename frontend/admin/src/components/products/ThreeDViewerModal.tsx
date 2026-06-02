@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { X, Box, Download, ZoomIn, Info } from 'lucide-react';
+import { X, Box, Download, ZoomIn, Info } from '../ui/IconlyIcons';
 import { Button } from '../ui/Button';
 
 declare global {

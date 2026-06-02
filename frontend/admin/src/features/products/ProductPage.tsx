@@ -23,7 +23,7 @@ import {
   Settings2,
   Gem,
   UploadCloud,
-} from 'lucide-react';
+} from '../../components/ui/IconlyIcons';
 import { productService } from '../../services/product.service';
 import { brandService } from '../../services/brand.service';
 import { categoryService } from '../../services/category.service';
@@ -241,7 +241,7 @@ export const ProductPage: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const { data: categories } = useQuery<Category[]>({ queryKey: ['categories'], queryFn: categoryService.getAllCategories });
-  const { data: brands } = useQuery<Brand[]>({ queryKey: ['brands'], queryFn: brandService.getAllBrands });
+  const { data: brands } = useQuery<Brand[]>({ queryKey: ['brands'], queryFn: () => brandService.getAllBrands() });
 
   const { data: editProduct, isLoading: isEditLoading } = useQuery<Product>({
     queryKey: ['product', slug],
@@ -507,33 +507,57 @@ export const ProductPage: React.FC = () => {
 
   if (isEdit && isEditLoading) return <div className="text-center py-20 font-bold text-primary animate-pulse font-heading">Đang tải dữ liệu sản phẩm...</div>;
 
+  const watchedVariants = watch('variants') || [];
+  const watchedCategoryId = watch('categoryId');
+  const watchedBrandId = watch('brandId');
+  const watchedDescription = watch('description') || '';
+  const flatCategories = categories?.flatMap((category: Category) => [category, ...(category.children || [])]) || [];
+  const selectedCategory = flatCategories.find((category: Category) => category.id === watchedCategoryId);
+  const selectedBrand = brands?.find((brand: Brand) => brand.id === watchedBrandId);
+  const validVariantCount = watchedVariants.filter((variant: any) => variant?.sku && Number(variant?.price) >= 0).length;
+  const totalStock = watchedVariants.reduce((sum: number, variant: any) => sum + Number(variant?.stock || 0), 0);
+
   return (
-    <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-300 pb-20">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={() => navigate('/products')} className="p-3 bg-white rounded-2xl border border-slate-200 hover:bg-slate-100 transition-colors h-14 w-14">
-            <ArrowLeft className="w-6 h-6 text-slate-600" />
-          </Button>
-          <div className="space-y-1">
-            <h1 className="text-3xl font-black text-slate-900 font-heading leading-none">{isEdit ? 'Sửa sản phẩm' : 'Thêm sản phẩm'}</h1>
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">{isEdit ? 'Cập nhật lại thông tin & kho' : 'Thiết lập nội dung & thuộc tính'}</p>
+    <div className="space-y-6 pb-10 animate-in fade-in slide-in-from-bottom-3 duration-500">
+      <div className="rounded-[12px] bg-white border border-[#edf2f7] shadow-[0_5px_15px_rgba(25,42,70,0.06)] p-5 md:p-6">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex items-start gap-4">
+            <Button variant="ghost" onClick={() => navigate('/products')} className="h-11 w-11 rounded-[10px] bg-[#f2f7ff] p-0 text-[#25396f] hover:bg-primary/10">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="space-y-2">
+              <p className="text-[12px] font-extrabold uppercase tracking-wider text-[#7c8db5]">Quản lý sản phẩm / {isEdit ? 'Cập nhật' : 'Tạo mới'}</p>
+              <div>
+                <h1 className="text-[28px] md:text-[32px] font-extrabold text-[#25396f] font-heading leading-tight">{isEdit ? 'Sửa sản phẩm' : 'Thêm sản phẩm'}</h1>
+                <p className="text-sm font-semibold text-[#7c8db5] mt-1">{isEdit ? 'Cập nhật nội dung, hình ảnh và cấu hình SKU.' : 'Thiết lập thông tin bán hàng, hình ảnh và biến thể.'}</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 xl:items-center">
+            <Button type="button" variant="outline" onClick={() => navigate('/products')} className="rounded-[8px] border-[#dce7f1] text-[#607080] hover:border-primary">
+              Hủy
+            </Button>
+            <Button onClick={handleSubmit(onSubmit, onInvalid)} isLoading={mutation.isPending} className="h-11 rounded-[8px] bg-primary px-6 shadow-[0_8px_18px_rgba(67,94,190,0.18)] hover:bg-primary/90">
+              <Save className="w-4 h-4 mr-2" />
+              {isEdit ? 'Lưu thay đổi' : 'Tạo sản phẩm'}
+            </Button>
           </div>
         </div>
-        <Button onClick={handleSubmit(onSubmit, onInvalid)} isLoading={mutation.isPending} className="py-4 px-8 min-w-[200px] shadow-primary/20 shadow-2xl h-14">
-          <Save className="w-5 h-5 mr-3" />
-          {isEdit ? 'Lưu thay đổi' : 'Đăng bán ngay'}
-        </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          <Card className="rounded-3xl border-none shadow-2xl shadow-slate-200/50">
-            <CardHeader className="pl-10 pt-8 border-none">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <FileText className="text-primary w-6 h-6" /> Thông tin cơ bản
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start">
+        <div className="space-y-6">
+          <Card className="rounded-[12px] border-none shadow-[0_5px_15px_rgba(25,42,70,0.06)] bg-white">
+            <CardHeader className="px-6 pt-6 pb-3 border-none">
+              <CardTitle className="text-[20px] text-[#25396f] flex items-center gap-3">
+                <span className="w-10 h-10 rounded-[10px] bg-primary/10 text-primary inline-flex items-center justify-center">
+                  <FileText className="w-5 h-5" />
+                </span>
+                Thông tin cơ bản
               </CardTitle>
+              <p className="text-sm font-semibold text-[#7c8db5]">Nội dung hiển thị chính trên trang chi tiết sản phẩm.</p>
             </CardHeader>
-            <CardContent className="px-10 pb-10 space-y-6">
+            <CardContent className="px-6 pb-6 space-y-5">
               <Input label="Tên sản phẩm" placeholder="Samsung Galaxy S24 Ultra..." {...register('name')} error={errors.name?.message} />
 
               <Input
@@ -545,13 +569,13 @@ export const ProductPage: React.FC = () => {
               />
 
               <div className="space-y-1.5">
-                <label className="text-sm font-bold text-slate-700 ml-1 flex items-center gap-2">
+                <label className="text-sm font-bold text-[#25396f] ml-1 flex items-center gap-2">
                   <Package className="w-4 h-4 text-primary/60" /> Mô tả chi tiết
                 </label>
                 <textarea
                   {...register('description')}
                   className={cn(
-                    "w-full h-40 p-4 border border-slate-200 rounded-2xl outline-none focus:border-primary focus:ring-3 focus:ring-primary/20 transition-all font-body text-slate-700 resize-none",
+                    "w-full h-40 p-4 border border-[#dce7f1] rounded-[10px] outline-none focus:border-primary focus:ring-3 focus:ring-primary/20 transition-all font-body text-[#25396f] resize-none bg-white",
                     errors.description && "border-red-400 focus:border-red-500 focus:ring-red-100"
                   )}
                   placeholder="Mô tả các đặc điểm nổi bật của sản phẩm..."
@@ -570,13 +594,13 @@ export const ProductPage: React.FC = () => {
                 )}
               />
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-1.5 flex flex-col">
-                  <label className="text-sm font-bold text-slate-700 ml-1">Danh mục</label>
+                  <label className="text-sm font-bold text-[#25396f] ml-1">Danh mục</label>
                   <div className="relative">
                     <select
                       {...register('categoryId')}
-                      className="w-full h-12 px-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-primary focus:ring-3 focus:ring-primary/20 appearance-none font-bold text-slate-700 transition-all cursor-pointer"
+                      className="w-full h-12 px-4 bg-white border border-[#dce7f1] rounded-[10px] outline-none focus:border-primary focus:ring-3 focus:ring-primary/20 appearance-none font-bold text-[#25396f] transition-all cursor-pointer"
                     >
                       <option value="">Chọn danh mục</option>
                       {categories?.map((c: Category) => (
@@ -588,21 +612,21 @@ export const ProductPage: React.FC = () => {
                         </React.Fragment>
                       ))}
                     </select>
-                    <Layers className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    <Layers className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a8b4c7] pointer-events-none" />
                   </div>
                   {errors.categoryId && <span className="text-xs font-bold text-red-500 ml-1">{errors.categoryId.message}</span>}
                 </div>
                 <div className="space-y-1.5 flex flex-col">
-                  <label className="text-sm font-bold text-slate-700 ml-1">Thương hiệu</label>
+                  <label className="text-sm font-bold text-[#25396f] ml-1">Thương hiệu</label>
                   <div className="relative">
                     <select
                       {...register('brandId')}
-                      className="w-full h-12 px-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-primary focus:ring-3 focus:ring-primary/20 appearance-none font-bold text-slate-700 transition-all cursor-pointer"
+                      className="w-full h-12 px-4 bg-white border border-[#dce7f1] rounded-[10px] outline-none focus:border-primary focus:ring-3 focus:ring-primary/20 appearance-none font-bold text-[#25396f] transition-all cursor-pointer"
                     >
                       <option value="">Chọn thương hiệu</option>
                       {brands?.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
                     </select>
-                    <Plus className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    <Plus className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a8b4c7] pointer-events-none" />
                   </div>
                   {errors.brandId && <span className="text-xs font-bold text-red-500 ml-1">{errors.brandId.message}</span>}
                 </div>
@@ -611,29 +635,32 @@ export const ProductPage: React.FC = () => {
           </Card>
 
           {/* === COMMON SPECS === */}
-          <Card className="rounded-3xl border-none shadow-2xl shadow-slate-200/50">
-            <CardHeader className="pl-10 pt-8 border-none flex flex-row items-center justify-between">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <Settings2 className="text-primary w-6 h-6" /> Thông số kỹ thuật chung
+          <Card className="rounded-[12px] border-none shadow-[0_5px_15px_rgba(25,42,70,0.06)] bg-white">
+            <CardHeader className="px-6 pt-6 pb-3 border-none flex flex-row items-center justify-between gap-4">
+              <CardTitle className="text-[20px] text-[#25396f] flex items-center gap-3">
+                <span className="w-10 h-10 rounded-[10px] bg-[#f2f7ff] text-primary inline-flex items-center justify-center">
+                  <Settings2 className="w-5 h-5" />
+                </span>
+                Thông số kỹ thuật chung
               </CardTitle>
-              <Button type="button" variant="ghost" size="sm" className="h-8 text-[10px] px-3 rounded-xl border border-slate-200"
+              <Button type="button" variant="ghost" size="sm" className="h-8 text-[10px] px-3 rounded-[8px] border border-[#dce7f1]"
                 onClick={() => setCommonSpecs([...commonSpecs, { key: '', val: '' }])}>
                 <Plus className="w-3 h-3 mr-1.5" /> Thêm spec
               </Button>
             </CardHeader>
-            <CardContent className="px-10 pb-10 space-y-3">
-              <p className="text-[10px] font-medium text-slate-400 italic">
-                * Thông số chung cho mọi biến thể (VD: Chip, Màn hình, Pin...).
+            <CardContent className="px-6 pb-6 space-y-3">
+              <p className="text-xs font-semibold text-[#7c8db5]">
+                Thông số chung cho mọi biến thể, ví dụ chip, màn hình, pin.
               </p>
               {commonSpecs.length === 0 && (
-                <div className="text-center py-6 text-sm text-slate-400 font-bold">Chưa có thông số nào</div>
+                <div className="rounded-[10px] border border-dashed border-[#dce7f1] bg-[#fbfcff] text-center py-6 text-sm text-[#7c8db5] font-bold">Chưa có thông số nào</div>
               )}
               {commonSpecs.map((item, idx) => (
                 <div key={idx} className="flex gap-3 items-center group/spec animate-in fade-in duration-200">
-                  <input className="flex-1 h-10 px-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-bold text-slate-700 text-xs"
+                  <input className="flex-1 h-10 px-4 bg-white border border-[#dce7f1] rounded-[10px] outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-bold text-[#25396f] text-xs"
                     placeholder="Tên (VD: chip)" value={item.key}
                     onChange={e => { const next = [...commonSpecs]; next[idx].key = e.target.value; setCommonSpecs(next); }} />
-                  <input className="flex-[2] h-10 px-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-bold text-slate-700 text-xs"
+                  <input className="flex-[2] h-10 px-4 bg-white border border-[#dce7f1] rounded-[10px] outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-bold text-[#25396f] text-xs"
                     placeholder="Giá trị (VD: Apple A16 Bionic)" value={item.val}
                     onChange={e => { const next = [...commonSpecs]; next[idx].val = e.target.value; setCommonSpecs(next); }} />
                   <button type="button" className="p-2 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover/spec:opacity-100"
@@ -646,36 +673,39 @@ export const ProductPage: React.FC = () => {
           </Card>
 
           {/* === VAULT PRODUCT === */}
-          <Card className={cn("rounded-3xl border-2 shadow-2xl transition-all duration-300", watchIsVault ? "border-amber-400/50 shadow-amber-100/50 bg-gradient-to-br from-amber-50/30 to-white" : "border-transparent shadow-slate-200/50")}>
-            <CardHeader className="pl-10 pt-8 border-none">
+          <Card className={cn("rounded-[12px] border shadow-[0_5px_15px_rgba(25,42,70,0.06)] transition-all duration-300", watchIsVault ? "border-primary/30 bg-[#fbfcff]" : "border-transparent bg-white")}>
+            <CardHeader className="px-6 pt-6 pb-4 border-none">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <Gem className={cn("w-6 h-6 transition-colors", watchIsVault ? "text-amber-500" : "text-slate-300")} /> Hàng trưng bày (Vault)
+                <CardTitle className="text-[20px] text-[#25396f] flex items-center gap-3">
+                  <span className={cn("w-10 h-10 rounded-[10px] inline-flex items-center justify-center transition-colors", watchIsVault ? "bg-primary/10 text-primary" : "bg-[#f2f7ff] text-[#7c8db5]")}>
+                    <Gem className="w-5 h-5" />
+                  </span>
+                  Hàng trưng bày (Vault)
                 </CardTitle>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" className="sr-only peer" {...register('isVault')} />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500" />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary" />
                 </label>
               </div>
-              <p className="text-xs font-bold text-slate-400 mt-1">Bật chế độ này cho sản phẩm trưng bày, hàng hiếm hoặc có giá trị đặc biệt.</p>
+              <p className="text-sm font-semibold text-[#7c8db5] mt-2">Bật chế độ này cho sản phẩm trưng bày, hàng hiếm hoặc có giá trị đặc biệt.</p>
             </CardHeader>
             {watchIsVault && (
-              <CardContent className="px-10 pb-10 space-y-3 animate-in slide-in-from-top-2 duration-300">
+              <CardContent className="px-6 pb-6 space-y-3 animate-in slide-in-from-top-2 duration-300">
                 <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
+                  <label className="text-[10px] font-black text-[#607080] uppercase tracking-widest flex items-center gap-2">
                     <Shield className="w-3 h-3" /> Thông tin kỹ thuật
                   </label>
-                  <Button type="button" variant="ghost" size="sm" className="h-8 text-[10px] px-3 rounded-xl border border-amber-300 text-amber-600 hover:bg-amber-50"
+                  <Button type="button" variant="ghost" size="sm" className="h-8 text-[10px] px-3 rounded-[8px] border border-[#dce7f1] text-[#607080] hover:bg-[#f2f7ff]"
                     onClick={() => setVaultSpecs([...vaultSpecs, { key: '', val: '' }])}>
                     <Plus className="w-3 h-3 mr-1.5" /> Thêm
                   </Button>
                 </div>
                 {vaultSpecs.map((item, idx) => (
                   <div key={idx} className="flex gap-3 items-center group/vault animate-in fade-in duration-200">
-                    <input className="flex-1 h-10 px-4 bg-white border border-amber-200 rounded-xl outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100 transition-all font-bold text-slate-700 text-xs"
+                    <input className="flex-1 h-10 px-4 bg-white border border-[#dce7f1] rounded-[10px] outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-bold text-[#25396f] text-xs"
                       placeholder="VD: Số serial giới hạn" value={item.key}
                       onChange={e => { const next = [...vaultSpecs]; next[idx].key = e.target.value; setVaultSpecs(next); }} />
-                    <input className="flex-[2] h-10 px-4 bg-white border border-amber-200 rounded-xl outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100 transition-all font-bold text-slate-700 text-xs"
+                    <input className="flex-[2] h-10 px-4 bg-white border border-[#dce7f1] rounded-[10px] outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-bold text-[#25396f] text-xs"
                       placeholder="VD: #0042/1000" value={item.val}
                       onChange={e => { const next = [...vaultSpecs]; next[idx].val = e.target.value; setVaultSpecs(next); }} />
                     <button type="button" className="p-2 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover/vault:opacity-100"
@@ -689,27 +719,30 @@ export const ProductPage: React.FC = () => {
           </Card>
 
           {/* === VARIANT GENERATOR === */}
-          <Card className="rounded-3xl border-none shadow-2xl shadow-slate-200/50">
-            <CardHeader className="pl-10 pt-8 border-none">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <Wand2 className="text-primary w-6 h-6" /> Tạo ma trận biến thể
+          <Card className="rounded-[12px] border-none shadow-[0_5px_15px_rgba(25,42,70,0.06)] bg-white">
+            <CardHeader className="px-6 pt-6 pb-3 border-none">
+              <CardTitle className="text-[20px] text-[#25396f] flex items-center gap-3">
+                <span className="w-10 h-10 rounded-[10px] bg-[#f2f7ff] text-primary inline-flex items-center justify-center">
+                  <Wand2 className="w-5 h-5" />
+                </span>
+                Tạo ma trận biến thể
               </CardTitle>
-              <p className="text-xs font-bold text-slate-400 mt-1">Nhập giá trị cho từng trục thuộc tính, phân cách bằng dấu phẩy.</p>
+              <p className="text-sm font-semibold text-[#7c8db5]">Nhập giá trị cho từng trục thuộc tính, phân cách bằng dấu phẩy.</p>
             </CardHeader>
-            <CardContent className="px-10 pb-10 space-y-4">
+            <CardContent className="px-6 pb-6 space-y-4">
               {(watch('attributeConfig') || []).filter(k => k.trim()).map(key => (
                 <div key={key} className="flex gap-3 items-center">
-                  <span className="min-w-[120px] text-xs font-black text-slate-500 uppercase">{key}</span>
-                  <input className="flex-1 h-10 px-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-bold text-slate-700 text-xs"
+                  <span className="min-w-[120px] text-xs font-black text-[#607080] uppercase">{key}</span>
+                  <input className="flex-1 h-10 px-4 bg-white border border-[#dce7f1] rounded-[10px] outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-bold text-[#25396f] text-xs"
                     placeholder={`VD: Đen, Trắng, Xanh (phân cách bằng dấu phẩy)`}
                     value={generatorAxes[key] || ''}
                     onChange={e => setGeneratorAxes({ ...generatorAxes, [key]: e.target.value })} />
                 </div>
               ))}
               {(watch('attributeConfig') || []).filter(k => k.trim()).length === 0 && (
-                <p className="text-sm text-slate-400 font-bold text-center py-4">Vui lòng thêm key ở mục "Các phím thuộc tính biến thể" phía trên trước.</p>
+                <p className="rounded-[10px] border border-dashed border-[#dce7f1] bg-[#fbfcff] text-sm text-[#7c8db5] font-bold text-center py-4">Vui lòng thêm key ở mục "Các phím thuộc tính biến thể" phía trên trước.</p>
               )}
-              <Button type="button" className="w-full py-3 rounded-2xl" onClick={handleGenerateVariants} isLoading={isGenerating}
+              <Button type="button" className="w-full py-3 rounded-[8px] bg-primary" onClick={handleGenerateVariants} isLoading={isGenerating}
                 disabled={(watch('attributeConfig') || []).filter(k => k.trim()).length === 0}>
                 <Wand2 className="w-4 h-4 mr-2" /> Tạo ma trận
               </Button>
@@ -717,21 +750,41 @@ export const ProductPage: React.FC = () => {
           </Card>
 
           {/* === VARIANTS TABLE === */}
-          <Card className="rounded-3xl border-none shadow-2xl shadow-slate-200/50">
-            <CardHeader className="pl-10 pt-8 border-none flex flex-row items-center justify-between">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <Layers className="text-primary w-6 h-6" /> Phân loại & Kho ({fields.length} biến thể)
-              </CardTitle>
-              <Button type="button" variant="outline" size="sm" className="rounded-full shadow-none" onClick={() => append({ sku: '', price: 0, stock: 0 })}>
+          <Card className="rounded-[12px] border-none shadow-[0_5px_15px_rgba(25,42,70,0.06)] bg-white">
+            <CardHeader className="px-6 pt-6 pb-3 border-none flex flex-row items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-[20px] text-[#25396f] flex items-center gap-3">
+                  <span className="w-10 h-10 rounded-[10px] bg-[#f2f7ff] text-primary inline-flex items-center justify-center">
+                    <Layers className="w-5 h-5" />
+                  </span>
+                  Phân loại & Kho
+                </CardTitle>
+                <p className="text-sm font-semibold text-[#7c8db5] mt-1">{fields.length} biến thể đang được cấu hình.</p>
+              </div>
+              <Button type="button" variant="outline" size="sm" className="rounded-[8px] border-[#dce7f1] shadow-none" onClick={() => append({ sku: '', price: 0, stock: 0 })}>
                 <Plus className="w-4 h-4 mr-1.5" /> Thêm SKU
               </Button>
             </CardHeader>
-            <CardContent className="px-10 pb-10 space-y-4">
+            <CardContent className="px-6 pb-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="rounded-[10px] border border-[#edf2f7] bg-white px-4 py-3">
+                  <p className="text-[11px] font-extrabold uppercase text-[#7c8db5] mb-1">Biến thể</p>
+                  <p className="text-xl font-extrabold text-[#25396f]">{fields.length}</p>
+                </div>
+                <div className="rounded-[10px] border border-[#edf2f7] bg-white px-4 py-3">
+                  <p className="text-[11px] font-extrabold uppercase text-[#7c8db5] mb-1">SKU hợp lệ</p>
+                  <p className="text-xl font-extrabold text-[#25396f]">{validVariantCount}</p>
+                </div>
+                <div className="rounded-[10px] border border-[#edf2f7] bg-white px-4 py-3">
+                  <p className="text-[11px] font-extrabold uppercase text-[#7c8db5] mb-1">Tổng tồn</p>
+                  <p className="text-xl font-extrabold text-[#25396f]">{totalStock}</p>
+                </div>
+              </div>
               {/* === BULK ACTION TOOLBAR === */}
-              <div className="bg-slate-100/60 border border-slate-200/50 p-5 rounded-2xl mb-6 space-y-4">
+              <div className="bg-[#fbfcff] border border-[#dce7f1] p-5 rounded-[12px] mb-6 space-y-4">
                 <div className="flex items-center gap-2">
-                  <Wand2 className="w-5 h-5 text-indigo-600" />
-                  <span className="text-xs font-black text-slate-800 uppercase tracking-wide">Magic Bulk Action (Gán nhanh hàng loạt)</span>
+                  <Wand2 className="w-5 h-5 text-primary" />
+                  <span className="text-xs font-black text-[#25396f] uppercase tracking-wide">Gán nhanh hàng loạt</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
@@ -739,7 +792,7 @@ export const ProductPage: React.FC = () => {
                     <label className="text-[10px] font-black text-slate-400 uppercase ml-1 flex items-center gap-1">Lọc theo Thuộc tính</label>
                     <select
                       id="bulk-attr-filter-key"
-                      className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-primary transition-all font-bold text-slate-700 text-xs cursor-pointer"
+                      className="w-full h-10 px-3 bg-white border border-[#dce7f1] rounded-[10px] outline-none focus:border-primary transition-all font-bold text-[#25396f] text-xs cursor-pointer"
                     >
                       <option value="">-- Tất cả thuộc tính --</option>
                       {Array.from(new Set(
@@ -756,7 +809,7 @@ export const ProductPage: React.FC = () => {
                       id="bulk-attr-filter-val"
                       type="text"
                       placeholder="VD: Đen, 512GB"
-                      className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-primary transition-all font-bold text-slate-700 text-xs"
+                      className="w-full h-10 px-3 bg-white border border-[#dce7f1] rounded-[10px] outline-none focus:border-primary transition-all font-bold text-[#25396f] text-xs"
                     />
                   </div>
 
@@ -764,9 +817,9 @@ export const ProductPage: React.FC = () => {
                     <div className="flex-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase ml-1 flex items-center gap-1">Hành động áp dụng</label>
                       <div className="grid grid-cols-3 gap-2">
-                        <input id="bulk-price-val" type="number" placeholder="Gán Giá" className="h-10 px-3 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold w-full" />
-                        <input id="bulk-stock-val" type="number" placeholder={isEdit ? 'Không đổi' : 'Gán Kho'} disabled={isEdit} className={cn("h-10 px-3 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold w-full", isEdit && "opacity-50 cursor-not-allowed")} />
-                        <input id="bulk-barcode-val" type="text" placeholder="Barcode" className="h-10 px-3 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold w-full" />
+                        <input id="bulk-price-val" type="number" placeholder="Giá" className="h-10 px-3 bg-white border border-[#dce7f1] rounded-[10px] outline-none text-xs font-bold w-full" />
+                        <input id="bulk-stock-val" type="number" placeholder={isEdit ? 'Không đổi' : 'Kho'} disabled={isEdit} className={cn("h-10 px-3 bg-white border border-[#dce7f1] rounded-[10px] outline-none text-xs font-bold w-full", isEdit && "opacity-50 cursor-not-allowed")} />
+                        <input id="bulk-barcode-val" type="text" placeholder="Barcode" className="h-10 px-3 bg-white border border-[#dce7f1] rounded-[10px] outline-none text-xs font-bold w-full" />
                       </div>
                     </div>
 
@@ -806,7 +859,7 @@ export const ProductPage: React.FC = () => {
 
                         setValue('variants', updatedVariants, { shouldDirty: true });
                       }}
-                      className="h-10 px-4 bg-primary text-white font-black text-xs uppercase tracking-wider rounded-xl hover:bg-primary-600 active:scale-95 transition-all shadow-md cursor-pointer flex items-center justify-center min-w-[90px]"
+                      className="h-10 px-4 bg-primary text-white font-black text-xs uppercase tracking-wider rounded-[8px] hover:bg-primary/90 active:scale-95 transition-all shadow-md cursor-pointer flex items-center justify-center min-w-[90px]"
                     >
                       Áp dụng
                     </button>
@@ -815,8 +868,8 @@ export const ProductPage: React.FC = () => {
 
                 <div className="border-t border-slate-200/40 pt-3 flex flex-wrap items-center gap-3">
                   <span className="text-[10px] font-black text-slate-400 uppercase">Hoặc gán thêm thuộc tính ẩn</span>
-                  <input id="bulk-attr-key" type="text" placeholder="Key (VD: Driver)" className="h-9 px-3 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold min-w-[140px]" />
-                  <input id="bulk-attr-val" type="text" placeholder="Value (VD: 30mm fiber)" className="h-9 px-3 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold min-w-[140px]" />
+                  <input id="bulk-attr-key" type="text" placeholder="Key (VD: Driver)" className="h-9 px-3 bg-white border border-[#dce7f1] rounded-[10px] outline-none text-xs font-bold min-w-[140px]" />
+                  <input id="bulk-attr-val" type="text" placeholder="Value (VD: 30mm fiber)" className="h-9 px-3 bg-white border border-[#dce7f1] rounded-[10px] outline-none text-xs font-bold min-w-[140px]" />
                   <button
                     type="button"
                     onClick={() => {
@@ -848,7 +901,7 @@ export const ProductPage: React.FC = () => {
 
                       setValue('variants', updatedVariants, { shouldDirty: true });
                     }}
-                    className="h-9 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+                    className="h-9 px-4 bg-primary hover:bg-primary/90 text-white font-black text-xs uppercase tracking-wider rounded-[8px] transition-all shadow-md active:scale-95 cursor-pointer"
                   >
                     Thêm Thuộc Tính
                   </button>
@@ -856,8 +909,8 @@ export const ProductPage: React.FC = () => {
               </div>
 
               {fields.map((field, idx) => (
-                <div key={field.id} className="relative p-6 bg-slate-50/50 rounded-2xl border border-slate-100 animate-in slide-in-from-right-2 duration-300">
-                  <div className="absolute -top-3 left-4 px-3 bg-white border border-slate-100 rounded-full text-[10px] font-black text-primary shadow-sm">BIẾN THỂ #{idx + 1}</div>
+                <div key={field.id} className="relative p-5 md:p-6 bg-white rounded-[12px] border border-[#edf2f7] shadow-[0_4px_12px_rgba(25,42,70,0.04)] animate-in slide-in-from-right-2 duration-300">
+                  <div className="absolute -top-3 left-4 px-3 py-1 bg-primary text-white rounded-full text-[10px] font-black shadow-sm">BIẾN THỂ #{idx + 1}</div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="relative">
@@ -873,7 +926,7 @@ export const ProductPage: React.FC = () => {
                       {isEdit ? (
                         <div className="relative">
                           <Input icon={Package} type="number" value={watch(`variants.${idx}.stock`)} disabled className="opacity-60 cursor-not-allowed" />
-                          <span className="absolute -bottom-4 left-1 text-[9px] font-bold text-amber-500">Không thể chỉnh sửa trực tiếp ở đây</span>
+                          <span className="absolute -bottom-4 left-1 text-[9px] font-bold text-[#7c8db5]">Không thể chỉnh sửa trực tiếp ở đây</span>
                         </div>
                       ) : (
                         <Input icon={Package} type="number" placeholder="0" {...register(`variants.${idx}.stock` as const)} error={(errors.variants as any)?.[idx]?.stock?.message} />
@@ -896,7 +949,7 @@ export const ProductPage: React.FC = () => {
                       <label className="text-[10px] font-black text-slate-400 uppercase ml-1 flex items-center gap-1">
                         <UploadCloud className="w-3 h-3" /> Tải ảnh riêng cho SKU này
                       </label>
-                      <div className="flex flex-wrap gap-2 mt-2 items-center bg-white p-3 rounded-xl border border-slate-200 min-h-[64px]">
+                      <div className="flex flex-wrap gap-2 mt-2 items-center bg-[#fbfcff] p-3 rounded-[10px] border border-[#dce7f1] min-h-[64px]">
                         <input
                           type="file"
                           multiple
@@ -915,14 +968,14 @@ export const ProductPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => document.getElementById(`variant-file-${idx}`)?.click()}
-                          className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl border border-slate-200 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                          className="px-3 py-2 bg-white hover:bg-[#f2f7ff] text-[#607080] font-bold text-xs rounded-[8px] border border-[#dce7f1] flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                         >
                           <UploadCloud className="w-3.5 h-3.5" /> Chọn File
                         </button>
 
                         {watch(`variants.${idx}.assets`)?.length ? (
                           (watch(`variants.${idx}.assets`) || []).map((a: any, aIdx: number) => (
-                            <div key={aIdx} className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 flex items-center justify-center bg-slate-50 animate-in fade-in group">
+                            <div key={aIdx} className="relative w-12 h-12 rounded-[8px] overflow-hidden border border-[#dce7f1] flex items-center justify-center bg-[#f2f7ff] animate-in fade-in group">
                               <img src={a.url} alt="existing asset preview" className="w-full h-full object-cover" />
                               <button
                                 type="button"
@@ -941,7 +994,7 @@ export const ProductPage: React.FC = () => {
                             </div>
                           ))
                         ) : watch(`variants.${idx}.imageUrl`) && !(variantFiles[idx]?.length) && (
-                          <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 flex items-center justify-center bg-slate-50 animate-in fade-in group">
+                          <div className="relative w-12 h-12 rounded-[8px] overflow-hidden border border-[#dce7f1] flex items-center justify-center bg-[#f2f7ff] animate-in fade-in group">
                             <img src={watch(`variants.${idx}.imageUrl`)} alt="existing preview" className="w-full h-full object-cover" />
                             <button
                               type="button"
@@ -957,9 +1010,9 @@ export const ProductPage: React.FC = () => {
                           const fileUrl = URL.createObjectURL(file);
                           const is3D = file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.usdz');
                           return (
-                            <div key={fileIdx} className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 group flex items-center justify-center bg-slate-50 animate-in fade-in">
+                            <div key={fileIdx} className="relative w-12 h-12 rounded-[8px] overflow-hidden border border-[#dce7f1] group flex items-center justify-center bg-[#f2f7ff] animate-in fade-in">
                               {is3D ? (
-                                <span className="text-[9px] font-black uppercase text-indigo-500">3D</span>
+                                <span className="text-[9px] font-black uppercase text-primary">3D</span>
                               ) : (
                                 <img src={fileUrl} alt="preview" className="w-full h-full object-cover" />
                               )}
@@ -1006,7 +1059,7 @@ export const ProductPage: React.FC = () => {
                             });
                             setVariantFiles(updatedVariantFiles);
                           }}
-                          className="ml-auto px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+                          className="ml-auto px-2.5 py-1.5 bg-[#f2f7ff] hover:bg-primary/10 text-primary border border-[#dce7f1] rounded-[8px] text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer"
                         >
                           Áp dụng cho toàn bộ màu tương ứng
                         </button>
@@ -1015,7 +1068,7 @@ export const ProductPage: React.FC = () => {
 
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase ml-1 flex items-center gap-1"><Barcode className="w-3 h-3" /> Barcode</label>
-                      <input className="w-full h-14 px-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-bold text-slate-700 text-xs mt-2"
+                      <input className="w-full h-14 px-4 bg-white border border-[#dce7f1] rounded-[10px] outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-bold text-[#25396f] text-xs mt-2"
                         placeholder="Mã vạch (tùy chọn)" {...register(`variants.${idx}.barcode` as const)} />
                     </div>
                   </div>
@@ -1036,15 +1089,18 @@ export const ProductPage: React.FC = () => {
           </Card>
         </div>
 
-        <div className="space-y-8">
-          <Card className="rounded-3xl border-none shadow-2xl shadow-slate-200/50">
-            <CardHeader className="pt-8 border-none">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <Plus className="text-primary w-6 h-6" /> Hình ảnh sản phẩm
+        <div className="space-y-6 xl:sticky xl:top-6">
+          <Card className="rounded-[12px] border-none shadow-[0_5px_15px_rgba(25,42,70,0.06)] bg-white">
+            <CardHeader className="px-6 pt-6 pb-3 border-none">
+              <CardTitle className="text-[20px] text-[#25396f] flex items-center gap-3">
+                <span className="w-10 h-10 rounded-[10px] bg-primary/10 text-primary inline-flex items-center justify-center">
+                  <UploadCloud className="w-5 h-5" />
+                </span>
+                Hình ảnh sản phẩm
               </CardTitle>
-              <p className="text-xs font-bold text-slate-400">Chọn tối đa 10 hình ảnh chất lượng cao</p>
+              <p className="text-sm font-semibold text-[#7c8db5]">Ảnh 2D là bắt buộc, có thể thêm GLB/USDZ cho trải nghiệm 3D.</p>
             </CardHeader>
-            <CardContent className="pb-10 pt-2">
+            <CardContent className="px-6 pb-6 pt-2">
               <ImageUpload
                 previews={previews}
                 onUpload={onUpload}
@@ -1056,7 +1112,7 @@ export const ProductPage: React.FC = () => {
           </Card>
 
           {error && (
-            <div className="p-6 bg-red-50 border-2 border-red-100 rounded-3xl flex items-start gap-4 text-red-600 animate-in slide-in-from-bottom-4">
+            <div className="p-5 bg-red-50 border border-red-100 rounded-[12px] flex items-start gap-4 text-red-600 animate-in slide-in-from-bottom-4">
               <AlertCircle className="w-6 h-6 flex-shrink-0 mt-0.5" />
               <div>
                 <h4 className="font-black text-red-700">Lỗi thực hiện</h4>
@@ -1065,17 +1121,66 @@ export const ProductPage: React.FC = () => {
             </div>
           )}
 
-          <div className="p-10 bg-gradient-to-br from-primary to-secondary rounded-[40px] text-white shadow-2xl shadow-primary/30 relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[radial-gradient(circle_at_2px_2px,_white_1px,_transparent_0)] bg-[length:24px_24px] group-hover:scale-110 transition-transform duration-500" />
-            <div className="relative z-10 space-y-4">
-              <TrendingUp className="w-10 h-10 group-hover:rotate-12 transition-transform h-min" />
-              <h3 className="text-2xl font-black font-heading leading-tight">Yêu cầu đăng bán</h3>
-              <p className="text-sm font-bold opacity-70 leading-relaxed">Hãy chắc chắn rằng dòng sản phẩm này đã đầy đủ SKU và hình ảnh minh hoạ trước khi đăng.</p>
-              <div className="pt-4">
-                <div className="h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
-                  <div className={cn("h-full bg-cta transition-all duration-500", isValid ? "w-full" : "w-1/3")} />
+          <Card className="rounded-[12px] border-none shadow-[0_5px_15px_rgba(25,42,70,0.06)] bg-white">
+            <CardHeader className="px-6 pt-6 pb-3 border-none">
+              <CardTitle className="text-[20px] text-[#25396f] flex items-center gap-3">
+                <span className="w-10 h-10 rounded-[10px] bg-[#f2f7ff] text-primary inline-flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5" />
+                </span>
+                Tóm tắt đăng bán
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-6 pb-6 space-y-5">
+              <div className="rounded-[12px] border border-[#edf2f7] bg-[#fbfcff] p-5">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-widest text-[#7c8db5] mb-2">Thông tin hiển thị</p>
+                  <h3 className="text-xl font-black text-[#25396f] font-heading leading-tight line-clamp-2">{watchName || 'Tên sản phẩm mới'}</h3>
+                  <p className="text-xs font-bold text-[#7c8db5] mt-2 line-clamp-2">{watchedDescription || 'Mô tả ngắn sẽ giúp đội vận hành kiểm tra nội dung nhanh hơn.'}</p>
                 </div>
-                <p className="text-[10px] font-black uppercase mt-2 tracking-widest">{isValid ? 'Đủ điều kiện xuất bản' : 'Nội dung chưa hợp lệ'}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-[10px] border border-[#edf2f7] p-3">
+                  <p className="text-[10px] font-black uppercase text-[#7c8db5] mb-1">Danh mục</p>
+                  <p className="text-sm font-extrabold text-[#25396f] truncate">{selectedCategory?.name || 'Chưa chọn'}</p>
+                </div>
+                <div className="rounded-[10px] border border-[#edf2f7] p-3">
+                  <p className="text-[10px] font-black uppercase text-[#7c8db5] mb-1">Thương hiệu</p>
+                  <p className="text-sm font-extrabold text-[#25396f] truncate">{selectedBrand?.name || 'Chưa chọn'}</p>
+                </div>
+                <div className="rounded-[10px] border border-[#edf2f7] p-3">
+                  <p className="text-[10px] font-black uppercase text-[#7c8db5] mb-1">Media</p>
+                  <p className="text-sm font-extrabold text-[#25396f]">{previews.length} file</p>
+                </div>
+                <div className="rounded-[10px] border border-[#edf2f7] p-3">
+                  <p className="text-[10px] font-black uppercase text-[#7c8db5] mb-1">Vault</p>
+                  <p className="text-sm font-extrabold text-[#25396f]">{watchIsVault ? 'Đang bật' : 'Không'}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-[#7c8db5]">Mức sẵn sàng</span>
+                  <span className="text-[11px] font-black uppercase text-[#25396f]">{isValid ? 'Đủ điều kiện' : 'Cần kiểm tra'}</span>
+                </div>
+                <div className="h-2 w-full bg-[#f2f7ff] rounded-full overflow-hidden">
+                  <div className={cn("h-full bg-primary transition-all duration-500", isValid ? "w-full" : "w-1/2")} />
+                </div>
+              </div>
+
+              <Button onClick={handleSubmit(onSubmit, onInvalid)} isLoading={mutation.isPending} className="w-full h-11 rounded-[8px] bg-primary hover:bg-primary/90">
+                <Save className="w-4 h-4 mr-2" />
+                {isEdit ? 'Lưu thay đổi' : 'Tạo sản phẩm'}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <div className="rounded-[12px] border border-[#edf2f7] bg-[#fbfcff] p-4">
+            <div className="flex gap-3">
+              <AlertCircle className="w-5 h-5 text-[#7c8db5] shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-extrabold text-[#25396f]">Checklist nhanh</h4>
+                <p className="text-xs font-semibold text-[#7c8db5] mt-1">Đảm bảo có ảnh chính, SKU, giá và danh mục trước khi tạo sản phẩm.</p>
               </div>
             </div>
           </div>

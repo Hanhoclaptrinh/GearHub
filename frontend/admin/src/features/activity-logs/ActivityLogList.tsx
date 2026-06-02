@@ -1,332 +1,823 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  History,
-  Search,
-  Calendar,
-  Clock,
-  RefreshCcw,
-  User,
-  FileText,
   AlertCircle,
-  Laptop,
+  Calendar,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  Filter,
   Globe,
-  Settings,
-  ShieldAlert
-} from 'lucide-react';
+  History,
+  Laptop,
+  RotateCcw,
+  Search,
+  ShieldCheck,
+  User,
+  XCircle,
+} from '../../components/ui/IconlyIcons';
+import {
+  Activity as IconlyActivity,
+  Danger as IconlyDanger,
+  Document as IconlyDocument,
+  TimeCircle as IconlyTimeCircle,
+} from 'react-iconly';
+import { toast } from 'sonner';
 import { activityLogService } from '../../services/activity-log.service';
 import { Button } from '../../components/ui/Button';
 import { Drawer } from '../../components/ui/Drawer';
-import { Input } from '../../components/ui/Input';
-import { Card, CardContent } from '../../components/ui/Card';
+import { cn } from '../../utils/cn';
+
+type ActivityLogUser = {
+  id: string;
+  email?: string;
+  role?: string;
+  profile?: {
+    fullName?: string;
+    avatarUrl?: string;
+  };
+};
+
+type ActivityLog = {
+  id: string;
+  userId?: string | null;
+  action: string;
+  metadata?: {
+    ip?: string;
+    userAgent?: string;
+    [key: string]: unknown;
+  };
+  createdAt: string;
+  user?: ActivityLogUser | null;
+};
+
+type ActionGroup = 'all' | 'account' | 'catalog' | 'order' | 'payment' | 'security';
+
+const pageSizeOptions = [10, 50, 100] as const;
+
+const actionLabels: Record<string, string> = {
+  USER_REGISTER: 'Đăng ký tài khoản',
+  USER_LOGIN: 'Đăng nhập',
+  USER_LOGOUT: 'Đăng xuất',
+  USER_CHANGE_PASSWORD: 'Đổi mật khẩu',
+  USER_FORGOT_PASSWORD: 'Yêu cầu khôi phục mật khẩu',
+  USER_RESET_PASSWORD: 'Đặt lại mật khẩu',
+  USER_STATUS_UPDATED: 'Cập nhật trạng thái tài khoản',
+  USER_ROLE_UPDATED: 'Cập nhật quyền tài khoản',
+  PROFILE_UPDATED: 'Cập nhật hồ sơ',
+  PRODUCT_VIEWED: 'Xem sản phẩm',
+  PRODUCT_CREATED: 'Tạo sản phẩm',
+  PRODUCT_UPDATED: 'Cập nhật sản phẩm',
+  PRODUCT_DELETED: 'Xóa sản phẩm',
+  PRODUCT_RESTORED: 'Khôi phục sản phẩm',
+  PRODUCT_TOGGLED: 'Bật/tắt sản phẩm',
+  VARIANT_CREATED: 'Tạo biến thể',
+  VARIANT_UPDATED: 'Cập nhật biến thể',
+  VARIANT_TOGGLED: 'Bật/tắt biến thể',
+  ASSET_UPLOADED: 'Tải tài nguyên',
+  ASSET_DELETED: 'Xóa tài nguyên',
+  ASSET_SET_PRIMARY: 'Đặt ảnh chính',
+  BRAND_CREATED: 'Tạo thương hiệu',
+  BRAND_UPDATED: 'Cập nhật thương hiệu',
+  BRAND_TOGGLED: 'Bật/tắt thương hiệu',
+  BRAND_DELETED: 'Xóa thương hiệu',
+  CATEGORY_CREATED: 'Tạo danh mục',
+  CATEGORY_UPDATED: 'Cập nhật danh mục',
+  CATEGORY_DELETED: 'Xóa danh mục',
+  CART_ITEM_ADDED: 'Thêm vào giỏ',
+  CART_ITEM_UPDATED: 'Cập nhật giỏ',
+  CART_ITEM_REMOVED: 'Xóa khỏi giỏ',
+  CART_CLEARED: 'Xóa giỏ hàng',
+  CART_SYNCED: 'Đồng bộ giỏ hàng',
+  WISHLIST_ADDED: 'Thêm yêu thích',
+  WISHLIST_REMOVED: 'Xóa yêu thích',
+  ORDER_PLACED: 'Đặt hàng',
+  ORDER_CANCELLED: 'Hủy đơn hàng',
+  ORDER_STATUS_UPDATED: 'Cập nhật trạng thái đơn',
+  ORDER_REORDERED: 'Đặt lại đơn hàng',
+  PAYMENT_INITIATED: 'Khởi tạo thanh toán',
+  PAYMENT_SUCCESS: 'Thanh toán thành công',
+  PAYMENT_FAILED: 'Thanh toán thất bại',
+};
+
+const actionOptions = [
+  { value: '', label: 'Tất cả hành động' },
+  { value: 'USER_LOGIN', label: 'Đăng nhập' },
+  { value: 'USER_LOGOUT', label: 'Đăng xuất' },
+  { value: 'USER_CHANGE_PASSWORD', label: 'Đổi mật khẩu' },
+  { value: 'USER_ROLE_UPDATED', label: 'Cập nhật quyền' },
+  { value: 'USER_STATUS_UPDATED', label: 'Cập nhật trạng thái tài khoản' },
+  { value: 'PRODUCT_CREATED', label: 'Tạo sản phẩm' },
+  { value: 'PRODUCT_UPDATED', label: 'Cập nhật sản phẩm' },
+  { value: 'PRODUCT_DELETED', label: 'Xóa sản phẩm' },
+  { value: 'CATEGORY_CREATED', label: 'Tạo danh mục' },
+  { value: 'CATEGORY_UPDATED', label: 'Cập nhật danh mục' },
+  { value: 'BRAND_CREATED', label: 'Tạo thương hiệu' },
+  { value: 'BRAND_UPDATED', label: 'Cập nhật thương hiệu' },
+  { value: 'ORDER_STATUS_UPDATED', label: 'Cập nhật trạng thái đơn' },
+  { value: 'ORDER_CANCELLED', label: 'Hủy đơn hàng' },
+  { value: 'PAYMENT_SUCCESS', label: 'Thanh toán thành công' },
+  { value: 'PAYMENT_FAILED', label: 'Thanh toán thất bại' },
+];
+
+const actionGroupLabels: Record<ActionGroup, string> = {
+  all: 'Tất cả module',
+  account: 'Tài khoản',
+  catalog: 'Catalog',
+  order: 'Đơn hàng',
+  payment: 'Thanh toán',
+  security: 'Bảo mật',
+};
+
+const formatDateTime = (value?: string) => {
+  if (!value) return 'N/A';
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value));
+};
+
+const toDateValue = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const parseDateValue = (value: string) => {
+  if (!value) return null;
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+};
+
+const addDays = (date: Date, days: number) => {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + days);
+  return nextDate;
+};
+
+const addMonths = (date: Date, months: number) => {
+  const nextDate = new Date(date);
+  nextDate.setMonth(nextDate.getMonth() + months);
+  return nextDate;
+};
+
+const formatShortDate = (value?: string) => {
+  if (!value) return '';
+  return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(`${value}T00:00:00`));
+};
+
+const formatRangeLabel = (startDate: string, endDate: string) => {
+  if (!startDate && !endDate) return 'Tất cả thời gian';
+  if (startDate && endDate) return `${formatShortDate(startDate)} - ${formatShortDate(endDate)}`;
+  if (startDate) return `Từ ${formatShortDate(startDate)}`;
+  return `Đến ${formatShortDate(endDate)}`;
+};
+
+const escapeCsvCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+
+const getActionLabel = (action: string) => actionLabels[action] || action.replace(/_/g, ' ');
+
+const getActorName = (log: ActivityLog) => log.user?.profile?.fullName || log.user?.email || 'Hệ thống';
+
+const getActionGroup = (action: string): Exclude<ActionGroup, 'all'> => {
+  if (action.startsWith('USER_') || action.startsWith('PROFILE_')) return 'account';
+  if (action.startsWith('PRODUCT_') || action.startsWith('VARIANT_') || action.startsWith('ASSET_') || action.startsWith('BRAND_') || action.startsWith('CATEGORY_')) return 'catalog';
+  if (action.startsWith('ORDER_') || action.startsWith('CART_') || action.startsWith('WISHLIST_')) return 'order';
+  if (action.startsWith('PAYMENT_')) return 'payment';
+  return 'security';
+};
+
+const getSeverity = (action: string) => {
+  if (action.includes('DELETED') || action.includes('FAILED') || action.includes('CANCELLED')) return 'high';
+  if (action.includes('UPDATED') || action.includes('ROLE') || action.includes('STATUS')) return 'medium';
+  return 'normal';
+};
+
+const downloadTextFile = (content: string, filename: string, type: string) => {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+};
+
+interface DateRangePickerProps {
+  startDate: string;
+  endDate: string;
+  onApply: (range: { startDate: string; endDate: string }) => void;
+}
+
+const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, onApply }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [draftStart, setDraftStart] = useState(startDate);
+  const [draftEnd, setDraftEnd] = useState(endDate);
+  const [visibleMonth, setVisibleMonth] = useState(() => parseDateValue(startDate) || new Date());
+
+  const monthLabel = (date: Date) =>
+    new Intl.DateTimeFormat('vi-VN', { month: 'long', year: 'numeric' }).format(date);
+
+  const buildMonthDays = (monthDate: Date) => {
+    const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+    const startOffset = (firstDay.getDay() + 6) % 7;
+    const calendarStart = addDays(firstDay, -startOffset);
+
+    return Array.from({ length: 42 }, (_, index) => {
+      const date = addDays(calendarStart, index);
+      return {
+        date,
+        value: toDateValue(date),
+        inMonth: date.getMonth() === monthDate.getMonth(),
+      };
+    });
+  };
+
+  const selectDate = (value: string) => {
+    if (!draftStart || draftEnd) {
+      setDraftStart(value);
+      setDraftEnd('');
+      return;
+    }
+
+    if (value < draftStart) {
+      setDraftStart(value);
+      setDraftEnd(draftStart);
+      return;
+    }
+
+    setDraftEnd(value);
+  };
+
+  const applyPreset = (preset: string) => {
+    const today = new Date();
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const startOfYear = new Date(today.getFullYear(), 0, 1);
+
+    if (preset === 'all') {
+      setDraftStart('');
+      setDraftEnd('');
+      return;
+    }
+
+    const ranges: Record<string, { start: Date; end: Date }> = {
+      today: { start: today, end: today },
+      '7d': { start: addDays(today, -6), end: today },
+      '30d': { start: addDays(today, -29), end: today },
+      '3m': { start: addMonths(today, -3), end: today },
+      month_to_date: { start: startOfMonth, end: today },
+      year_to_date: { start: startOfYear, end: today },
+    };
+
+    const range = ranges[preset];
+    if (!range) return;
+    setDraftStart(toDateValue(range.start));
+    setDraftEnd(toDateValue(range.end));
+    setVisibleMonth(range.start);
+  };
+
+  const cancel = () => {
+    setDraftStart(startDate);
+    setDraftEnd(endDate);
+    setIsOpen(false);
+  };
+
+  const apply = () => {
+    onApply({ startDate: draftStart, endDate: draftEnd || draftStart });
+    setIsOpen(false);
+  };
+
+  const renderMonth = (monthDate: Date) => (
+    <div className="min-w-0 flex-1">
+      <div className="h-11 rounded-[8px] bg-[#fbfcff] flex items-center justify-center text-sm font-extrabold text-[#25396f] mb-3 capitalize">
+        {monthLabel(monthDate)}
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center mb-2">
+        {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((day) => (
+          <span key={day} className="text-[11px] font-extrabold text-[#a8b4c7] py-1">{day}</span>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {buildMonthDays(monthDate).map((day) => {
+          const isStart = day.value === draftStart;
+          const isEnd = day.value === draftEnd;
+          const isInRange = Boolean(draftStart && draftEnd && day.value > draftStart && day.value < draftEnd);
+
+          return (
+            <button
+              key={day.value}
+              type="button"
+              onClick={() => selectDate(day.value)}
+              className={cn(
+                'h-9 rounded-[7px] text-sm font-extrabold transition-colors',
+                day.inMonth ? 'text-[#25396f]' : 'text-[#c8d1df]',
+                isInRange && 'bg-primary/10 text-primary',
+                (isStart || isEnd) && 'bg-primary text-white shadow-sm',
+                !isStart && !isEnd && !isInRange && 'hover:bg-[#f2f7ff] hover:text-primary',
+              )}
+            >
+              {day.date.getDate()}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => {
+          setDraftStart(startDate);
+          setDraftEnd(endDate);
+          setVisibleMonth(parseDateValue(startDate) || new Date());
+          setIsOpen(!isOpen);
+        }}
+        className={cn(
+          'h-10 w-full rounded-[5px] border px-3 text-sm font-bold inline-flex items-center gap-2 outline-none transition-colors',
+          startDate || endDate
+            ? 'border-primary bg-primary/10 text-primary'
+            : 'border-[#dce7f1] bg-white text-[#25396f] hover:border-primary',
+        )}
+      >
+        <Calendar className="w-4 h-4 shrink-0" />
+        <span className="truncate">{formatRangeLabel(startDate, endDate)}</span>
+        <ChevronDown className={cn('w-4 h-4 ml-auto shrink-0 transition-transform', isOpen && 'rotate-180')} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 z-30 mt-2 w-[calc(100vw-2rem)] max-w-[860px] origin-top-right rounded-[12px] border border-[#dce7f1] bg-white shadow-2xl overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-[200px_minmax(0,1fr)]">
+            <div className="border-b md:border-b-0 md:border-r border-[#f2f7ff] p-4 space-y-1 bg-[#fbfcff]">
+              {[
+                ['today', 'Hôm nay'],
+                ['7d', '7 ngày qua'],
+                ['30d', '30 ngày qua'],
+                ['3m', '3 tháng qua'],
+                ['month_to_date', 'Tháng hiện tại'],
+                ['year_to_date', 'Năm hiện tại'],
+                ['all', 'Tất cả thời gian'],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => applyPreset(value)}
+                  className="w-full rounded-[7px] px-3 py-2.5 text-left text-sm font-bold text-[#607080] hover:bg-white hover:text-primary transition-colors"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between border-b border-[#f2f7ff] px-5 py-3">
+                <button type="button" onClick={() => setVisibleMonth(addMonths(visibleMonth, -1))} className="w-8 h-8 rounded-[6px] text-[#607080] hover:bg-[#f2f7ff] inline-flex items-center justify-center">
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <p className="text-sm font-extrabold text-[#25396f] mb-0">{formatRangeLabel(draftStart, draftEnd)}</p>
+                <button type="button" onClick={() => setVisibleMonth(addMonths(visibleMonth, 1))} className="w-8 h-8 rounded-[6px] text-[#607080] hover:bg-[#f2f7ff] inline-flex items-center justify-center">
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 sm:p-6">
+                {renderMonth(visibleMonth)}
+                {renderMonth(addMonths(visibleMonth, 1))}
+              </div>
+
+              <div className="border-t border-[#f2f7ff] px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <p className="min-w-0 text-sm font-semibold text-[#7c8db5] mb-0">Khoảng thời gian: <span className="font-extrabold text-[#25396f] break-words">{formatRangeLabel(draftStart, draftEnd)}</span></p>
+                <div className="flex items-center justify-end gap-3">
+                  <button type="button" onClick={cancel} className="h-10 rounded-[7px] border border-[#dce7f1] px-5 text-sm font-extrabold text-[#607080] hover:text-primary hover:border-primary">
+                    Hủy
+                  </button>
+                  <button type="button" onClick={apply} className="h-10 rounded-[7px] bg-primary px-5 text-sm font-extrabold text-white shadow-sm hover:bg-primary/90">
+                    Áp dụng
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const ActivityLogList: React.FC = () => {
-  const [searchEmail, setSearchEmail] = useState('');
+  const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [selectedLog, setSelectedLog] = useState<any>(null);
+  const [pageSize, setPageSize] = useState<(typeof pageSizeOptions)[number]>(10);
+  const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null);
   const [actionFilter, setActionFilter] = useState('');
+  const [actionGroup, setActionGroup] = useState<ActionGroup>('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
 
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['activity-logs', searchEmail, page, actionFilter, startDate, endDate],
+  const queryParams = useMemo(() => ({
+    search: search.trim() || undefined,
+    action: actionFilter || undefined,
+    actionGroup: actionGroup !== 'all' ? actionGroup : undefined,
+    from: startDate ? new Date(`${startDate}T00:00:00`).toISOString() : undefined,
+    to: endDate ? new Date(`${endDate}T23:59:59.999`).toISOString() : undefined,
+  }), [actionFilter, actionGroup, endDate, search, startDate]);
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['activity-logs', page, pageSize, queryParams],
     queryFn: () => activityLogService.getAllLogs({
       page,
-      limit: 10,
-      action: actionFilter || undefined,
-      from: startDate ? new Date(startDate).toISOString() : undefined,
-      to: endDate ? new Date(endDate).toISOString() : undefined,
-      // Pass user search to filter logs
-      userId: undefined, // Standard search by service will scan on DB. We can filter on email/name on client or adjust params.
+      limit: pageSize,
+      ...queryParams,
     }),
   });
 
-  const logs = data?.data || [];
-  const meta = data?.meta || { total: 0, lastPage: 1 };
-
-  // Filter logs locally by email/name if searching
-  const filteredLogs = logs.filter((log: any) => {
-    if (!searchEmail.trim()) return true;
-    const userEmail = log.user?.email || '';
-    const userFullName = log.user?.profile?.fullName || '';
-    return userEmail.toLowerCase().includes(searchEmail.toLowerCase()) || 
-           userFullName.toLowerCase().includes(searchEmail.toLowerCase());
+  const { data: statsData } = useQuery({
+    queryKey: ['activity-logs', 'stats', queryParams],
+    queryFn: () => activityLogService.getStats(queryParams),
   });
 
-  const actionLabels: Record<string, string> = {
-    USER_REGISTER: 'Đăng ký tài khoản',
-    USER_LOGIN: 'Đăng nhập',
-    USER_LOGOUT: 'Đăng xuất',
-    USER_CHANGE_PASSWORD: 'Đổi mật khẩu',
-    USER_FORGOT_PASSWORD: 'Yêu cầu khôi phục mật khẩu',
-    USER_RESET_PASSWORD: 'Đặt lại mật khẩu',
-    PROFILE_UPDATED: 'Cập nhật hồ sơ',
-    USER_STATUS_UPDATED: 'Trạng thái tài khoản',
-    USER_ROLE_UPDATED: 'Quyền hạn tài khoản',
-    PRODUCT_VIEWED: 'Xem sản phẩm',
-    PRODUCT_CREATED: 'Tạo sản phẩm',
-    PRODUCT_UPDATED: 'Cập nhật sản phẩm',
-    PRODUCT_DELETED: 'Xóa sản phẩm',
-    PRODUCT_RESTORED: 'Khôi phục sản phẩm',
-    PRODUCT_TOGGLED: 'Bật/Tắt hiển thị sản phẩm',
-    VARIANT_CREATED: 'Tạo biến thể sản phẩm',
-    VARIANT_UPDATED: 'Cập nhật biến thể',
-    VARIANT_TOGGLED: 'Bật/Tắt biến thể',
-    ASSET_UPLOADED: 'Tải lên hình ảnh/mô hình 3D',
-    ASSET_DELETED: 'Xóa hình ảnh/mô hình 3D',
-    ASSET_SET_PRIMARY: 'Đặt ảnh chính sản phẩm',
-    BRAND_CREATED: 'Tạo thương hiệu',
-    BRAND_UPDATED: 'Cập nhật thương hiệu',
-    BRAND_TOGGLED: 'Bật/Tắt thương hiệu',
-    BRAND_DELETED: 'Xóa thương hiệu',
-    CATEGORY_CREATED: 'Tạo danh mục mới',
-    CATEGORY_UPDATED: 'Cập nhật danh mục',
-    CATEGORY_DELETED: 'Xóa danh mục',
-    CART_ITEM_ADDED: 'Thêm sản phẩm vào giỏ',
-    CART_ITEM_UPDATED: 'Cập nhật giỏ hàng',
-    CART_ITEM_REMOVED: 'Xóa khỏi giỏ hàng',
-    CART_CLEARED: 'Xóa sạch giỏ hàng',
-    CART_SYNCED: 'Đồng bộ giỏ hàng',
-    WISHLIST_ADDED: 'Thêm yêu thích',
-    WISHLIST_REMOVED: 'Xóa yêu thích',
-    ORDER_PLACED: 'Đặt hàng mới',
-    ORDER_CANCELLED: 'Hủy đơn hàng',
-    ORDER_STATUS_UPDATED: 'Cập nhật trạng thái đơn',
-    ORDER_REORDERED: 'Đặt lại đơn hàng',
-    PAYMENT_INITIATED: 'Khởi tạo thanh toán',
-    PAYMENT_SUCCESS: 'Thanh toán thành công',
-    PAYMENT_FAILED: 'Thanh toán thất bại',
+  const logs: ActivityLog[] = data?.data || [];
+  const meta = data?.meta || { total: 0, page: 1, limit: pageSize, lastPage: 1 };
+  const totalLogs = statsData?.totalLogs ?? meta.total;
+  const todayLogs = statsData?.todayLogs ?? 0;
+  const highRiskLogs = statsData?.highRiskLogs ?? 0;
+  const adminLogs = statsData?.adminLogs ?? 0;
+  const hasActiveFilters = Boolean(search || actionFilter || actionGroup !== 'all' || startDate || endDate);
+
+  const statCards = [
+    { label: 'Tổng nhật ký', value: totalLogs, icon: IconlyDocument, bgClass: 'bg-[#9694ff]' },
+    { label: 'Hôm nay', value: todayLogs, icon: IconlyTimeCircle, bgClass: 'bg-[#57caeb]' },
+    { label: 'Rủi ro cao', value: highRiskLogs, icon: IconlyDanger, bgClass: 'bg-[#ff7976]' },
+    { label: 'Admin thực hiện', value: adminLogs, icon: IconlyActivity, bgClass: 'bg-[#5ddc97]' },
+  ];
+
+  const visiblePages = Array.from({ length: Math.min(meta.lastPage, 5) }, (_, index) => {
+    if (meta.lastPage <= 5) return index + 1;
+    if (page <= 3) return index + 1;
+    if (page >= meta.lastPage - 2) return meta.lastPage - 4 + index;
+    return page - 2 + index;
+  });
+
+  const resetFilters = () => {
+    setSearch('');
+    setActionFilter('');
+    setActionGroup('all');
+    setStartDate('');
+    setEndDate('');
+    setPage(1);
   };
 
-  const getActionBadge = (action: string) => {
-    let colorClass = 'bg-slate-50 text-slate-600 border-slate-100';
-    
-    if (action.startsWith('USER_') || action.startsWith('PROFILE_')) {
-      colorClass = 'bg-blue-50 text-blue-600 border-blue-100';
-    } else if (action.startsWith('PRODUCT_') || action.startsWith('VARIANT_') || action.startsWith('ASSET_')) {
-      colorClass = 'bg-indigo-50 text-indigo-600 border-indigo-100';
-    } else if (action.startsWith('ORDER_') || action.startsWith('CART_')) {
-      colorClass = 'bg-green-50 text-green-600 border-green-100';
-    } else if (action.startsWith('PAYMENT_')) {
-      colorClass = 'bg-emerald-50 text-emerald-600 border-emerald-100';
-    } else if (action.startsWith('BRAND_') || action.startsWith('CATEGORY_') || action.startsWith('VOUCHER_')) {
-      colorClass = 'bg-amber-50 text-amber-600 border-amber-100';
+  const fetchExportLogs = async () => {
+    const exportTotal = Math.max(1, totalLogs);
+    const result = await activityLogService.getAllLogs({
+      page: 1,
+      limit: exportTotal,
+      ...queryParams,
+    });
+    return (result?.data || []) as ActivityLog[];
+  };
+
+  const exportExcel = async () => {
+    const exportLogs = await fetchExportLogs();
+    if (exportLogs.length === 0) {
+      toast.error('Không có nhật ký để xuất');
+      return;
     }
 
-    const label = actionLabels[action] || action.replace(/_/g, ' ');
+    const header = ['Thời gian', 'Người thực hiện', 'Email', 'Vai trò', 'Hành động', 'Module', 'Mức độ', 'IP', 'Thiết bị'];
+    const rows = exportLogs.map((log) => [
+      formatDateTime(log.createdAt),
+      getActorName(log),
+      log.user?.email || '',
+      log.user?.role || 'SYSTEM',
+      getActionLabel(log.action),
+      actionGroupLabels[getActionGroup(log.action)],
+      getSeverity(log.action),
+      log.metadata?.ip || '',
+      log.metadata?.userAgent || '',
+    ]);
+
+    const csv = [header, ...rows].map((row) => row.map(escapeCsvCell).join(',')).join('\n');
+    downloadTextFile(`\uFEFF${csv}`, `activity-logs-${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv;charset=utf-8;');
+    setIsExportOpen(false);
+  };
+
+  const exportTxt = async () => {
+    const exportLogs = await fetchExportLogs();
+    if (exportLogs.length === 0) {
+      toast.error('Không có nhật ký để xuất');
+      return;
+    }
+
+    const text = exportLogs
+      .map((log) => `[${formatDateTime(log.createdAt)}] ${log.user?.role || 'SYSTEM'} ${getActorName(log)} | ${getActionLabel(log.action)} | IP: ${log.metadata?.ip || 'N/A'}`)
+      .join('\n');
+    downloadTextFile(text, `activity-logs-${new Date().toISOString().slice(0, 10)}.txt`, 'text/plain;charset=utf-8;');
+    setIsExportOpen(false);
+  };
+
+  const renderActionBadge = (action: string) => {
+    const group = getActionGroup(action);
+    const groupClass = {
+      account: 'bg-primary/10 text-primary',
+      catalog: 'bg-[#fff7e6] text-[#946200]',
+      order: 'bg-[#edf9f1] text-[#2f8f5b]',
+      payment: 'bg-[#e6fdff] text-[#008c9e]',
+      security: 'bg-red-50 text-red-600',
+    }[group];
 
     return (
-      <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${colorClass}`}>
-        {label}
+      <span className={cn('inline-flex rounded-[6px] px-2.5 py-1 text-[11px] font-extrabold uppercase', groupClass)}>
+        {getActionLabel(action)}
       </span>
     );
   };
 
-  const getRoleBadge = (role: string) => {
-    switch (role) {
-      case 'ADMIN':
-        return <span className="text-[9px] font-black tracking-wider uppercase px-2 py-0.5 rounded bg-red-50 text-red-500 border border-red-100">Admin</span>;
-      case 'STAFF':
-        return <span className="text-[9px] font-black tracking-wider uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-500 border border-blue-100">Staff</span>;
-      default:
-        return <span className="text-[9px] font-black tracking-wider uppercase px-2 py-0.5 rounded bg-slate-50 text-slate-400 border border-slate-100">User</span>;
-    }
+  const renderSeverityBadge = (action: string) => {
+    const severity = getSeverity(action);
+    const config = {
+      high: ['Cao', 'bg-red-50 text-red-600'],
+      medium: ['Trung bình', 'bg-[#fff7e6] text-[#946200]'],
+      normal: ['Bình thường', 'bg-[#edf9f1] text-[#2f8f5b]'],
+    }[severity];
+
+    return <span className={cn('rounded-[6px] px-2.5 py-1 text-[11px] font-extrabold', config[1])}>{config[0]}</span>;
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-              <History size={20} />
+    <div className="space-y-6 pb-10 animate-in fade-in slide-in-from-bottom-3 duration-500">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+        {statCards.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <div key={stat.label} className="border-none shadow-[0_5px_15px_rgba(25,42,70,0.06)] rounded-[12px] bg-white transition-all duration-300 group py-6 px-6 flex items-center gap-4">
+              <div className={cn('w-12 h-12 rounded-[10px] flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shadow-xs shrink-0 text-white', stat.bgClass)}>
+                <Icon set="bold" primaryColor="white" size={24} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h6 className="text-[15px] font-semibold text-[#7c8db5] leading-tight mb-1 truncate">{stat.label}</h6>
+                <h6 className="text-[24px] font-extrabold text-[#25396f] leading-none mb-0 font-heading truncate">{stat.value}</h6>
+              </div>
             </div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Nhật ký hoạt động</h1>
-          </div>
-          <p className="text-slate-500 font-bold flex items-center gap-2">
-            Lịch sử kiểm toán và giám sát hành động của quản trị viên và nhân viên
-          </p>
-        </div>
+          );
+        })}
       </div>
 
-      <Card className="border-none shadow-2xl shadow-slate-200/50 bg-white/80 backdrop-blur-sm rounded-[32px] overflow-hidden">
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <div className="flex flex-col md:flex-row gap-4 items-center">
-              <div className="relative flex-1 w-full group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
-                <Input
-                  placeholder="Tìm kiếm theo email nhân viên..."
-                  className="pl-11 py-2.5 h-11 border-slate-200 focus:border-primary transition-all rounded-2xl"
-                  value={searchEmail}
-                  onChange={(e) => {
-                    setSearchEmail(e.target.value);
-                    setPage(1);
-                  }}
-                />
-              </div>
-              <Button
-                variant="outline"
-                className="px-6 h-11 rounded-2xl hover:bg-slate-50 border-slate-200"
-                onClick={() => refetch()}
+      <div className="bg-white rounded-[12px] shadow-[0_5px_15px_rgba(25,42,70,0.06)] border border-[#f2f7ff] overflow-hidden">
+        <div className="px-5 py-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-[#f2f7ff]">
+          <div className="relative w-full lg:max-w-[360px]">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a8b4c7]" />
+            <input
+              value={search}
+              onChange={(event) => { setSearch(event.target.value); setPage(1); }}
+              placeholder="Tìm theo người dùng, email, IP, hành động..."
+              className="w-full h-10 pl-11 pr-4 rounded-[5px] border border-[#dce7f1] bg-white text-sm font-semibold text-[#25396f] outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className={cn(
+                'h-10 rounded-[5px] px-4 text-sm font-extrabold inline-flex items-center gap-2 transition-colors',
+                isFilterOpen || hasActiveFilters ? 'bg-primary text-white shadow-sm' : 'bg-[#f2f7ff] text-[#607080] hover:bg-[#e9f1ff]',
+              )}
+            >
+              <Filter className="w-4 h-4" />
+              Bộ lọc
+            </button>
+
+            <select
+              value={pageSize}
+              onChange={(event) => { setPageSize(Number(event.target.value) as (typeof pageSizeOptions)[number]); setPage(1); }}
+              className="h-10 rounded-[5px] border border-[#dce7f1] bg-white px-3 text-sm font-bold text-[#25396f] outline-none focus:border-primary"
+              aria-label="Số nhật ký trên mỗi trang"
+            >
+              {pageSizeOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsExportOpen(!isExportOpen)}
+                className="h-10 rounded-[5px] bg-[#f2f7ff] px-4 text-sm font-extrabold text-[#607080] inline-flex items-center gap-2 hover:bg-[#e9f1ff] transition-colors"
               >
-                <RefreshCcw className="w-5 h-5" />
-              </Button>
-            </div>
+                <Download className="w-4 h-4" />
+                Xuất file
+                <ChevronDown className="w-4 h-4" />
+              </button>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-              <select
-                className="h-11 px-4 rounded-2xl border border-slate-200 focus:border-primary focus:outline-none transition-all text-sm bg-white font-bold text-slate-700"
-                value={actionFilter}
-                onChange={(e) => {
-                  setActionFilter(e.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="">Tất cả hoạt động</option>
-                <optgroup label="Tài khoản & Xác thực">
-                  <option value="USER_LOGIN">Đăng nhập</option>
-                  <option value="USER_LOGOUT">Đăng xuất</option>
-                  <option value="USER_CHANGE_PASSWORD">Thay đổi mật khẩu</option>
-                  <option value="USER_ROLE_UPDATED">Cập nhật quyền hạn</option>
-                  <option value="USER_STATUS_UPDATED">Cập nhật trạng thái tài khoản</option>
-                </optgroup>
-                <optgroup label="Sản phẩm & Thương hiệu">
-                  <option value="PRODUCT_CREATED">Tạo sản phẩm</option>
-                  <option value="PRODUCT_UPDATED">Cập nhật sản phẩm</option>
-                  <option value="PRODUCT_DELETED">Xóa sản phẩm</option>
-                  <option value="PRODUCT_TOGGLED">Bật/tắt sản phẩm</option>
-                  <option value="BRAND_CREATED">Tạo thương hiệu</option>
-                  <option value="BRAND_UPDATED">Cập nhật thương hiệu</option>
-                  <option value="CATEGORY_CREATED">Tạo danh mục</option>
-                  <option value="CATEGORY_UPDATED">Cập nhật danh mục</option>
-                </optgroup>
-                <optgroup label="Đơn hàng & Giao dịch">
-                  <option value="ORDER_STATUS_UPDATED">Cập nhật trạng thái đơn hàng</option>
-                  <option value="ORDER_CANCELLED">Hủy đơn hàng</option>
-                  <option value="PAYMENT_SUCCESS">Thanh toán thành công</option>
-                  <option value="PAYMENT_FAILED">Thanh toán thất bại</option>
-                </optgroup>
-              </select>
-
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase text-slate-400 pl-2 shrink-0">Từ ngày</span>
-                <Input
-                  type="date"
-                  className="h-11 px-4 rounded-2xl border border-slate-200 focus:border-primary transition-all text-sm bg-white font-bold text-slate-700"
-                  value={startDate}
-                  onChange={(e) => {
-                    setStartDate(e.target.value);
-                    setPage(1);
-                  }}
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase text-slate-400 pl-2 shrink-0">Đến ngày</span>
-                <Input
-                  type="date"
-                  className="h-11 px-4 rounded-2xl border border-slate-200 focus:border-primary transition-all text-sm bg-white font-bold text-slate-700"
-                  value={endDate}
-                  onChange={(e) => {
-                    setEndDate(e.target.value);
-                    setPage(1);
-                  }}
-                />
-              </div>
+              {isExportOpen && (
+                <div className="absolute right-0 top-12 z-30 w-44 rounded-[8px] border border-[#dce7f1] bg-white shadow-[0_12px_24px_rgba(25,42,70,0.12)] p-1">
+                  <button type="button" onClick={exportExcel} className="w-full h-9 rounded-[6px] px-3 text-left text-[12px] font-extrabold text-[#25396f] hover:bg-[#f2f7ff] inline-flex items-center gap-2">
+                    <FileSpreadsheet className="w-4 h-4 text-[#4fbe87]" />
+                    Excel CSV
+                  </button>
+                  <button type="button" onClick={exportTxt} className="w-full h-9 rounded-[6px] px-3 text-left text-[12px] font-extrabold text-[#25396f] hover:bg-[#f2f7ff] inline-flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-[#57caeb]" />
+                    TXT log
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      <div className="bg-white rounded-[32px] shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden text-sm">
+        {isFilterOpen && (
+          <div className="px-5 py-4 border-b border-[#f2f7ff] bg-[#fbfcff]">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              <div>
+                <label className="mb-2 block text-[11px] font-extrabold uppercase text-[#7c8db5]">Hành động</label>
+                <select
+                  value={actionFilter}
+                  onChange={(event) => { setActionFilter(event.target.value); setPage(1); }}
+                  className="h-10 w-full rounded-[5px] border border-[#dce7f1] bg-white px-3 text-sm font-bold text-[#25396f] outline-none focus:border-primary"
+                >
+                  {actionOptions.map((option) => <option key={option.value || 'all'} value={option.value}>{option.label}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-[11px] font-extrabold uppercase text-[#7c8db5]">Module</label>
+                <select
+                  value={actionGroup}
+                  onChange={(event) => { setActionGroup(event.target.value as ActionGroup); setPage(1); }}
+                  className="h-10 w-full rounded-[5px] border border-[#dce7f1] bg-white px-3 text-sm font-bold text-[#25396f] outline-none focus:border-primary"
+                >
+                  {Object.entries(actionGroupLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+              </div>
+
+              <div className="xl:col-span-2">
+                <label className="mb-2 block text-[11px] font-extrabold uppercase text-[#7c8db5]">Thời gian</label>
+                <DateRangePicker
+                  startDate={startDate}
+                  endDate={endDate}
+                  onApply={(range) => {
+                    setStartDate(range.startDate);
+                    setEndDate(range.endDate);
+                    setPage(1);
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={resetFilters}
+                disabled={!hasActiveFilters}
+                className="h-9 rounded-[5px] border border-[#dce7f1] bg-white px-3 text-[12px] font-extrabold text-[#607080] inline-flex items-center gap-2 hover:text-primary hover:border-primary disabled:opacity-50 disabled:pointer-events-none"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Xóa bộ lọc
+              </button>
+            </div>
+          </div>
+        )}
+
+        {hasActiveFilters && (
+          <div className="px-5 pb-5 flex flex-wrap items-center gap-2">
+            {search && (
+              <button type="button" onClick={() => { setSearch(''); setPage(1); }} className="rounded-full bg-[#f2f7ff] px-3 py-1.5 text-[12px] font-extrabold text-[#435ebe] inline-flex items-center gap-2 hover:bg-[#e9f1ff]">
+                Từ khóa: {search}
+                <XCircle className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {actionFilter && (
+              <button type="button" onClick={() => { setActionFilter(''); setPage(1); }} className="rounded-full bg-[#f2f7ff] px-3 py-1.5 text-[12px] font-extrabold text-[#435ebe] inline-flex items-center gap-2 hover:bg-[#e9f1ff]">
+                Hành động: {getActionLabel(actionFilter)}
+                <XCircle className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {actionGroup !== 'all' && (
+              <button type="button" onClick={() => { setActionGroup('all'); setPage(1); }} className="rounded-full bg-[#f2f7ff] px-3 py-1.5 text-[12px] font-extrabold text-[#435ebe] inline-flex items-center gap-2 hover:bg-[#e9f1ff]">
+                Module: {actionGroupLabels[actionGroup]}
+                <XCircle className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {(startDate || endDate) && (
+              <button type="button" onClick={() => { setStartDate(''); setEndDate(''); setPage(1); }} className="rounded-full bg-[#f2f7ff] px-3 py-1.5 text-[12px] font-extrabold text-[#435ebe] inline-flex items-center gap-2 hover:bg-[#e9f1ff]">
+                Ngày: {formatRangeLabel(startDate, endDate)}
+                <XCircle className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        )}
+
+        {isError && (
+          <div className="mx-5 mt-5 rounded-[8px] border border-red-100 bg-red-50 p-4 flex gap-3 text-red-600">
+            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+            <div>
+              <h6 className="font-extrabold text-red-700 mb-1">Không thể tải nhật ký hoạt động</h6>
+              <p className="text-sm font-semibold text-red-500 mb-0">Máy chủ hiện không phản hồi. Vui lòng thử lại sau.</p>
+            </div>
+          </div>
+        )}
+
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[1000px]">
-            <thead className="bg-slate-50/50 border-b border-slate-100">
-              <tr>
-                <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Người thực hiện</th>
-                <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Vai trò</th>
-                <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Hành động</th>
-                <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Thiết bị / IP</th>
-                <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Thời gian</th>
-                <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Chi tiết</th>
+          <table className="w-full text-left border-collapse min-w-[1120px]">
+            <thead>
+              <tr className="border-b border-[#dce7f1] bg-[#fbfcff] text-[#607080] text-[11px] font-extrabold uppercase">
+                <th className="px-5 py-4">Thời gian</th>
+                <th className="px-5 py-4">Người thực hiện</th>
+                <th className="px-5 py-4">Hành động</th>
+                <th className="px-5 py-4">Module</th>
+                <th className="px-5 py-4">Mức độ</th>
+                <th className="px-5 py-4">IP / Thiết bị</th>
+                <th className="px-5 py-4 text-right">Chi tiết</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[#f2f7ff]">
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    <td colSpan={6} className="px-8 py-8 bg-slate-50/20" />
+                Array.from({ length: 6 }).map((_, index) => (
+                  <tr key={index} className="animate-pulse">
+                    <td colSpan={7} className="px-5 py-5">
+                      <div className="h-12 rounded-[8px] bg-[#f2f7ff]" />
+                    </td>
                   </tr>
                 ))
-              ) : filteredLogs.length > 0 ? (
-                filteredLogs.map((log: any) => (
-                  <tr key={log.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-8 py-6">
-                      <div className="flex flex-col">
-                        <span className="font-black text-slate-900">
-                          {log.user?.profile?.fullName || 'Hệ thống'}
-                        </span>
-                        {log.user?.email && (
-                          <span className="text-xs text-slate-400 font-medium mt-0.5">{log.user.email}</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      {log.user?.role ? getRoleBadge(log.user.role) : <span className="text-[9px] font-black tracking-wider uppercase px-2 py-0.5 rounded bg-slate-50 text-slate-400 border border-slate-100">SYSTEM</span>}
-                    </td>
-                    <td className="px-8 py-6">
-                      {getActionBadge(log.action)}
-                    </td>
-                    <td className="px-8 py-6">
+              ) : logs.length > 0 ? (
+                logs.map((log) => (
+                  <tr key={log.id} className="hover:bg-[#fbfcff] transition-colors">
+                    <td className="px-5 py-4">
                       <div className="flex flex-col gap-1">
-                        <span className="font-bold text-slate-600 flex items-center gap-1">
-                          <Globe size={12} className="text-slate-400" />
-                          {log.metadata?.ip || 'N/A'}
-                        </span>
-                        {log.metadata?.userAgent && (
-                          <span className="text-[10px] font-bold text-slate-400 line-clamp-1 max-w-[180px]" title={log.metadata.userAgent}>
-                            {log.metadata.userAgent}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                          <Calendar size={12} className="text-slate-400" />
+                        <span className="text-sm font-extrabold text-[#25396f] inline-flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-[#a8b4c7]" />
                           {new Date(log.createdAt).toLocaleDateString('vi-VN')}
                         </span>
-                        <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1.5 mt-1">
-                          <Clock size={12} />
+                        <span className="text-[11px] font-bold text-[#7c8db5] inline-flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5" />
                           {new Date(log.createdAt).toLocaleTimeString('vi-VN')}
                         </span>
                       </div>
                     </td>
-                    <td className="px-8 py-6">
-                      <Button
-                        variant="outline"
-                        size="sm"
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-[10px] bg-[#f2f7ff] flex items-center justify-center text-primary shrink-0 overflow-hidden">
+                          {log.user?.profile?.avatarUrl ? (
+                            <img src={log.user.profile.avatarUrl} alt={getActorName(log)} className="w-full h-full object-cover" />
+                          ) : (
+                            <User className="w-5 h-5" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-extrabold text-[#25396f] mb-0 truncate max-w-[220px]">{getActorName(log)}</p>
+                          <p className="text-[11px] font-semibold text-[#7c8db5] mb-0 truncate max-w-[220px]">{log.user?.email || 'SYSTEM'}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">{renderActionBadge(log.action)}</td>
+                    <td className="px-5 py-4">
+                      <span className="text-sm font-extrabold text-[#25396f]">{actionGroupLabels[getActionGroup(log.action)]}</span>
+                    </td>
+                    <td className="px-5 py-4">{renderSeverityBadge(log.action)}</td>
+                    <td className="px-5 py-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-bold text-[#25396f] inline-flex items-center gap-1.5">
+                          <Globe className="w-3.5 h-3.5 text-[#a8b4c7]" />
+                          {log.metadata?.ip || 'N/A'}
+                        </span>
+                        <span className="text-[11px] font-semibold text-[#7c8db5] line-clamp-1 max-w-[260px]" title={log.metadata?.userAgent || ''}>
+                          {log.metadata?.userAgent || 'Không có user agent'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <button
+                        type="button"
                         onClick={() => setSelectedLog(log)}
-                        className="rounded-xl px-4 font-bold border-slate-200 hover:bg-slate-50"
+                        className="h-9 rounded-[6px] border border-[#dce7f1] bg-white px-3 text-[12px] font-extrabold text-[#607080] hover:text-primary hover:border-primary"
                       >
                         Xem
-                      </Button>
+                      </button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-8 py-20 text-center">
-                    <div className="flex flex-col items-center gap-4">
-                      <div className="w-20 h-20 bg-slate-50 rounded-[32px] flex items-center justify-center text-slate-200">
-                        <History size={40} />
-                      </div>
-                      <div>
-                        <p className="text-slate-800 text-lg font-black tracking-tight">Chưa có nhật ký hoạt động nào.</p>
-                        <p className="text-slate-400 font-bold text-sm">Hãy thử thay đổi tiêu chí tìm kiếm.</p>
-                      </div>
+                  <td colSpan={7} className="px-6 py-20 text-center">
+                    <div className="mx-auto w-16 h-16 rounded-[14px] bg-[#f2f7ff] flex items-center justify-center mb-4">
+                      <History className="w-8 h-8 text-primary" />
                     </div>
+                    <h6 className="text-[18px] font-extrabold text-[#25396f] mb-1">Không tìm thấy nhật ký nào</h6>
+                    <p className="text-sm font-semibold text-[#7c8db5] mb-5">Thử thay đổi từ khóa hoặc xóa bộ lọc hiện tại.</p>
+                    <button type="button" onClick={resetFilters} className="h-9 rounded-[8px] border border-[#dce7f1] bg-white px-4 text-sm font-extrabold text-[#607080] hover:text-primary hover:border-primary">
+                      Xóa bộ lọc
+                    </button>
                   </td>
                 </tr>
               )}
@@ -334,118 +825,114 @@ export const ActivityLogList: React.FC = () => {
           </table>
         </div>
 
-        {meta.lastPage > 1 && (
-          <div className="px-10 py-6 border-t border-slate-100 bg-slate-50/10 flex items-center justify-between">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Trang {page} / {meta.lastPage}</p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === 1}
-                onClick={() => setPage(page - 1)}
-                className="rounded-xl px-6 font-bold"
-              >
-                Trước
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === meta.lastPage}
-                onClick={() => setPage(page + 1)}
-                className="rounded-xl px-6 font-bold"
-              >
-                Sau
-              </Button>
-            </div>
-          </div>
-        )}
+        <div className="px-5 py-4 border-t border-[#dce7f1] bg-white flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <p className="text-[13px] font-semibold text-[#a8b4c7] mb-0">
+            Hiển thị {(page - 1) * pageSize + (logs.length > 0 ? 1 : 0)} tới {(page - 1) * pageSize + logs.length} của {meta.total} nhật ký
+          </p>
+          {meta.lastPage > 1 && (
+            <nav aria-label="Activity log pagination">
+              <ul className="flex items-center gap-1.5">
+                <li>
+                  <button type="button" disabled={page === 1} onClick={() => setPage(page - 1)} className="w-9 h-9 rounded-[6px] border border-[#dce7f1] bg-white text-[#7c8db5] inline-flex items-center justify-center hover:text-primary hover:border-primary disabled:opacity-40 disabled:pointer-events-none">
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                </li>
+                {visiblePages.map((visiblePage) => (
+                  <li key={visiblePage}>
+                    <button
+                      type="button"
+                      onClick={() => setPage(visiblePage)}
+                      className={cn('w-9 h-9 rounded-[6px] text-sm font-extrabold transition-all', visiblePage === page ? 'bg-primary text-white shadow-sm' : 'bg-white border border-[#dce7f1] text-[#607080] hover:text-primary hover:border-primary')}
+                    >
+                      {visiblePage}
+                    </button>
+                  </li>
+                ))}
+                <li>
+                  <button type="button" disabled={page === meta.lastPage} onClick={() => setPage(page + 1)} className="w-9 h-9 rounded-[6px] border border-[#dce7f1] bg-white text-[#7c8db5] inline-flex items-center justify-center hover:text-primary hover:border-primary disabled:opacity-40 disabled:pointer-events-none">
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </li>
+              </ul>
+            </nav>
+          )}
+        </div>
       </div>
 
-      {isError && (
-        <div className="p-6 bg-red-50 border border-red-100 rounded-[32px] flex items-center gap-4 text-red-600 shadow-xl shadow-red-100/50">
-          <AlertCircle className="w-6 h-6 flex-shrink-0" />
-          <p className="text-sm font-black uppercase tracking-tight">Lỗi nạp nhật ký kiểm toán. Vui lòng kiểm tra lại server.</p>
-        </div>
-      )}
-
-      {/* Log Detail Drawer */}
-      <Drawer
-        isOpen={!!selectedLog}
-        onClose={() => setSelectedLog(null)}
-        title="Chi tiết hoạt động"
-      >
+      <Drawer isOpen={!!selectedLog} onClose={() => setSelectedLog(null)} title="Chi tiết hoạt động">
         {selectedLog && (
-          <div className="space-y-8 animate-in slide-in-from-right duration-500">
-            {/* Header info */}
-            <div className="p-6 rounded-[24px] bg-primary/5 border border-primary/10 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase text-primary tracking-widest">Loại hoạt động</span>
-                {selectedLog.user?.role ? getRoleBadge(selectedLog.user.role) : getRoleBadge('SYSTEM')}
+          <div className="space-y-6">
+            <div className="rounded-[16px] border border-primary/10 bg-primary/5 p-5">
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div>
+                  <p className="text-[11px] font-extrabold uppercase text-primary mb-1">Hành động</p>
+                  <h3 className="text-xl font-extrabold text-[#25396f] mb-0">{getActionLabel(selectedLog.action)}</h3>
+                </div>
+                {renderSeverityBadge(selectedLog.action)}
               </div>
-              <div className="text-2xl font-black text-slate-900 tracking-tight leading-snug">
-                {selectedLog.action.replace(/_/g, ' ')}
+              <div className="flex flex-wrap gap-2">
+                {renderActionBadge(selectedLog.action)}
+                <span className="rounded-[6px] bg-white px-2.5 py-1 text-[11px] font-extrabold text-[#607080]">{actionGroupLabels[getActionGroup(selectedLog.action)]}</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6">
-              {/* User Details */}
-              <div className="space-y-4">
-                <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
-                  <User size={14} className="text-slate-300" /> Tài khoản thực hiện
-                </h4>
-                <div className="bg-slate-50/50 p-5 rounded-3xl border border-slate-100 space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Họ & Tên</span>
-                    <span className="font-bold text-slate-900">{selectedLog.user?.profile?.fullName || 'Hệ thống'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email</span>
-                    <span className="font-bold text-slate-800 underline underline-offset-4 decoration-primary/20">{selectedLog.user?.email || 'N/A'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Thời điểm</span>
-                    <span className="font-bold text-slate-900">{new Date(selectedLog.createdAt).toLocaleString('vi-VN')}</span>
-                  </div>
+            <section>
+              <h4 className="mb-3 flex items-center gap-2 text-[12px] font-extrabold uppercase text-[#7c8db5]">
+                <ShieldCheck className="w-4 h-4" />
+                Người thực hiện
+              </h4>
+              <div className="rounded-[12px] border border-[#f2f7ff] bg-[#fbfcff] p-4 space-y-3">
+                <div className="flex justify-between gap-3">
+                  <span className="text-sm font-bold text-[#7c8db5]">Tên:</span>
+                  <span className="text-sm font-extrabold text-[#25396f] text-right">{getActorName(selectedLog)}</span>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <span className="text-sm font-bold text-[#7c8db5]">Email:</span>
+                  <span className="text-sm font-extrabold text-[#25396f] text-right">{selectedLog.user?.email || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <span className="text-sm font-bold text-[#7c8db5]">Vai trò:</span>
+                  <span className="text-sm font-extrabold text-[#25396f] text-right">{selectedLog.user?.role || 'SYSTEM'}</span>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <span className="text-sm font-bold text-[#7c8db5]">Thời gian:</span>
+                  <span className="text-sm font-extrabold text-[#25396f] text-right">{formatDateTime(selectedLog.createdAt)}</span>
                 </div>
               </div>
+            </section>
 
-              {/* Environment Details */}
-              <div className="space-y-4">
-                <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
-                  <Laptop size={14} className="text-slate-300" /> Môi trường thực hiện
-                </h4>
-                <div className="bg-slate-50/50 p-5 rounded-3xl border border-slate-100 space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Địa chỉ IP</span>
-                    <span className="font-mono text-xs font-bold text-slate-950 bg-white px-2 py-0.5 border border-slate-100 rounded">{selectedLog.metadata?.ip || 'N/A'}</span>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Trình duyệt / User Agent</span>
-                    <p className="text-xs font-bold text-slate-700 bg-white p-3 border border-slate-100 rounded-xl leading-relaxed break-words">{selectedLog.metadata?.userAgent || 'N/A'}</p>
-                  </div>
+            <section>
+              <h4 className="mb-3 flex items-center gap-2 text-[12px] font-extrabold uppercase text-[#7c8db5]">
+                <Laptop className="w-4 h-4" />
+                Môi trường
+              </h4>
+              <div className="rounded-[12px] border border-[#f2f7ff] bg-[#fbfcff] p-4 space-y-3">
+                <div className="flex justify-between gap-3">
+                  <span className="text-sm font-bold text-[#7c8db5]">IP:</span>
+                  <span className="text-sm font-mono font-extrabold text-[#25396f] text-right">{selectedLog.metadata?.ip || 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="text-sm font-bold text-[#7c8db5]">User agent:</span>
+                  <p className="mt-2 rounded-[8px] border border-[#dce7f1] bg-white p-3 text-xs font-semibold text-[#607080] break-words">
+                    {selectedLog.metadata?.userAgent || 'N/A'}
+                  </p>
                 </div>
               </div>
+            </section>
 
-              {/* Action Metadata Payload JSON */}
-              <div className="space-y-4">
-                <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
-                  <Settings size={14} className="text-slate-300" /> Tham số & Dữ liệu chỉnh sửa (Metadata)
-                </h4>
-                <div className="bg-slate-950 text-emerald-400 p-5 rounded-3xl border border-slate-900 font-mono text-xs overflow-auto max-h-[300px] leading-relaxed shadow-lg">
-                  <pre>{JSON.stringify(selectedLog.metadata || {}, null, 2)}</pre>
-                </div>
-              </div>
-            </div>
+            <section>
+              <h4 className="mb-3 flex items-center gap-2 text-[12px] font-extrabold uppercase text-[#7c8db5]">
+                <FileText className="w-4 h-4" />
+                Metadata
+              </h4>
+              <pre className="max-h-[320px] overflow-auto rounded-[12px] bg-[#1f2937] p-4 text-xs font-semibold leading-relaxed text-[#d1fae5]">
+                {JSON.stringify(selectedLog.metadata || {}, null, 2)}
+              </pre>
+            </section>
 
-            <div className="pt-6 pb-2">
-              <Button
-                variant="outline"
-                className="w-full h-12 rounded-2xl font-black uppercase tracking-[0.2em] text-xs border-slate-200 hover:bg-slate-50 hover:text-slate-900 transition-all shadow-sm"
-                onClick={() => setSelectedLog(null)}
-              >
-                Đóng thông tin
-              </Button>
-            </div>
+            <Button variant="outline" className="w-full h-11 rounded-[8px] font-extrabold" onClick={() => setSelectedLog(null)}>
+              Đóng chi tiết
+            </Button>
           </div>
         )}
       </Drawer>

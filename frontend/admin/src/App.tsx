@@ -18,6 +18,7 @@ import { authService } from './services/auth.service';
 import { VoucherList } from './features/vouchers/VoucherList';
 import { ReviewList } from './features/reviews/ReviewList';
 import { ActivityLogList } from './features/activity-logs/ActivityLogList';
+import { Toaster } from 'sonner';
 
 
 const queryClient = new QueryClient({
@@ -45,21 +46,36 @@ const ProtectedRoute: React.FC<{
   return <>{children}</>;
 };
 
-import { Toaster } from 'sonner';
+const mazerToastClassNames = {
+  toast: '!rounded-[5px] !border-0 !px-4 !py-3 !font-body !text-white !shadow-[0_10px_25px_rgba(25,42,70,0.14)]',
+  success: '!bg-[#4fbe87] !text-white',
+  error: '!bg-[#f3616d] !text-white',
+  warning: '!bg-[#eaca4a] !text-white',
+  info: '!bg-[#56b6f7] !text-white',
+  loading: '!bg-[#435ebe] !text-white',
+  default: '!bg-[#435ebe] !text-white',
+  title: '!font-semibold !text-white',
+  description: '!text-white/85',
+  icon: '!text-white',
+  actionButton: '!bg-white/20 !text-white hover:!bg-white/30',
+  cancelButton: '!bg-white/10 !text-white hover:!bg-white/20',
+};
 
 const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <Toaster
-        position="top-right"
+        position="bottom-right"
         richColors
         closeButton
         theme="light"
         expand={true}
+        duration={3000}
+        mobileOffset={{ bottom: 16, right: 16, left: 16 }}
+        offset={{ bottom: 24, right: 24 }}
         toastOptions={{
+          classNames: mazerToastClassNames,
           style: {
-            borderRadius: '12px',
-            padding: '16px 24px',
             border: 'none',
             boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'
           },

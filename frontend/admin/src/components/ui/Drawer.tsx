@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { X } from './IconlyIcons';
 import { Button } from './Button';
 
 interface DrawerProps {

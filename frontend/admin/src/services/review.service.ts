@@ -10,6 +10,15 @@ export interface GetReviewsResponse {
   };
 }
 
+export interface ReviewStats {
+  total: number;
+  average: number;
+  unreplied: number;
+  replied: number;
+  hidden: number;
+  ratingDistribution: Record<string, number>;
+}
+
 export const reviewService = {
   async getReviews(params?: {
     page?: number;
@@ -38,13 +47,8 @@ export const reviewService = {
     return data;
   },
 
-  async getReviewStats() {
-    const { data } = await api.get<{
-      total: number;
-      average: number;
-      unreplied: number;
-      hidden: number;
-    }>('/reviews/stats');
+  async getReviewStats(): Promise<ReviewStats> {
+    const { data } = await api.get<ReviewStats>('/reviews/stats');
     return data;
   }
 };

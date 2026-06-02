@@ -45,13 +45,24 @@ export class PromotionController {
     async findAllVouchers(
         @Query('page') page?: number,
         @Query('limit') limit?: number,
-        @Query('search') search?: string
+        @Query('search') search?: string,
+        @Query('status') status?: string,
+        @Query('type') type?: string
     ) {
         return this.promotionService.findAllVouchersAdmin({
             page: page ? Number(page) : 1,
             limit: limit ? Number(limit) : 10,
-            search
+            search,
+            status,
+            type
         });
+    }
+
+    @Get('admin/promotions/vouchers/analytics')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.STAFF)
+    async getVoucherAnalytics() {
+        return this.promotionService.getVoucherAdminAnalytics();
     }
 
     @Get('admin/promotions/vouchers/:id')

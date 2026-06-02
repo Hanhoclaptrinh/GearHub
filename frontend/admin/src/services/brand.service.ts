@@ -30,5 +30,10 @@ export const brandService = {
   async toggleBrand(id: string) {
     const { data } = await api.patch(`/brands/${id}/toggle`);
     return data;
+  },
+
+  async toggleFeaturedBrand(id: string) {
+    const { data } = await api.patch(`/brands/${id}/featured`);
+    return data;
   }
 };

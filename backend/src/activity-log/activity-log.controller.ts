@@ -12,6 +12,11 @@ import { Role } from '@prisma/client';
 export class ActivityLogController {
     constructor(private readonly activityLogService: ActivityLogService) {}
 
+    @Get('stats')
+    async getStats(@Query() query: QueryActivityLogDto) {
+        return this.activityLogService.getStats(query);
+    }
+
     @Get()
     async getLogs(@Query() query: QueryActivityLogDto) {
         return this.activityLogService.findAll(query);

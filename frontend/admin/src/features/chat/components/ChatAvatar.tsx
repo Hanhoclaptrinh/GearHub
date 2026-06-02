@@ -21,14 +21,14 @@ export const ChatAvatar: React.FC<ChatAvatarProps> = ({ profile, size = 'md', cl
       <img
         src={profile.avatarUrl}
         alt={profile.fullName || profile.email}
-        className={cn('shrink-0 rounded-full object-cover ring-1 ring-white/10', sizes[size], className)}
+        className={cn('shrink-0 rounded-full object-cover ring-1 ring-slate-100', sizes[size], className)}
       />
     );
   }
 
   return (
     <div className={cn(
-      'shrink-0 rounded-full bg-gradient-to-br from-cyan-300 to-emerald-300 text-slate-950 font-black flex items-center justify-center ring-1 ring-white/20',
+      'shrink-0 rounded-full bg-gradient-to-br from-[#435ebe] to-[#5ddc97] text-white font-black flex items-center justify-center ring-1 ring-slate-100',
       sizes[size],
       className
     )}>

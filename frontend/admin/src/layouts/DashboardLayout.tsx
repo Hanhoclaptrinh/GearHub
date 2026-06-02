@@ -11,15 +11,13 @@ import {
   LogOut,
   Menu,
   ChevronRight,
-  User as UserIcon,
-  Globe,
   CreditCard,
   MessageSquareText,
   Ticket,
   Star,
   History
-} from 'lucide-react';
-import { Warehouse } from 'lucide-react';
+} from '../components/ui/IconlyIcons';
+import { Warehouse } from '../components/ui/IconlyIcons';
 import { cn } from '../utils/cn';
 import { authService } from '../services/auth.service';
 
@@ -47,10 +45,24 @@ const navigation = [
   { name: 'Lịch sử hoạt động', icon: History, path: '/activity-logs', roles: ['ADMIN'] },
 ];
 
+const getPageTitle = (pathname: string) => {
+  if (pathname === '/') return 'Dashboard';
+
+  for (const item of navigation) {
+    if (item.path !== '/' && (pathname === item.path || pathname.startsWith(`${item.path}/`))) {
+      return item.name;
+    }
+
+    if (item.children?.some(child => pathname === child.path || pathname.startsWith(`${child.path}/`))) {
+      return item.name;
+    }
+  }
+
+  return 'Dashboard';
+};
+
 export const DashboardLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [currentLang, setCurrentLang] = useState('VN');
-  const [showLangDropdown, setShowLangDropdown] = useState(false);
   const location = useLocation();
 
   const { data: user } = useQuery({
@@ -79,11 +91,11 @@ export const DashboardLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="h-screen overflow-hidden bg-[#f2f7ff] flex font-sans">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-40 xl:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -91,163 +103,153 @@ export const DashboardLayout: React.FC = () => {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-200 z-50 transform transition-transform duration-300 lg:relative lg:translate-x-0",
+          "fixed inset-y-0 left-0 w-[300px] bg-white border-r border-[#f2f7ff] z-50 transform transition-transform duration-300 xl:relative xl:translate-x-0 shadow-sm flex flex-col",
           !isSidebarOpen && "-translate-x-full"
         )}
       >
-        <div className="h-full flex flex-col p-6">
-          <div className="flex items-center gap-3 px-4 mb-10">
-            <div className="bg-primary p-2 rounded-xl shadow-lg shadow-primary/20">
+        {/* Sidebar Header */}
+        <div className="py-8 px-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* <div className="bg-primary p-2.5 rounded-xl shadow-md">
               <Package className="text-white w-6 h-6" />
-            </div>
-            <span className="text-xl font-bold font-heading text-slate-800 uppercase tracking-tight">GearHub <span className="text-cta">Admin</span></span>
+            </div> */}
+            <span className="text-2xl font-extrabold text-[#25396f] tracking-tight">
+              GearHub <span className="text-[#f97316]">Admin</span>
+            </span>
           </div>
+          <button
+            className="xl:hidden p-1 text-[#25396f] hover:bg-[#f2f7ff] rounded-lg transition-colors"
+            onClick={() => setIsSidebarOpen(false)}
+          >
+            <ChevronRight className="w-6 h-6 rotate-180" />
+          </button>
+        </div>
 
-          <nav className="flex-1 space-y-2 overflow-y-auto pr-2 custom-scrollbar">
+        {/* Sidebar Menu */}
+        <nav className="flex-1 min-h-0 px-6 pb-6 overflow-y-auto overscroll-contain custom-scrollbar">
+          <ul className="space-y-1 list-none p-0 m-0">
+            {/* Main Menu Header */}
+            <li className="text-base font-semibold text-[#25396f]/80 px-4 mt-6 mb-3 list-none">
+              Menu chính
+            </li>
+
             {navigation
               .filter(item => item.roles.includes(user?.role || ''))
-              .map((item) => {
+              .map((item, index) => {
                 const hasChildren = item.children && item.children.length > 0;
                 const isOpen = openMenus.includes(item.name);
                 const isActive = location.pathname === item.path || (hasChildren && item.children?.some(c => location.pathname === c.path));
 
-                if (hasChildren) {
-                  return (
-                    <div key={item.name} className="space-y-1">
-                      <button
-                        onClick={() => toggleMenu(item.name)}
-                        className={cn(
-                          "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 group relative",
-                          isActive && !isOpen
-                            ? "bg-primary text-white shadow-lg shadow-primary/20"
-                            : "text-slate-500 hover:bg-slate-100/80 hover:text-slate-800"
-                        )}
-                      >
-                        <item.icon className={cn("w-5 h-5", !isActive && "text-slate-400 group-hover:rotate-6")} />
-                        {item.name}
-                        <ChevronRight className={cn("ml-auto w-4 h-4 transition-transform duration-200", isOpen && "rotate-90")} />
-                      </button>
-
-                      {isOpen && (
-                        <div className="ml-9 space-y-1 animate-in slide-in-from-top-2 duration-200">
-                          {item.children?.map(child => (
-                            <NavLink
-                              key={child.path}
-                              to={child.path}
-                              className={({ isActive }) => cn(
-                                "flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all",
-                                isActive
-                                  ? "text-primary bg-primary/5"
-                                  : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
-                              )}
-                            >
-                              <div className={cn("w-1.5 h-1.5 rounded-full", location.pathname === child.path ? "bg-primary" : "bg-slate-300")} />
-                              {child.name}
-                            </NavLink>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
+                // Add System Header before Quản lý giao dịch
+                const showSystemHeader = item.path === '/transactions' || item.path === '/activity-logs';
+                const prevItem = index > 0 ? navigation.filter(i => i.roles.includes(user?.role || ''))[index - 1] : null;
+                const renderSystemHeader = showSystemHeader && prevItem && prevItem.path !== '/transactions' && prevItem.path !== '/activity-logs';
 
                 return (
-                  <NavLink
-                    key={item.name}
-                    to={item.path}
-                    className={({ isActive }) => cn(
-                      "flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 group relative",
-                      isActive
-                        ? "bg-primary text-white shadow-lg shadow-primary/20"
-                        : "text-slate-500 hover:bg-slate-100/80 hover:text-slate-800"
+                  <React.Fragment key={item.name}>
+                    {renderSystemHeader && (
+                      <li className="text-base font-semibold text-[#25396f]/80 px-4 mt-6 mb-3 list-none">
+                        Hệ thống
+                      </li>
                     )}
-                  >
-                    <item.icon className={cn("w-5 h-5", !isActive && "text-slate-400 group-hover:rotate-6")} />
-                    {item.name}
-                    {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-cta rounded-full" />}
-                  </NavLink>
+
+                    <li className="list-none">
+                      {hasChildren ? (
+                        <div className="space-y-1">
+                          <button
+                            onClick={() => toggleMenu(item.name)}
+                            className={cn(
+                              "w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-300 group relative",
+                              isActive
+                                ? "bg-primary text-white shadow-md shadow-primary/10 font-bold"
+                                : "text-[#25396f] hover:bg-[#f0f1f5]"
+                            )}
+                          >
+                            <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-[#7c8db5] group-hover:text-[#25396f]")} />
+                            <span className="flex-1 text-left">{item.name}</span>
+                            <ChevronRight className={cn("w-4 h-4 transition-transform duration-400", isOpen && "rotate-90", isActive ? "text-white" : "text-[#7c8db5]")} />
+                          </button>
+
+                          <ul className={cn(
+                            "space-y-1 mt-1 list-none p-0 overflow-hidden transition-all duration-300 ease-in-out",
+                            isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+                          )}>
+                            {item.children?.map(child => {
+                              const isChildActive = location.pathname === child.path;
+                              return (
+                                <li key={child.path} className="list-none">
+                                  <NavLink
+                                    to={child.path}
+                                    className={cn(
+                                      "block pl-12 pr-4 py-2.5 rounded-xl text-[0.9rem] transition-all duration-300",
+                                      isChildActive
+                                        ? "text-primary font-bold"
+                                        : "text-[#25396f] font-semibold hover:translate-x-1.5 hover:text-primary"
+                                    )}
+                                  >
+                                    {child.name}
+                                  </NavLink>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      ) : (
+                        <NavLink
+                          to={item.path}
+                          className={cn(
+                            "flex items-center gap-4 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-300 group relative",
+                            isActive
+                              ? "bg-primary text-white shadow-md shadow-primary/10 font-bold"
+                              : "text-[#25396f] hover:bg-[#f0f1f5]"
+                          )}
+                        >
+                          <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-[#7c8db5] group-hover:text-[#25396f]")} />
+                          <span>{item.name}</span>
+                        </NavLink>
+                      )}
+                    </li>
+                  </React.Fragment>
                 );
               })}
-          </nav>
+          </ul>
+        </nav>
 
-          <div className="mt-auto pt-6 border-t border-slate-100">
-            <button
-              onClick={() => authService.logout()}
-              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 transition-all duration-200 group"
-            >
-              <LogOut className="w-5 h-5 group-hover:-translate-x-1" />
-              Đăng xuất
-            </button>
-          </div>
+        {/* Sidebar Footer (Logout) */}
+        <div className="p-6 border-t border-[#f2f7ff]">
+          <button
+            onClick={() => authService.logout()}
+            className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-base font-bold text-red-500 hover:bg-red-50 transition-all duration-300 group"
+          >
+            <LogOut className="w-5 h-5 group-hover:-translate-x-1" />
+            Đăng xuất
+          </button>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-x-hidden">
-        {/* Topbar */}
-        <header className="sticky top-0 h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 z-30 px-6 lg:px-10 flex items-center justify-between">
+      {/* Main Content Area */}
+      <div className="flex-1 min-w-0 h-screen flex flex-col overflow-hidden xl:absolute xl:inset-y-0 xl:right-0 xl:left-0 xl:pl-[300px]">
+        {/* Top Header (Mobile Only) */}
+        <header className="h-16 bg-white border-b border-[#f2f7ff] px-6 flex items-center xl:hidden sticky top-0 z-30">
           <button
-            className="p-2 -ml-2 rounded-lg hover:bg-slate-100 lg:hidden"
+            className="p-2 -ml-2 rounded-lg hover:bg-[#f2f7ff] text-[#25396f] transition-colors"
             onClick={() => setIsSidebarOpen(true)}
           >
-            <Menu className="w-6 h-6 text-slate-600" />
+            <Menu className="w-6 h-6" />
           </button>
-
-          <div className="lg:block hidden">
-            <h2 className="text-xl font-bold text-slate-800 capitalize">
-              {navigation.find(n => n.path === location.pathname)?.name || 'Dashboard'}
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-6">
-            {/* Language Switcher */}
-            <div className="relative">
-              <button
-                onClick={() => setShowLangDropdown(!showLangDropdown)}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 hover:border-primary transition-all text-sm font-black text-slate-700"
-              >
-                <Globe className="w-4 h-4 text-slate-400" />
-                <span>{currentLang}</span>
-              </button>
-
-              {showLangDropdown && (
-                <div className="absolute top-full right-0 mt-2 w-24 bg-white border border-slate-100 rounded-2xl shadow-xl p-2 z-[100] animate-in fade-in zoom-in-95 duration-200">
-                  {['VN', 'EN', 'CN'].map((lang) => (
-                    <button
-                      key={lang}
-                      onClick={() => {
-                        setCurrentLang(lang);
-                        setShowLangDropdown(false);
-                      }}
-                      className={cn(
-                        "w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all",
-                        currentLang === lang ? "bg-primary text-white" : "text-slate-500 hover:bg-slate-50"
-                      )}
-                    >
-                      {lang === 'VN' ? 'Vietnam' : lang === 'EN' ? 'English' : 'Chinese'}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-bold text-slate-900">{user?.fullName || (user as any)?.profile?.fullName || 'Administrator'}</p>
-              <p className="text-xs font-medium text-slate-500">{user?.email}</p>
-            </div>
-            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center p-0.5 border-2 border-slate-200">
-              {user?.avatarUrl || (user as any)?.profile?.avatarUrl ? (
-                <img src={user?.avatarUrl || (user as any)?.profile?.avatarUrl} alt="avatar" className="w-full h-full rounded-full object-cover" />
-              ) : (
-                <UserIcon className="w-6 h-6 text-slate-400" />
-              )}
-            </div>
-          </div>
         </header>
 
-        {/* Dynamic Page Content */}
-        <main className="flex-1 p-6 lg:p-10 max-w-[1600px] mx-auto w-full">
-          <Outlet />
+        {/* Dynamic Page Content Wrapper */}
+        <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain overflow-x-hidden custom-scrollbar">
+          <div className="max-w-[1600px] w-full mx-auto p-6 lg:p-8">
+            {/* Mazer page-heading */}
+            <div className="mb-6">
+              <h3 className="text-[28px] font-bold text-[#25396f] tracking-tight">
+                {getPageTitle(location.pathname)}
+              </h3>
+            </div>
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

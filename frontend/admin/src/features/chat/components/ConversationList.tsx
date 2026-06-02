@@ -1,5 +1,12 @@
 import React, { memo } from 'react';
-import { Inbox, MailSearch, Search, UserCheck, UserPlus, Archive, BellDot } from 'lucide-react';
+import { MailSearch, Search } from '../../../components/ui/IconlyIcons';
+import {
+  Chat as IconlyChat,
+  User as IconlyUser,
+  AddUser as IconlyAddUser,
+  CloseSquare as IconlyCloseSquare,
+  Notification as IconlyNotification,
+} from 'react-iconly';
 import { cn } from '../../../utils/cn';
 import type { ChatRoomSummary, InboxFilter } from '../types';
 import { formatShortTime, getDisplayName } from '../utils';
@@ -8,11 +15,11 @@ import { RoomStatusBadge } from './RoomStatusBadge';
 import { InboxSkeleton } from './InboxSkeleton';
 
 const filters: Array<{ id: InboxFilter; label: string; icon: React.ElementType }> = [
-  { id: 'all', label: 'Tất cả', icon: Inbox },
-  { id: 'unclaimed', label: 'Đang đợi', icon: UserPlus },
-  { id: 'mine', label: 'Của tôi', icon: UserCheck },
-  { id: 'closed', label: 'Đã đóng', icon: Archive },
-  { id: 'unread', label: 'Chưa đọc', icon: BellDot },
+  { id: 'all', label: 'Tất cả', icon: IconlyChat },
+  { id: 'unclaimed', label: 'Đang đợi', icon: IconlyAddUser },
+  { id: 'mine', label: 'Của tôi', icon: IconlyUser },
+  { id: 'closed', label: 'Đã đóng', icon: IconlyCloseSquare },
+  { id: 'unread', label: 'Chưa đọc', icon: IconlyNotification },
 ];
 
 interface ConversationListProps {
@@ -34,50 +41,60 @@ interface RoomItemProps {
 
 const RoomItem = memo<RoomItemProps>(({ room, isActive, onSelect }) => {
   const customer = room.customer;
-  const preview = room.lastMessageContent || 'No messages yet';
+  const preview = room.lastMessageContent || 'Chưa có tin nhắn...';
+  const hasUnread = room.staffUnreadCount > 0;
 
   return (
     <button
       onClick={() => onSelect(room.id)}
       className={cn(
-        'w-full rounded-lg p-4 text-left transition-all ring-1',
+        'w-full rounded-[10px] px-4 py-3.5 text-left transition-all outline-none border',
         isActive
-          ? 'bg-white text-slate-950 ring-white shadow-xl'
-          : 'bg-white/[0.045] text-slate-200 ring-white/5 hover:bg-white/[0.08] hover:ring-white/10'
+          ? 'bg-[#f2f7ff] border-[#dce7f1] shadow-[0_2px_8px_rgba(67,94,190,0.08)]'
+          : 'bg-white border-transparent hover:bg-[#fbfcff] hover:border-[#f2f7ff]'
       )}
     >
       <div className="flex items-start gap-3">
-        <ChatAvatar profile={customer} />
+        {/* Avatar with online dot */}
+        <div className="relative shrink-0">
+          <ChatAvatar profile={customer} />
+          {room.status === 'STAFF_ACTIVE' && (
+            <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-[#5ddc97] border-2 border-white" />
+          )}
+        </div>
+
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className={cn('truncate text-sm font-black', isActive ? 'text-slate-950' : 'text-white')}>
-                {getDisplayName(customer)}
-              </p>
-              <p className={cn('truncate text-xs font-semibold', isActive ? 'text-slate-500' : 'text-slate-400')}>
-                {customer?.email || 'Unknown email'}
-              </p>
-            </div>
-            <span className={cn('shrink-0 text-[10px] font-black uppercase', isActive ? 'text-slate-500' : 'text-slate-500')}>
+          {/* Top row: name + time */}
+          <div className="flex items-center justify-between gap-2 mb-0.5">
+            <p className={cn(
+              'truncate text-[13px] font-extrabold',
+              isActive ? 'text-[#25396f]' : 'text-[#25396f]'
+            )}>
+              {getDisplayName(customer)}
+            </p>
+            <span className="shrink-0 text-[10px] font-semibold text-[#a8b4c7]">
               {formatShortTime(room.lastMessageAt)}
             </span>
           </div>
 
-          <p className={cn('mt-3 line-clamp-2 text-xs leading-relaxed', isActive ? 'text-slate-600' : 'text-slate-400')}>
+          {/* Email */}
+          <p className="truncate text-[11px] font-semibold text-[#7c8db5] mb-1.5">
+            {customer?.email || '—'}
+          </p>
+
+          {/* Preview */}
+          <p className={cn(
+            'line-clamp-1 text-[12px] leading-relaxed',
+            hasUnread ? 'font-bold text-[#25396f]' : 'font-medium text-[#7c8db5]'
+          )}>
             {preview}
           </p>
 
-          <div className="mt-3 flex items-center justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-2">
-              <RoomStatusBadge status={room.status} />
-              {room.staff && (
-                <span className={cn('truncate text-[10px] font-bold', isActive ? 'text-slate-500' : 'text-slate-500')}>
-                  {room.staff.fullName || room.staff.email}
-                </span>
-              )}
-            </div>
-            {room.staffUnreadCount > 0 && (
-              <span className="grid h-6 min-w-6 place-items-center rounded-full bg-orange-500 px-2 text-[10px] font-black text-white">
+          {/* Bottom row: status + unread count */}
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <RoomStatusBadge status={room.status} />
+            {hasUnread && (
+              <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[#435ebe] px-1.5 text-[9px] font-black text-white">
                 {room.staffUnreadCount}
               </span>
             )}
@@ -101,56 +118,63 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   onSelectRoom,
 }) => {
   return (
-    <aside className="flex min-h-0 flex-col border-r border-white/10 bg-slate-950/80">
-      <div className="sticky top-0 z-10 border-b border-white/10 bg-slate-950/95 p-4 backdrop-blur">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-black uppercase tracking-tight text-white">Quản lý tin nhắn</h1>
-            <p className="text-xs font-semibold text-slate-500">Hộp thư chung </p>
-          </div>
-          <div className="rounded-full bg-emerald-400/10 px-3 py-1 text-[10px] font-black uppercase text-emerald-200 ring-1 ring-emerald-300/20">
-            Live
-          </div>
-        </div>
+    <aside className="flex min-h-0 flex-col overflow-hidden border-r border-[#dce7f1] bg-white">
+      {/* Header */}
+      <div className="shrink-0 border-b border-[#f2f7ff] bg-white px-4 pt-5 pb-4">
+        <h6 className="mb-4 text-[11px] font-extrabold uppercase tracking-widest text-[#7c8db5]">
+          Hội thoại
+        </h6>
 
-        <div className="mt-4 grid grid-cols-5 gap-1 rounded-lg bg-white/[0.04] p-1 ring-1 ring-white/5">
-          {filters.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => onFilterChange(item.id)}
-              className={cn(
-                'flex h-9 items-center justify-center rounded-md transition-all',
-                filter === item.id ? 'bg-white text-slate-950' : 'text-slate-500 hover:bg-white/[0.06] hover:text-white'
-              )}
-              title={item.label}
-            >
-              <item.icon className="h-4 w-4" />
-            </button>
-          ))}
-        </div>
-
-        <div className="relative mt-4">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+        {/* Search */}
+        <div className="relative mb-3">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a8b4c7]" />
           <input
             value={search}
-            onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Search name or email"
-            className="h-11 w-full rounded-lg border border-white/10 bg-white/[0.04] pl-10 pr-3 text-sm font-semibold text-white outline-none transition focus:border-cyan-300/40 focus:bg-white/[0.07]"
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Tìm theo tên hoặc email..."
+            className="h-10 w-full rounded-[8px] border border-[#dce7f1] bg-[#f8fafc] pl-10 pr-3 text-sm font-semibold text-[#25396f] outline-none transition focus:border-[#435ebe] focus:bg-white focus:ring-2 focus:ring-[#435ebe]/10 placeholder:text-[#a8b4c7]"
           />
+        </div>
+
+        {/* Filter tabs */}
+        <div className="flex gap-1">
+          {filters.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onFilterChange(item.id)}
+                title={item.label}
+                className={cn(
+                  'flex flex-1 h-8 items-center justify-center rounded-[6px] transition-all text-[10px] font-extrabold uppercase tracking-wide',
+                  filter === item.id
+                    ? 'bg-[#435ebe] text-white shadow-sm'
+                    : 'text-[#7c8db5] hover:bg-[#f2f7ff] hover:text-[#435ebe]'
+                )}
+              >
+                <Icon set={filter === item.id ? 'bold' : 'light'} primaryColor="currentColor" size={15} />
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">
+      {/* Room list */}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
         {isLoading ? (
           <InboxSkeleton />
         ) : rooms.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center px-8 text-center">
-            <MailSearch className="h-10 w-10 text-slate-600" />
-            <p className="mt-4 text-sm font-black text-white">Không có tin nhắn nào</p>
-            <p className="mt-1 text-xs font-semibold leading-relaxed text-slate-500">Thử tìm kiếm với từ khóa khác hoặc áp dụng bộ lọc khác</p>
+          <div className="flex h-full flex-col items-center justify-center px-6 py-16 text-center">
+            <div className="w-14 h-14 rounded-[12px] bg-[#f2f7ff] flex items-center justify-center mb-4">
+              <MailSearch className="h-7 w-7 text-[#435ebe]/50" />
+            </div>
+            <p className="text-[13px] font-extrabold text-[#25396f]">Không có hội thoại nào</p>
+            <p className="mt-1 text-[11px] font-semibold text-[#7c8db5] leading-relaxed">
+              Thử áp dụng bộ lọc khác hoặc tìm kiếm
+            </p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {rooms.map((room) => (
               <RoomItem key={room.id} room={room} isActive={room.id === activeRoomId} onSelect={onSelectRoom} />
             ))}

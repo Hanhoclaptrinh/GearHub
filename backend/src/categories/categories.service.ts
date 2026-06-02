@@ -12,17 +12,24 @@ export class CategoriesService {
         private cloudinaryService: CloudinaryService
     ) { }
 
+    /**
+     * tạo danh mục mới
+     * hỗ trợ tự động tạo slug từ tên danh mục, kiểm tra tính hợp lệ của danh mục cha,
+     * và upload icon đại diện lên cloudinary
+     */
     async createCategory(data: CreateCategoryDto, file?: Express.Multer.File) {
         const slug = slugify(data.name, { strict: true, lower: true });
 
         const existingSlug = await this.prisma.category.findUnique({ where: { slug } });
         if (existingSlug) throw new ConflictException('Danh mục này đã tồn tại');
 
+        // kiểm tra danh mục cha tồn tại trước khi gán cha
         if (data.parentId) {
             const parent = await this.prisma.category.findUnique({ where: { id: data.parentId } });
             if (!parent) throw new NotFoundException('Danh mục cha không tồn tại');
         }
 
+        // upload ảnh icon đại diện lên cloudinary
         let iconUrl = null;
         if (file) {
             const uploadResult = await this.cloudinaryService.uploadFile(file);
@@ -61,23 +68,24 @@ export class CategoriesService {
         });
     }
 
+    // lấy cây danh mục theo từng cấp
     async getCategoryTree() {
         return this.prisma.category.findMany({
-            where: { parentId: null }, // chi lay parent
+            where: { parentId: null }, // chỉ lấy danh mục cha
             include: {
                 children: {
                     include: {
                         _count: {
-                            select: { products: true } // dem moi subcate co bao nhieu prod
+                            select: { products: true } // đếm số lượng sp trong mỗi subcate
                         },
                     },
                 },
                 _count: {
-                    select: { products: true } // dem tong prod nhom cha
+                    select: { products: true } // đếm tổng sp cate cha
                 },
             },
             orderBy: {
-                name: 'asc' // theo bang chu cai
+                name: 'asc'
             }
         })
     }
@@ -99,6 +107,7 @@ export class CategoriesService {
         return category;
     }
 
+    // cập nhật thông tin danh mục
     async updateCategory(id: string, data: UpdateCategoryDto, file?: Express.Multer.File) {
         const category = await this.prisma.category.findUnique({ where: { id } });
         if (!category) throw new NotFoundException('Danh mục không tồn tại');
@@ -110,7 +119,7 @@ export class CategoriesService {
             throw new BadRequestException('Danh mục không thể làm cha của chính nó');
         }
 
-        // neu cap nhat name - kiem tra slug
+        // nếu cập nhật name - check slug
         if (data.name) {
             const newSlug = slugify(data.name, { lower: true, strict: true });
             const duplicate = await this.prisma.category.findFirst({
@@ -120,6 +129,7 @@ export class CategoriesService {
             updateData.slug = newSlug;
         }
 
+        // thực hiện xóa file cũ và upload file mới lên cld
         if (file) {
             if (category.iconUrl) {
                 try {
@@ -168,15 +178,19 @@ export class CategoriesService {
         return this.prisma.category.delete({ where: { id } });
     }
 
+    /**
+     * lấy danh sách các danh mục bán chạy nhất dựa trên tổng số lượng sản phẩm đã bán
+     * hiển thị cho client
+     */
     async getTopCategories(limit = 4) {
-        // sum soldCount cua cac danh muc theo cateId
+        // gom nhóm sản phẩm theo categoryId và tính tổng soldCount của từng nhóm
         const grouped = await this.prisma.product.groupBy({
             by: ['categoryId'],
             where: {
-                isActive: true,
-                categoryId: { not: null }
+                isActive: true, // chỉ tính các sản phẩm đang hoạt động
+                categoryId: { not: null } // bỏ qua các sản phẩm chưa phân loại danh mục
             },
-            _sum: { soldCount: true },
+            _sum: { soldCount: true }, // tính tổng soldCount
             orderBy: {
                 _sum: { soldCount: 'desc' }
             },
@@ -185,10 +199,12 @@ export class CategoriesService {
 
         if (grouped.length === 0) return [];
 
+        // trích xuất mảng cateid từ kết quả gom nhóm trên
         const categoryIds = grouped
             .map(g => g.categoryId)
             .filter((id): id is string => id !== null);
 
+        // truy vấn thông tin theo cateid thu được
         const categories = await this.prisma.category.findMany({
             where: { id: { in: categoryIds } },
             select: {
@@ -200,8 +216,10 @@ export class CategoriesService {
             },
         });
 
+        // map lưu trữ thông tin - tối ưu tốc độ tìm kiếm
         const map = new Map(categories.map(c => [c.id, c]));
 
+        // ánh xạ
         return grouped.map(g => {
             if (!g.categoryId) return null;
 
@@ -218,4 +236,5 @@ export class CategoriesService {
             };
         }).filter(Boolean);
     }
+
 }

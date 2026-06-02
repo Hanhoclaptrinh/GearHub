@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SendHorizontal } from 'lucide-react';
+import { Smile, SendHorizontal } from '../../../components/ui/IconlyIcons';
 import { cn } from '../../../utils/cn';
 
 interface MessageComposerProps {
@@ -21,39 +21,59 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({ disabled, disa
   };
 
   return (
-    <div className="sticky bottom-0 border-t border-white/10 bg-slate-950/95 p-4 backdrop-blur">
-      {disabled && (
-        <div className="mb-3 rounded-lg bg-amber-400/10 px-4 py-3 text-xs font-bold text-amber-100 ring-1 ring-amber-300/20">
+    <div className="shrink-0 border-t border-[#dce7f1] bg-white">
+      {/* Disabled reason banner */}
+      {disabled && disabledReason && (
+        <div className="mx-4 mt-3 rounded-[8px] bg-[#fff7e6] border border-[#ffe6a6] px-4 py-2.5 text-[12px] font-semibold text-[#946200]">
           {disabledReason}
         </div>
       )}
-      <div className={cn(
-        'flex items-end gap-3 rounded-lg bg-white/[0.06] p-2 ring-1 ring-white/10 transition',
-        !disabled && 'focus-within:ring-cyan-300/40'
-      )}>
-        <textarea
+
+      {/* Input row */}
+      <div className="flex items-center gap-3 px-4 py-3">
+        <button
+          type="button"
+          className="shrink-0 text-[#a8b4c7] hover:text-[#435ebe] transition-colors"
+          tabIndex={-1}
+        >
+          <Smile className="h-5 w-5" />
+        </button>
+
+        <input
+          type="text"
           value={value}
           disabled={disabled}
-          onChange={(event) => {
-            setValue(event.target.value);
-            onTyping(!!event.target.value.trim());
+          onChange={(e) => {
+            setValue(e.target.value);
+            onTyping(!!e.target.value.trim());
           }}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.shiftKey) {
-              event.preventDefault();
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
               send();
             }
           }}
           placeholder="Trả lời khách hàng..."
-          className="max-h-40 min-h-12 flex-1 resize-none bg-transparent px-3 py-3 text-sm font-semibold leading-relaxed text-white outline-none placeholder:text-slate-500 disabled:cursor-not-allowed"
+          className={cn(
+            "flex-1 h-11 rounded-[8px] border border-[#dce7f1] bg-[#f8fafc] px-4 text-[13px] font-semibold text-[#25396f] outline-none transition",
+            "placeholder:text-[#a8b4c7]",
+            "focus:border-[#435ebe] focus:bg-white focus:ring-2 focus:ring-[#435ebe]/10",
+            "disabled:cursor-not-allowed disabled:opacity-60"
+          )}
         />
+
         <button
           onClick={send}
           disabled={disabled || !value.trim()}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-cyan-300 text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-slate-600"
-          title="Send"
+          title="Gửi tin nhắn"
+          className={cn(
+            "h-11 w-11 shrink-0 rounded-[8px] flex items-center justify-center transition-all",
+            value.trim() && !disabled
+              ? "bg-[#435ebe] text-white shadow-[0_2px_8px_rgba(67,94,190,0.3)] hover:bg-[#3950a2] active:scale-95"
+              : "bg-[#f2f7ff] text-[#a8b4c7] cursor-not-allowed"
+          )}
         >
-          <SendHorizontal className="h-5 w-5" />
+          <SendHorizontal className="h-4 w-4" />
         </button>
       </div>
     </div>

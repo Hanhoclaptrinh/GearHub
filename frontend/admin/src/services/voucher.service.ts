@@ -1,6 +1,44 @@
 import api from './api';
 import type { Voucher, VoucherType } from '../types';
 
+export interface VoucherListParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: 'ACTIVE' | 'DISABLED' | 'EXPIRED' | 'UPCOMING';
+  type?: VoucherType;
+}
+
+export interface VoucherListResponse {
+  data: Voucher[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    lastPage: number;
+  };
+}
+
+export interface VoucherAnalytics {
+  stats: {
+    total: number;
+    active: number;
+    disabled: number;
+    expired: number;
+    upcoming: number;
+    expiringSoon: number;
+    totalIssued: number;
+    totalClaimed: number;
+    totalUsed: number;
+    totalDiscount: number;
+  };
+  chart: Array<{
+    date: string;
+    usedCount: number;
+    discountAmount: number;
+  }>;
+}
+
 export interface CreateVoucherPayload {
   code: string;
   name: string;
@@ -30,9 +68,14 @@ export interface UpdateVoucherPayload {
 }
 
 export const voucherService = {
-  getAllVouchers: async () => {
-    const { data } = await api.get<{ message: string; data: Voucher[] }>('/admin/promotions/vouchers');
-    return data.data;
+  getAllVouchers: async (params?: VoucherListParams) => {
+    const { data } = await api.get<VoucherListResponse>('/admin/promotions/vouchers', { params });
+    return data;
+  },
+
+  getVoucherAnalytics: async () => {
+    const { data } = await api.get<VoucherAnalytics>('/admin/promotions/vouchers/analytics');
+    return data;
   },
 
   getVoucherById: async (id: string) => {

@@ -73,6 +73,13 @@ export class PaymentController {
         return this.paymentService.getAllTransactions(query);
     }
 
+    @Get('admin/transactions/stats')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    async getTransactionStats(@Query() query: any) {
+        return this.paymentService.getTransactionStats(query);
+    }
+
     @Post('refund/:orderId')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN)

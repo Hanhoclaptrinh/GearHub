@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { VnPayGateway } from './gateway/vnpay.gateway';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { OrderStatus, PaymentMethod, PaymentStatus, TransactionStatus, NotificationType, InventoryTransactionType } from '@prisma/client';
+import { OrderStatus, PaymentMethod, PaymentStatus, TransactionStatus, NotificationType, InventoryTransactionType, Prisma } from '@prisma/client';
 import { PromotionService } from 'src/promotion/promotion.service';
 import { NotificationService } from 'src/notification/notification.service';
 import { InventoriesService } from 'src/inventories/inventories.service';
@@ -436,6 +436,7 @@ export class PaymentService {
         }
     }
 
+    // lấy danh sách các giao dịch của client
     async getAllTransactions(query: {
         page?: number;
         limit?: number;
@@ -446,41 +447,45 @@ export class PaymentService {
         endDate?: string;
     }) {
         const { page = 1, limit = 10, search, paymentMethod, status, startDate, endDate } = query;
-        const skip = (page - 1) * limit;
+        // đảm bảo số trang tối thiểu là 1 và giới hạn kích thước trang
+        const safePage = Math.max(1, Number(page) || 1);
+        const safeLimit = [10, 50, 100].includes(Number(limit)) ? Number(limit) : 10;
+        const skip = (safePage - 1) * safeLimit;
 
-        const where: any = {};
-        if (search) {
+        const where: Prisma.TransactionWhereInput = {};
+
+        // tìm kiếm theo mã giao dịch hệ thống, id đơn hàng hoặc mã giao dịch phía nhà cung cấp
+        if (search?.trim()) {
             where.OR = [
                 { transactionCode: { contains: search } },
                 { orderId: { contains: search } },
+                { providerTransactionId: { contains: search } },
             ];
         }
 
-        if (paymentMethod) {
-            where.paymentMethod = paymentMethod;
+        // lọc theo phương thức thanh toán
+        if (Object.values(PaymentMethod).includes(paymentMethod as PaymentMethod)) {
+            where.paymentMethod = paymentMethod as PaymentMethod;
         }
 
-        if (status) {
-            where.status = status;
+        // lọc theo trạng thái giao dịch
+        if (Object.values(TransactionStatus).includes(status as TransactionStatus)) {
+            where.status = status as TransactionStatus;
         }
 
+        // lọc giao dịch theo mốc thời gian bắt đầu và kết thúc
         if (startDate || endDate) {
             where.createdAt = {};
-            if (startDate) {
-                where.createdAt.gte = new Date(startDate);
-            }
-            if (endDate) {
-                const d = new Date(endDate);
-                d.setHours(23, 59, 59, 999);
-                where.createdAt.lte = d;
-            }
+            if (startDate) where.createdAt.gte = new Date(`${startDate}T00:00:00`);
+            if (endDate) where.createdAt.lte = new Date(`${endDate}T23:59:59.999`);
         }
 
+        // lấy dữ liệu giao dịch kèm thông tin chi tiết đơn hàng, email người dùng và đếm tổng số lượng bản ghi
         const [items, total] = await Promise.all([
             this.prisma.transaction.findMany({
                 where,
                 skip,
-                take: Number(limit),
+                take: safeLimit,
                 include: {
                     order: {
                         include: {
@@ -502,10 +507,79 @@ export class PaymentService {
             data: items,
             meta: {
                 total,
-                page: Number(page),
-                limit: Number(limit),
-                lastPage: Math.ceil(total / Number(limit))
+                page: safePage,
+                limit: safeLimit,
+                lastPage: Math.max(1, Math.ceil(total / safeLimit))
             }
         };
     }
+
+    /**
+     * thống kê hiệu suất và số lượng giao dịch thanh toán trong hệ thống trong một khoảng thời gian
+     * tính toán tổng doanh thu thành công, tổng tiền hoàn trả, tỷ lệ thanh toán thành công và giá trị đơn hàng trung bình
+     */
+    async getTransactionStats(q: { startDate?: string; endDate?: string }) {
+        const { startDate, endDate } = q;
+        const w: Prisma.TransactionWhereInput = {};
+
+        // áp dụng bộ lọc mốc thời gian nếu có
+        if (startDate || endDate) {
+            w.createdAt = {};
+            if (startDate) w.createdAt.gte = new Date(`${startDate}T00:00:00`);
+            if (endDate) w.createdAt.lte = new Date(`${endDate}T23:59:59.999`);
+        }
+
+        // hàm tiện ích tái sử dụng bộ lọc thời gian kết hợp thêm điều kiện lọc trạng thái giao dịch
+        const byStatus = (status: TransactionStatus): Prisma.TransactionWhereInput => ({
+            ...w,
+            status
+        });
+
+        // thực hiện thống kê song song (đếm số lượng theo trạng thái và tính tổng tiền giao dịch)
+        const [
+            totalTransactions,
+            successTransactions,
+            pendingTransactions,
+            failedTransactions,
+            refundedTransactions,
+            successAmountAgg,
+            refundedAmountAgg,
+        ] = await Promise.all([
+            this.prisma.transaction.count({ where: w }),
+            this.prisma.transaction.count({ where: byStatus(TransactionStatus.SUCCESS) }),
+            this.prisma.transaction.count({ where: byStatus(TransactionStatus.PENDING) }),
+            this.prisma.transaction.count({ where: byStatus(TransactionStatus.FAILED) }),
+            this.prisma.transaction.count({ where: byStatus(TransactionStatus.REFUNDED) }),
+            this.prisma.transaction.aggregate({
+                where: byStatus(TransactionStatus.SUCCESS),
+                _sum: { amount: true }
+            }),
+            this.prisma.transaction.aggregate({
+                where: byStatus(TransactionStatus.REFUNDED),
+                _sum: { amount: true }
+            })
+        ]);
+
+        const successfulAmount = Number(successAmountAgg._sum.amount || 0);
+        const refundedAmount = Number(refundedAmountAgg._sum.amount || 0);
+
+        return {
+            totalTransactions,
+            successTransactions,
+            pendingTransactions,
+            failedTransactions,
+            refundedTransactions,
+            successfulAmount,
+            refundedAmount,
+            // tính toán giá trị giao dịch thành công trung bình
+            averageSuccessfulAmount: successTransactions > 0
+                ? successfulAmount / successTransactions
+                : 0,
+            // tính toán tỷ lệ thanh toán thành công
+            successRate: totalTransactions > 0
+                ? (successTransactions / totalTransactions) * 100
+                : 0,
+        };
+    }
 }
+

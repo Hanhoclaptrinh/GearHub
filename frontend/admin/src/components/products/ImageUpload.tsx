@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { X, Star, UploadCloud, Box } from 'lucide-react';
+import { X, Star, UploadCloud, Box } from '../ui/IconlyIcons';
 import { cn } from '../../utils/cn';
 
 interface ImageUploadProps {
@@ -38,20 +38,20 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div
         {...getRootProps()}
         className={cn(
-          "border-2 border-dashed rounded-[32px] p-8 flex flex-col items-center justify-center transition-all cursor-pointer group hover:bg-slate-50",
-          isDragActive ? "border-primary bg-primary/5 scale-[0.98]" : "border-slate-200"
+          "border border-dashed rounded-[12px] p-6 flex flex-col items-center justify-center transition-all cursor-pointer group hover:bg-slate-50",
+          isDragActive ? "border-primary bg-primary/5 scale-[0.98]" : "border-[#dce7f1] bg-white"
         )}
       >
         <input {...getInputProps()} />
-        <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-          <UploadCloud className="w-7 h-7 text-primary" />
+        <div className="w-12 h-12 bg-[#f2f7ff] rounded-[10px] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+          <UploadCloud className="w-6 h-6 text-primary" />
         </div>
-        <p className="text-slate-800 font-black text-base text-center">Tải ảnh hoặc 3D Model</p>
-        <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">PNG, JPG, GLB, USDZ</p>
+        <p className="text-[#25396f] font-extrabold text-base text-center">Tải ảnh hoặc 3D Model</p>
+        <p className="text-[#7c8db5] font-bold text-[10px] uppercase tracking-widest mt-1">PNG, JPG, GLB, USDZ</p>
       </div>
 
       {previews.length > 0 && (
@@ -62,12 +62,12 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
               <div
                 key={idx}
                 className={cn(
-                  "group relative aspect-square rounded-2xl overflow-hidden border-2 transition-all bg-slate-50",
-                  primaryIndex === idx ? "border-primary shadow-lg shadow-primary/10" : "border-slate-100"
+                  "group relative aspect-square rounded-[10px] overflow-hidden border transition-all bg-white",
+                  primaryIndex === idx ? "border-primary shadow-lg shadow-primary/10" : "border-[#edf2f7]"
                 )}
               >
                 {is3D ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-indigo-50 text-indigo-500">
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-[#f2f7ff] text-primary">
                     <Box className="w-8 h-8 mb-1" />
                     <span className="text-[10px] font-black uppercase tracking-tighter">{preview.split('.').pop()?.substring(0, 4) || '3D'}</span>
                   </div>
@@ -82,7 +82,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                   />
                 )}
 
-                <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 backdrop-blur-[2px]">
+                <div className="absolute inset-0 bg-[#25396f]/65 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 backdrop-blur-[2px]">
                   {!is3D && (
                     <button
                       type="button"
@@ -113,7 +113,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                 )}
 
                 {is3D && (
-                  <div className="absolute top-2 left-2 bg-indigo-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-md">
+                  <div className="absolute top-2 left-2 bg-primary text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-md">
                     3D
                   </div>
                 )}

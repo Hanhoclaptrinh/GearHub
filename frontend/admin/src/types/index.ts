@@ -42,6 +42,12 @@ export interface Category {
   icon?: string;
   iconUrl?: string;
   parentId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  _count?: {
+    products?: number;
+    children?: number;
+  };
   children?: Category[];
 }
 
@@ -51,9 +57,14 @@ export interface Brand {
   slug: string;
   description?: string;
   logoUrl?: string;
+  bannerUrl?: string;
   quote?: string;
   philosophy?: string;
   isActive: boolean;
+  isFeatured?: boolean;
+  score?: number;
+  createdAt?: string;
+  updatedAt?: string;
   _count?: {
     products: number;
   };
@@ -82,6 +93,7 @@ export interface Product {
   name: string;
   slug: string;
   tagline?: string;
+  thumbnailUrl?: string;
   description: string;
   categoryId: string;
   brandId: string;
@@ -93,6 +105,7 @@ export interface Product {
   variants: ProductVariant[];
   attributeConfig?: string[];
   createdAt: string;
+  updatedAt?: string;
 }
 
 export const OrderStatus = {
