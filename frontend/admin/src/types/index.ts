@@ -148,6 +148,8 @@ export interface Order {
   shippingAddress: string;
   phone: string;
   notes?: string;
+  note?: string;
+  voucherDiscount?: number;
   userId: string;
   user?: User;
   items: OrderItem[];

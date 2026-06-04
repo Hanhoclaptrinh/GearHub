@@ -20,6 +20,7 @@ import {
   Search,
   ShoppingBag,
   XCircle,
+  ReceiptText,
 } from '../../components/ui/IconlyIcons';
 import {
   CloseSquare as IconlyCloseSquare,
@@ -753,8 +754,158 @@ export const OrderList: React.FC = () => {
     setMinTotal('');
     setMaxTotal('');
     setCancelRequestOnly(false);
-    setSelectedOrderIds([]);
-    setPage(1);
+  };
+
+  const handlePrintInvoice = (order: Order) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Trình duyệt đang chặn cửa sổ xuất hóa đơn');
+      return;
+    }
+
+    const priceTotal = order.items?.reduce((sum: number, item: any) => sum + Number(item.priceAtPurchase || item.price || 0) * item.quantity, 0) || 0;
+    const vatAmount = priceTotal * 0.1;
+    const subtotal = priceTotal + vatAmount;
+
+    const itemsHtml = order.items?.map((item: any) => `
+      <tr>
+        <td style="padding: 12px 8px; border-bottom: 1px solid #edf2f7; vertical-align: top;">
+          <div style="font-weight: bold; color: #2d3748; font-size: 13px;">${escapeHtml(item.productName)}</div>
+          <div style="font-size: 10px; color: #718096; text-transform: uppercase; margin-top: 4px;">${escapeHtml(item.variantName || item.sku)}</div>
+        </td>
+        <td style="padding: 12px 8px; border-bottom: 1px solid #edf2f7; text-align: center; vertical-align: top; font-weight: bold;">${item.quantity}</td>
+        <td style="padding: 12px 8px; border-bottom: 1px solid #edf2f7; text-align: right; vertical-align: top;">${formatCurrency(Number(item.priceAtPurchase || item.price))}</td>
+        <td style="padding: 12px 8px; border-bottom: 1px solid #edf2f7; text-align: right; vertical-align: top; font-weight: bold; color: #2d3748;">${formatCurrency(Number(item.priceAtPurchase || item.price) * item.quantity)}</td>
+      </tr>
+    `).join('') || '';
+
+    const receiverName = getCustomerName(order);
+    const receiverPhone = getCustomerContact(order);
+    const paymentMethodText = paymentMethodLabel[order.paymentMethod as Exclude<PaymentMethodFilter, ''>] || order.paymentMethod;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Hóa đơn mua hàng #${order.orderNumber || order.id.slice(-8).toUpperCase()}</title>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #2d3748; line-height: 1.5; padding: 40px; margin: 0; background: #fff; }
+            .invoice-box { max-width: 800px; margin: auto; padding: 30px; border: 1px solid #edf2f7; border-radius: 8px; font-size: 14px; }
+            .header-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+            .header-table td { vertical-align: top; }
+            .logo { font-size: 28px; font-weight: 800; color: #435ebe; letter-spacing: -1px; }
+            .company-info { text-align: right; font-size: 12px; color: #718096; line-height: 1.6; }
+            .details-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            .details-table td { padding: 16px; border: 1px solid #edf2f7; vertical-align: top; width: 50%; }
+            .details-title { font-size: 10px; font-weight: 800; color: #a0aec0; letter-spacing: 1px; margin-bottom: 8px; text-transform: uppercase; }
+            .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            .items-table th { background: #f7fafc; padding: 12px 8px; text-align: left; font-size: 11px; font-weight: 800; color: #718096; text-transform: uppercase; border-bottom: 2px solid #edf2f7; }
+            .totals-table { width: 320px; margin-left: auto; border-collapse: collapse; margin-top: 20px; }
+            .totals-table td { padding: 8px; font-size: 14px; }
+            .footer { text-align: center; margin-top: 60px; font-size: 12px; color: #a0aec0; border-top: 1px solid #edf2f7; padding-top: 20px; line-height: 1.6; }
+            @media print {
+              body { padding: 0; }
+              .invoice-box { border: none; padding: 0; max-width: 100%; }
+              .footer { page-break-inside: avoid; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="invoice-box">
+            <table class="header-table">
+              <tr>
+                <td>
+                  <div class="logo">GEARHUB</div>
+                  <div style="font-size: 12px; color: #718096; margin-top: 4px; font-weight: 600;">Hệ thống bán lẻ thiết bị công nghệ hàng đầu</div>
+                </td>
+                <td class="company-info">
+                  <strong style="color: #2d3748; font-size: 13px;">CÔNG TY TNHH GEARHUB VIỆT NAM</strong><br/>
+                  Địa chỉ: Tòa nhà GearHub, Q. Cầu Giấy, Hà Nội<br/>
+                  Điện thoại: 1900 6789 | Email: contact@gearhub.com
+                </td>
+              </tr>
+            </table>
+
+            <div style="border-top: 2px solid #435ebe; margin-bottom: 24px;"></div>
+
+            <table class="header-table" style="margin-bottom: 24px;">
+              <tr>
+                <td>
+                  <div style="font-size: 20px; font-weight: 800; color: #2d3748; letter-spacing: -0.5px;">HÓA ĐƠN BÁN HÀNG</div>
+                  <div style="font-size: 13px; color: #718096; margin-top: 6px;">Mã đơn hàng: <strong style="color: #2d3748;">#${order.orderNumber || order.id}</strong></div>
+                  <div style="font-size: 13px; color: #718096;">Ngày lập hóa đơn: ${formatDate(order.createdAt)}</div>
+                </td>
+                <td style="text-align: right;">
+                  <div style="font-size: 13px; color: #718096;">Trạng thái đơn: <strong style="color: #2d3748;">${statusLabel[order.status] || order.status}</strong></div>
+                  <div style="font-size: 13px; color: #718096; margin-top: 4px;">Hình thức thanh toán: <strong style="color: #2d3748;">${paymentMethodText}</strong></div>
+                </td>
+              </tr>
+            </table>
+
+            <table class="details-table">
+              <tr>
+                <td>
+                  <div class="details-title">Thông tin người mua</div>
+                  <strong style="font-size: 15px; color: #2d3748;">${escapeHtml(receiverName)}</strong><br/>
+                  <span style="color: #4a5568; display: inline-block; margin-top: 6px;">Điện thoại: ${escapeHtml(receiverPhone)}</span><br/>
+                  <span style="color: #4a5568;">Email: ${escapeHtml(order.user?.email || 'N/A')}</span>
+                </td>
+                <td>
+                  <div class="details-title">Địa chỉ giao hàng</div>
+                  <span style="color: #4a5568; leading-height: 1.6;">${escapeHtml(order.shippingAddress || 'N/A')}</span><br/>
+                  ${order.note ? `<div style="margin-top: 10px; font-style: italic; font-size: 12px; color: #718096; background: #f7fafc; padding: 6px 10px; border-radius: 6px;">Ghi chú: ${escapeHtml(order.note)}</div>` : ''}
+                </td>
+              </tr>
+            </table>
+
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th style="width: 55%; padding-left: 8px;">Mô tả sản phẩm</th>
+                  <th style="text-align: center; width: 10%;">SL</th>
+                  <th style="text-align: right; width: 15%;">Đơn giá</th>
+                  <th style="text-align: right; width: 20%; padding-right: 8px;">Thành tiền</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+              </tbody>
+            </table>
+
+            <table class="totals-table">
+              <tr>
+                <td style="color: #718096; padding-left: 0;">Tạm tính (Chưa VAT):</td>
+                <td style="text-align: right; font-weight: 600; color: #2d3748; padding-right: 0;">${formatCurrency(priceTotal)}</td>
+              </tr>
+              <tr>
+                <td style="color: #718096; padding-left: 0;">Thuế VAT (10%):</td>
+                <td style="text-align: right; font-weight: 600; color: #2d3748; padding-right: 0;">${formatCurrency(vatAmount)}</td>
+              </tr>
+              <tr>
+                <td style="color: #718096; padding-left: 0;">Cộng thành tiền (Có VAT):</td>
+                <td style="text-align: right; font-weight: 600; color: #2d3748; padding-right: 0;">${formatCurrency(subtotal)}</td>
+              </tr>
+              ${order.voucherDiscount && Number(order.voucherDiscount) > 0 ? `
+              <tr>
+                <td style="color: #e53e3e; padding-left: 0;">Mã giảm giá:</td>
+                <td style="text-align: right; font-weight: 600; color: #e53e3e; padding-right: 0;">-${formatCurrency(Number(order.voucherDiscount))}</td>
+              </tr>
+              ` : ''}
+              <tr style="border-top: 2px solid #435ebe;">
+                <td style="font-weight: bold; color: #435ebe; padding: 16px 0 0 0; font-size: 15px;">Tổng thanh toán:</td>
+                <td style="text-align: right; font-weight: 800; color: #435ebe; padding: 16px 0 0 0; font-size: 20px;">${formatCurrency(order.totalAmount)}</td>
+              </tr>
+            </table>
+
+            <div class="footer">
+              <strong>Cảm ơn quý khách đã mua sắm tại GearHub!</strong><br/>
+              <em>Mọi thắc mắc về hóa đơn & bảo hành vui lòng liên hệ hotline 1900 6789.</em>
+            </div>
+          </div>
+          <script>window.onload = () => { window.print(); };</script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   return (
@@ -1190,14 +1341,27 @@ export const OrderList: React.FC = () => {
                   {orderDetail && <p className="text-xs font-bold text-[#607080] mt-1">#{orderDetail.orderNumber || orderDetail.id.toUpperCase()}</p>}
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedOrderId(null)}
-                className="h-9 w-9 rounded-[8px] p-0 hover:bg-[#f2f7ff]"
-              >
-                <XCircle className="w-5 h-5 text-[#7c8db5]" />
-              </Button>
+              <div className="flex items-center gap-2">
+                {orderDetail && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePrintInvoice(orderDetail)}
+                    className="h-9 gap-2 rounded-[8px] border-[#dce7f1] text-[#607080] hover:text-primary hover:border-primary font-extrabold flex items-center"
+                  >
+                    <ReceiptText className="w-4 h-4 text-primary" />
+                    In hóa đơn
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedOrderId(null)}
+                  className="h-9 w-9 rounded-[8px] p-0 hover:bg-[#f2f7ff]"
+                >
+                  <XCircle className="w-5 h-5 text-[#7c8db5]" />
+                </Button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-[#fbfcff]">
