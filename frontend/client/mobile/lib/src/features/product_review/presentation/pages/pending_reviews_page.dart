@@ -70,7 +70,7 @@ class _PendingReviewsPageState extends State<PendingReviewsPage>
             icon: const Icon(
               Icons.arrow_back_rounded,
               color: Colors.white,
-              size: 24,
+              size: 22,
             ),
             onPressed: () => Navigator.of(context).pop(),
           ),

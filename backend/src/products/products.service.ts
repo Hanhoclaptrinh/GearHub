@@ -898,6 +898,7 @@ export class ProductsService {
             assetType?: 'all' | 'has_3d' | 'only_2d';
             showInactiveOnly?: boolean;
             showActiveOnly?: boolean;
+            sortBy?: string;
         }
     ) {
         const {
@@ -912,7 +913,8 @@ export class ProductsService {
             inventoryStatus = 'all',
             assetType = 'all',
             showInactiveOnly = false,
-            showActiveOnly = false
+            showActiveOnly = false,
+            sortBy
         } = query;
 
         const skip = (page - 1) * limit;
@@ -1023,6 +1025,17 @@ export class ProductsService {
             }
         }
 
+        let orderByObj: any = { createdAt: 'desc' };
+        if (sortBy === 'popular') {
+            orderByObj = { soldCount: 'desc' };
+        } else if (sortBy === 'price_asc') {
+            orderByObj = { variants: { _min: { price: 'asc' } } };
+        } else if (sortBy === 'price_desc') {
+            orderByObj = { variants: { _max: { price: 'desc' } } };
+        } else if (sortBy === 'newest') {
+            orderByObj = { createdAt: 'desc' };
+        }
+
         const [items, total] = await Promise.all([
             this.prisma.product.findMany({
                 where: whereCondition,
@@ -1035,7 +1048,7 @@ export class ProductsService {
                     },
                     assets: true
                 },
-                orderBy: { createdAt: 'desc' },
+                orderBy: orderByObj,
                 skip: skip,
                 take: Number(limit),
             }),

@@ -31,6 +31,7 @@ export class ProductsController {
         @Query('assetType') assetType?: 'all' | 'has_3d' | 'only_2d',
         @Query('showInactiveOnly') showInactiveOnly?: string,
         @Query('showActiveOnly') showActiveOnly?: string,
+        @Query('sortBy') sortBy?: string,
     ) {
         return this.productsService.getAllProducts({
             page: page ? Number(page) : undefined,
@@ -45,6 +46,7 @@ export class ProductsController {
             assetType,
             showInactiveOnly: showInactiveOnly === 'true',
             showActiveOnly: showActiveOnly === 'true',
+            sortBy,
         });
     }
 

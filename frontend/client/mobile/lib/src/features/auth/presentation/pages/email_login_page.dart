@@ -114,7 +114,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
 
                           // header
                           const Text(
-                            'CHÀO MỪNG\nTRỞ LẠI! 👋',
+                            'CHÀO MỪNG\nTRỞ LẠI!',
                             style: TextStyle(
                               fontSize: 36,
                               fontWeight: FontWeight.w900,

@@ -37,22 +37,22 @@ import { AddressModule } from './address/address.module';
         {
           name: 'auth',
           ttl: 60000,
-          limit: 50000000000
+          limit: 5
         },
         {
           name: 'login',
           ttl: 60000,
-          limit: 150000000000
+          limit: 15
         },
         {
           name: 'default',
           ttl: 60000,
-          limit: 1000000000000
+          limit: 100
         },
         {
           name: 'chat',
           ttl: 60000,
-          limit: 150000000000
+          limit: 15
         }
       ]
     }),

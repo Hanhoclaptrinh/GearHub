@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/core/storage/secure_storage_service.dart';
 import 'package:mobile/src/features/chat/data/models/chat_message_model.dart';
@@ -87,7 +86,7 @@ class ConciergeCubit extends Cubit<ConciergeState> {
         emit(
           state.copyWith(
             isStartingNewRoom: false,
-            errorMessage: 'KhÃ´ng thá»ƒ táº¡o cuá»™c trÃ² chuyá»‡n má»›i.',
+            errorMessage: 'Không thể tạo cuộc trò chuyện mới.',
           ),
         );
         return;
@@ -115,7 +114,7 @@ class ConciergeCubit extends Cubit<ConciergeState> {
       emit(
         state.copyWith(
           isStartingNewRoom: false,
-          errorMessage: 'KhÃ´ng thá»ƒ táº¡o cuá»™c trÃ² chuyá»‡n má»›i.',
+          errorMessage: 'Không thể tạo cuộc trò chuyện mới.',
         ),
       );
     }
@@ -296,14 +295,16 @@ class ConciergeCubit extends Cubit<ConciergeState> {
     final clientMessageId = payload['clientMessageId']?.toString();
 
     final nextMessages = [...state.messages];
-    
+
     int tempIndex = -1;
     if (message.isAi) {
       tempIndex = nextMessages.indexWhere(
-        (item) => item.id.startsWith('ai-stream-') || item.clientMessageId?.startsWith('ai-stream-') == true,
+        (item) =>
+            item.id.startsWith('ai-stream-') ||
+            item.clientMessageId?.startsWith('ai-stream-') == true,
       );
     }
-    
+
     if (tempIndex < 0) {
       tempIndex = clientMessageId == null
           ? -1
@@ -387,9 +388,7 @@ class ConciergeCubit extends Cubit<ConciergeState> {
       nextMessages.add(newMsg);
     }
 
-    emit(state.copyWith(
-      messages: nextMessages,
-    ));
+    emit(state.copyWith(messages: nextMessages));
   }
 
   void _handleRoomUpdated(dynamic payload) {
@@ -407,19 +406,18 @@ class ConciergeCubit extends Cubit<ConciergeState> {
 
   void _handleTypingStart(dynamic payload) {
     if (payload is Map && payload['roomId'] == state.room?.id) {
-      emit(state.copyWith(
-        isTyping: true,
-        typingUserId: payload['userId']?.toString(),
-      ));
+      emit(
+        state.copyWith(
+          isTyping: true,
+          typingUserId: payload['userId']?.toString(),
+        ),
+      );
     }
   }
 
   void _handleTypingStop(dynamic payload) {
     if (payload is Map && payload['roomId'] == state.room?.id) {
-      emit(state.copyWith(
-        isTyping: false,
-        clearTypingUser: true,
-      ));
+      emit(state.copyWith(isTyping: false, clearTypingUser: true));
     }
   }
 

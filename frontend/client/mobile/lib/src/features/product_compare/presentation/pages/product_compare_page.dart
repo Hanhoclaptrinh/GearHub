@@ -3,10 +3,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/core/theme/app_colors.dart';
+import 'package:mobile/src/core/utils/formatter_utils.dart';
 import 'package:mobile/src/features/explore/domain/repositories/explore_repository.dart';
 import 'package:mobile/src/features/product_compare/presentation/state/product_compare_cubit.dart';
 import 'package:mobile/src/features/product_compare/presentation/state/product_compare_state.dart';
@@ -46,7 +46,11 @@ class ProductCompareView extends StatelessWidget {
           backgroundColor: AppColors.background,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 22),
+            icon: const Icon(
+              Icons.arrow_back_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
           title: const Text(
@@ -78,9 +82,9 @@ class ProductCompareView extends StatelessWidget {
               previous.errorMessage != current.errorMessage &&
               current.errorMessage != null,
           listener: (context, state) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.errorMessage!)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
           },
           builder: (context, state) {
             return Stack(
@@ -255,7 +259,9 @@ class _AddProductTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.brandIndigoSoft,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.brandIndigo.withValues(alpha: 0.4)),
+          border: Border.all(
+            color: AppColors.brandIndigo.withValues(alpha: 0.4),
+          ),
         ),
         child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -292,7 +298,11 @@ class _NeedMoreProductsCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Icon(Icons.compare_arrows_rounded, color: Colors.white, size: 40),
+          const Icon(
+            Icons.compare_arrows_rounded,
+            color: Colors.white,
+            size: 40,
+          ),
           const SizedBox(height: 14),
           const Text(
             'Cần ít nhất 2 sản phẩm',
@@ -356,7 +366,7 @@ class _CompareTable extends StatelessWidget {
       _CompareRowData(
         label: 'Giá',
         values: {
-          for (final product in products) product.id: _formatPrice(product.price),
+          for (final product in products) product.id: formatVND(product.price),
         },
       ),
       _CompareRowData(
@@ -403,9 +413,7 @@ class _CompareTable extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _ProductHeaderRow(products: products),
-                  ...rows.map(
-                    (row) => _SpecRow(products: products, row: row),
-                  ),
+                  ...rows.map((row) => _SpecRow(products: products, row: row)),
                 ],
               ),
             ),
@@ -413,10 +421,6 @@ class _CompareTable extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  static String _formatPrice(double price) {
-    return NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(price);
   }
 }
 
@@ -727,7 +731,7 @@ class _PickerProductTile extends StatelessWidget {
         ),
       ),
       subtitle: Text(
-        _CompareTable._formatPrice(product.price),
+        formatVND(product.price),
         style: const TextStyle(
           color: AppColors.textSlate,
           fontSize: 12,
