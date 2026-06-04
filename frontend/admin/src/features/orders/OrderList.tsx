@@ -1444,6 +1444,33 @@ export const OrderList: React.FC = () => {
             </div>
 
             <div className="p-6 bg-white border-t border-[#edf2f7]">
+              {orderDetail && (() => {
+                const priceTotal = orderDetail.items?.reduce((sum: number, item: any) => sum + Number(item.priceAtPurchase || item.price || 0) * item.quantity, 0) || 0;
+                const vatAmount = priceTotal * 0.1;
+                const subtotal = priceTotal + vatAmount;
+                return (
+                  <div className="mb-4 space-y-2.5 border-b border-dashed border-[#edf2f7] pb-4">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-bold text-[#7c8db5] uppercase">Tạm tính (Chưa VAT)</span>
+                      <span className="font-bold text-[#25396f]">{formatCurrency(priceTotal)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-bold text-[#7c8db5] uppercase">Thuế VAT (10%)</span>
+                      <span className="font-bold text-[#25396f]">{formatCurrency(vatAmount)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-bold text-[#7c8db5] uppercase">Cộng thành tiền (Có VAT)</span>
+                      <span className="font-bold text-[#25396f]">{formatCurrency(subtotal)}</span>
+                    </div>
+                    {orderDetail.voucherDiscount && Number(orderDetail.voucherDiscount) > 0 ? (
+                      <div className="flex justify-between items-center text-xs text-rose-500">
+                        <span className="font-bold uppercase">Mã giảm giá</span>
+                        <span className="font-bold">-{formatCurrency(Number(orderDetail.voucherDiscount))}</span>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })()}
               <div className="flex items-center justify-between mb-5 rounded-[12px] border border-[#edf2f7] bg-[#fbfcff] px-4 py-3">
                 <p className="text-sm font-extrabold text-[#7c8db5] uppercase">Tổng thanh toán</p>
                 <p className="text-2xl font-extrabold text-[#25396f]">
