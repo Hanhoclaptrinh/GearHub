@@ -6,6 +6,7 @@ import '../../../../shared/models/product_model.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/core/storage/secure_storage_service.dart';
 import 'package:mobile/src/core/utils/device_utils.dart';
+import 'package:mobile/src/core/utils/error_formatter.dart';
 import 'home_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -43,7 +44,7 @@ class HomeCubit extends Cubit<HomeState> {
         ),
       );
     } catch (e) {
-      emit(HomeError(message: e.toString()));
+      emit(HomeError(message: ErrorFormatter.format(e, 'Không thể tải dữ liệu trang chủ.')));
     }
   }
 

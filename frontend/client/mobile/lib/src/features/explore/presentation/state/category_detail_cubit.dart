@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/features/explore/domain/repositories/explore_repository.dart';
+import 'package:mobile/src/core/utils/error_formatter.dart';
 import '../../../home/domain/entities/category_entity.dart';
 import 'category_detail_state.dart';
 
@@ -32,7 +33,7 @@ class CategoryDetailCubit extends Cubit<CategoryDetailState> {
         ),
       );
     } catch (e) {
-      emit(CategoryDetailError(message: e.toString()));
+      emit(CategoryDetailError(message: ErrorFormatter.format(e, 'Không thể tải danh sách sản phẩm.')));
     }
   }
 
@@ -69,7 +70,7 @@ class CategoryDetailCubit extends Cubit<CategoryDetailState> {
         ),
       );
     } catch (e) {
-      emit(CategoryDetailError(message: e.toString()));
+      emit(CategoryDetailError(message: ErrorFormatter.format(e, 'Không thể lọc sản phẩm.')));
     }
   }
 
@@ -115,7 +116,7 @@ class CategoryDetailCubit extends Cubit<CategoryDetailState> {
         ),
       );
     } catch (e) {
-      emit(CategoryDetailError(message: e.toString()));
+      emit(CategoryDetailError(message: ErrorFormatter.format(e, 'Không thể lọc sản phẩm.')));
     }
   }
 

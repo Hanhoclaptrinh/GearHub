@@ -91,9 +91,11 @@ export class OrdersService {
         };
       });
 
-      // VAT
-      const vatAmount = totalAmount * 0.1;
-      const subtotal = totalAmount + vatAmount;
+      // mô hình giá đã bao gồm VAT
+      const subtotal = totalAmount; // tổng tiền đã bao gồm thuế
+      // trích xuất 8% thuế từ bên trong (8% theo mức thuế cho các sản phẩm phần cứng công nghệ hiện tại ở VN)
+      const vatAmount = (subtotal / 1.08) * 0.08;
+      const baseAmount = subtotal - vatAmount; // giá gốc chưa thuế
 
       let voucherDiscount = 0;
 

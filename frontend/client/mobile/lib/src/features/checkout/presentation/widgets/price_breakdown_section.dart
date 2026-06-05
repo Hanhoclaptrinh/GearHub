@@ -42,8 +42,6 @@ class PriceBreakdownSection extends StatelessWidget {
               valueColor: AppColors.emerald400,
             ),
           ],
-          const SizedBox(height: 14),
-          _priceRow("Thuế VAT (10%)", formatVND(vat)),
           if (voucherDiscount > 0) ...[
             const SizedBox(height: 14),
             _priceRow(
@@ -78,6 +76,18 @@ class PriceBreakdownSection extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 6),
+          const Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              "(Giá đã bao gồm thuế VAT 8%)",
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.slate400,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
           ),
         ],
       ),

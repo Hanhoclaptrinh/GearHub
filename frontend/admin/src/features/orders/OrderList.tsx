@@ -763,9 +763,9 @@ export const OrderList: React.FC = () => {
       return;
     }
 
-    const priceTotal = order.items?.reduce((sum: number, item: any) => sum + Number(item.priceAtPurchase || item.price || 0) * item.quantity, 0) || 0;
-    const vatAmount = priceTotal * 0.1;
-    const subtotal = priceTotal + vatAmount;
+    const subtotal = order.items?.reduce((sum: number, item: any) => sum + Number(item.priceAtPurchase || item.price || 0) * item.quantity, 0) || 0;
+    const priceTotal = Math.round(subtotal / 1.08);
+    const vatAmount = subtotal - priceTotal;
 
     const itemsHtml = order.items?.map((item: any) => `
       <tr>
@@ -818,9 +818,9 @@ export const OrderList: React.FC = () => {
                   <div style="font-size: 12px; color: #718096; margin-top: 4px; font-weight: 600;">Hệ thống bán lẻ thiết bị công nghệ hàng đầu</div>
                 </td>
                 <td class="company-info">
-                  <strong style="color: #2d3748; font-size: 13px;">CÔNG TY TNHH GEARHUB VIỆT NAM</strong><br/>
-                  Địa chỉ: Tòa nhà GearHub, Q. Cầu Giấy, Hà Nội<br/>
-                  Điện thoại: 1900 6789 | Email: contact@gearhub.com
+                  <strong style="color: #2d3748; font-size: 13px;">CÔNG TY TNHH THƯƠNG MẠI GEARHUB</strong><br/>
+                  Địa chỉ: Tòa nhà GearHub, P. Sài Gòn, TP.Hồ Chí Minh<br/>
+                  Điện thoại: 1800 6789 | Email: contact@gearhub.com
                 </td>
               </tr>
             </table>
@@ -873,15 +873,15 @@ export const OrderList: React.FC = () => {
 
             <table class="totals-table">
               <tr>
-                <td style="color: #718096; padding-left: 0;">Tạm tính (Chưa VAT):</td>
+                <td style="color: #718096; padding-left: 0;">Tạm tính:</td>
                 <td style="text-align: right; font-weight: 600; color: #2d3748; padding-right: 0;">${formatCurrency(priceTotal)}</td>
               </tr>
               <tr>
-                <td style="color: #718096; padding-left: 0;">Thuế VAT (10%):</td>
+                <td style="color: #718096; padding-left: 0;">Thuế VAT (8%):</td>
                 <td style="text-align: right; font-weight: 600; color: #2d3748; padding-right: 0;">${formatCurrency(vatAmount)}</td>
               </tr>
               <tr>
-                <td style="color: #718096; padding-left: 0;">Cộng thành tiền (Có VAT):</td>
+                <td style="color: #718096; padding-left: 0;">Thành tiền:</td>
                 <td style="text-align: right; font-weight: 600; color: #2d3748; padding-right: 0;">${formatCurrency(subtotal)}</td>
               </tr>
               ${order.voucherDiscount && Number(order.voucherDiscount) > 0 ? `
@@ -898,7 +898,7 @@ export const OrderList: React.FC = () => {
 
             <div class="footer">
               <strong>Cảm ơn quý khách đã mua sắm tại GearHub!</strong><br/>
-              <em>Mọi thắc mắc về hóa đơn & bảo hành vui lòng liên hệ hotline 1900 6789.</em>
+              <em>Mọi thắc mắc về hóa đơn & bảo hành vui lòng liên hệ hotline 1800 6789.</em>
             </div>
           </div>
           <script>window.onload = () => { window.print(); };</script>
@@ -1445,9 +1445,9 @@ export const OrderList: React.FC = () => {
 
             <div className="p-6 bg-white border-t border-[#edf2f7]">
               {orderDetail && (() => {
-                const priceTotal = orderDetail.items?.reduce((sum: number, item: any) => sum + Number(item.priceAtPurchase || item.price || 0) * item.quantity, 0) || 0;
-                const vatAmount = priceTotal * 0.1;
-                const subtotal = priceTotal + vatAmount;
+                const subtotal = orderDetail.items?.reduce((sum: number, item: any) => sum + Number(item.priceAtPurchase || item.price || 0) * item.quantity, 0) || 0;
+                const priceTotal = Math.round(subtotal / 1.08);
+                const vatAmount = subtotal - priceTotal;
                 return (
                   <div className="mb-4 space-y-2.5 border-b border-dashed border-[#edf2f7] pb-4">
                     <div className="flex justify-between items-center text-xs">
@@ -1455,7 +1455,7 @@ export const OrderList: React.FC = () => {
                       <span className="font-bold text-[#25396f]">{formatCurrency(priceTotal)}</span>
                     </div>
                     <div className="flex justify-between items-center text-xs">
-                      <span className="font-bold text-[#7c8db5] uppercase">Thuế VAT (10%)</span>
+                      <span className="font-bold text-[#7c8db5] uppercase">Thuế VAT (8%)</span>
                       <span className="font-bold text-[#25396f]">{formatCurrency(vatAmount)}</span>
                     </div>
                     <div className="flex justify-between items-center text-xs">
@@ -1557,9 +1557,9 @@ export const OrderList: React.FC = () => {
             <div className="p-6 space-y-4 font-body">
               <div className="rounded-[10px] border border-[#edf2f7] bg-[#fbfcff] p-4">
                 <p className="text-sm font-medium text-[#607080] leading-relaxed">
-                {reviewApprove
-                  ? 'Khi chấp nhận hủy đơn, hệ thống sẽ tự động hoàn kho và hoàn voucher cho khách hàng. Hành động này không thể hoàn tác.'
-                  : 'Đơn hàng sẽ tiếp tục trạng thái xử lý để vận chuyển. Khách hàng sẽ nhận được thông báo về việc từ chối hủy.'}
+                  {reviewApprove
+                    ? 'Khi chấp nhận hủy đơn, hệ thống sẽ tự động hoàn kho và hoàn voucher cho khách hàng. Hành động này không thể hoàn tác.'
+                    : 'Đơn hàng sẽ tiếp tục trạng thái xử lý để vận chuyển. Khách hàng sẽ nhận được thông báo về việc từ chối hủy.'}
                 </p>
               </div>
               <div className="space-y-2">

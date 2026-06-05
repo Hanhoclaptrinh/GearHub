@@ -10,6 +10,7 @@ import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart
 import 'package:mobile/src/features/profile/presentation/state/orders_state.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 import 'package:mobile/src/features/checkout/presentation/pages/checkout_page.dart';
+import 'package:mobile/src/features/profile/presentation/pages/invoice_page.dart';
 
 double _toDouble(dynamic val) {
   if (val == null) return 0.0;
@@ -951,10 +952,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
     }
     final double shipping = _toDouble(order['shippingFee'] ?? 0.0);
     final double discount = _toDouble(order['discount']);
-    final double vat = subtotal * 0.1;
     double totalAmount = _toDouble(order['totalAmount'] ?? order['total']);
     if (totalAmount == 0.0) {
-      totalAmount = subtotal + vat + shipping - discount;
+      totalAmount = subtotal + shipping - discount;
     }
 
     showModalBottomSheet(
@@ -993,7 +993,28 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                     color: AppColors.textPrimary,
                   ),
                 ),
-                _buildStatusBadge(status),
+                Row(
+                  children: [
+                    if (status != 'CANCELLED')
+                      IconButton(
+                        tooltip: 'Xuất hóa đơn điện tử',
+                        icon: const Icon(
+                          Icons.receipt_long_rounded,
+                          color: AppColors.brandIndigo,
+                          size: 22,
+                        ),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => InvoicePage(order: order),
+                            ),
+                          );
+                        },
+                      ),
+                    const SizedBox(width: 4),
+                    _buildStatusBadge(status),
+                  ],
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -1262,8 +1283,6 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                           const SizedBox(height: 8),
                           _priceRow("Phí vận chuyển", formatVND(shipping)),
                           const SizedBox(height: 8),
-                          _priceRow("Thuế VAT (10%)", formatVND(vat)),
-                          const SizedBox(height: 8),
                           _priceRow(
                             "Giảm giá",
                             "-${formatVND(discount)}",
@@ -1297,6 +1316,18 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                                 ),
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 6),
+                          const Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              "(Giá đã bao gồm thuế VAT 8%)",
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.slate400,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
                           ),
                         ],
                       ),

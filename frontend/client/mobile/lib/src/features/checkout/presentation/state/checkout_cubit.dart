@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/core/network/api_client.dart';
 import 'package:mobile/src/features/cart/domain/entities/cart_item_entity.dart';
+import 'package:mobile/src/core/utils/error_formatter.dart';
 import 'checkout_state.dart';
 
 class CheckoutCubit extends Cubit<CheckoutState> {
@@ -56,7 +57,7 @@ class CheckoutCubit extends Cubit<CheckoutState> {
         ),
       );
     } catch (e) {
-      emit(CheckoutError(message: e.toString()));
+      emit(CheckoutError(message: ErrorFormatter.format(e, 'Không thể đặt hàng.')));
     }
   }
 }

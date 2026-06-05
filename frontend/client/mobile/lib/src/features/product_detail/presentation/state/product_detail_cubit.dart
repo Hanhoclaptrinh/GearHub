@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/src/core/utils/error_formatter.dart';
 import 'product_detail_state.dart';
 import '../../domain/repositories/product_detail_repository.dart';
 
@@ -21,7 +22,7 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
         relatedProducts: related,
       ));
     } catch (e) {
-      emit(ProductDetailError(e.toString()));
+      emit(ProductDetailError(ErrorFormatter.format(e, 'Không thể tải thông tin sản phẩm.')));
     }
   }
 

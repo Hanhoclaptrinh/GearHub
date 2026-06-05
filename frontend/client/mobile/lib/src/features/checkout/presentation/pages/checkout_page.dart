@@ -123,10 +123,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
       widget.args.items.fold(0.0, (sum, item) => sum + item.itemTotal);
 
   double get _shipping => 0.0;
-  double get _vat => _subtotal * 0.1;
+  double get _vat =>
+      _subtotal -
+      (_subtotal / 1.08); // trích xuất 8% thuế VAT từ tổng phụ đã bao gồm VAT
 
-  /// subtotal + VAT (trước khi giảm)
-  double get _subtotalWithVat => _subtotal + _vat;
+  // subtotal đã bao gồm VAT sẵn
+  double get _subtotalWithVat => _subtotal;
 
   @override
   Widget build(BuildContext context) {

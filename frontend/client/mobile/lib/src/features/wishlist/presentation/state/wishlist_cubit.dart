@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/features/wishlist/domain/repositories/wishlist_repository.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
+import 'package:mobile/src/core/utils/error_formatter.dart';
 import 'wishlist_state.dart';
 
 class WishlistCubit extends Cubit<WishlistState> {
@@ -43,7 +44,7 @@ class WishlistCubit extends Cubit<WishlistState> {
         hasReachedMax: page >= lastPage,
       ));
     } catch (e) {
-      emit(WishlistError(e.toString()));
+      emit(WishlistError(ErrorFormatter.format(e, 'Không thể tải danh sách yêu thích.')));
     }
   }
 
@@ -53,7 +54,7 @@ class WishlistCubit extends Cubit<WishlistState> {
      
       fetchWishlist(refresh: true);
     } catch (e) {
-      emit(WishlistError(e.toString()));
+      emit(WishlistError(ErrorFormatter.format(e, 'Không thể thay đổi trạng thái yêu thích.')));
     }
   }
 }

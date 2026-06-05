@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:mobile/src/core/utils/error_formatter.dart';
 import '../../domain/repositories/promotions_repository.dart';
 import '../../data/models/voucher_model.dart';
 
@@ -45,7 +46,7 @@ class MyVouchersCubit extends Cubit<MyVouchersState> {
       final vouchers = await _repository.getMyVouchers();
       emit(MyVouchersLoaded(vouchers: vouchers));
     } catch (e) {
-      emit(MyVouchersError(message: e.toString()));
+      emit(MyVouchersError(message: ErrorFormatter.format(e, 'Không thể tải danh sách ưu đãi.')));
     }
   }
 }
