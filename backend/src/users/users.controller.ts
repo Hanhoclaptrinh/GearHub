@@ -4,6 +4,8 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { VerifyEmailChangeDto } from './dto/verify-email-change.dto';
+import { UpdatePreferencesDto } from './dto/update-preferences.dto';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
@@ -72,6 +74,30 @@ export class UsersController {
     }
 
     return this.userService.updateProfile(userId, data);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('verify-email-change')
+  async verifyEmailChange(
+    @Request() req,
+    @Body() data: VerifyEmailChangeDto
+  ) {
+    return this.userService.verifyEmailChange(req.user.userId, data.otp);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('preferences')
+  async getPreferences(@Request() req) {
+    return this.userService.getPreferences(req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('preferences')
+  async updatePreferences(
+    @Request() req,
+    @Body() data: UpdatePreferencesDto
+  ) {
+    return this.userService.updatePreferences(req.user.userId, data);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

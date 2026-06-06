@@ -44,6 +44,8 @@ model Profile {
   fullName    String? @map("full_name") @db.VarChar(255)
   phone       String? @unique @db.VarChar(20)
   avatarUrl   String? @map("avatar_url") @db.VarChar(255)
+  dateOfBirth DateTime? @map("date_of_birth") @db.Date
+  gender      Gender?
   preferences Json?
   user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -543,6 +545,12 @@ model Notification {
   @@index([userId, isRead])
   @@index([createdAt])
   @@map("notifications")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
 }
 
 enum NotificationType {

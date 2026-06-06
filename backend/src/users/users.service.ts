@@ -1,9 +1,12 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Role, UserStatus } from '@prisma/client';
+import { Prisma, Role, UserStatus } from '@prisma/client';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { MailService } from 'src/mail/mail.service';
+import { RedisService } from 'src/redis/redis.service';
+import { UpdatePreferencesDto } from './dto/update-preferences.dto';
 
 export interface ICreateUser {
   email: string;
@@ -14,11 +17,71 @@ export interface ICreateUser {
   avatarUrl?: string;
 }
 
+type ShoppingPreferences = {
+  categoryIds: string[];
+  brandIds: string[];
+  styleTags: string[];
+  useCases: string[];
+  budgetRange: {
+    min: number | null;
+    max: number | null;
+  } | null;
+  updatedAt: string | null;
+};
+
 @Injectable()
 export class UsersService {
   constructor(
-    private prisma: PrismaService
+    private prisma: PrismaService,
+    private mailService: MailService,
+    private redisService: RedisService
   ) { }
+
+  private readonly emailChangeOtpTtlSeconds = 300;
+
+  private getEmailChangeKey(userId: string) {
+    return `email_change:${userId}`;
+  }
+
+  private getDefaultPreferences(): ShoppingPreferences {
+    return {
+      categoryIds: [],
+      brandIds: [],
+      styleTags: [],
+      useCases: [],
+      budgetRange: null,
+      updatedAt: null
+    };
+  }
+
+  private normalizeStringList(values?: string[]) {
+    if (!values) return undefined;
+
+    return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+  }
+
+  private normalizePreferences(preferences: Prisma.JsonValue | null | undefined): ShoppingPreferences {
+    if (!preferences || typeof preferences !== 'object' || Array.isArray(preferences)) {
+      return this.getDefaultPreferences();
+    }
+
+    const data = preferences as Record<string, unknown>;
+    const budgetRange = data.budgetRange as Record<string, unknown> | null | undefined;
+
+    return {
+      categoryIds: Array.isArray(data.categoryIds) ? data.categoryIds.filter((id): id is string => typeof id === 'string') : [],
+      brandIds: Array.isArray(data.brandIds) ? data.brandIds.filter((id): id is string => typeof id === 'string') : [],
+      styleTags: Array.isArray(data.styleTags) ? data.styleTags.filter((tag): tag is string => typeof tag === 'string') : [],
+      useCases: Array.isArray(data.useCases) ? data.useCases.filter((useCase): useCase is string => typeof useCase === 'string') : [],
+      budgetRange: budgetRange && typeof budgetRange === 'object'
+        ? {
+          min: typeof budgetRange.min === 'number' ? budgetRange.min : null,
+          max: typeof budgetRange.max === 'number' ? budgetRange.max : null
+        }
+        : null,
+      updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : null
+    };
+  }
 
   /**
    * tạo user mới trong hệ thống
@@ -63,7 +126,9 @@ export class UsersService {
           select: {
             fullName: true,
             phone: true,
-            avatarUrl: true
+            avatarUrl: true,
+            dateOfBirth: true,
+            gender: true
           }
         }
       }
@@ -180,38 +245,160 @@ export class UsersService {
     });
   }
 
+  /**
+   * cập nhật hồ sơ cá nhân của người dùng
+   * nếu thay đổi email thì cần gửi otp xác thực trước khi cập nhật chính thức
+   */
   async updateProfile(id: string, data: UpdateProfileDto) {
-    if (data.email || data.phone) {
+    if (data.phone) {
+      // kiểm tra xem số điện thoại đã được người khác sử dụng chưa
       const existingUser = await this.prisma.user.findFirst({
         where: {
-          OR: [
-            { email: data.email },
-            { profile: { phone: data.phone } }
-          ],
+          profile: { phone: data.phone },
           NOT: { id }
         }
       });
 
       if (existingUser) {
-        const isEmailDup = existingUser.email === data.email;
-        throw new ConflictException(
-          isEmailDup ? 'Email đã được sử dụng' : 'Số điện thoại đã được sử dụng'
-        );
+        throw new ConflictException('Số điện thoại đã được sử dụng');
       }
     }
 
-    const { email, ...profileData } = data;
+    const { email, dateOfBirth, ...profileData } = data;
+    let pendingEmail: string | null = null;
 
-    return await this.prisma.user.update({
-      where: { id },
-      data: {
-        ...(email && { email }),
-        profile: {
-          update: {
-            ...profileData
-          }
+    const currentUser = email
+      ? await this.prisma.user.findUnique({ where: { id }, select: { email: true } })
+      : null;
+
+    if (email && !currentUser) {
+      throw new NotFoundException(`Không tìm thấy người dùng với ID: ${id}`);
+    }
+
+    // nếu đổi sang email mới khác email hiện tại thì cần xác thực qua otp
+    if (email && currentUser && email !== currentUser.email) {
+      const existingEmailUser = await this.prisma.user.findFirst({
+        where: {
+          email,
+          NOT: { id }
         }
-      },
+      });
+
+      if (existingEmailUser) {
+        throw new ConflictException('Email đã được sử dụng');
+      }
+
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+      // lưu email mới và mã otp tạm thời vào redis
+      await this.redisService.set(
+        this.getEmailChangeKey(id),
+        JSON.stringify({ email, otp }),
+        'EX',
+        this.emailChangeOtpTtlSeconds
+      );
+
+      // gửi mail thông báo otp đổi email
+      await this.mailService.sendChangeEmailOtp(email, otp);
+
+      pendingEmail = email;
+    }
+
+    if (dateOfBirth) {
+      const birthday = new Date(dateOfBirth);
+
+      if (birthday > new Date()) {
+        throw new BadRequestException('Ngày sinh không được lớn hơn ngày hiện tại');
+      }
+    }
+
+    const profileUpdateData = {
+      ...profileData,
+      ...(dateOfBirth !== undefined && {
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+      }),
+    };
+    const hasProfileUpdate = Object.keys(profileUpdateData).length > 0;
+
+    const userSelect = {
+      id: true,
+      email: true,
+      role: true,
+      profile: {
+        select: {
+          fullName: true,
+          phone: true,
+          avatarUrl: true,
+          dateOfBirth: true,
+          gender: true,
+          preferences: true
+        }
+      }
+    } as const;
+
+    // chỉ cập nhật db nếu có thay đổi thông tin profile
+    const user = hasProfileUpdate
+      ? await this.prisma.user.update({
+        where: { id },
+        data: {
+          profile: {
+            update: {
+              ...profileUpdateData
+            }
+          }
+        },
+        select: userSelect
+      })
+      : await this.prisma.user.findUnique({
+        where: { id },
+        select: userSelect
+      });
+
+    if (!user) {
+      throw new NotFoundException(`Không tìm thấy người dùng với ID: ${id}`);
+    }
+
+    return {
+      ...user,
+      pendingEmail,
+      emailChangeOtpSent: Boolean(pendingEmail)
+    };
+  }
+
+  /**
+   * xác thực otp và hoàn tất quá trình đổi email mới cho người dùng
+   */
+  async verifyEmailChange(id: string, otp: string) {
+    const key = this.getEmailChangeKey(id);
+    const rawData = await this.redisService.get(key);
+
+    if (!rawData) {
+      throw new BadRequestException('Yêu cầu đổi email đã hết hạn, vui lòng thử lại');
+    }
+
+    const pendingData = JSON.parse(rawData) as { email: string; otp: string };
+
+    if (pendingData.otp !== otp) {
+      throw new BadRequestException('Mã OTP không đúng');
+    }
+
+    // kiểm tra lại tính khả dụng của email mới lần cuối trước khi cập nhật
+    const existingEmailUser = await this.prisma.user.findFirst({
+      where: {
+        email: pendingData.email,
+        NOT: { id }
+      }
+    });
+
+    if (existingEmailUser) {
+      await this.redisService.del(key);
+      throw new ConflictException('Email đã được sử dụng');
+    }
+
+    // cập nhật email mới
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: { email: pendingData.email },
       select: {
         id: true,
         email: true,
@@ -221,11 +408,130 @@ export class UsersService {
             fullName: true,
             phone: true,
             avatarUrl: true,
+            dateOfBirth: true,
+            gender: true,
             preferences: true
           }
         }
       }
     });
+
+    // xóa otp đã sử dụng
+    await this.redisService.del(key);
+
+    return user;
+  }
+
+  /**
+   * lấy sở thích mua sắm của người dùng
+   */
+  async getPreferences(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        profile: {
+          select: {
+            preferences: true
+          }
+        }
+      }
+    });
+
+    if (!user) {
+      throw new NotFoundException(`Không tìm thấy người dùng với ID: ${id}`);
+    }
+
+    return this.normalizePreferences(user.profile?.preferences);
+  }
+
+  /**
+   * cập nhật hoặc khởi tạo sở thích mua sắm của người dùng
+   */
+  async updatePreferences(id: string, data: UpdatePreferencesDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        profile: {
+          select: {
+            preferences: true
+          }
+        }
+      }
+    });
+
+    if (!user) {
+      throw new NotFoundException(`Không tìm thấy người dùng với ID: ${id}`);
+    }
+
+    const currentPreferences = this.normalizePreferences(user.profile?.preferences);
+    const categoryIds = data.categoryIds ? [...new Set(data.categoryIds)] : undefined;
+    const brandIds = data.brandIds ? [...new Set(data.brandIds)] : undefined;
+    const styleTags = this.normalizeStringList(data.styleTags);
+    const useCases = this.normalizeStringList(data.useCases);
+
+    // kiểm tra các danh mục có tồn tại hay không
+    if (categoryIds) {
+      const existingCategories = await this.prisma.category.findMany({
+        where: { id: { in: categoryIds } },
+        select: { id: true }
+      });
+
+      if (existingCategories.length !== categoryIds.length) {
+        throw new BadRequestException('Một hoặc nhiều danh mục không tồn tại');
+      }
+    }
+
+    // kiểm tra các thương hiệu có tồn tại hay không
+    if (brandIds) {
+      const existingBrands = await this.prisma.brand.findMany({
+        where: { id: { in: brandIds } },
+        select: { id: true }
+      });
+
+      if (existingBrands.length !== brandIds.length) {
+        throw new BadRequestException('Một hoặc nhiều thương hiệu không tồn tại');
+      }
+    }
+
+    let budgetRange = currentPreferences.budgetRange;
+
+    // tính toán khoảng ngân sách mua sắm
+    if (data.budgetRange !== undefined) {
+      const min = data.budgetRange.min ?? null;
+      const max = data.budgetRange.max ?? null;
+
+      if (min !== null && max !== null && min > max) {
+        throw new BadRequestException('Ngân sách tối thiểu không được lớn hơn ngân sách tối đa');
+      }
+
+      budgetRange = min === null && max === null ? null : { min, max };
+    }
+
+    const nextPreferences: ShoppingPreferences = {
+      categoryIds: categoryIds ?? currentPreferences.categoryIds,
+      brandIds: brandIds ?? currentPreferences.brandIds,
+      styleTags: styleTags ?? currentPreferences.styleTags,
+      useCases: useCases ?? currentPreferences.useCases,
+      budgetRange,
+      updatedAt: new Date().toISOString()
+    };
+
+    // cập nhật hoặc tạo mới preferences trong db
+    const profile = await this.prisma.profile.upsert({
+      where: { userId: id },
+      create: {
+        userId: id,
+        preferences: nextPreferences as Prisma.InputJsonValue
+      },
+      update: {
+        preferences: nextPreferences as Prisma.InputJsonValue
+      },
+      select: {
+        preferences: true
+      }
+    });
+
+    return this.normalizePreferences(profile.preferences);
   }
 
   /**

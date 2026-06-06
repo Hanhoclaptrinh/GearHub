@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsUrl, IsObject, MaxLength, Matches, IsEmail } from "class-validator";
+import { IsOptional, IsString, IsUrl, IsObject, MaxLength, Matches, IsEmail, IsDateString, IsEnum } from "class-validator";
+import { Gender } from "@prisma/client";
 
 export class UpdateProfileDto {
     @IsEmail({}, { message: 'Email không hợp lệ' })
@@ -12,12 +13,20 @@ export class UpdateProfileDto {
 
     @IsString()
     @IsOptional()
-    @Matches(/(84|0[3|5|7|8|9])+([0-9]{8})\b/g, { message: 'Số điện thoại không hợp lệ' })
+    @Matches(/^(84|0[35789])([0-9]{8})$/, { message: 'Số điện thoại không hợp lệ' })
     phone?: string;
 
     @IsUrl({}, { message: 'Avatar phải là một đường dẫn URL hợp lệ' })
     @IsOptional()
     avatarUrl?: string;
+
+    @IsDateString({}, { message: 'Ngày sinh không hợp lệ' })
+    @IsOptional()
+    dateOfBirth?: string;
+
+    @IsEnum(Gender, { message: 'Giới tính không hợp lệ' })
+    @IsOptional()
+    gender?: Gender;
 
     @IsObject()
     @IsOptional()
