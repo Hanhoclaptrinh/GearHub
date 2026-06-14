@@ -23,6 +23,8 @@ class AppColors {
   // ── primary CTA ──
   static const Color ctaPrimary = Color(0xFFF5F7FA);
   static const Color ctaPrimaryText = Color(0xFF0A0A0D);
+  static const Color ctaMain = Color(0xFF64748B);
+  static const Color ctaSub = Color(0xFF94A3B8);
 
   // ── depth & border ──
   static const Color borderSubtle = Color(0x0FFFFFFF);
@@ -47,13 +49,14 @@ class AppColors {
   static const Color indicatorBg = Color(0x26FFFFFF);
 
   // ── status & feedback ──
-  static const Color error = Color(0xFFFF4D4D);
+  static const Color error = Color(0xFFEF4444);
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
   static const Color info = Color(0xFF3B82F6);
 
   // ── brand & semantic accents ──
   static const Color brandBlue = Color(0xFF3B82F6);
+  static const Color gearBlue = Color(0xFF0076DF);
   static const Color brandIndigo = Color(0xFF6366F1);
   static const Color brandIndigoSoft = Color(0x1A6366F1);
   static const Color accentPink = Color(0xFFFF6B8A);

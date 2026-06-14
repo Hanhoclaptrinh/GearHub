@@ -11,7 +11,7 @@ class SecureStorageService {
   SecureStorageService({FlutterSecureStorage? storage})
     : _storage = storage ?? const FlutterSecureStorage();
 
-  // luu at, rt vao storage
+  ///lưu at, rt vào local storage
   Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
@@ -22,30 +22,30 @@ class SecureStorageService {
     ]);
   }
 
-  // lay at
+  ///lấy at
   Future<String?> get accessToken => _storage.read(key: _accessTokenKey);
 
-  // lay rt
+  ///lấy rt
   Future<String?> get refreshToken => _storage.read(key: _refreshTokenKey);
 
-  // luu user id
+  ///lưu user id
   Future<void> saveUserId(String userId) =>
       _storage.write(key: _userIdKey, value: userId);
 
-  // lay user id
+  ///lấy user id
   Future<String?> get userId => _storage.read(key: _userIdKey);
 
-  // luu device id
+  ///lưu device id
   Future<void> saveDeviceId(String deviceId) =>
       _storage.write(key: _deviceIdKey, value: deviceId);
 
-  // lay device id
+  ///lấy device id
   Future<String?> get deviceId => _storage.read(key: _deviceIdKey);
 
-  // xoa tat ca storage
+  ///xóa tất cả storage
   Future<void> clearAll() => _storage.deleteAll();
 
-  // kiem tra xem co token hay khong
+  ///kiểm tra at trong stg
   Future<bool> get hasTokens async {
     final at = await accessToken;
     return at != null && at.isNotEmpty;

@@ -7,6 +7,7 @@ import 'package:mobile/src/core/storage/secure_storage_service.dart';
 class ApiClient {
   late final Dio dio;
 
+  //using dio for network connection & api integrate
   ApiClient({required SecureStorageService storageService}) {
     dio = Dio(
       BaseOptions(

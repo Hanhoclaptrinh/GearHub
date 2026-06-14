@@ -4,12 +4,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/core/notifications/push_notification_service.dart';
 import 'package:mobile/src/core/theme/app_theme.dart';
+import 'package:mobile/src/core/theme/theme_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
-import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
-import 'package:mobile/src/features/home/presentation/pages/main_screen.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 import 'package:mobile/src/features/notifications/presentation/state/notification_cubit.dart';
+import 'package:mobile/src/features/preferences/presentation/state/preferences_cubit.dart';
 import 'package:mobile/src/features/wishlist/presentation/state/wishlist_cubit.dart';
+import 'package:mobile/src/features/splash/presentation/pages/splash_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:vietnam_provinces/vietnam_provinces.dart';
 import 'firebase_options.dart';
@@ -23,10 +24,7 @@ void main() async {
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
       systemNavigationBarColor: Colors.transparent,
-      systemNavigationBarIconBrightness: Brightness.light,
-      statusBarBrightness: Brightness.light,
     ),
   );
 
@@ -43,6 +41,7 @@ class GearHubApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
+        BlocProvider<ThemeCubit>(create: (_) => ThemeCubit()),
         BlocProvider<AuthCubit>(
           create: (_) => getIt<AuthCubit>()..checkAuthStatus(),
         ),
@@ -53,21 +52,22 @@ class GearHubApp extends StatelessWidget {
         BlocProvider<NotificationCubit>(
           create: (_) => getIt<NotificationCubit>()..loadNotifications(),
         ),
-      ],
-      child: MaterialApp(
-        navigatorKey: PushNotificationService.navigatorKey,
-        debugShowCheckedModeBanner: false,
-        title: 'GearHub',
-        theme: AppTheme.theme(context),
-        home: BlocBuilder<AuthCubit, AuthState>(
-          buildWhen: (prev, curr) =>
-              curr is AuthAuthenticated ||
-              curr is AuthUnauthenticated ||
-              curr is AuthInitial,
-          builder: (context, state) {
-            return const MainScreen();
-          },
+        BlocProvider<PreferencesCubit>(
+          create: (_) => getIt<PreferencesCubit>(),
         ),
+      ],
+      child: BlocBuilder<ThemeCubit, ThemeMode>(
+        builder: (context, themeMode) {
+          return MaterialApp(
+            navigatorKey: PushNotificationService.navigatorKey,
+            debugShowCheckedModeBanner: false,
+            title: 'GearHub',
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeMode,
+            home: const SplashPage(),
+          );
+        },
       ),
     );
   }

@@ -60,6 +60,11 @@ import 'package:mobile/src/features/notifications/data/datasources/notification_
 import 'package:mobile/src/features/notifications/data/repositories/notification_repository_impl.dart';
 import 'package:mobile/src/features/notifications/domain/repositories/notification_repository.dart';
 import 'package:mobile/src/features/notifications/presentation/state/notification_cubit.dart';
+import 'package:mobile/src/features/preferences/data/datasources/preferences_local_datasource.dart';
+import 'package:mobile/src/features/preferences/data/datasources/preferences_remote_datasource.dart';
+import 'package:mobile/src/features/preferences/data/repositories/preferences_repository_impl.dart';
+import 'package:mobile/src/features/preferences/domain/repositories/preferences_repository.dart';
+import 'package:mobile/src/features/preferences/presentation/state/preferences_cubit.dart';
 import 'package:mobile/src/features/address/data/datasources/address_remote_datasource.dart';
 import 'package:mobile/src/features/address/data/repositories/address_repository_impl.dart';
 import 'package:mobile/src/features/address/domain/repositories/address_repository.dart';
@@ -103,7 +108,7 @@ Future<void> setupDependencies() async {
     ),
   );
 
-  getIt.registerFactory<AuthCubit>(
+  getIt.registerLazySingleton<AuthCubit>(
     () => AuthCubit(
       repository: getIt<AuthRepository>(),
       googleAuthService: getIt<GoogleAuthService>(),
@@ -121,6 +126,25 @@ Future<void> setupDependencies() async {
 
   getIt.registerFactory<HomeCubit>(
     () => HomeCubit(repository: getIt<HomeRepository>()),
+  );
+
+  // preferences
+  getIt.registerLazySingleton<PreferencesRemoteDatasource>(
+    () => PreferencesRemoteDatasource(dio: getIt<ApiClient>().dio),
+  );
+  getIt.registerLazySingleton<PreferencesLocalDatasource>(
+    () => PreferencesLocalDatasource(
+      sharedPreferences: getIt<SharedPreferences>(),
+    ),
+  );
+  getIt.registerLazySingleton<PreferencesRepository>(
+    () => PreferencesRepositoryImpl(
+      remoteDatasource: getIt<PreferencesRemoteDatasource>(),
+      localDatasource: getIt<PreferencesLocalDatasource>(),
+    ),
+  );
+  getIt.registerFactory<PreferencesCubit>(
+    () => PreferencesCubit(repository: getIt<PreferencesRepository>()),
   );
 
   // product detail
