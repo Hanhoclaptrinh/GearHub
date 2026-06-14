@@ -832,11 +832,12 @@ export const ProductList: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => toggleFeaturedMutation.mutate(product.id)}
+                                    disabled={toggleFeaturedMutation.isPending && toggleFeaturedMutation.variables === product.id}
                                     className={cn(
-                                      'w-9 h-9 rounded-[8px] inline-flex items-center justify-center transition-colors',
+                                      'w-9 h-9 rounded-[8px] inline-flex items-center justify-center transition-colors disabled:opacity-60 disabled:cursor-not-allowed',
                                       product.isFeatured ? 'text-[#eaca4a] bg-[#eaca4a]/10 hover:bg-[#eaca4a]/20' : 'text-[#7c8db5] bg-[#f2f7ff] hover:bg-[#e9f1ff]',
                                     )}
-                                    title={product.isFeatured ? 'Bỏ nổi bật' : 'Nổi bật'}
+                                    title={product.isFeatured ? 'Bỏ nổi bật và tự chọn sản phẩm thay thế' : 'Đặt làm sản phẩm nổi bật duy nhất'}
                                   >
                                     <Star className={cn('w-4 h-4', product.isFeatured && 'fill-[#eaca4a]')} />
                                   </button>

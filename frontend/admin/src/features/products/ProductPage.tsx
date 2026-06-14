@@ -18,10 +18,8 @@ import {
   FileText,
   TrendingUp,
   Wand2,
-  Shield,
   Barcode,
   Settings2,
-  Gem,
   UploadCloud,
 } from '../../components/ui/IconlyIcons';
 import { productService } from '../../services/product.service';
@@ -53,7 +51,6 @@ const productSchema = z.object({
   brandId: z.string().min(1, 'Vui lòng chọn thương hiệu'),
   attributeConfig: z.array(z.string()).optional(),
   variants: z.array(variantSchema).min(1, 'Ít nhất 1 phân loại sản phẩm'),
-  isVault: z.boolean().optional(),
 });
 
 type FormValues = z.infer<typeof productSchema>;
@@ -236,7 +233,6 @@ export const ProductPage: React.FC = () => {
   const [variantFiles, setVariantFiles] = useState<Record<number, File[]>>({});
 
   const [commonSpecs, setCommonSpecs] = useState<{ key: string; val: string }[]>([]);
-  const [vaultSpecs, setVaultSpecs] = useState<{ key: string; val: string }[]>([]);
   const [generatorAxes, setGeneratorAxes] = useState<Record<string, string>>({});
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -267,11 +263,9 @@ export const ProductPage: React.FC = () => {
       brandId: '',
       attributeConfig: [],
       variants: [{ sku: '', price: 0, stock: 0 }],
-      isVault: false,
     },
   });
 
-  const watchIsVault = watch('isVault');
   const watchName = watch('name');
 
   const { fields, append, remove } = useFieldArray({
@@ -288,7 +282,6 @@ export const ProductPage: React.FC = () => {
         categoryId: editProduct.categoryId,
         brandId: editProduct.brandId,
         attributeConfig: editProduct.attributeConfig || [],
-        isVault: (editProduct as any).isVault || false,
         variants: editProduct.variants.map((v: any) => ({
           id: v.id,
           sku: v.sku,
@@ -307,14 +300,6 @@ export const ProductPage: React.FC = () => {
         setCommonSpecs(Object.entries(meta.common_specs).map(([key, val]) => ({ key, val: String(val) })));
       } else {
         setCommonSpecs([]);
-      }
-
-      // load vault specs
-      const vs = (editProduct as any).vaultSpecs;
-      if (vs) {
-        setVaultSpecs(Object.entries(vs).map(([key, val]) => ({ key, val: String(val) })));
-      } else {
-        setVaultSpecs([]);
       }
 
       if (editProduct.assets?.length) {
@@ -458,14 +443,6 @@ export const ProductPage: React.FC = () => {
 
     const cleanConfig = (values.attributeConfig || []).filter(k => k.trim() !== '');
     formData.append('attributeConfig', JSON.stringify(cleanConfig));
-
-    // Vault
-    formData.append('isVault', values.isVault ? 'true' : 'false');
-    if (values.isVault && vaultSpecs.length > 0) {
-      const vsObj: Record<string, string> = {};
-      vaultSpecs.forEach(s => { if (s.key.trim()) vsObj[s.key.trim()] = s.val; });
-      formData.append('vaultSpecs', JSON.stringify(vsObj));
-    }
 
     // Common Specs
     if (commonSpecs.length > 0) {
@@ -670,52 +647,6 @@ export const ProductPage: React.FC = () => {
                 </div>
               ))}
             </CardContent>
-          </Card>
-
-          {/* === VAULT PRODUCT === */}
-          <Card className={cn("rounded-[12px] border shadow-[0_5px_15px_rgba(25,42,70,0.06)] transition-all duration-300", watchIsVault ? "border-primary/30 bg-[#fbfcff]" : "border-transparent bg-white")}>
-            <CardHeader className="px-6 pt-6 pb-4 border-none">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-[20px] text-[#25396f] flex items-center gap-3">
-                  <span className={cn("w-10 h-10 rounded-[10px] inline-flex items-center justify-center transition-colors", watchIsVault ? "bg-primary/10 text-primary" : "bg-[#f2f7ff] text-[#7c8db5]")}>
-                    <Gem className="w-5 h-5" />
-                  </span>
-                  Hàng trưng bày (Vault)
-                </CardTitle>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" {...register('isVault')} />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary" />
-                </label>
-              </div>
-              <p className="text-sm font-semibold text-[#7c8db5] mt-2">Bật chế độ này cho sản phẩm trưng bày, hàng hiếm hoặc có giá trị đặc biệt.</p>
-            </CardHeader>
-            {watchIsVault && (
-              <CardContent className="px-6 pb-6 space-y-3 animate-in slide-in-from-top-2 duration-300">
-                <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-black text-[#607080] uppercase tracking-widest flex items-center gap-2">
-                    <Shield className="w-3 h-3" /> Thông tin kỹ thuật
-                  </label>
-                  <Button type="button" variant="ghost" size="sm" className="h-8 text-[10px] px-3 rounded-[8px] border border-[#dce7f1] text-[#607080] hover:bg-[#f2f7ff]"
-                    onClick={() => setVaultSpecs([...vaultSpecs, { key: '', val: '' }])}>
-                    <Plus className="w-3 h-3 mr-1.5" /> Thêm
-                  </Button>
-                </div>
-                {vaultSpecs.map((item, idx) => (
-                  <div key={idx} className="flex gap-3 items-center group/vault animate-in fade-in duration-200">
-                    <input className="flex-1 h-10 px-4 bg-white border border-[#dce7f1] rounded-[10px] outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-bold text-[#25396f] text-xs"
-                      placeholder="VD: Số serial giới hạn" value={item.key}
-                      onChange={e => { const next = [...vaultSpecs]; next[idx].key = e.target.value; setVaultSpecs(next); }} />
-                    <input className="flex-[2] h-10 px-4 bg-white border border-[#dce7f1] rounded-[10px] outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-bold text-[#25396f] text-xs"
-                      placeholder="VD: #0042/1000" value={item.val}
-                      onChange={e => { const next = [...vaultSpecs]; next[idx].val = e.target.value; setVaultSpecs(next); }} />
-                    <button type="button" className="p-2 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover/vault:opacity-100"
-                      onClick={() => setVaultSpecs(vaultSpecs.filter((_, i) => i !== idx))}>
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </CardContent>
-            )}
           </Card>
 
           {/* === VARIANT GENERATOR === */}
@@ -1151,10 +1082,6 @@ export const ProductPage: React.FC = () => {
                 <div className="rounded-[10px] border border-[#edf2f7] p-3">
                   <p className="text-[10px] font-black uppercase text-[#7c8db5] mb-1">Media</p>
                   <p className="text-sm font-extrabold text-[#25396f]">{previews.length} file</p>
-                </div>
-                <div className="rounded-[10px] border border-[#edf2f7] p-3">
-                  <p className="text-[10px] font-black uppercase text-[#7c8db5] mb-1">Vault</p>
-                  <p className="text-sm font-extrabold text-[#25396f]">{watchIsVault ? 'Đang bật' : 'Không'}</p>
                 </div>
               </div>
 
