@@ -12,7 +12,7 @@ import { MailModule } from 'src/mail/mail.module';
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET_KEY,
-      signOptions: { expiresIn: '7d' }
+      signOptions: { expiresIn: '1h' }
     }),
     UsersModule,
     RedisModule,

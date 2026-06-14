@@ -132,7 +132,8 @@ export class BrandsService {
     };
   }
 
-  async getTopBrands(limit: number = 8) {
+  // hiển thị top 5 thương hiệu dựa trên số điểm
+  async getTopBrands(limit: number = 5) {
     await this.updateBrandScores();
     return this.prisma.brand.findMany({
       where: {
@@ -151,56 +152,123 @@ export class BrandsService {
         bannerUrl: true,
         quote: true,
         philosophy: true,
+        _count: { select: { products: true } }
       }
     });
   }
 
   // auto chạy cron job mỗi 6 tiếng
-  // thực hiện cập nhật điểm số của brand dựa trên tổng bán, tổng view & trung bình rate
-  // hiển thị cho top brands
+  // thực hiện cập nhật điểm số của brand dựa trên doanh thu 30 ngày qua và đánh giá trung bình bayes
   @Cron(CronExpression.EVERY_6_HOURS)
   async updateBrandScores() {
-    // nhóm theo brand id để thực hiện tính toán điểm dưới db
-    const aggregations = await this.prisma.product.groupBy({
-      by: ['brandId'],
-      _sum: {
-        soldCount: true,
-        viewsCount: true,
-      },
-      _avg: {
-        averageRating: true,
-      },
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    // lấy tất cả order item trong 30 ngày qua để tính doanh số cho từng brand
+    const orderItems = await this.prisma.orderItem.findMany({
       where: {
-        brandId: { not: null },
+        order: {
+          createdAt: { gte: thirtyDaysAgo },
+          status: { notIn: ['CANCELLED', 'FAILED', 'RETURNED'] } // chỉ lấy các đơn hàng ok
+        },
+        productVariant: {
+          product: {
+            brandId: { not: null }
+          }
+        }
       },
+      select: {
+        quantity: true,
+        productVariant: {
+          select: {
+            product: {
+              select: {
+                brandId: true
+              }
+            }
+          }
+        }
+      }
     });
 
-    // map data
-    const statsMap = new Map<string, { totalSold: number; totalViews: number; avgRating: number }>();
-    for (const agg of aggregations) {
-      if (agg.brandId) {
-        statsMap.set(agg.brandId, {
-          totalSold: agg._sum.soldCount || 0,
-          totalViews: agg._sum.viewsCount || 0,
-          avgRating: agg._avg.averageRating || 0,
-        });
+    const brandSales = new Map<string, number>();
+    for (const item of orderItems) {
+      const bId = item.productVariant?.product?.brandId;
+      if (bId) {
+        brandSales.set(bId, (brandSales.get(bId) || 0) + item.quantity);
       }
     }
 
-    // lấy tất cả brand để tính toán điểm - kể cả brand chưa có sản phẩm nào
+    // lấy tất cả review để tính điểm trung bình bayes
+    const reviews = await this.prisma.review.findMany({
+      where: {
+        product: {
+          brandId: { not: null },
+          isActive: true
+        }
+      },
+      select: {
+        rating: true,
+        product: {
+          select: {
+            brandId: true
+          }
+        }
+      }
+    });
+
+    const brandReviews = new Map<string, { totalStars: number; count: number }>();
+    for (const r of reviews) {
+      const bId = r.product?.brandId;
+      if (bId) {
+        const stats = brandReviews.get(bId) || { totalStars: 0, count: 0 };
+        stats.totalStars += r.rating;
+        stats.count += 1;
+        brandReviews.set(bId, stats);
+      }
+    }
+
+    // view count
+    const products = await this.prisma.product.findMany({
+      where: {
+        brandId: { not: null },
+        isActive: true
+      },
+      select: {
+        viewsCount: true,
+        brandId: true
+      }
+    });
+
+    const brandViews = new Map<string, number>();
+    for (const p of products) {
+      if (p.brandId) {
+        brandViews.set(p.brandId, (brandViews.get(p.brandId) || 0) + p.viewsCount);
+      }
+    }
+
+    // lấy tất cả brands
     const brands = await this.prisma.brand.findMany({
       select: { id: true }
     });
 
-    // update score cho từng brand
+    // cập nhật score cho từng brand
     const updatePromises = brands.map((b) => {
-      const stats = statsMap.get(b.id) || { totalSold: 0, totalViews: 0, avgRating: 0 };
-      const sc = (stats.totalSold * 5) + (stats.avgRating * 10) + (stats.totalViews * 0.1);
+      const sales = brandSales.get(b.id) || 0;
+      const views = brandViews.get(b.id) || 0;
+      const reviewStats = brandReviews.get(b.id) || { totalStars: 0, count: 0 };
+
+      // làm mượt bayes
+      // kéo điểm về 4.0 khi chưa có hoặc ít reviews
+      const bayesianRating = (reviewStats.totalStars + 20) / (reviewStats.count + 5);
+
+      // hệ số nhân
+      const score = (sales + (views * 0.01)) * bayesianRating;
 
       return this.prisma.brand.update({
         where: { id: b.id },
         data: {
-          score: sc,
+          score,
           lastScoredAt: new Date()
         }
       });

@@ -13,11 +13,9 @@ const productEmbeddingSelect = {
   tagline: true,
   description: true,
   metadata: true,
-  vaultSpecs: true,
   averageRating: true,
   reviewCount: true,
   isActive: true,
-  isVault: true,
   isFeatured: true,
   brand: { select: { name: true } },
   category: { select: { name: true } },
@@ -228,9 +226,6 @@ export class EmbeddingService {
 
     return [
       `Sản phẩm: ${product.name}`,
-      product.isVault
-        ? 'Bộ sưu tập: GearHub Vault (Phiên bản Cao cấp / Giới hạn)'
-        : '',
       product.isFeatured ? 'Trạng thái: Khuyên dùng / Bán chạy nhất' : '',
       `Thương hiệu: ${product.brand?.name ?? 'Chưa rõ'}`,
       `Danh mục: ${product.category?.name ?? 'Chưa rõ'}`,
@@ -240,9 +235,6 @@ export class EmbeddingService {
         : '',
       product.metadata
         ? `Thông số chung: ${this.safeJson(this.getCommonSpecs(product.metadata))}`
-        : '',
-      product.vaultSpecs
-        ? `Thông số Vault: ${this.safeJson(product.vaultSpecs)}`
         : '',
       `Đánh giá: ${product.averageRating}/5 sao (${product.reviewCount} lượt đánh giá)`,
       formattedAttrs ? `Các phiên bản hỗ trợ: ${formattedAttrs}` : '',

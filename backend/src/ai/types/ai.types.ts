@@ -20,7 +20,6 @@ export type PublicProductContext = {
   tagline: string | null;
   description: string | null;
   commonSpecs: unknown;
-  vaultSpecs: unknown;
   averageRating: number;
   reviewCount: number;
   variants: PublicProductVariantContext[];

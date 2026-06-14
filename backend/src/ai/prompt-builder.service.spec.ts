@@ -30,7 +30,6 @@ describe('PromptBuilderService', () => {
           tagline: 'Mong nhe',
           description: 'Laptop van phong cao cap',
           commonSpecs: { cpu: 'Core Ultra', ram: '16GB' },
-          vaultSpecs: { material: 'Aluminum' },
           averageRating: 4.8,
           reviewCount: 24,
           variants: [
@@ -77,7 +76,6 @@ describe('PromptBuilderService', () => {
       tagline: null,
       description: 'Public catalog description',
       commonSpecs: null,
-      vaultSpecs: null,
       averageRating: 4.5,
       reviewCount: 10,
       variants: [],

@@ -29,7 +29,6 @@ const productImageSearchSelect = {
       viewsCount: true,
       soldCount: true,
       attributeConfig: true,
-      vaultSpecs: true,
       metadata: true,
       brand: { select: { id: true, name: true } },
       category: { select: { id: true, name: true } },
@@ -247,7 +246,6 @@ export class ImageSearchService {
       viewsCount: product.viewsCount,
       soldCount: product.soldCount,
       attributeConfig: product.attributeConfig,
-      vaultSpecs: product.vaultSpecs,
       metadata: product.metadata,
       variants: variants.map((variant) => ({
         id: variant.id,

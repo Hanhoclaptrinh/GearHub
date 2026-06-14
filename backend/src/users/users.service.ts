@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma, Role, UserStatus } from '@prisma/client';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -7,6 +7,7 @@ import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { MailService } from 'src/mail/mail.service';
 import { RedisService } from 'src/redis/redis.service';
 import { UpdatePreferencesDto } from './dto/update-preferences.dto';
+import { EmbeddingService } from 'src/ai/embedding.service';
 
 export interface ICreateUser {
   email: string;
@@ -27,14 +28,20 @@ type ShoppingPreferences = {
     max: number | null;
   } | null;
   updatedAt: string | null;
+  completedAt: string | null;
+  skippedAt: string | null;
+  preferenceVector?: number[];
 };
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     private prisma: PrismaService,
     private mailService: MailService,
-    private redisService: RedisService
+    private redisService: RedisService,
+    private embeddingService: EmbeddingService
   ) { }
 
   private readonly emailChangeOtpTtlSeconds = 300;
@@ -50,7 +57,10 @@ export class UsersService {
       styleTags: [],
       useCases: [],
       budgetRange: null,
-      updatedAt: null
+      updatedAt: null,
+      completedAt: null,
+      skippedAt: null,
+      preferenceVector: []
     };
   }
 
@@ -79,7 +89,12 @@ export class UsersService {
           max: typeof budgetRange.max === 'number' ? budgetRange.max : null
         }
         : null,
-      updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : null
+      updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : null,
+      completedAt: typeof data.completedAt === 'string' ? data.completedAt : null,
+      skippedAt: typeof data.skippedAt === 'string' ? data.skippedAt : null,
+      preferenceVector: Array.isArray(data.preferenceVector)
+        ? data.preferenceVector.filter((v): v is number => typeof v === 'number')
+        : []
     };
   }
 
@@ -305,7 +320,7 @@ export class UsersService {
     }
 
     if (dateOfBirth) {
-      const birthday = new Date(dateOfBirth);
+      const birthday = new Date(dateOfBirth.split('T')[0]);
 
       if (birthday > new Date()) {
         throw new BadRequestException('Ngày sinh không được lớn hơn ngày hiện tại');
@@ -315,7 +330,7 @@ export class UsersService {
     const profileUpdateData = {
       ...profileData,
       ...(dateOfBirth !== undefined && {
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth.split('T')[0]) : null,
       }),
     };
     const hasProfileUpdate = Object.keys(profileUpdateData).length > 0;
@@ -507,14 +522,74 @@ export class UsersService {
       budgetRange = min === null && max === null ? null : { min, max };
     }
 
+    const now = new Date().toISOString();
+    const hasSelectionUpdate =
+      categoryIds !== undefined ||
+      brandIds !== undefined ||
+      styleTags !== undefined ||
+      useCases !== undefined ||
+      data.budgetRange !== undefined;
+
+    const shouldMarkCompleted = data.completed === true || (hasSelectionUpdate && data.skipped !== true);
+
     const nextPreferences: ShoppingPreferences = {
       categoryIds: categoryIds ?? currentPreferences.categoryIds,
       brandIds: brandIds ?? currentPreferences.brandIds,
       styleTags: styleTags ?? currentPreferences.styleTags,
       useCases: useCases ?? currentPreferences.useCases,
       budgetRange,
-      updatedAt: new Date().toISOString()
+      updatedAt: now,
+      completedAt: shouldMarkCompleted ? (currentPreferences.completedAt ?? now) : currentPreferences.completedAt,
+      skippedAt: data.skipped === true ? now : currentPreferences.skippedAt,
+      preferenceVector: currentPreferences.preferenceVector ?? []
     };
+
+    if (shouldMarkCompleted && hasSelectionUpdate) {
+      const targetCategoryIds = nextPreferences.categoryIds;
+      const targetBrandIds = nextPreferences.brandIds;
+
+      const categoryNames: string[] = [];
+      if (targetCategoryIds.length > 0) {
+        const categories = await this.prisma.category.findMany({
+          where: { id: { in: targetCategoryIds } },
+          select: { name: true }
+        });
+        categoryNames.push(...categories.map((c) => c.name));
+      }
+
+      const brandNames: string[] = [];
+      if (targetBrandIds.length > 0) {
+        const brands = await this.prisma.brand.findMany({
+          where: { id: { in: targetBrandIds } },
+          select: { name: true }
+        });
+        brandNames.push(...brands.map((b) => b.name));
+      }
+
+      const preferenceTextParts: string[] = [];
+      if (categoryNames.length > 0) {
+        preferenceTextParts.push(`Danh mục yêu thích: ${categoryNames.join(', ')}`);
+      }
+      if (brandNames.length > 0) {
+        preferenceTextParts.push(`Thương hiệu ưu tiên: ${brandNames.join(', ')}`);
+      }
+      if (nextPreferences.styleTags.length > 0) {
+        preferenceTextParts.push(`Phong cách và thiết kế ưa chuộng: ${nextPreferences.styleTags.join(', ')}`);
+      }
+      if (nextPreferences.useCases.length > 0) {
+        preferenceTextParts.push(`Mục đích sử dụng chính: ${nextPreferences.useCases.join(', ')}`);
+      }
+
+      if (preferenceTextParts.length > 0) {
+        const textToEmbed = preferenceTextParts.join('\n');
+        try {
+          const vector = await this.embeddingService.embedText(textToEmbed);
+          nextPreferences.preferenceVector = vector;
+        } catch (error) {
+          this.logger.warn(`Failed to generate preference vector: ${error.message}`);
+        }
+      }
+    }
 
     // cập nhật hoặc tạo mới preferences trong db
     const profile = await this.prisma.profile.upsert({

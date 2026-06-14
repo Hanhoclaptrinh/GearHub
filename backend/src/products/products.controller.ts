@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
@@ -56,13 +56,20 @@ export class ProductsController {
     }
 
     @Get('top-rated')
-    async getTopRatedProducts() {
-        return this.productsService.getTopRatedProducts(5);
+    async getTopRatedProducts(@Query('limit') limit?: string) {
+        return this.productsService.getTopRatedProducts(limit ? Number(limit) : 5);
     }
 
-    @Get('vault')
-    async getVaultProducts() {
-        return this.productsService.getVaultProducts();
+    @Get('recommendations')
+    @UseGuards(JwtAuthGuard)
+    async getPersonalizedRecommendations(
+        @Req() req,
+        @Query('limit') limit?: string
+    ) {
+        return this.productsService.getPersonalizedRecommendations(
+            req.user.userId,
+            limit ? Number(limit) : 8
+        );
     }
 
     @Get('inventory/stats')

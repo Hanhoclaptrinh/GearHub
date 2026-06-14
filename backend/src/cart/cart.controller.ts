@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { CartService } from './cart.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { AddToCartDto } from './dto/add-to-cart.dto';
@@ -24,6 +24,14 @@ export class CartController {
     @Get('count')
     async getCartCount(@Request() req) {
         return this.cartService.getCartCount(req.user.userId);
+    }
+
+    @Get('recommendations')
+    async getRecommendations(
+        @Request() req,
+        @Query('limit') limit?: string,
+    ) {
+        return this.cartService.getCartRecommendations(req.user.userId, limit ? Number(limit) : undefined);
     }
 
     @Patch('item/:id')

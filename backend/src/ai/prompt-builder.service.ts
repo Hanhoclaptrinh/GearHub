@@ -97,9 +97,6 @@ export class PromptBuilderService {
       product.commonSpecs
         ? `Thông số chung: ${this.safeJson(product.commonSpecs)}`
         : '',
-      product.vaultSpecs
-        ? `Thông số Vault: ${this.safeJson(product.vaultSpecs)}`
-        : '',
       `Các phiên bản:\n${variants || '- Chưa có phiên bản nào đang hoạt động.'}`,
     ]
       .filter(Boolean)

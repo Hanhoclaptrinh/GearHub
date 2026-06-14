@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
   IsInt,
   IsOptional,
   IsString,
@@ -59,4 +60,12 @@ export class UpdatePreferencesDto {
   @ValidateNested()
   @Type(() => BudgetRangeDto)
   budgetRange?: BudgetRangeDto;
+
+  @IsOptional()
+  @IsBoolean()
+  completed?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  skipped?: boolean;
 }

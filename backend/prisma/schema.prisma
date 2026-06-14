@@ -144,8 +144,6 @@ model Product {
   createdAt        DateTime          @default(now()) @map("created_at")
   averageRating    Float             @default(0) @map("average_rating")
   reviewCount      Int               @default(0) @map("review_count")
-  isVault          Boolean           @default(false) @map("is_vault")
-  vaultSpecs       Json?             @map("vault_specs")
   attributeConfig  Json?
   assets           ProductAsset[]
   imageEmbeddings  ProductImageEmbedding[]
@@ -160,7 +158,6 @@ model Product {
   @@index([categoryId])
   @@index([brandId])
   @@index([createdAt])
-  @@index([isVault])
   @@map("products")
 }
 

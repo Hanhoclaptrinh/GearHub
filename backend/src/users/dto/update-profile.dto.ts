@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsUrl, IsObject, MaxLength, Matches, IsEmail, IsDateString, IsEnum } from "class-validator";
+import { IsOptional, IsString, IsUrl, MaxLength, Matches, IsEmail, IsDateString, IsEnum } from "class-validator";
 import { Gender } from "@prisma/client";
 
 export class UpdateProfileDto {
@@ -28,7 +28,4 @@ export class UpdateProfileDto {
     @IsOptional()
     gender?: Gender;
 
-    @IsObject()
-    @IsOptional()
-    preferences?: any;
 }

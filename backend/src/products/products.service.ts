@@ -27,6 +27,16 @@ type CompareKey = {
     path: { id: string; name: string; slug: string }[];
 };
 
+// alias gợi ý sản phẩm dựa trên sở thích mua sắm của người dùng (preferences)
+type ProductRecommendationPreferences = {
+    categoryIds: string[];
+    brandIds: string[];
+    styleTags: string[];
+    useCases: string[];
+    budgetRange: { min: number | null; max: number | null } | null;
+    preferenceVector?: number[];
+};
+
 @Injectable()
 export class ProductsService {
     private readonly logger = new Logger(ProductsService.name);
@@ -119,16 +129,6 @@ export class ProductsService {
                     }
                 }
 
-                // parse vault specs
-                let parsedVaultSpecs = null;
-                if (data.vaultSpecs) {
-                    try {
-                        parsedVaultSpecs = JSON.parse(data.vaultSpecs);
-                    } catch (e) {
-                        throw new BadRequestException('Vault Specs JSON không hợp lệ');
-                    }
-                }
-
                 // parent prod
                 const product = await tx.product.create({
                     data: {
@@ -141,8 +141,6 @@ export class ProductsService {
                         thumbnailUrl: data.thumbnailUrl || null,
                         tagline: data.tagline || null,
                         attributeConfig: data.attributeConfig ? JSON.parse(data.attributeConfig) : [],
-                        isVault: data.isVault === 'true',
-                        vaultSpecs: parsedVaultSpecs ?? undefined,
                     }
                 });
 
@@ -294,6 +292,8 @@ export class ProductsService {
                     }
                 }
 
+                await this.syncSingleFeatured(tx);
+
                 return tx.product.findUnique({
                     where: { id: product.id },
                     include: {
@@ -380,7 +380,6 @@ export class ProductsService {
 
             if (data.isFeatured !== undefined) updateData.isFeatured = data.isFeatured === 'true';
             if (data.isActive !== undefined) updateData.isActive = data.isActive === 'true';
-            if (data.isVault !== undefined) updateData.isVault = data.isVault === 'true';
 
             if (data.metadata) {
                 try {
@@ -398,15 +397,6 @@ export class ProductsService {
                     updateData.metadata = existingMeta;
                 } catch (e) {
                     throw new BadRequestException('Common Specs JSON không hợp lệ');
-                }
-            }
-
-            // vault specs
-            if (data.vaultSpecs) {
-                try {
-                    updateData.vaultSpecs = JSON.parse(data.vaultSpecs);
-                } catch (e) {
-                    throw new BadRequestException('Vault Specs JSON không hợp lệ');
                 }
             }
 
@@ -622,6 +612,18 @@ export class ProductsService {
                 }
             }
 
+            // xử lý đánh dấu featured cho một sản phẩm tại một thời điểm duy nhất
+            // nếu set prod này làm featured thì tắt featured sản phẩm đang được mark trước đó
+            const shouldSkipUpdatedProduct = data.isFeatured === 'false' || data.isActive === 'false';
+            let featuredProduct = await this.syncSingleFeatured(
+                tx,
+                shouldSkipUpdatedProduct ? id : undefined,
+                data.isFeatured === 'true' ? id : undefined,
+            );
+            if (!featuredProduct && data.isFeatured === 'false' && data.isActive !== 'false') {
+                featuredProduct = await this.syncSingleFeatured(tx);
+            }
+
             return tx.product.findUnique({
                 where: { id: updatedProduct.id },
                 include: { assets: true, variants: true }
@@ -784,7 +786,10 @@ export class ProductsService {
             // toggle trạng thái kinh doanh (isActive)
             const updatedProduct = await tx.product.update({
                 where: { id },
-                data: { isActive: !product.isActive }
+                data: {
+                    isActive: !product.isActive,
+                    ...(product.isActive ? { isFeatured: false } : {}),
+                }
             });
 
             // ẩn toàn bộ biến thể nếu sản phẩm cha ngừng kinh doanh
@@ -795,32 +800,86 @@ export class ProductsService {
                 });
             }
 
+            const featuredProduct = await this.syncSingleFeatured(
+                tx,
+                updatedProduct.isActive ? undefined : id,
+            );
+
             return {
                 message: `Đã ${updatedProduct.isActive ? 'hiển thị' : 'ẩn'} sản phẩm '${product.name}'`,
-                isActive: updatedProduct.isActive
+                isActive: updatedProduct.isActive,
+                featuredProduct,
             };
         });
     }
 
-    // toggle trạng thái sản phẩm nổi bật
+    /**
+     * toggle trạng thái nổi bật của sản phẩm
+     * chỉ sản phẩm đang hoạt động mới được phép là sản phẩm nổi bật
+     * hệ thống chỉ duy trì duy nhất một sản phẩm nổi bật tại một thời điểm
+     * khi đánh dấu nổi bật, tất cả sản phẩm nổi bật khác sẽ bị gỡ
+     * khi gỡ nổi bật, hệ thống sẽ tự động chọn sản phẩm phù hợp khác nếu cần
+     */
     async toggleFeatured(id: string) {
         const product = await this.prisma.product.findUnique({
             where: { id },
-            select: { id: true, name: true, isFeatured: true }
+            select: {
+                id: true,
+                name: true,
+                isActive: true,
+                isFeatured: true
+            }
         });
 
-        if (!product) throw new NotFoundException('Sản phẩm không tồn tại');
+        if (!product) {
+            throw new NotFoundException('Sản phẩm không tồn tại');
+        }
 
-        // toggle
-        const updatedProduct = await this.prisma.product.update({
-            where: { id },
-            data: { isFeatured: !product.isFeatured }
+        // không cho phép sản phẩm ngưng kinh doanh trở thành sản phẩm nổi bật
+        if (!product.isActive) {
+            throw new BadRequestException(
+                'Không thể đánh dấu nổi bật sản phẩm đang ngưng kinh doanh'
+            );
+        }
+
+        const result = await this.prisma.$transaction(async (tx) => {
+            // đảo trạng thái nổi bật hiện tại
+            const nextFeatured = !product.isFeatured;
+
+            const updatedProduct = await tx.product.update({
+                where: { id },
+                data: {
+                    isFeatured: nextFeatured
+                }
+            });
+
+            // đồng bộ lại hệ thống để đảm bảo chỉ tồn tại duy nhất 1 sản phẩm nổi bật
+            let featuredProduct = await this.syncSingleFeatured(
+                tx,
+                nextFeatured ? undefined : id,
+                nextFeatured ? id : undefined,
+            );
+
+            // nếu vừa gỡ nổi bật và chưa tìm được sản phẩm thay thế
+            // thì tự động chọn một sản phẩm phù hợp khác
+            if (!featuredProduct && !nextFeatured) {
+                featuredProduct = await this.syncSingleFeatured(tx);
+            }
+
+            return {
+                message: nextFeatured
+                    ? `Đã đặt '${product.name}' làm sản phẩm nổi bật duy nhất`
+                    : featuredProduct?.id === id
+                        ? `Không có sản phẩm hoạt động khác nên '${product.name}' vẫn là sản phẩm nổi bật`
+                        : `Đã gỡ '${product.name}' khỏi mục nổi bật${featuredProduct ? ` và chuyển sang '${featuredProduct.name}'` : ''}`,
+
+                // trạng thái nổi bật thực tế sau khi đồng bộ
+                isFeatured: featuredProduct?.id === updatedProduct.id,
+                featuredProduct,
+            };
         });
 
-        return {
-            message: `Đã ${updatedProduct.isFeatured ? 'đưa' : 'gỡ'} sản phẩm '${product.name}' ${updatedProduct.isFeatured ? 'vào mục' : 'khỏi mục'} nổi bật`,
-            isFeatured: updatedProduct.isFeatured
-        };
+        return result;
     }
 
     /**
@@ -852,23 +911,38 @@ export class ProductsService {
         // không được xóa cứng sp cha nếu biến thể có đơn hàng
         const totalOrders = product.variants.reduce((sum, variant) => sum + variant._count.orderItems, 0);
 
-        if (totalOrders > 0) {
-            // ẩn sản phẩm
-            return this.prisma.product.update({
-                where: { id },
-                data: { isActive: false }
-            });
-        }
+        return this.prisma.$transaction(async (tx) => {
+            if (totalOrders > 0) {
+                // ẩn sản phẩm
+                const updatedProduct = await tx.product.update({
+                    where: { id },
+                    data: { isActive: false, isFeatured: false }
+                });
 
-        return this.prisma.product.delete({
-            where: { id },
+                await this.syncSingleFeatured(tx, id);
+                return updatedProduct;
+            }
+
+            const deletedProduct = await tx.product.delete({
+                where: { id },
+            });
+
+            await this.syncSingleFeatured(tx, id);
+            return deletedProduct;
         });
     }
 
     async restore(id: string) {
-        return this.prisma.product.update({
-            where: { id },
-            data: { isActive: true },
+        return this.prisma.$transaction(async (tx) => {
+            const restoredProduct = await tx.product.update({
+                where: { id },
+                data: { isActive: true },
+            });
+
+            await this.syncSingleFeatured(tx);
+            return tx.product.findUnique({
+                where: { id: restoredProduct.id },
+            });
         });
     }
 
@@ -917,153 +991,203 @@ export class ProductsService {
             sortBy
         } = query;
 
-        const skip = (page - 1) * limit;
+        const pageNumber = Number(page);
+        const limitNumber = Number(limit);
+        const skip = (pageNumber - 1) * limitNumber;
 
-        // đệ quy qua category lấy sản phẩm trong cấp subcate
         let categoryIds: string[] | undefined = undefined;
+
         if (categoryId) {
             const currentCategory = await this.prisma.category.findUnique({
                 where: { id: categoryId },
-                include: { children: { select: { id: true } } }
+                include: {
+                    children: {
+                        select: { id: true }
+                    }
+                }
             });
-            categoryIds = currentCategory ? [currentCategory.id, ...currentCategory.children.map(c => c.id)] : [categoryId];
+
+            categoryIds = currentCategory
+                ? [currentCategory.id, ...currentCategory.children.map(c => c.id)]
+                : [categoryId];
+        }
+
+        const variantConditions: any[] = [];
+
+        if (showActiveOnly) {
+            variantConditions.push({ isActive: true });
+        }
+
+        if (minPrice !== undefined || maxPrice !== undefined) {
+            variantConditions.push({
+                price: {
+                    gte: minPrice !== undefined ? Number(minPrice) : undefined,
+                    lte: maxPrice !== undefined ? Number(maxPrice) : undefined,
+                }
+            });
+        }
+
+        if (inventoryStatus && inventoryStatus !== 'all') {
+            if (inventoryStatus === 'out_of_stock') {
+                variantConditions.push({ stock: 0 });
+            } else if (inventoryStatus === 'low_stock') {
+                variantConditions.push({ stock: { gt: 0, lte: 10 } });
+            } else if (inventoryStatus === 'in_stock') {
+                variantConditions.push({ stock: { gt: 10 } });
+            }
         }
 
         let whereCondition: any = {
-            categoryId: categoryIds ? { in: categoryIds } : undefined,
-            brandId: brandId || undefined,
+            ...(categoryIds && { categoryId: { in: categoryIds } }),
+            ...(brandId && { brandId }),
         };
 
-        // xử lý logic isActive vs showInactiveOnly vs showActiveOnly
         if (showInactiveOnly) {
-            // hiển thị sản phẩm đang bị tắt hoặc sản phẩm còn bật nhưng có biến thể bị tắt
             whereCondition.OR = [
                 { isActive: false },
                 { variants: { some: { isActive: false } } }
             ];
         } else if (showActiveOnly) {
             whereCondition.isActive = true;
+
             whereCondition.variants = {
-                some: { isActive: true }
+                some: variantConditions.length > 0
+                    ? { AND: variantConditions }
+                    : { isActive: true }
             };
         } else {
-            // hiển thị sản phẩm đang hoạt động cho client
-            whereCondition.isActive = isAdmin ? undefined : true;
+            if (!isAdmin) {
+                whereCondition.isActive = true;
+            }
+
+            if (variantConditions.length > 0) {
+                whereCondition.variants = {
+                    some: {
+                        AND: variantConditions
+                    }
+                };
+            }
         }
 
         if (search) {
             const words = search.trim().split(/\s+/).filter(w => w.length > 0);
-            if (words.length > 0) {
-                // tìm kiếm sâu hơn, không phụ thuộc viết hoa/thường
-                const searchConditions = words.map(word => {
-                    return {
-                        OR: [
-                            { name: { contains: word } },
-                            { brand: { name: { contains: word } } },
-                            { category: { name: { contains: word } } },
-                            { category: { parent: { name: { contains: word } } } },
-                        ],
-                    };
-                });
 
-                if (showInactiveOnly && whereCondition.OR) {
-                    // merge search conditions vào OR đã có sản phẩm inactive
+            if (words.length > 0) {
+                const searchConditions = words.map(word => ({
+                    OR: [
+                        { name: { contains: word } },
+                        { brand: { name: { contains: word } } },
+                        { category: { name: { contains: word } } },
+                        { category: { parent: { name: { contains: word } } } },
+                    ],
+                }));
+
+                if (whereCondition.OR) {
                     whereCondition.AND = [
                         { OR: whereCondition.OR },
                         ...searchConditions
                     ];
                     delete whereCondition.OR;
                 } else {
-                    whereCondition.AND = searchConditions;
+                    whereCondition.AND = [
+                        ...(whereCondition.AND ?? []),
+                        ...searchConditions
+                    ];
                 }
             }
         }
 
-
-        // lọc giá qua biến thể
-        if (minPrice || maxPrice) {
-            whereCondition.variants = {
-                some: {
-                    price: {
-                        gte: minPrice ? Number(minPrice) : undefined,
-                        lte: maxPrice ? Number(maxPrice) : undefined,
-                    }
-                }
-            };
-        }
-
-        // lọc theo tồn kho
-        if (inventoryStatus && inventoryStatus !== 'all') {
-            if (inventoryStatus === 'out_of_stock') {
-                whereCondition.variants = {
-                    ...whereCondition.variants,
-                    every: { stock: 0 }
-                };
-            } else if (inventoryStatus === 'low_stock') {
-                whereCondition.variants = {
-                    ...whereCondition.variants,
-                    some: { stock: { gt: 0, lte: 10 } }
-                };
-            } else if (inventoryStatus === 'in_stock') {
-                whereCondition.variants = {
-                    ...whereCondition.variants,
-                    some: { stock: { gt: 10 } }
-                };
-            }
-        }
-
-        // lọc theo assets
         if (assetType && assetType !== 'all') {
             if (assetType === 'has_3d') {
                 whereCondition.assets = {
-                    some: { type: { in: ['GLB', 'USDZ'] } }
+                    some: {
+                        type: {
+                            in: ['GLB', 'USDZ']
+                        }
+                    }
                 };
             } else if (assetType === 'only_2d') {
                 whereCondition.assets = {
-                    every: { type: 'IMAGE' }
+                    every: {
+                        type: 'IMAGE'
+                    }
                 };
             }
         }
 
         let orderByObj: any = { createdAt: 'desc' };
+
         if (sortBy === 'popular') {
             orderByObj = { soldCount: 'desc' };
-        } else if (sortBy === 'price_asc') {
-            orderByObj = { variants: { _min: { price: 'asc' } } };
-        } else if (sortBy === 'price_desc') {
-            orderByObj = { variants: { _max: { price: 'desc' } } };
         } else if (sortBy === 'newest') {
             orderByObj = { createdAt: 'desc' };
         }
 
-        const [items, total] = await Promise.all([
+        let [items, total] = await Promise.all([
             this.prisma.product.findMany({
                 where: whereCondition,
                 include: {
-                    brand: { select: { name: true, logoUrl: true } },
-                    category: { include: { parent: { select: { id: true, name: true } } } },
+                    brand: {
+                        select: {
+                            name: true,
+                            logoUrl: true
+                        }
+                    },
+                    category: {
+                        include: {
+                            parent: {
+                                select: {
+                                    id: true,
+                                    name: true
+                                }
+                            }
+                        }
+                    },
                     variants: {
-                        where: showInactiveOnly ? { isActive: false } : (showActiveOnly ? { isActive: true } : undefined),
-                        orderBy: { price: "asc" },
+                        where: showInactiveOnly
+                            ? { isActive: false }
+                            : showActiveOnly
+                                ? { isActive: true }
+                                : undefined,
+                        orderBy: {
+                            price: 'asc'
+                        },
                     },
                     assets: true
                 },
                 orderBy: orderByObj,
-                skip: skip,
-                take: Number(limit),
+                skip,
+                take: limitNumber,
             }),
+
             this.prisma.product.count({
                 where: whereCondition
             }),
         ]);
 
+        if (sortBy === 'price_asc') {
+            items = items.sort((a, b) => {
+                const priceA = Number(a.variants?.[0]?.price ?? 0);
+                const priceB = Number(b.variants?.[0]?.price ?? 0);
+                return priceA - priceB;
+            });
+        }
+
+        if (sortBy === 'price_desc') {
+            items = items.sort((a, b) => {
+                const priceA = Number(a.variants?.[0]?.price ?? 0);
+                const priceB = Number(b.variants?.[0]?.price ?? 0);
+                return priceB - priceA;
+            });
+        }
+
         return {
             data: items,
             meta: {
                 total,
-                page: Number(page),
-                limit: Number(limit),
-                lastPage: Math.ceil(total / Number(limit)),
+                page: pageNumber,
+                limit: limitNumber,
+                lastPage: Math.ceil(total / limitNumber),
             },
         };
     }
@@ -1231,8 +1355,15 @@ export class ProductsService {
                 tagline: true,
                 description: true,
                 viewsCount: true,
-                vaultSpecs: true,
                 attributeConfig: true,
+                assets: {
+                    select: {
+                        id: true,
+                        type: true,
+                        url: true,
+                    }
+                },
+                brand: { select: { name: true } },
                 variants: {
                     where: { isActive: true },
                     orderBy: { price: 'asc' },
@@ -1255,50 +1386,109 @@ export class ProductsService {
     }
 
     /**
-     * lấy danh sách sản phẩm liên quan trong cùng danh mục với sản phẩm hiện tại
-     *
-     * kết quả loại trừ chính sản phẩm gốc và chỉ lấy các sản phẩm còn hoạt động
+     * lấy sản phẩm liên quan theo ngữ cảnh mua hàng
+     * ưu tiên sản phẩm cùng danh mục gần nhất
+     * nếu chưa đủ số lượng, mở rộng sang cate cùng cấp trong cùng nhánh cha
      */
     async getRelatedProducts(id: string) {
         const currentProduct = await this.prisma.product.findUnique({
             where: { id },
-            select: { categoryId: true }
+            select: {
+                categoryId: true,
+                category: { select: { parentId: true } }
+            }
         });
 
         if (!currentProduct) throw new NotFoundException('Sản phẩm không tồn tại');
+        if (!currentProduct.categoryId) return [];
 
-        return await this.prisma.product.findMany({
+        const limit = 4;
+        const productInclude = {
+            brand: { select: { name: true, logoUrl: true } },
+            variants: {
+                where: {
+                    isActive: true,
+                    stock: { gt: 0 }
+                },
+                orderBy: { price: 'asc' },
+                select: {
+                    id: true,
+                    sku: true,
+                    name: true,
+                    price: true,
+                    stock: true,
+                    attributes: true,
+                    imageUrl: true,
+                    isActive: true,
+                }
+            },
+            assets: {
+                where: { isPrimary: true },
+                take: 1
+            }
+        } satisfies Prisma.ProductInclude;
+
+        const productOrderBy: Prisma.ProductOrderByWithRelationInput[] = [
+            { averageRating: 'desc' },
+            { reviewCount: 'desc' },
+            { soldCount: 'desc' },
+            { viewsCount: 'desc' }
+        ];
+
+        const inStockVariantCondition = {
+            some: {
+                isActive: true,
+                stock: { gt: 0 }
+            }
+        } satisfies Prisma.ProductVariantListRelationFilter;
+
+        const exactMatchProducts = await this.prisma.product.findMany({
             where: {
                 categoryId: currentProduct.categoryId,
                 id: { not: id }, // không lấy chính nó
                 isActive: true,
-                variants: {
-                    some: {}
-                }
+                variants: inStockVariantCondition
             },
-            take: 4,
-            include: {
-                brand: { select: { name: true, logoUrl: true } },
-                variants: {
-                    where: { isActive: true },
-                    orderBy: { price: 'asc' },
-                    select: {
-                        id: true,
-                        sku: true,
-                        name: true,
-                        price: true,
-                        stock: true,
-                        attributes: true,
-                        imageUrl: true,
-                        isActive: true,
-                    }
-                },
-                assets: {
-                    where: { isPrimary: true },
-                    take: 1
-                }
-            }
+            take: limit,
+            include: productInclude,
+            orderBy: productOrderBy
         });
+
+        if (exactMatchProducts.length >= limit) {
+            return exactMatchProducts;
+        }
+
+        const parentId = currentProduct.category?.parentId;
+        if (!parentId) {
+            return exactMatchProducts;
+        }
+
+        const siblingCategories = await this.prisma.category.findMany({
+            where: {
+                parentId,
+                id: { not: currentProduct.categoryId }
+            },
+            select: { id: true }
+        });
+        const siblingCategoryIds = siblingCategories.map((category) => category.id);
+
+        if (siblingCategoryIds.length === 0) {
+            return exactMatchProducts;
+        }
+
+        const fallbackProducts = await this.prisma.product.findMany({
+            where: {
+                categoryId: { in: siblingCategoryIds },
+                id: { notIn: [id, ...exactMatchProducts.map((product) => product.id)] },
+                isActive: true,
+                variants: inStockVariantCondition
+            },
+            take: limit - exactMatchProducts.length,
+            include: productInclude,
+            orderBy: productOrderBy
+        });
+
+        return [...exactMatchProducts, ...fallbackProducts];
     }
 
     /**
@@ -1318,7 +1508,6 @@ export class ProductsService {
             reviewCount: true,
             soldCount: true,
             description: true,
-            vaultSpecs: true,
             attributeConfig: true,
             brand: { select: { name: true } },
             variants: {
@@ -1369,41 +1558,456 @@ export class ProductsService {
         return products;
     }
 
-    // vault
-    async getVaultProducts() {
-        const products = await this.prisma.product.findMany({
-            where: {
-                isVault: true,
-                isActive: true,
-            },
-            select: {
-                id: true,
-                name: true,
-                thumbnailUrl: true,
-                tagline: true,
-                vaultSpecs: true,
-                description: true,
-                variants: {
-                    where: { isActive: true },
-                    orderBy: { price: 'asc' },
+    /**
+     * tạo danh sách sản phẩm đề xuất cá nhân hóa cho người dùng
+     *
+     * ưu tiên recommendation bằng vector embedding
+     * nếu không có embedding hoặc xảy ra lỗi thì fallback sang rule-based recommendation
+     * nếu vẫn chưa đủ số lượng sản phẩm thì bổ sung bằng danh sách fallback sản phẩm phổ biến
+     */
+    async getPersonalizedRecommendations(
+        userId: string,
+        limit: number = 8
+    ) {
+        const safeLimit = this.normalizeRecommendationLimit(limit);
+
+        // sở thích mua sắm của user dựa trên khảo sát
+        const preferences = await this.getUserRecommendationPreferences(userId);
+
+        const productSelect = this.getRecommendationProductSelect();
+
+        // lọc sản phẩm theo ngân sách ưa thích của người dùng
+        const variantPriceFilter = this.getBudgetVariantFilter(
+            preferences.budgetRange
+        );
+
+        // vector rcm
+        // nếu đã có vector sở thích thì ưu tiên recommendation bằng cosine similarity
+        if (
+            preferences.preferenceVector &&
+            preferences.preferenceVector.length > 0
+        ) {
+            try {
+                // lấy embedding của các sản phẩm đang hoạt động và còn hàng
+                const rows = await this.prisma.productEmbedding.findMany({
+                    where: {
+                        product: {
+                            isActive: true,
+                            variants: {
+                                some: {
+                                    isActive: true,
+                                    stock: { gt: 0 },
+                                    ...(variantPriceFilter ?? {})
+                                }
+                            }
+                        }
+                    },
                     select: {
-                        id: true,
-                        sku: true,
-                        name: true,
-                        price: true,
-                        stock: true,
-                        attributes: true,
-                        imageUrl: true,
-                        isActive: true,
+                        productId: true,
+                        embedding: true
                     }
+                });
+
+                // tính độ tương đồng cosine giữa vector sở thích của user và vector sản phẩm
+                const queryEmbedding = preferences.preferenceVector;
+
+                const scoredRows = rows
+                    .map((row) => {
+                        const embedding = Array.isArray(row.embedding)
+                            ? row.embedding
+                                .map(v => typeof v === 'number' ? v : Number(v))
+                                .filter(Number.isFinite)
+                            : [];
+
+                        return {
+                            productId: row.productId,
+                            score: this.cosineSimilarity(
+                                queryEmbedding,
+                                embedding
+                            )
+                        };
+                    })
+                    .filter((item) => item.score > 0)
+                    .sort((a, b) => b.score - a.score);
+
+                // lấy top sản phẩm có điểm tương đồng cao nhất
+                const targetIds = scoredRows
+                    .slice(0, safeLimit)
+                    .map((item) => item.productId);
+
+                if (targetIds.length > 0) {
+                    const products = await this.prisma.product.findMany({
+                        where: {
+                            id: { in: targetIds }
+                        },
+                        select: productSelect
+                    });
+
+                    // giữ nguyên thứ tự đã được xếp hạng bởi cosine sml
+                    const productMap = new Map(
+                        products.map((p) => [p.id, p])
+                    );
+
+                    const sortedProducts: typeof products = [];
+
+                    for (const id of targetIds) {
+                        const p = productMap.get(id);
+                        if (p) {
+                            sortedProducts.push(p);
+                        }
+                    }
+
+                    // trả đủ 8 items
+                    if (sortedProducts.length >= safeLimit) {
+                        return sortedProducts;
+                    }
+
+                    // bổ sung sản phẩm fallback nếu thiếu
+                    const excludedIds = new Set(
+                        sortedProducts.map((p) => p.id)
+                    );
+
+                    const fallback =
+                        await this.getFallbackRecommendations(
+                            excludedIds,
+                            safeLimit - sortedProducts.length,
+                            productSelect
+                        );
+
+                    return [...sortedProducts, ...fallback];
                 }
-            },
-            orderBy: {
-                createdAt: 'desc'
+            } catch (err) {
+                this.logger.error(
+                    `Vector personalized recommendations failed, falling back: ${err.message}`
+                );
+            }
+        }
+
+        // rule base rcm
+        // fallback dựa trên category, brand và ngân sách
+        const preferenceOr: Prisma.ProductWhereInput[] = [];
+
+        if (preferences.categoryIds.length > 0) {
+            preferenceOr.push({
+                categoryId: {
+                    in: preferences.categoryIds
+                }
+            });
+        }
+
+        if (preferences.brandIds.length > 0) {
+            preferenceOr.push({
+                brandId: {
+                    in: preferences.brandIds
+                }
+            });
+        }
+
+        if (variantPriceFilter) {
+            preferenceOr.push({
+                variants: {
+                    some: variantPriceFilter
+                }
+            });
+        }
+
+        // sản phẩm phải hoạt động và đang còn hàng
+        const baseWhere: Prisma.ProductWhereInput = {
+            isActive: true,
+            variants: {
+                some: {
+                    isActive: true,
+                    stock: { gt: 0 },
+                    ...(variantPriceFilter ?? {})
+                }
+            }
+        };
+
+        const preferenceProducts =
+            preferenceOr.length > 0
+                ? await this.prisma.product.findMany({
+                    where: {
+                        ...baseWhere,
+                        OR: preferenceOr
+                    },
+                    select: productSelect,
+
+                    // lấy dư dữ liệu để phục vụ bước chấm điểm
+                    take: safeLimit * 3,
+
+                    orderBy: [
+                        { averageRating: 'desc' },
+                        { soldCount: 'desc' },
+                        { createdAt: 'desc' }
+                    ]
+                })
+                : [];
+
+        // chấm điểm sản phẩm theo hồ sơ sở thích người dùng
+        const scoredProducts = preferenceProducts
+            .map((product) => ({
+                product,
+                score: this.scoreRecommendedProduct(
+                    product,
+                    preferences
+                )
+            }))
+            .sort((a, b) => b.score - a.score)
+            .map((item) => item.product);
+
+        const merged = this.uniqueProducts(scoredProducts)
+            .slice(0, safeLimit);
+
+        // nếu chưa đủ số lượng thì lấy thêm sản phẩm phổ biến
+        if (merged.length < safeLimit) {
+            const fallback =
+                await this.getFallbackRecommendations(
+                    new Set(merged.map((product) => product.id)),
+                    safeLimit - merged.length,
+                    productSelect
+                );
+
+            merged.push(...fallback);
+        }
+
+        return merged;
+    }
+
+    private cosineSimilarity(a: number[], b: number[]): number {
+        if (a.length === 0 || b.length === 0 || a.length !== b.length) return 0;
+
+        let dot = 0;
+        let aMagnitude = 0;
+        let bMagnitude = 0;
+        for (let i = 0; i < a.length; i += 1) {
+            dot += a[i] * b[i];
+            aMagnitude += a[i] * a[i];
+            bMagnitude += b[i] * b[i];
+        }
+
+        if (aMagnitude === 0 || bMagnitude === 0) return 0;
+        return dot / (Math.sqrt(aMagnitude) * Math.sqrt(bMagnitude));
+    }
+
+    private normalizeRecommendationLimit(limit: number) {
+        if (!Number.isFinite(limit)) return 8;
+        return Math.min(Math.max(Math.trunc(limit), 1), 20);
+    }
+
+    private getRecommendationProductSelect() {
+        return {
+            id: true,
+            categoryId: true,
+            brandId: true,
+            name: true,
+            slug: true,
+            thumbnailUrl: true,
+            tagline: true,
+            description: true,
+            averageRating: true,
+            reviewCount: true,
+            soldCount: true,
+            metadata: true,
+            attributeConfig: true,
+            brand: { select: { id: true, name: true } },
+            category: { select: { id: true, name: true } },
+            variants: {
+                where: { isActive: true },
+                orderBy: { price: 'asc' },
+                select: {
+                    id: true,
+                    sku: true,
+                    name: true,
+                    price: true,
+                    stock: true,
+                    attributes: true,
+                    imageUrl: true,
+                    isActive: true,
+                }
+            }
+        } satisfies Prisma.ProductSelect;
+    }
+
+    /**
+ * lấy và chuẩn hóa hồ sơ sở thích của người dùng phục vụ hệ thống recommendation
+ * đọc preferences từ db
+ * validate kiểu dữ liệu
+ * loại bỏ dữ liệu không hợp lệ
+ * trả về cấu trúc an toàn để sử dụng trong recommendation engine
+ */
+    private async getUserRecommendationPreferences(
+        userId: string
+    ): Promise<ProductRecommendationPreferences> {
+
+        const profile = await this.prisma.profile.findUnique({
+            where: { userId },
+            select: {
+                preferences: true
             }
         });
 
-        return products;
+        const preferences = profile?.preferences;
+
+        // trường hợp chưa thiết lập preferences hoặc dữ liệu bị lỗi
+        if (
+            !preferences ||
+            typeof preferences !== 'object' ||
+            Array.isArray(preferences)
+        ) {
+            return {
+                categoryIds: [],
+                brandIds: [],
+                styleTags: [],
+                useCases: [],
+                budgetRange: null,
+                preferenceVector: []
+            };
+        }
+
+        const data = preferences as Record<string, unknown>;
+
+        const budgetRange =
+            data.budgetRange as
+            | Record<string, unknown>
+            | null
+            | undefined;
+
+        return {
+            // danh mục sản phẩm yêu thích
+            categoryIds: Array.isArray(data.categoryIds)
+                ? data.categoryIds.filter(
+                    (id): id is string => typeof id === 'string'
+                )
+                : [],
+
+            // thương hiệu yêu thích
+            brandIds: Array.isArray(data.brandIds)
+                ? data.brandIds.filter(
+                    (id): id is string => typeof id === 'string'
+                )
+                : [],
+
+            // phong cách sản phẩm quan tâm
+            styleTags: Array.isArray(data.styleTags)
+                ? data.styleTags.filter(
+                    (tag): tag is string => typeof tag === 'string'
+                )
+                : [],
+
+            // mục đích sử dụng sản phẩm
+            useCases: Array.isArray(data.useCases)
+                ? data.useCases.filter(
+                    (useCase): useCase is string =>
+                        typeof useCase === 'string'
+                )
+                : [],
+
+            // khoảng ngân sách mong muốn
+            budgetRange:
+                budgetRange &&
+                    typeof budgetRange === 'object'
+                    ? {
+                        min:
+                            typeof budgetRange.min === 'number'
+                                ? budgetRange.min
+                                : null,
+
+                        max:
+                            typeof budgetRange.max === 'number'
+                                ? budgetRange.max
+                                : null
+                    }
+                    : null,
+
+            // vector embedding đại diện cho sở thích người dùng
+            preferenceVector: Array.isArray(data.preferenceVector)
+                ? data.preferenceVector.filter(
+                    (v): v is number => typeof v === 'number'
+                )
+                : []
+        };
+    }
+
+    private getBudgetVariantFilter(budgetRange: ProductRecommendationPreferences['budgetRange']) {
+        if (!budgetRange) return null;
+        const price: Prisma.DecimalFilter = {};
+        if (budgetRange.min !== null) price.gte = budgetRange.min;
+        if (budgetRange.max !== null) price.lte = budgetRange.max;
+        if (Object.keys(price).length === 0) return null;
+        return { isActive: true, stock: { gt: 0 }, price } satisfies Prisma.ProductVariantWhereInput;
+    }
+
+    private scoreRecommendedProduct(
+        product: Prisma.ProductGetPayload<{ select: ReturnType<ProductsService['getRecommendationProductSelect']> }>,
+        preferences: ProductRecommendationPreferences
+    ) {
+        let score = 0;
+
+        if (product.categoryId && preferences.categoryIds.includes(product.categoryId)) score += 50;
+        if (product.brandId && preferences.brandIds.includes(product.brandId)) score += 35;
+
+        const lowestPrice = product.variants[0]?.price ? Number(product.variants[0].price) : null;
+        if (lowestPrice !== null && preferences.budgetRange) {
+            const { min, max } = preferences.budgetRange;
+            if ((min === null || lowestPrice >= min) && (max === null || lowestPrice <= max)) {
+                score += 20;
+            }
+        }
+
+        const searchableText = [
+            product.name,
+            product.tagline,
+            product.description,
+            product.brand?.name,
+            product.category?.name,
+            product.metadata ? JSON.stringify(product.metadata) : ''
+        ].join(' ').toLowerCase();
+
+        for (const tag of preferences.styleTags) {
+            if (searchableText.includes(tag.toLowerCase())) score += 8;
+        }
+
+        for (const useCase of preferences.useCases) {
+            if (searchableText.includes(useCase.toLowerCase())) score += 8;
+        }
+
+        score += Math.min(product.averageRating * 3, 15);
+        score += Math.min(product.reviewCount, 20) * 0.5;
+        score += Math.min(product.soldCount, 100) * 0.1;
+
+        return score;
+    }
+
+    private async getFallbackRecommendations(
+        excludedProductIds: Set<string>,
+        limit: number,
+        select: ReturnType<ProductsService['getRecommendationProductSelect']>
+    ) {
+        if (limit <= 0) return [];
+
+        return this.prisma.product.findMany({
+            where: {
+                id: { notIn: Array.from(excludedProductIds) },
+                isActive: true,
+                variants: { some: { isActive: true, stock: { gt: 0 } } }
+            },
+            select,
+            take: limit,
+            orderBy: [
+                { averageRating: 'desc' },
+                { soldCount: 'desc' },
+                { createdAt: 'desc' }
+            ]
+        });
+    }
+
+    private uniqueProducts<T extends { id: string }>(products: T[]) {
+        const seen = new Set<string>();
+        return products.filter((product) => {
+            if (seen.has(product.id)) return false;
+            seen.add(product.id);
+            return true;
+        });
     }
 
     // thêm biến thể mới cho sp cha đã tồn tại
@@ -1839,6 +2443,119 @@ export class ProductsService {
             name: category.name,
             slug: category.slug,
         };
+    }
+
+    /**
+     * đồng bộ trạng thái sản phẩm nổi bật trong hệ thống
+     * chỉ sản phẩm đang hoạt động mới được phép là sản phẩm nổi bật
+     * hệ thống chỉ được tồn tại duy nhất một sản phẩm nổi bật
+     * ưu tiên sử dụng sản phẩm được chỉ định qua preferredProductId
+     * nếu không có, giữ lại featured hiện tại nếu hợp lệ
+     * nếu vẫn không có, tự động chọn một sản phẩm active khác
+     * nếu không còn sản phẩm active nào, gỡ toàn bộ trạng thái nổi bật
+     */
+    private async syncSingleFeatured(
+        tx: Prisma.TransactionClient,
+        skipProductId?: string,
+        preferredProductId?: string,
+    ) {
+        const skipProductWhere = skipProductId
+            ? { id: { not: skipProductId } }
+            : {};
+
+        const productIdentitySelect = {
+            id: true,
+            name: true,
+        } satisfies Prisma.ProductSelect;
+
+        // ưu tiên sử dụng sản phẩm được chỉ định làm featured
+        let selectedProduct =
+            preferredProductId &&
+                preferredProductId !== skipProductId
+                ? await tx.product.findFirst({
+                    where: {
+                        id: preferredProductId,
+                        isActive: true,
+                    },
+                    select: productIdentitySelect,
+                })
+                : null;
+
+        let selectedFromExistingFeatured = false;
+
+        // nếu không có preferred product hợp lệ
+        // thử giữ lại featured hiện tại
+        if (!selectedProduct) {
+            selectedProduct = await tx.product.findFirst({
+                where: {
+                    isFeatured: true,
+                    isActive: true,
+                    ...skipProductWhere,
+                },
+                orderBy: [
+                    { createdAt: 'desc' },
+                ],
+                select: productIdentitySelect,
+            });
+
+            selectedFromExistingFeatured = Boolean(selectedProduct);
+        }
+
+        // nếu chưa có featured phù hợp
+        // chọn một sản phẩm active khác để thay thế
+        if (!selectedProduct) {
+            selectedProduct = await tx.product.findFirst({
+                where: {
+                    isActive: true,
+                    ...skipProductWhere,
+                },
+                orderBy: [
+                    { createdAt: 'desc' },
+                ],
+                select: productIdentitySelect,
+            });
+        }
+
+        // không còn sản phẩm active nào trong hệ thống
+        if (!selectedProduct) {
+            await tx.product.updateMany({
+                where: {
+                    isFeatured: true
+                },
+                data: {
+                    isFeatured: false
+                },
+            });
+
+            return null;
+        }
+
+        // đánh dấu sản phẩm mới thành featured nếu cần
+        if (!selectedFromExistingFeatured) {
+            await tx.product.update({
+                where: {
+                    id: selectedProduct.id
+                },
+                data: {
+                    isFeatured: true
+                },
+            });
+        }
+
+        // gỡ trạng thái featured khỏi toàn bộ sản phẩm còn lại
+        await tx.product.updateMany({
+            where: {
+                isFeatured: true,
+                id: {
+                    not: selectedProduct.id
+                },
+            },
+            data: {
+                isFeatured: false
+            },
+        });
+
+        return selectedProduct;
     }
 
     // gọi đồng bộ embedding theo kiểu bất đồng bộ, không chặn request hiện tại

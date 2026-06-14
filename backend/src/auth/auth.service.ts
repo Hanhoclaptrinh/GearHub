@@ -25,6 +25,7 @@ export class AuthService {
   /**
    * ký access token cho người dùng
    * bao gồm userid, email, phân quyền rbac và id thiết bị
+   * đảm bảo at cần sống được trong 1 giờ
    */
   private async signAccessToken(userId: string, email: string, role: string, deviceId: string = 'default') {
     return this.jwtService.sign({
@@ -32,7 +33,7 @@ export class AuthService {
       email: email,
       role: role,
       deviceId: deviceId
-    }, { expiresIn: '4h' });
+    }, { expiresIn: '1h' });
   }
 
   /**
@@ -41,7 +42,7 @@ export class AuthService {
   private async generateRefreshToken(userId: string, deviceId: string = 'default') {
     const refreshToken = uuidv4();
     const key = `refresh_token:${userId}:${deviceId}`;
-    const REFRESH_TTL = 7 * 24 * 60 * 60; // 7 ngày tính bằng giây
+    const REFRESH_TTL = 30 * 24 * 60 * 60; // 30 ngày tính bằng giây
 
     await this.redisService.set(key, refreshToken, 'EX', REFRESH_TTL);
 
@@ -159,7 +160,8 @@ export class AuthService {
           avatarUrl: user.profile?.avatarUrl,
           phone: user.profile?.phone,
           dateOfBirth: user.profile?.dateOfBirth,
-          gender: user.profile?.gender
+          gender: user.profile?.gender,
+          preferences: user.profile?.preferences
         },
         tokens: { accessToken: at, refreshToken: rt }
       }
@@ -232,7 +234,8 @@ export class AuthService {
           avatarUrl: user.profile?.avatarUrl,
           phone: user.profile?.phone,
           dateOfBirth: user.profile?.dateOfBirth,
-          gender: user.profile?.gender
+          gender: user.profile?.gender,
+          preferences: user.profile?.preferences
         },
         tokens: { accessToken: at, refreshToken: rt }
       }
@@ -306,6 +309,9 @@ export class AuthService {
 
     const user = await this.userService.findByUserId(userId);
     if (!user) throw new UnauthorizedException('Người dùng không tồn tại');
+    if (user.status === UserStatus.BANNED) {
+      throw new ForbiddenException('Tài khoản đã bị khóa! Vui lòng liên hệ quản trị viên để biết thêm chi tiết.');
+    }
 
     // tạo cặp token mới thay thế token cũ
     const [nat, nrt] = await Promise.all([
@@ -416,7 +422,8 @@ export class AuthService {
       avatarUrl: user.profile?.avatarUrl,
       phone: user.profile?.phone,
       dateOfBirth: user.profile?.dateOfBirth,
-      gender: user.profile?.gender
+      gender: user.profile?.gender,
+      preferences: user.profile?.preferences
     }
   }
 }

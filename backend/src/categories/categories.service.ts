@@ -183,30 +183,47 @@ export class CategoriesService {
      * hiển thị cho client
      */
     async getTopCategories(limit = 4) {
-        // gom nhóm sản phẩm theo categoryId và tính tổng soldCount của từng nhóm
-        const grouped = await this.prisma.product.groupBy({
-            by: ['categoryId'],
+        // lấy tất cả sản phẩm đang bán kèm thông tin category
+        const products = await this.prisma.product.findMany({
             where: {
-                isActive: true, // chỉ tính các sản phẩm đang hoạt động
-                categoryId: { not: null } // bỏ qua các sản phẩm chưa phân loại danh mục
+                isActive: true,
+                categoryId: { not: null }
             },
-            _sum: { soldCount: true }, // tính tổng soldCount
-            orderBy: {
-                _sum: { soldCount: 'desc' }
-            },
-            take: limit
+            select: {
+                soldCount: true,
+                category: {
+                    select: {
+                        id: true,
+                        parentId: true
+                    }
+                }
+            }
         });
 
-        if (grouped.length === 0) return [];
+        if (products.length === 0) return [];
 
-        // trích xuất mảng cateid từ kết quả gom nhóm trên
-        const categoryIds = grouped
-            .map(g => g.categoryId)
-            .filter((id): id is string => id !== null);
+        // gom nhóm và tính tổng lượng bán theo cate cha
+        const parentSales = new Map<string, number>();
+        for (const p of products) {
+            if (!p.category) continue;
+            // nếu có parentId thì đó là danh mục con -> gộp vào danh mục cha
+            // nếu không có parentId thì chính nó là danh mục cha
+            const parentId = p.category.parentId || p.category.id;
+            const current = parentSales.get(parentId) || 0;
+            parentSales.set(parentId, current + (p.soldCount || 0));
+        }
 
-        // truy vấn thông tin theo cateid thu được
+        // sắp xếp các cate cha theo tổng lượng bán giảm dần
+        const sortedParents = Array.from(parentSales.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, limit);
+
+        if (sortedParents.length === 0) return [];
+
+        const parentIds = sortedParents.map(([id]) => id);
+
         const categories = await this.prisma.category.findMany({
-            where: { id: { in: categoryIds } },
+            where: { id: { in: parentIds } },
             select: {
                 id: true,
                 name: true,
@@ -215,15 +232,10 @@ export class CategoriesService {
                 description: true,
             },
         });
-
-        // map lưu trữ thông tin - tối ưu tốc độ tìm kiếm
         const map = new Map(categories.map(c => [c.id, c]));
 
-        // ánh xạ
-        return grouped.map(g => {
-            if (!g.categoryId) return null;
-
-            const c = map.get(g.categoryId);
+        return sortedParents.map(([id, totalSold]) => {
+            const c = map.get(id);
             if (!c) return null;
 
             return {
@@ -232,7 +244,7 @@ export class CategoriesService {
                 slug: c.slug,
                 iconUrl: c.iconUrl,
                 description: c.description,
-                totalSold: g._sum.soldCount ?? 0,
+                totalSold,
             };
         }).filter(Boolean);
     }
