@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 400 400">
+  <path fill="none" stroke="#191919" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" d="M344.6,263.4H55.3c-8.5,0-15.4-6.9-15.4-15.4V112.1c0-8.5,6.9-15.4,15.4-15.4h289.2c8.5,0,15.4,6.9,15.4,15.4v135.9c0,8.5-6.9,15.4-15.4,15.4Z"/>
+  <path fill="none" stroke="#191919" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" d="M342,263.3v7c0,7.5-6.1,13.7-13.6,13.7H71.5c-7.5,0-13.7-6.1-13.7-13.7v-7"/>
+  <path fill="none" stroke="#191919" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" d="M321.5,284v7.6c0,6.5-5.2,11.7-11.7,11.7H90.1c-6.4,0-11.7-5.2-11.7-11.7v-7.6"/>
+  <path fill="none" stroke="#4f46e5" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" d="M170.9,237.2h-80.5c0-13.7-11.1-24.8-24.8-24.8v-64.8c13.7,0,24.8-11.1,24.8-24.8h80.6"/>
+  <path fill="none" stroke="#4f46e5" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" d="M229,122.8h80.5c0,13.7,11.1,24.8,24.8,24.8v64.8c-13.7,0-24.8,11.1-24.8,24.8h-80.5"/>
+  <path fill="none" stroke="#4f46e5" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" d="M211.5,155.5h-15c-6.8,0-12.2,5.5-12.2,12.2s5.5,12.2,12.2,12.2h7c6.8,0,12.2,5.5,12.2,12.3s-5.5,12.2-12.2,12.2h-17.5"/>
+  <path fill="none" stroke="#4f46e5" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" d="M200,155.5v-13.6"/>
+  <path fill="none" stroke="#4f46e5" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" d="M200,218.1v-13.6"/>
+  <path fill="none" stroke="#4f46e5" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" d="M264.1,180c0,35.4-28.7,64.1-64.1,64.1s-64.1-28.7-64.1-64.1,28.7-64.1,64.1-64.1,64.1,28.7,64.1,64.1Z"/>
+</svg>

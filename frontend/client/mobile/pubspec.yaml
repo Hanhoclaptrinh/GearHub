@@ -45,6 +45,7 @@ dependencies:
   flutter_staggered_grid_view: ^0.7.0
   image_picker: ^1.1.2
   speech_to_text: ^7.3.0
+  font_awesome_flutter: ^11.0.0
 
   # --- AR Plugin ---
   ar_flutter_plugin_2: ^0.0.3
@@ -63,6 +64,7 @@ dependencies:
   screenshot: ^3.0.0
   share_plus: ^7.2.1
   path_provider: ^2.1.5
+  flutter_native_splash: ^2.4.0
 
 dev_dependencies:
   flutter_test:
@@ -79,9 +81,7 @@ dev_dependencies:
 
   # --- security ---
   flutter_dotenv: ^6.0.0
-
-  # --- splash ---
-  flutter_native_splash: ^2.4.0
+  mocktail: ^1.0.5
 
 flutter_native_splash:
   # default
