@@ -191,6 +191,7 @@ model ProductVariant {
   orderItems            OrderItem[]
   assets                ProductAsset[]
   imageEmbeddings       ProductImageEmbedding[]
+  flashSaleProducts     FlashSaleProduct[]
   product               Product                @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([price])
@@ -649,4 +650,19 @@ enum InventoryTransactionType {
 enum VoucherType {
   PERCENT
   FIXED_AMOUNT
+}
+
+model FlashSaleProduct {
+  id               String         @id @default(uuid()) @db.VarChar(36)
+  productVariantId String         @map("product_variant_id") @db.VarChar(36)
+  flashPrice       Decimal        @map("flash_price") @db.Decimal(15, 2)
+  stockLimit       Int            @map("stock_limit")
+  soldCount        Int            @default(0) @map("sold_count")
+  startsAt         DateTime       @map("starts_at")
+  expiresAt         DateTime       @map("expires_at")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+
+  @@map("flash_sale_products")
 }

@@ -1,6 +1,8 @@
 ALTER TABLE `chat_rooms`
   ADD COLUMN `customer_unread_count` INTEGER NOT NULL DEFAULT 0,
-  ADD COLUMN `staff_unread_count` INTEGER NOT NULL DEFAULT 0;
+  ADD COLUMN `staff_unread_count` INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN `last_message_at` DATETIME(3) NULL,
+  ADD COLUMN `last_message_content` TEXT NULL;
 
 ALTER TABLE `messages`
   ADD COLUMN `type` ENUM('TEXT', 'IMAGE', 'SYSTEM') NOT NULL DEFAULT 'TEXT',
