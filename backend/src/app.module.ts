@@ -25,6 +25,7 @@ import { InventoriesModule } from './inventories/inventories.module';
 import { PromotionModule } from './promotion/promotion.module';
 import { NotificationModule } from './notification/notification.module';
 import { AddressModule } from './address/address.module';
+import { FlashSaleModule } from './flash-sale/flash-sale.module';
 
 @Module({
   imports: [
@@ -76,7 +77,8 @@ import { AddressModule } from './address/address.module';
     InventoriesModule,
     PromotionModule,
     NotificationModule,
-    AddressModule
+    AddressModule,
+    FlashSaleModule
   ],
   controllers: [AppController],
   providers: [

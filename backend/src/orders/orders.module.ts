@@ -7,6 +7,7 @@ import { ActivityLogModule } from 'src/activity-log/activity-log.module';
 import { InventoriesModule } from 'src/inventories/inventories.module';
 import { PromotionModule } from 'src/promotion/promotion.module';
 import { NotificationModule } from 'src/notification/notification.module';
+import { FlashSaleModule } from 'src/flash-sale/flash-sale.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { NotificationModule } from 'src/notification/notification.module';
     InventoriesModule,
     PromotionModule,
     NotificationModule,
+    FlashSaleModule,
   ],
   providers: [OrdersService],
   controllers: [OrdersController],

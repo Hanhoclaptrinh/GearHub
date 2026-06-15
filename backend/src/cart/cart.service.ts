@@ -170,6 +170,17 @@ export class CartService {
 
         if (!cart) return this.getOrCreateCart(userId);
 
+        // lấy danh sách fs đang hoạt động cho các variant trong giỏ hàng
+        const variantIds = cart.items.map(i => i.productVariantId);
+        const now = new Date();
+        const activeFlashSales = await this.prisma.flashSaleProduct.findMany({
+            where: {
+                productVariantId: { in: variantIds },
+                startsAt: { lte: now },
+                expiresAt: { gte: now }
+            }
+        });
+
         // filter và cảnh báo sp đã hết hàng hoặc ngừng kinh doanh
         const itemsWithTotal = cart.items.map(item => {
             const isAvailable =
@@ -177,10 +188,21 @@ export class CartService {
                 item.productVariant.product.isActive &&
                 item.productVariant.stock > 0;
 
+            const flashSale = activeFlashSales.find(fs => fs.productVariantId === item.productVariantId);
+            const hasActiveFlashSale = flashSale && (flashSale.soldCount < flashSale.stockLimit);
+            const price = hasActiveFlashSale ? Number(flashSale.flashPrice) : Number(item.productVariant.price);
+
             return {
                 ...item,
                 isAvailable,
-                itemTotal: item.quantity * Number(item.productVariant.price)
+                flashSale: hasActiveFlashSale ? {
+                    id: flashSale.id,
+                    flashPrice: Number(flashSale.flashPrice),
+                    stockLimit: flashSale.stockLimit,
+                    soldCount: flashSale.soldCount
+                } : null,
+                priceUsed: price,
+                itemTotal: item.quantity * price
             };
         });
 

@@ -1152,6 +1152,14 @@ export class ProductsService {
                         orderBy: {
                             price: 'asc'
                         },
+                        include: {
+                            flashSaleProducts: {
+                                where: {
+                                    startsAt: { lte: new Date() },
+                                    expiresAt: { gte: new Date() }
+                                }
+                            }
+                        }
                     },
                     assets: true
                 },
@@ -1195,6 +1203,7 @@ export class ProductsService {
     async getProductById(idOrSlug: string) {
         // regex uuid hợp lệ
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+        const now = new Date();
 
         const product = await this.prisma.product.findUnique({
             where: isUuid ? { id: idOrSlug } : { slug: idOrSlug },
@@ -1203,7 +1212,15 @@ export class ProductsService {
                 category: { include: { parent: { select: { id: true, name: true } } } },
                 variants: {
                     orderBy: { price: "asc" },
-                    include: { assets: true }
+                    include: {
+                        assets: true,
+                        flashSaleProducts: {
+                            where: {
+                                startsAt: { lte: now },
+                                expiresAt: { gte: now }
+                            }
+                        }
+                    }
                 },
                 assets: true
             }

@@ -22,6 +22,7 @@ import { PromotionService } from 'src/promotion/promotion.service';
 import { NotificationService } from 'src/notification/notification.service';
 import { ReviewCancelDto } from './dto/review-cancel.dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { FlashSaleService } from 'src/flash-sale/flash-sale.service';
 
 @Injectable()
 export class OrdersService {
@@ -32,6 +33,7 @@ export class OrdersService {
     private inventoriesService: InventoriesService,
     private promotionService: PromotionService,
     private notificationService: NotificationService,
+    private flashSaleService: FlashSaleService,
   ) { }
 
   /**
@@ -65,7 +67,10 @@ export class OrdersService {
 
       // tính tổng giá trị tạm tính và kiểm tra tồn kho để đảm bảo cửa hàng có đủ số lượng sản phẩm cung ứng
       let totalAmount = 0;
-      const orderItemsData = items.map((item) => {
+      const orderItemsData: any[] = [];
+
+      // tìm sản phẩm và kiểm tra tồn kho
+      for (const item of items) {
         const variant = variants.find((v) => v.id === item.variantId);
         if (!variant) {
           throw new NotFoundException(
@@ -80,16 +85,27 @@ export class OrdersService {
           );
         }
 
-        totalAmount += Number(variant.price) * item.quantity;
+        // kiểm tra sản phẩm này có đang chạy flash sale không
+        // nếu luồng order bị lỗi - hủy toàn bộ các hành động trừ kho flash sale
+        const flashSale = await this.flashSaleService.validateAndGetFlashSale(
+          item.variantId,
+          item.quantity,
+          tx,
+        );
+        // quyết định giá mua thực tế và cộng dồn tiền vào đơn hàng
+        // nếu có chương trình flash sale thì lấy giá được giảm
+        // không thì lấy giá gốc của biến thể
+        const priceAtPurchase = flashSale ? flashSale.flashPrice : Number(variant.price);
+        totalAmount += priceAtPurchase * item.quantity; // tổng tiền đơn
 
-        return {
+        orderItemsData.push({
           productVariantId: item.variantId,
           quantity: item.quantity,
-          priceAtPurchase: variant.price, // lưu lại giá tại thời điểm mua để phục vụ làm hóa đơn và đối soát sau này
+          priceAtPurchase: new Prisma.Decimal(priceAtPurchase), // snap lại giá lúc user mua, tránh làm sai lệch lịch sử đơn hàng khi hết đợt flash sale
           productName: variant.product.name,
           variantName: variant.name,
-        };
-      });
+        });
+      }
 
       // mô hình giá đã bao gồm VAT
       const subtotal = totalAmount; // tổng tiền đã bao gồm thuế
@@ -1215,6 +1231,22 @@ export class OrdersService {
         where: { id: userVoucher.id },
         data: { usedAt: null, orderId: null },
       });
+    }
+
+    // hoàn trả tồn kho flash sale
+    const order = await tx.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+    if (order) {
+      for (const item of order.items) {
+        await this.flashSaleService.rollbackFlashSaleStock(
+          item.productVariantId,
+          item.quantity,
+          order.createdAt,
+          tx,
+        );
+      }
     }
   }
 
