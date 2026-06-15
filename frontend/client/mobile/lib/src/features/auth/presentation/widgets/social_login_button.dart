@@ -22,6 +22,8 @@ class SocialLoginButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -33,16 +35,13 @@ class SocialLoginButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 18),
         decoration: BoxDecoration(
           color: isFilled
-              ? (fillColor ?? const Color(0xFF14141E))
-              : const Color(0xFF14141E),
+              ? (fillColor ?? cs.surfaceContainerHighest)
+              : cs.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.08),
-            width: 1,
-          ),
+          border: Border.all(color: cs.outlineVariant, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
+              color: cs.shadow.withValues(alpha: isDark ? 0.2 : 0.05),
               blurRadius: 15,
               offset: const Offset(0, 4),
             ),
@@ -58,9 +57,7 @@ class SocialLoginButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: isFilled
-                    ? (textColor ?? Colors.white)
-                    : Colors.white,
+                color: isFilled ? (textColor ?? cs.onSurface) : cs.onSurface,
                 letterSpacing: 0.2,
               ),
             ),
@@ -70,18 +67,11 @@ class SocialLoginButton extends StatelessWidget {
     );
   }
 
-
   Widget _buildIcon() {
     switch (iconPath) {
       case 'google':
         return SvgPicture.asset(
           'assets/logo/google-icon.svg',
-          width: 22,
-          height: 22,
-        );
-      case 'facebook':
-        return SvgPicture.asset(
-          'assets/logo/facebook-icon.svg',
           width: 22,
           height: 22,
         );
@@ -99,6 +89,8 @@ class SocialIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -108,15 +100,12 @@ class SocialIconButton extends StatelessWidget {
         width: 64,
         height: 64,
         decoration: BoxDecoration(
-          color: const Color(0xFF14141E),
+          color: cs.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.08),
-            width: 1,
-          ),
+          border: Border.all(color: cs.outlineVariant, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
+              color: cs.shadow.withValues(alpha: isDark ? 0.2 : 0.05),
               blurRadius: 15,
               offset: const Offset(0, 4),
             ),
@@ -127,18 +116,11 @@ class SocialIconButton extends StatelessWidget {
     );
   }
 
-
   Widget _buildIcon() {
     switch (type) {
       case 'google':
         return SvgPicture.asset(
           'assets/logo/google-icon.svg',
-          width: 24,
-          height: 24,
-        );
-      case 'facebook':
-        return SvgPicture.asset(
-          'assets/logo/facebook-icon.svg',
           width: 24,
           height: 24,
         );

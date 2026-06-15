@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -6,7 +7,6 @@ import 'package:mobile/src/features/cart/domain/entities/cart_item_entity.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 import 'package:mobile/src/shared/widgets/stock_limit_dialog.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
 import 'quantity_selector.dart';
 
 class CartItemCard extends StatefulWidget {
@@ -62,20 +62,31 @@ class _CartItemCardState extends State<CartItemCard>
     super.dispose();
   }
 
+  ///xử lý sự kiện khi kéo theo chiều ngang
+  ///cập nhật giá trị kéo và điều chỉnh controller
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
+    //cộng dồn khoảng cách kéo
     _dragExtent += details.delta.dx;
+
+    //giới hạn phạm vi kéo
     if (_dragExtent > 0) _dragExtent = 0;
     if (_dragExtent < -_maxDragExtent * 1.2) {
       _dragExtent = -_maxDragExtent * 1.2;
     }
+
+    //cập nhật giá trị controller theo tỷ lệ kéo
     _dragController.value = _dragExtent.abs() / _maxDragExtent;
   }
 
+  ///xử lý sự kiện khi kết thúc thao tác kéo
+  ///quyết định xem có thực hiện hoàn tất hành động hay không
   void _onHorizontalDragEnd(DragEndDetails details) {
+    //nếu kéo quá một nửa thì chạy tới
     if (_dragExtent.abs() > _maxDragExtent / 2) {
       _dragController.forward();
       _dragExtent = -_maxDragExtent;
     } else {
+      //ngược lại thì quay về vị trí ban đầu
       _dragController.reverse();
       _dragExtent = 0;
     }
@@ -88,14 +99,20 @@ class _CartItemCardState extends State<CartItemCard>
 
   String _getVariantComboName(dynamic variant) {
     if (variant == null) return '';
+    //chuyển đổi giá trị thuộc tính thành string list
     final values = variant.attributes.values.map((e) => e.toString()).toList();
     return values.join(' / ');
   }
 
+  ///hiển thị bảng chọn phân loại sản phẩm
+  ///cho phép người dùng thay đổi biến thể hiện tại trong giỏ hàng
   void _showVariantSelectionSheet(BuildContext context) {
+    //lọc các biến thể đang hoạt động
     final variants = widget.item.product.variants
         .where((v) => v.isActive)
         .toList();
+
+    //nếu không có biến thể thì thoát
     if (variants.isEmpty) return;
 
     showModalBottomSheet(
@@ -104,34 +121,38 @@ class _CartItemCardState extends State<CartItemCard>
       isScrollControlled: true,
       builder: (BuildContext sheetContext) {
         return Container(
-          decoration: const BoxDecoration(
-            color: AppColors.background,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border(
-              top: BorderSide(color: AppColors.borderCardStrong, width: 0.5),
+              top: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                width: 0.5,
+              ),
             ),
           ),
           padding: const EdgeInsets.only(top: 20, bottom: 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              //thanh kéo định dạng
               Container(
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.borderCardStrong,
+                  color: Theme.of(context).colorScheme.outlineVariant,
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
               const SizedBox(height: 20),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
                   'Chọn phân loại hàng',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -148,9 +169,12 @@ class _CartItemCardState extends State<CartItemCard>
 
                     return GestureDetector(
                       onTap: () {
+                        //nếu biến thể chưa được chọn thì thực hiện đổi
                         if (!isSelected) {
                           final cartState = context.read<CartCubit>().state;
                           int existingQty = 0;
+
+                          //kiểm tra số lượng hiện có trong giỏ
                           if (cartState.cart != null) {
                             final existingItem = cartState.cart!.items
                                 .where((i) => i.productVariant.id == variant.id)
@@ -158,6 +182,7 @@ class _CartItemCardState extends State<CartItemCard>
                             existingQty = existingItem?.quantity ?? 0;
                           }
 
+                          //kiểm tra giới hạn kho
                           if (existingQty + widget.item.quantity >
                               variant.stock) {
                             Navigator.pop(sheetContext);
@@ -171,6 +196,7 @@ class _CartItemCardState extends State<CartItemCard>
                             return;
                           }
 
+                          //cập nhật biến thể qua cubit
                           context.read<CartCubit>().changeVariant(
                             widget.item.id,
                             widget.item.productVariant.id,
@@ -192,13 +218,19 @@ class _CartItemCardState extends State<CartItemCard>
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? AppColors.champagneSoft
-                              : AppColors.cardSurfaceAlt,
+                              ? Theme.of(
+                                  context,
+                                ).colorScheme.primary.withValues(alpha: 0.08)
+                              : Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: isSelected
-                                ? AppColors.champagne.withValues(alpha: 0.4)
-                                : AppColors.borderCardStrong,
+                                ? Theme.of(
+                                    context,
+                                  ).colorScheme.primary.withValues(alpha: 0.35)
+                                : Theme.of(context).colorScheme.outlineVariant,
                             width: isSelected ? 1 : 0.5,
                           ),
                         ),
@@ -208,6 +240,7 @@ class _CartItemCardState extends State<CartItemCard>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  //tên phân loại
                                   Text(
                                     variantName.isEmpty
                                         ? 'Mặc định'
@@ -216,28 +249,38 @@ class _CartItemCardState extends State<CartItemCard>
                                       fontWeight: FontWeight.w700,
                                       fontSize: 14,
                                       color: isSelected
-                                          ? AppColors.textPrimary
-                                          : AppColors.slate400,
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface
+                                          : Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
+                                  //giá sản phẩm
                                   Text(
                                     formatVND(variant.price),
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                       color: isSelected
-                                          ? AppColors.textPrimary
-                                          : AppColors.slate600,
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface
+                                          : Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant
+                                                .withValues(alpha: 0.7),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
                             if (isSelected)
-                              const Icon(
+                              Icon(
                                 LucideIcons.circleCheck,
-                                color: AppColors.champagne,
+                                color: Theme.of(context).colorScheme.primary,
                                 size: 22,
                               ),
                           ],
@@ -271,14 +314,14 @@ class _CartItemCardState extends State<CartItemCard>
         children: [
           Positioned.fill(
             child: Container(
-              color: AppColors.cardSurface,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   _buildActionButton(
                     icon: LucideIcons.sparkles,
                     label: 'Tương tự',
-                    color: AppColors.slate400,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     onTap: () {
                       _close();
                       widget.onViewSimilar();
@@ -298,7 +341,7 @@ class _CartItemCardState extends State<CartItemCard>
             ),
           ),
 
-          // content
+          //content
           AnimatedBuilder(
             animation: _contentAnimation,
             builder: (context, child) {
@@ -310,21 +353,18 @@ class _CartItemCardState extends State<CartItemCard>
             child: GestureDetector(
               onHorizontalDragUpdate: _onHorizontalDragUpdate,
               onHorizontalDragEnd: _onHorizontalDragEnd,
-              onLongPress: () {
-                HapticFeedback.heavyImpact();
-                widget.onLongPress();
-              },
               onTap: () {
-                HapticFeedback.lightImpact();
-                widget.onToggleSelected();
+                widget.onLongPress();
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 decoration: BoxDecoration(
-                  color: AppColors.background,
+                  color: Theme.of(context).scaffoldBackgroundColor,
                   border: Border(
                     bottom: BorderSide(
-                      color: AppColors.textPrimary.withValues(alpha: 0.05),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.05),
                       width: 0.5,
                     ),
                   ),
@@ -332,8 +372,17 @@ class _CartItemCardState extends State<CartItemCard>
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    _buildSelectionIndicator(isSelected),
-                    const SizedBox(width: 16),
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        widget.onToggleSelected();
+                      },
+                      behavior: HitTestBehavior.opaque,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 16),
+                        child: _buildSelectionIndicator(isSelected),
+                      ),
+                    ),
                     _buildImageBox(productImage, isSelected),
                     const SizedBox(width: 20),
 
@@ -349,10 +398,12 @@ class _CartItemCardState extends State<CartItemCard>
                               Expanded(
                                 child: Text(
                                   productName.toUpperCase(),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w900,
                                     fontSize: 12,
-                                    color: AppColors.textPrimary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
                                     letterSpacing: 1.0,
                                     height: 1.4,
                                   ),
@@ -365,7 +416,7 @@ class _CartItemCardState extends State<CartItemCard>
 
                           const SizedBox(height: 8),
 
-                          // variant row
+                          //variant row
                           GestureDetector(
                             onTap: hasMultipleVariants
                                 ? () => _showVariantSelectionSheet(context)
@@ -378,8 +429,10 @@ class _CartItemCardState extends State<CartItemCard>
                                     variantName.isEmpty
                                         ? 'Mặc định'
                                         : variantName,
-                                    style: const TextStyle(
-                                      color: AppColors.slate400,
+                                    style: TextStyle(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 0.5,
@@ -390,27 +443,18 @@ class _CartItemCardState extends State<CartItemCard>
                                 ),
                                 if (hasMultipleVariants) ...[
                                   const SizedBox(width: 4),
-                                  const Icon(
+                                  Icon(
                                     LucideIcons.chevronDown,
                                     size: 10,
-                                    color: AppColors.slate400,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
                                   ),
                                 ],
                               ],
                             ),
                           ),
                           const SizedBox(height: 14),
-
-                          const Text(
-                            'GIÁ',
-                            style: TextStyle(
-                              color: AppColors.slate600,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
 
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
@@ -421,10 +465,12 @@ class _CartItemCardState extends State<CartItemCard>
                                   alignment: Alignment.centerLeft,
                                   child: Text(
                                     formatVND(productPrice),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w200,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
                                       fontSize: 22,
-                                      color: AppColors.textPrimary,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface,
                                       letterSpacing: -0.5,
                                       height: 1.0,
                                     ),
@@ -455,16 +501,18 @@ class _CartItemCardState extends State<CartItemCard>
 
   Widget _buildImageBox(String url, bool isSelected) {
     return Container(
-      width: 80,
-      height: 80,
+      width: 88,
+      height: 88,
       decoration: BoxDecoration(
-        color: AppColors.cardSurfaceAlt,
-        borderRadius: BorderRadius.circular(12),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isSelected
-              ? AppColors.champagne.withValues(alpha: 0.3)
-              : AppColors.borderCardStrong,
-          width: 0.5,
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+              : Theme.of(
+                  context,
+                ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+          width: isSelected ? 1 : 0.5,
         ),
       ),
       clipBehavior: Clip.antiAlias,
@@ -475,41 +523,59 @@ class _CartItemCardState extends State<CartItemCard>
     );
   }
 
+  ///xây dựng widget hiển thị ảnh sản phẩm
+  ///hỗ trợ tải từ url hoặc asset địa phương
   Widget _buildProductImage(String url) {
+    //trả về icon mặc định nếu không có url
     if (url.isEmpty) {
-      return const Center(
-        child: Icon(LucideIcons.image, color: AppColors.slate600, size: 28),
-      );
-    }
-    if (url.startsWith('http')) {
-      return Image.network(
-        url,
-        fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => const Center(
-          child: Icon(LucideIcons.image, color: AppColors.slate600, size: 28),
+      return Center(
+        child: Icon(
+          LucideIcons.image,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          size: 28,
         ),
       );
     }
+
+    //xử lý tải ảnh từ mạng với bộ nhớ đệm
+    if (url.startsWith('http')) {
+      return CachedNetworkImage(
+        imageUrl: url,
+        fit: BoxFit.contain,
+        //hiển thị icon khi tải lỗi
+        errorWidget: (_, __, ___) => Center(
+          child: Icon(
+            LucideIcons.image,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            size: 28,
+          ),
+        ),
+      );
+    }
+
+    //trả về ảnh từ asset nội bộ
     return Image.asset(url, fit: BoxFit.contain);
   }
 
   Widget _buildSelectionIndicator(bool isSelected) {
+    final colorScheme = Theme.of(context).colorScheme;
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      width: 16,
-      height: 16,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      width: 20,
+      height: 20,
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isSelected ? AppColors.champagne : Colors.transparent,
+        borderRadius: BorderRadius.circular(6),
+        color: isSelected ? colorScheme.primary : Colors.transparent,
         border: Border.all(
           color: isSelected
-              ? AppColors.champagne
-              : AppColors.textPrimary.withValues(alpha: 0.1),
-          width: 1,
+              ? colorScheme.primary
+              : colorScheme.onSurfaceVariant.withValues(alpha: 0.25),
+          width: 1.5,
         ),
       ),
       child: isSelected
-          ? const Icon(Icons.check, size: 10, color: AppColors.ctaPrimaryText)
+          ? Icon(LucideIcons.check, size: 13, color: colorScheme.onPrimary)
           : null,
     );
   }

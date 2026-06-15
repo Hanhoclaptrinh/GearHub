@@ -9,7 +9,7 @@ class SlideToActionButton extends StatefulWidget {
   const SlideToActionButton({
     super.key,
     required this.onAction,
-    this.text = 'Get Started',
+    this.text = 'Bắt đầu',
   });
 
   @override
@@ -80,7 +80,7 @@ class _SlideToActionButtonState extends State<SlideToActionButton>
     const double trackHeight = 64.0;
     const double hPadding = 6.0;
     const double vPadding = 4.0;
-    final double activeHeight = trackHeight - (vPadding * 2);
+    const double activeHeight = trackHeight - (vPadding * 2);
 
     final Color handleColor = isDark ? Colors.white : theme.colorScheme.primary;
 
@@ -140,7 +140,7 @@ class _SlideToActionButtonState extends State<SlideToActionButton>
                     ),
                   ),
 
-                  // draggable button
+                  //draggable button
                   Positioned(
                     left: _dragPosition,
                     top: 0,

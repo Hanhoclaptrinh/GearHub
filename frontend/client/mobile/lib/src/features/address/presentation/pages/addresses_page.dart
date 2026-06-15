@@ -8,6 +8,9 @@ import 'package:mobile/src/features/address/data/models/address_model.dart';
 import 'package:mobile/src/features/address/presentation/state/address_cubit.dart';
 import 'package:mobile/src/features/address/presentation/state/address_state.dart';
 import 'package:mobile/src/features/checkout/presentation/widgets/edit_address_modal.dart';
+import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
+import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
+import 'package:mobile/src/shared/widgets/error_illustration_widget.dart';
 
 class AddressesPage extends StatefulWidget {
   final bool selectMode;
@@ -56,30 +59,31 @@ class _AddressesPageState extends State<AddressesPage> {
           initialWard: address?.ward,
           initialDetail: address?.detail,
           initialSaveAsDefault: address?.isDefault ?? false,
-          onSave: (name, phone, province, district, ward, detail, saveAsDefault) {
-            if (address == null) {
-              _addressCubit.createAddress(
-                fullName: name,
-                phone: phone,
-                province: province,
-                district: district,
-                ward: ward,
-                detail: detail,
-                isDefault: saveAsDefault,
-              );
-            } else {
-              _addressCubit.updateAddress(
-                id: address.id,
-                fullName: name,
-                phone: phone,
-                province: province,
-                district: district,
-                ward: ward,
-                detail: detail,
-                isDefault: saveAsDefault,
-              );
-            }
-          },
+          onSave:
+              (name, phone, province, district, ward, detail, saveAsDefault) {
+                if (address == null) {
+                  _addressCubit.createAddress(
+                    fullName: name,
+                    phone: phone,
+                    province: province,
+                    district: district,
+                    ward: ward,
+                    detail: detail,
+                    isDefault: saveAsDefault,
+                  );
+                } else {
+                  _addressCubit.updateAddress(
+                    id: address.id,
+                    fullName: name,
+                    phone: phone,
+                    province: province,
+                    district: district,
+                    ward: ward,
+                    detail: detail,
+                    isDefault: saveAsDefault,
+                  );
+                }
+              },
         ),
       ),
     );
@@ -87,36 +91,55 @@ class _AddressesPageState extends State<AddressesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _addressCubit,
-      child: BlocConsumer<AddressCubit, AddressState>(
-        listener: (context, state) {
-          if (state is AddressActionSuccess) {
-            _showSnackBar(state.message);
-          } else if (state is AddressError) {
-            _showSnackBar(state.message, isError: true);
-          }
-        },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<AuthCubit, AuthState>(
+          listener: (context, state) {
+            if (state is AuthUnauthenticated) {
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            }
+          },
+        ),
+        BlocListener<AddressCubit, AddressState>(
+          bloc: _addressCubit,
+          listener: (context, state) {
+            if (state is AddressActionSuccess) {
+              _showSnackBar(state.message);
+            } else if (state is AddressError) {
+              if (_addressCubit.state is AddressLoaded) {
+                _showSnackBar(state.message, isError: true);
+              }
+            }
+          },
+        ),
+      ],
+      child: BlocBuilder<AddressCubit, AddressState>(
+        bloc: _addressCubit,
         builder: (context, state) {
+          final theme = Theme.of(context);
+          final cs = theme.colorScheme;
+          final isLoaded =
+              state is AddressLoaded || _addressCubit.state is AddressLoaded;
+
           return Scaffold(
-            backgroundColor: AppColors.background,
+            backgroundColor: theme.scaffoldBackgroundColor,
             appBar: AppBar(
-              backgroundColor: AppColors.background,
+              backgroundColor: theme.scaffoldBackgroundColor,
               elevation: 0,
               scrolledUnderElevation: 0,
               centerTitle: true,
               leading: GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: const Icon(
-                  Icons.arrow_back_rounded,
-                  color: AppColors.textPrimary,
+                child: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: cs.onSurface,
                   size: 22,
                 ),
               ),
               title: Text(
                 widget.selectMode ? "Chọn địa chỉ giao hàng" : "Địa chỉ đã lưu",
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: cs.onSurface,
                   fontWeight: FontWeight.w800,
                   fontSize: 20,
                   letterSpacing: -0.5,
@@ -126,26 +149,23 @@ class _AddressesPageState extends State<AddressesPage> {
             body: Stack(
               children: [
                 if (state is AddressLoading && state is! AddressLoaded)
-                  const Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.champagne,
-                    ),
-                  )
-                else if (state is AddressLoaded ||
-                    _addressCubit.state is AddressLoaded)
+                  Center(child: CircularProgressIndicator(color: cs.primary))
+                else if (isLoaded)
                   _buildAddressList(
                     (state is AddressLoaded)
                         ? state.addresses
                         : (_addressCubit.state as AddressLoaded).addresses,
                   )
+                else if (state is AddressError)
+                  ErrorIllustrationWidget(
+                    message: state.message,
+                    title: 'Không thể tải địa chỉ',
+                    onRetry: () => _addressCubit.fetchAddresses(),
+                  )
                 else
-                  const Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.champagne,
-                    ),
-                  ),
+                  Center(child: CircularProgressIndicator(color: cs.primary)),
 
-                _buildAddButton(),
+                if (isLoaded) _buildAddButton(),
               ],
             ),
           );
@@ -155,169 +175,153 @@ class _AddressesPageState extends State<AddressesPage> {
   }
 
   Widget _buildAddressList(List<AddressModel> addresses) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final textHigh = cs.onSurface;
+    final textMid = cs.onSurfaceVariant;
+
     if (addresses.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(LucideIcons.mapPin, size: 48, color: AppColors.textDim),
-            SizedBox(height: 16),
+            Icon(LucideIcons.mapPin, size: 48, color: textMid),
+            const SizedBox(height: 16),
             Text(
               "Bạn chưa có địa chỉ giao hàng nào",
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: textHigh,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               "Bấm nút bên dưới để thêm mới",
-              style: TextStyle(color: AppColors.textDim, fontSize: 13),
+              style: TextStyle(color: textMid, fontSize: 13),
             ),
           ],
         ),
       );
     }
 
-    return ListView.builder(
+    return ListView.separated(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
       itemCount: addresses.length,
+      separatorBuilder: (context, index) =>
+          Divider(color: cs.outlineVariant, thickness: 0.5, height: 32),
       itemBuilder: (context, index) {
         final address = addresses[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            color: AppColors.cardSurfaceAlt,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: address.isDefault
-                  ? AppColors.champagne
-                  : AppColors.borderCardStrong,
-              width: address.isDefault ? 1.0 : 0.5,
-            ),
-          ),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(20),
-            onTap: widget.selectMode
-                ? () => Navigator.pop(context, address)
-                : () => _openAddEditAddressModal(address: address),
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        address.fullName,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
+        return InkWell(
+          onTap: widget.selectMode
+              ? () => Navigator.pop(context, address)
+              : () => _openAddEditAddressModal(address: address),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Text(
+                      address.fullName,
+                      style: TextStyle(
+                        color: textHigh,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
                       ),
-                      const SizedBox(width: 10),
-                      Text(
-                        address.phone,
-                        style: const TextStyle(
-                          color: AppColors.textDim,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const Spacer(),
-                      if (address.isDefault)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.champagne.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: AppColors.champagne.withValues(alpha: 0.3),
-                              width: 0.5,
-                            ),
-                          ),
-                          child: const Text(
-                            "Mặc định",
-                            style: TextStyle(
-                              color: AppColors.champagne,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    address.fullAddressText,
-                    style: const TextStyle(
-                      color: AppColors.slate400,
-                      fontSize: 14,
-                      height: 1.4,
                     ),
-                  ),
-                  const Divider(color: AppColors.borderCardStrong, height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      if (!address.isDefault)
-                        TextButton(
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            _addressCubit.setDefaultAddress(address.id);
-                          },
-                          child: const Text(
-                            "Thiết lập mặc định",
-                            style: TextStyle(
-                              color: AppColors.brandBlue,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
+                    Text(
+                      address.phone,
+                      style: TextStyle(
+                        color: textMid,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    if (address.isDefault) _buildDefaultBadge(cs),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  address.fullAddressText,
+                  style: TextStyle(color: textMid, fontSize: 14, height: 1.6),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (!address.isDefault)
+                      TextButton(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          _addressCubit.setDefaultAddress(address.id);
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
                           ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                      TextButton.icon(
-                        onPressed: () =>
-                            _openAddEditAddressModal(address: address),
-                        icon: const Icon(
-                          LucideIcons.pencil,
-                          size: 14,
-                          color: AppColors.slate400,
-                        ),
-                        label: const Text(
-                          "Sửa",
+                        child: Text(
+                          "Thiết lập mặc định",
                           style: TextStyle(
-                            color: AppColors.slate400,
+                            color: cs.primary,
                             fontSize: 13,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
-                      if (!address.isDefault)
-                        TextButton.icon(
-                          onPressed: () {
-                            _showDeleteConfirmDialog(address.id);
-                          },
-                          icon: const Icon(
-                            LucideIcons.trash2,
-                            size: 14,
-                            color: AppColors.error,
-                          ),
-                          label: const Text(
-                            "Xóa",
-                            style: TextStyle(
-                              color: AppColors.error,
-                              fontSize: 13,
-                            ),
-                          ),
+                    const SizedBox(width: 16),
+                    TextButton(
+                      onPressed: () =>
+                          _openAddEditAddressModal(address: address),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
                         ),
-                    ],
-                  ),
-                ],
-              ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        "Sửa",
+                        style: TextStyle(
+                          color: textMid,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    TextButton(
+                      onPressed: () => _showDeleteConfirmDialog(address.id),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text(
+                        "Xóa",
+                        style: TextStyle(
+                          color: AppColors.error,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         );
@@ -325,32 +329,58 @@ class _AddressesPageState extends State<AddressesPage> {
     );
   }
 
+  Widget _buildDefaultBadge(ColorScheme cs) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: cs.primary,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        "Mặc định",
+        style: TextStyle(
+          color: cs.onPrimary,
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
   void _showDeleteConfirmDialog(String id) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppColors.cardSurfaceAlt,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: AppColors.borderCardStrong, width: 0.5),
+          side: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            width: 0.5,
+          ),
         ),
-        title: const Text(
+        title: Text(
           "Xác nhận xóa",
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
-        content: const Text(
+        content: Text(
           "Bạn có chắc chắn muốn xóa địa chỉ này?",
-          style: TextStyle(color: AppColors.slate400),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text(
+            child: Text(
               "Hủy",
-              style: TextStyle(color: AppColors.slate400),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           TextButton(
@@ -373,6 +403,8 @@ class _AddressesPageState extends State<AddressesPage> {
 
   Widget _buildAddButton() {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final cs = Theme.of(context).colorScheme;
+
     return Positioned(
       bottom: 20 + bottomPadding,
       left: 20,
@@ -382,26 +414,19 @@ class _AddressesPageState extends State<AddressesPage> {
         child: Container(
           height: 56,
           decoration: BoxDecoration(
-            color: AppColors.champagne,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.champagne.withValues(alpha: 0.3),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            color: cs.primary,
+            borderRadius: BorderRadius.circular(32), // Fully rounded Pill Shape
           ),
-          child: const Center(
+          child: Center(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(LucideIcons.plus, color: Colors.black, size: 20),
-                SizedBox(width: 8),
+                Icon(LucideIcons.plus, color: cs.onPrimary, size: 20),
+                const SizedBox(width: 8),
                 Text(
                   "THÊM ĐỊA CHỈ MỚI",
                   style: TextStyle(
-                    color: Colors.black,
+                    color: cs.onPrimary,
                     fontWeight: FontWeight.w900,
                     fontSize: 14,
                     letterSpacing: 1,

@@ -27,6 +27,7 @@ class ColorBubbleSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final values = _getUniqueValues();
     if (values.isEmpty) return const SizedBox.shrink();
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Wrap(
       spacing: spacing,
@@ -62,7 +63,7 @@ class ColorBubbleSelector extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(
                 color: isSelected
-                    ? const Color(0xFFFDE047)
+                    ? primaryColor
                     : Colors.transparent,
                 width: 1.5,
               ),
@@ -76,9 +77,7 @@ class ColorBubbleSelector extends StatelessWidget {
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: const Color(
-                            0xFFFDE047,
-                          ).withValues(alpha: 0.15),
+                          color: primaryColor.withValues(alpha: 0.15),
                           blurRadius: 10,
                           spreadRadius: 1,
                         ),

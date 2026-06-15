@@ -24,7 +24,7 @@ class SearchHistoryTagsWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // recent searches
+        //recent searches
         if (searchHistory.isNotEmpty) ...[
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -44,12 +44,12 @@ class SearchHistoryTagsWidget extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  const Text(
+                  Text(
                     'Lịch sử tìm kiếm',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
-                      color: AppColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -91,28 +91,32 @@ class SearchHistoryTagsWidget extends StatelessWidget {
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.cardSurfaceAltAlt,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.borderCardStrong),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         k,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textSlate,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(width: 8),
                       GestureDetector(
                         onTap: () => onRemoveHistoryItem(k),
-                        child: const Icon(
+                        child: Icon(
                           LucideIcons.x,
                           size: 14,
-                          color: AppColors.textDim,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -124,7 +128,7 @@ class SearchHistoryTagsWidget extends StatelessWidget {
           const SizedBox(height: 32),
         ],
 
-        // rcm keyword/popular
+        //rcm keyword/popular
         if (popularKeywords.isNotEmpty) ...[
           Row(
             children: [
@@ -141,12 +145,12 @@ class SearchHistoryTagsWidget extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              const Text(
+              Text(
                 'Có phải bạn muốn tìm',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                   letterSpacing: -0.3,
                 ),
               ),
@@ -168,16 +172,18 @@ class SearchHistoryTagsWidget extends StatelessWidget {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.cardSurfaceAlt,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.borderCardStrong),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
                   ),
                   child: Text(
                     k,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textSlate,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),

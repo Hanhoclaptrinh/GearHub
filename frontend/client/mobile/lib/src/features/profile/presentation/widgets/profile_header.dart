@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/features/auth/domain/entities/user_entity.dart';
 import 'package:mobile/src/features/profile/presentation/pages/edit_profile_page.dart';
@@ -10,12 +11,16 @@ class ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 32, 24, 48),
       child: Column(
         children: [
-          // ── Profile Identity Section ──
+          //profile indentity
+          //nhấn vào qua trang sửa thông tin
           GestureDetector(
             onTap: user != null
                 ? () => Navigator.of(context).push(
@@ -27,27 +32,13 @@ class ProfileHeader extends StatelessWidget {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Pulse/Glow Effect
-                Container(
-                  width: 130,
-                  height: 130,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        AppColors.champagne.withValues(alpha: 0.1),
-                        AppColors.champagne.withValues(alpha: 0.0),
-                      ],
-                    ),
-                  ),
-                ),
                 Container(
                   width: 104,
                   height: 104,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08),
+                      color: cs.onSurface.withValues(alpha: 0.08),
                       width: 1.5,
                     ),
                   ),
@@ -57,7 +48,7 @@ class ProfileHeader extends StatelessWidget {
                       borderRadius: BorderRadius.circular(52),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFF14141E),
+                          color: cs.surfaceContainerHighest,
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.2),
@@ -72,9 +63,9 @@ class ProfileHeader extends StatelessWidget {
                                 fit: BoxFit.cover,
                                 filterQuality: FilterQuality.high,
                                 errorWidget: (_, __, ___) =>
-                                    _buildInitialAvatar(),
+                                    _buildInitialAvatar(context),
                               )
-                            : _buildInitialAvatar(),
+                            : _buildInitialAvatar(context),
                       ),
                     ),
                   ),
@@ -82,18 +73,32 @@ class ProfileHeader extends StatelessWidget {
 
                 if (user != null)
                   Positioned(
-                    bottom: 0,
-                    right: 4,
+                    bottom: 2,
+                    right: 2,
                     child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: const BoxDecoration(
-                        color: AppColors.champagne,
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: AppColors.ctaMain,
                         shape: BoxShape.circle,
+                        border: Border.all(
+                          color: theme.scaffoldBackgroundColor,
+                          width: 2.0,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.12),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      child: const Icon(
-                        Icons.edit_rounded,
-                        size: 14,
-                        color: Colors.black,
+                      child: const Center(
+                        child: Icon(
+                          LucideIcons.pencil,
+                          size: 12,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -105,10 +110,10 @@ class ProfileHeader extends StatelessWidget {
 
           Text(
             (user?.fullName ?? 'KHÁCH HÀNG'),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.w900,
-              color: Colors.white,
+              color: cs.onSurface,
               letterSpacing: -1.0,
             ),
           ),
@@ -121,7 +126,7 @@ class ProfileHeader extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: Colors.white.withValues(alpha: 0.36),
+                color: cs.onSurface.withValues(alpha: 0.36),
               ),
             )
           else
@@ -130,7 +135,7 @@ class ProfileHeader extends StatelessWidget {
               style: TextStyle(
                 fontSize: 9,
                 fontWeight: FontWeight.w900,
-                color: Colors.white.withValues(alpha: 0.2),
+                color: cs.onSurface.withValues(alpha: 0.2),
                 letterSpacing: 1.5,
               ),
             ),
@@ -139,16 +144,18 @@ class ProfileHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildInitialAvatar() {
+  Widget _buildInitialAvatar(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Center(
       child: Text(
         user?.fullName?.isNotEmpty == true
             ? user!.fullName![0].toUpperCase()
             : 'U',
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 32,
           fontWeight: FontWeight.w200,
-          color: Colors.white24,
+          color: cs.onSurface.withValues(alpha: 0.24),
         ),
       ),
     );

@@ -1,16 +1,14 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/core/storage/secure_storage_service.dart';
+import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/core/utils/device_utils.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
-import '../widgets/social_login_button.dart';
-import '../widgets/auth_primary_button.dart';
-import 'register_page.dart';
+import 'package:mobile/src/features/onboarding/presentation/widgets/three_animated_arrow.dart';
 import 'email_login_page.dart';
 
 class LoginPage extends StatelessWidget {
@@ -23,13 +21,14 @@ class LoginPage extends StatelessWidget {
 
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
+        if (ModalRoute.of(context)?.isCurrent != true) return;
         if (state is AuthAuthenticated) {
           Navigator.of(context).popUntil((route) => route.isFirst);
         } else if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),
-              backgroundColor: const Color(0xFFFF4D4D),
+              backgroundColor: AppColors.error,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -39,247 +38,214 @@ class LoginPage extends StatelessWidget {
         }
       },
       child: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.light,
+        value: Theme.of(context).brightness == Brightness.dark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark,
         child: Scaffold(
-          backgroundColor: const Color(0xFF050507),
-          body: Stack(
-            children: [
-              Positioned(
-                top: -size.height * 0.1,
-                right: -size.width * 0.2,
-                child: _buildGlow(
-                  const Color(0xFFFDE047).withValues(alpha: 0.12),
-                  300,
-                ),
-              ),
-              Positioned(
-                bottom: -size.height * 0.2,
-                left: -size.width * 0.2,
-                child: _buildGlow(
-                  const Color(0xFF3B82F6).withValues(alpha: 0.08),
-                  400,
-                ),
-              ),
-
-              SafeArea(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      28,
-                      40,
-                      28,
-                      bottomPadding + 20,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildLogo(),
-                        const SizedBox(height: 40),
-
-                        ShaderMask(
-                          shaderCallback: (bounds) => const LinearGradient(
-                            colors: [Colors.white, Colors.white70],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ).createShader(bounds),
-                          child: const Text(
-                            "THIẾT BỊ\nCÔNG NGHỆ\nCAO CẤP",
-                            style: TextStyle(
-                              fontSize: 44,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -1.5,
-                              height: 1.2,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        Text(
-                          'GearHub – Hệ sinh thái thiết bị tối thượng cho không gian sáng tạo của bạn.',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            color: Colors.white.withValues(alpha: 0.4),
-                            height: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 50),
-
-                        SocialLoginButton(
-                          label: 'TIẾP TỤC VỚI GOOGLE',
-                          iconPath: 'google',
-                          onTap: () async {
-                            HapticFeedback.mediumImpact();
-                            final deviceId = await DeviceUtils.getDeviceId(
-                              getIt<SecureStorageService>(),
-                            );
-                            if (context.mounted) {
-                              context.read<AuthCubit>().loginWithGoogle(
-                                deviceId: deviceId,
-                              );
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 12),
-
-                        SocialLoginButton(
-                          label: 'TIẾP TỤC VỚI FACEBOOK',
-                          iconPath: 'facebook',
-                          onTap: () => HapticFeedback.mediumImpact(),
-                        ),
-                        const SizedBox(height: 32),
-
-                        _buildDivider(),
-                        const SizedBox(height: 32),
-
-                        AuthPrimaryButton(
-                          label: 'ĐĂNG NHẬP',
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const EmailLoginPage(),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 40),
-
-                        _buildFooter(context),
-                      ],
-                    ),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onHorizontalDragEnd: (details) {
+              //trượt ngang để mở trang login
+              if (details.primaryVelocity != null &&
+                  details.primaryVelocity! < 0) {
+                HapticFeedback.lightImpact();
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const EmailLoginPage()),
+                );
+              }
+            },
+            child: Stack(
+              children: [
+                Positioned(
+                  top: -size.height * 0.12,
+                  right: -size.width * 0.4,
+                  child: SvgPicture.asset(
+                    'assets/logo/union-auth.svg',
+                    width: size.width * 1.3,
+                    fit: BoxFit.contain,
                   ),
                 ),
-              ),
-              Positioned.fill(
-                child: BlocBuilder<AuthCubit, AuthState>(
-                  builder: (context, state) {
-                    if (state is AuthLoading) {
-                      return Container(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Color(0xFFFDE047),
+
+                Positioned(
+                  top: size.height * 0.14,
+                  right: size.width * 0.15,
+                  child: _buildHeroCircle('assets/images/hero1.png', 110),
+                ),
+
+                Positioned(
+                  top: size.height * 0.27,
+                  left: size.width * 0.36,
+                  child: _buildHeroCircle('assets/images/hero3.png', 165),
+                ),
+
+                Positioned(
+                  bottom: bottomPadding + 36,
+                  left: 28,
+                  right: 28,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "Let's Gear Up",
+                        style: TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.w900,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          letterSpacing: -1.5,
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "Nâng tầm cuộc chơi",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 48),
+
+                      //google cta
+                      GestureDetector(
+                        onTap: () async {
+                          HapticFeedback.mediumImpact();
+                          final deviceId = await DeviceUtils.getDeviceId(
+                            getIt<SecureStorageService>(),
+                          );
+                          if (context.mounted) {
+                            context.read<AuthCubit>().loginWithGoogle(
+                              deviceId: deviceId,
+                            );
+                          }
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                ? Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest
+                                      .withValues(alpha: 0.35)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(32),
+                            border: Border.all(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outlineVariant,
+                              width: 1.0,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(
+                                  alpha:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? 0.2
+                                      : 0.04,
+                                ),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SvgPicture.asset(
+                                'assets/logo/google-icon.svg',
+                                width: 22,
+                                height: 22,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                "Tiếp tục với Google",
+                                style: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: -0.1,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
+                      ),
+                      const SizedBox(height: 24),
+
+                      //slide
+                      Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ThreeAnimatedArrows(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant
+                                  .withValues(alpha: 0.7),
+                              isLeft: true,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              "Vuốt để khám phá",
+                              style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant
+                                    .withValues(alpha: 0.5),
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
-  Widget _buildGlow(Color color, double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-        child: Container(color: Colors.transparent),
-      ),
-    );
-  }
-
-  Widget _buildLogo() {
-    return Container(
-      width: 72,
-      height: 72,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A24),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFDE047).withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: const Center(
-        child: Icon(LucideIcons.zap, color: Color(0xFFFDE047), size: 32),
-      ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Row(
-      children: [
-        Expanded(
-          child: Divider(
-            color: Colors.white.withValues(alpha: 0.05),
-            thickness: 1,
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'HOẶC',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              color: Colors.white.withValues(alpha: 0.2),
-              letterSpacing: 2,
+                Positioned.fill(
+                  child: BlocBuilder<AuthCubit, AuthState>(
+                    builder: (context, state) {
+                      if (state is AuthLoading) {
+                        return Container(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.shadow.withValues(alpha: 0.5),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                AppColors.ctaMain,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-        Expanded(
-          child: Divider(
-            color: Colors.white.withValues(alpha: 0.05),
-            thickness: 1,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildFooter(BuildContext context) {
-    return Center(
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.heavyImpact();
-          Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (_) => const RegisterPage()));
-        },
-        behavior: HitTestBehavior.opaque,
-        child: RichText(
-          text: TextSpan(
-            style: const TextStyle(fontSize: 13, letterSpacing: 0.5),
-            children: [
-              TextSpan(
-                text: "CHƯA CÓ TÀI KHOẢN? ",
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white.withValues(alpha: 0.3),
-                ),
-              ),
-              const TextSpan(
-                text: 'ĐĂNG KÝ NGAY',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFFDE047),
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-            ],
-          ),
-        ),
+  Widget _buildHeroCircle(String assetPath, double size) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3))],
       ),
+      child: ClipOval(child: Image.asset(assetPath, fit: BoxFit.cover)),
     );
   }
 }

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/theme/app_colors.dart';
+import 'package:mobile/src/core/theme/app_theme.dart';
 import 'package:vietnam_provinces/vietnam_provinces.dart';
 
 class EditAddressPage extends StatefulWidget {
@@ -51,6 +52,10 @@ class _EditAddressPageState extends State<EditAddressPage> {
   late bool _saveAsDefault;
   InAppWebViewController? _webViewController;
 
+  final FocusNode _nameFocus = FocusNode();
+  final FocusNode _phoneFocus = FocusNode();
+  final FocusNode _detailedAddressFocus = FocusNode();
+
   Province? _selectedProvince;
   District? _selectedDistrict;
   Ward? _selectedWard;
@@ -64,6 +69,10 @@ class _EditAddressPageState extends State<EditAddressPage> {
       text: widget.initialDetail ?? '',
     );
     _saveAsDefault = widget.initialSaveAsDefault;
+
+    _nameFocus.addListener(() => setState(() {}));
+    _phoneFocus.addListener(() => setState(() {}));
+    _detailedAddressFocus.addListener(() => setState(() {}));
 
     _initializeAddressDivisions();
   }
@@ -108,6 +117,9 @@ class _EditAddressPageState extends State<EditAddressPage> {
     _nameController.dispose();
     _phoneController.dispose();
     _detailedAddressController.dispose();
+    _nameFocus.dispose();
+    _phoneFocus.dispose();
+    _detailedAddressFocus.dispose();
     super.dispose();
   }
 
@@ -167,29 +179,41 @@ class _EditAddressPageState extends State<EditAddressPage> {
     return null;
   }
 
+  ///phân tích chuỗi địa chỉ geocoded thành các thành phần tỉnh, huyện, xã
+  ///tự động cập nhật vào các biến trạng thái tương ứng
   void _parseGeocodedAddress(String address) {
+    //thoát nếu địa chỉ rỗng
     if (address.isEmpty) return;
 
     try {
+      //tách chuỗi thành các thành phần và loại bỏ khoảng trắng thừa
       final parts = address.split(',').map((p) => p.trim()).toList();
+
       if (parts.isNotEmpty && parts.last.toLowerCase() == 'việt nam') {
         parts.removeLast();
       }
 
+      //nếu không đủ thành phần phân cấp thì gán trực tiếp vào địa chỉ chi tiết
       if (parts.length < 3) {
         _detailedAddressController.text = parts.join(', ');
         return;
       }
 
+      //lấy các thành phần tỉnh, huyện, xã từ cuối danh sách
       final provincePart = parts.removeLast();
       final districtPart = parts.removeLast();
       final wardPart = parts.removeLast();
 
+      //tìm kiếm tỉnh trong db
       final province = _findProvince(provincePart);
       if (province != null) {
+        //tìm kiếm huyện thuộc tỉnh
         final district = _findDistrict(province, districtPart);
         if (district != null) {
+          //tìm kiếm xã thuộc huyện
           final ward = _findWard(province, district, wardPart);
+
+          //cập nhật trạng thái và địa chỉ chi tiết còn lại
           setState(() {
             _selectedProvince = province;
             _selectedDistrict = district;
@@ -200,17 +224,22 @@ class _EditAddressPageState extends State<EditAddressPage> {
         }
       }
 
+      //fallback nếu không tìm thấy phân cấp hành chính chính xác
       _detailedAddressController.text = address;
     } catch (e) {
-      debugPrint('Error parsing geocoded address: $e');
+      //ghi log lỗi và giữ nguyên địa chỉ gốc
+      debugPrint('error parsing geocoded address: $e');
       _detailedAddressController.text = address;
     }
   }
 
-  // --- API Geocoding ---
+  ///thực hiện truy vấn ngược để lấy địa chỉ từ tọa độ
+  ///api nominatim openstreetmap và trả về địa chỉ định dạng chuỗi
   Future<String> _reverseGeocode(double lat, double lng) async {
     try {
       final dio = dio_pkg.Dio();
+
+      //api reverse geocoding
       final response = await dio.get(
         'https://nominatim.openstreetmap.org/reverse',
         queryParameters: {
@@ -223,16 +252,23 @@ class _EditAddressPageState extends State<EditAddressPage> {
           headers: {'User-Agent': 'GearHub/1.0 (mobile client)'},
         ),
       );
+
       if (response.statusCode == 200 && response.data != null) {
         return response.data['display_name'] ?? '$lat, $lng';
       }
     } catch (_) {}
+
+    //trả về tọa độ dưới dạng chuỗi nếu không lấy được địa chỉ
     return '$lat, $lng';
   }
 
+  ///thực hiện truy vấn tìm tọa độ từ chuỗi địa chỉ
+  ///api nominatim openstreetmap và trả về map chứa lat và lng
   Future<Map<String, double>?> _forwardGeocode(String address) async {
     try {
       final dio = dio_pkg.Dio();
+
+      //api forward geocoding
       final response = await dio.get(
         'https://nominatim.openstreetmap.org/search',
         queryParameters: {
@@ -245,6 +281,8 @@ class _EditAddressPageState extends State<EditAddressPage> {
           headers: {'User-Agent': 'GearHub/1.0 (mobile client)'},
         ),
       );
+
+      //kiểm tra phản hồi và trích xuất tọa độ
       if (response.statusCode == 200 &&
           response.data is List &&
           (response.data as List).isNotEmpty) {
@@ -255,6 +293,8 @@ class _EditAddressPageState extends State<EditAddressPage> {
         };
       }
     } catch (_) {}
+
+    //trả về null nếu không tìm thấy tọa độ
     return null;
   }
 
@@ -288,6 +328,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        final theme = Theme.of(context);
         return StatefulBuilder(
           builder: (context, setModalState) {
             final filteredItems = items
@@ -300,74 +341,89 @@ class _EditAddressPageState extends State<EditAddressPage> {
 
             final bottomPadding = MediaQuery.of(context).padding.bottom;
             final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+            final isDark = theme.brightness == Brightness.dark;
             return Container(
               height: MediaQuery.of(context).size.height * 0.7,
               margin: EdgeInsets.only(bottom: keyboardHeight),
-              decoration: const BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.only(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF0C0C10)
+                    : theme.scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(28),
                   topRight: Radius.circular(28),
                 ),
                 border: Border(
                   top: BorderSide(
-                    color: AppColors.borderCardStrong,
-                    width: 0.5,
+                    color: theme.colorScheme.outlineVariant,
+                    width: 1.0,
                   ),
                 ),
               ),
               child: Column(
                 children: [
                   const SizedBox(height: 12),
-                  // Handle bar
+                  //handle bar
                   Container(
                     width: 38,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: AppColors.textDim.withValues(alpha: 0.3),
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.3,
+                      ),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w900,
+                      color: theme.colorScheme.onSurface,
+                      letterSpacing: -0.3,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Search box
+                  //search box
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: AppColors.cardSurfaceAltAlt,
+                        color: isDark
+                            ? const Color(0xFF161622)
+                            : theme.colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: AppColors.borderCardStrong,
-                          width: 0.5,
+                          color: theme.colorScheme.outlineVariant,
+                          width: 0.8,
                         ),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: TextField(
                         autofocus: true,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface,
                           fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Tìm kiếm nhanh...',
                           hintStyle: TextStyle(
-                            color: AppColors.textDim,
+                            color: theme.colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.6),
                             fontSize: 13,
                           ),
                           border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
                           icon: Icon(
                             LucideIcons.search,
                             size: 16,
-                            color: AppColors.textDim,
+                            color: isDark
+                                ? AppColors.champagne
+                                : theme.colorScheme.primary,
                           ),
                         ),
                         onChanged: (val) {
@@ -378,8 +434,8 @@ class _EditAddressPageState extends State<EditAddressPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  // List
+                  const SizedBox(height: 16),
+                  //list
                   Expanded(
                     child: ListView.builder(
                       physics: const BouncingScrollPhysics(),
@@ -393,28 +449,53 @@ class _EditAddressPageState extends State<EditAddressPage> {
                       itemBuilder: (context, index) {
                         final item = filteredItems[index];
                         final name = getName(item);
-                        return ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          title: Text(
-                            name,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF14141E)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: theme.colorScheme.outlineVariant,
+                              width: 0.5,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: .02),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                          trailing: const Icon(
-                            Icons.chevron_right_rounded,
-                            size: 16,
-                            color: AppColors.textDim,
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 2,
+                            ),
+                            title: Text(
+                              name,
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurface,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            trailing: Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 12,
+                              color: isDark
+                                  ? AppColors.champagne
+                                  : theme.colorScheme.primary,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            onTap: () {
+                              onSelect(item);
+                              Navigator.pop(context);
+                            },
                           ),
-                          onTap: () {
-                            onSelect(item);
-                            Navigator.pop(context);
-                          },
                         );
                       },
                     ),
@@ -429,6 +510,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
   }
 
   void _handleSave() {
+    final theme = Theme.of(context);
     if (_nameController.text.trim().isEmpty ||
         _phoneController.text.trim().isEmpty ||
         _selectedProvince == null ||
@@ -436,10 +518,10 @@ class _EditAddressPageState extends State<EditAddressPage> {
         _selectedWard == null ||
         _detailedAddressController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           behavior: SnackBarBehavior.floating,
-          backgroundColor: AppColors.accentPink,
-          content: Text(
+          backgroundColor: theme.colorScheme.danger,
+          content: const Text(
             'Vui lòng nhập và chọn đủ thông tin địa chỉ.',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
           ),
@@ -462,10 +544,12 @@ class _EditAddressPageState extends State<EditAddressPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
           CustomScrollView(
@@ -473,24 +557,24 @@ class _EditAddressPageState extends State<EditAddressPage> {
             slivers: [
               SliverAppBar(
                 pinned: true,
-                backgroundColor: AppColors.background,
+                backgroundColor: theme.scaffoldBackgroundColor,
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 leading: GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: const Icon(
-                    Icons.arrow_back_rounded,
-                    color: Colors.white,
+                  child: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: theme.colorScheme.onSurface,
                     size: 22,
                   ),
                 ),
                 centerTitle: true,
-                title: const Text(
+                title: Text(
                   "Thông tin giao hàng",
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -507,13 +591,17 @@ class _EditAddressPageState extends State<EditAddressPage> {
                       const _SectionLabel(text: "NGƯỜI NHẬN"),
                       const SizedBox(height: 10),
                       _buildTextField(
+                        context,
                         _nameController,
+                        _nameFocus,
                         "Họ và tên",
                         LucideIcons.user,
                       ),
                       const SizedBox(height: 10),
                       _buildTextField(
+                        context,
                         _phoneController,
+                        _phoneFocus,
                         "Số điện thoại",
                         LucideIcons.phone,
                         keyboardType: TextInputType.phone,
@@ -524,6 +612,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
                       const _SectionLabel(text: "ĐỊA CHỈ GIAO HÀNG"),
                       const SizedBox(height: 10),
                       _buildSelector(
+                        context,
                         label: _selectedProvince?.name ?? '',
                         hint: "Tỉnh / Thành phố",
                         icon: LucideIcons.map,
@@ -546,6 +635,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
                       ),
                       const SizedBox(height: 10),
                       _buildSelector(
+                        context,
                         label: _selectedDistrict?.name ?? '',
                         hint: "Quận / Huyện",
                         icon: LucideIcons.mapPin,
@@ -570,6 +660,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
                       ),
                       const SizedBox(height: 10),
                       _buildSelector(
+                        context,
                         label: _selectedWard?.name ?? '',
                         hint: "Phường / Xã",
                         icon: LucideIcons.navigation,
@@ -594,23 +685,30 @@ class _EditAddressPageState extends State<EditAddressPage> {
                       ),
                       const SizedBox(height: 10),
                       _buildTextField(
+                        context,
                         _detailedAddressController,
+                        _detailedAddressFocus,
                         "Số nhà, ngõ, tên đường...",
                         LucideIcons.house,
                       ),
-
                       const SizedBox(height: 16),
-
-                      // Interactive Dark Map View
+                      //map view
                       Container(
-                        height: 220,
+                        height: 230,
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(24),
                           border: Border.all(
-                            color: AppColors.borderCardStrong,
-                            width: 0.5,
+                            color: theme.colorScheme.outlineVariant,
+                            width: 1.0,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: .06),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         clipBehavior: Clip.antiAlias,
                         child: Stack(
@@ -623,7 +721,9 @@ class _EditAddressPageState extends State<EditAddressPage> {
                                     ),
                                   },
                               initialData: InAppWebViewInitialData(
-                                data: _mapHtml,
+                                data: _getMapHtml(
+                                  theme.brightness == Brightness.dark,
+                                ),
                               ),
                               onWebViewCreated: (controller) {
                                 _webViewController = controller;
@@ -648,8 +748,6 @@ class _EditAddressPageState extends State<EditAddressPage> {
                                     );
                                   },
                                 );
-
-                                // Pan to initial location if available
                                 Future.delayed(
                                   const Duration(milliseconds: 1200),
                                   () {
@@ -658,6 +756,42 @@ class _EditAddressPageState extends State<EditAddressPage> {
                                 );
                               },
                             ),
+                            //gps tag
+                            Positioned(
+                              top: 12,
+                              right: 12,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: .75),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: const Color(
+                                      0xFF22C55E,
+                                    ).withValues(alpha: .2),
+                                    width: 0.5,
+                                  ),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'GPS ACTIVE',
+                                      style: TextStyle(
+                                        color: Color(0xFF22C55E),
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.8,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            //map drag
                             Positioned(
                               bottom: 12,
                               left: 12,
@@ -667,30 +801,33 @@ class _EditAddressPageState extends State<EditAddressPage> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.cardSurfaceAlt.withValues(
-                                    alpha: 0.85,
-                                  ),
+                                  color: theme.brightness == Brightness.dark
+                                      ? const Color(
+                                          0xFF14141E,
+                                        ).withValues(alpha: .9)
+                                      : Colors.white.withValues(alpha: .9),
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
-                                    color: AppColors.borderCardStrong,
+                                    color: theme.colorScheme.outlineVariant,
                                     width: 0.5,
                                   ),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
                                       LucideIcons.move,
                                       size: 12,
-                                      color: AppColors.slate400,
+                                      color: theme.colorScheme.onSurfaceVariant,
                                     ),
-                                    SizedBox(width: 6),
+                                    const SizedBox(width: 6),
                                     Text(
                                       'Kéo bản đồ để ghim vị trí',
                                       style: TextStyle(
                                         fontSize: 10,
-                                        color: AppColors.slate400,
-                                        fontWeight: FontWeight.w600,
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant,
+                                        fontWeight: FontWeight.w700,
                                       ),
                                     ),
                                   ],
@@ -700,60 +837,82 @@ class _EditAddressPageState extends State<EditAddressPage> {
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 24),
-
                       GestureDetector(
                         onTap: () {
-                          HapticFeedback.lightImpact();
+                          HapticFeedback.selectionClick();
                           setState(() => _saveAsDefault = !_saveAsDefault);
                         },
-                        child: Container(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 14,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.cardSurfaceAlt,
+                            color: _saveAsDefault
+                                ? (isDark
+                                      ? AppColors.champagne.withValues(
+                                          alpha: 0.05,
+                                        )
+                                      : theme.colorScheme.primary.withValues(
+                                          alpha: 0.03,
+                                        ))
+                                : theme.colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: AppColors.borderCardStrong,
-                              width: 0.5,
+                              color: _saveAsDefault
+                                  ? (isDark
+                                        ? AppColors.champagne
+                                        : theme.colorScheme.primary)
+                                  : theme.colorScheme.outlineVariant,
+                              width: _saveAsDefault ? 1.0 : 0.8,
                             ),
                           ),
                           child: Row(
                             children: [
                               AnimatedContainer(
-                                duration: const Duration(milliseconds: 250),
-                                width: 22,
-                                height: 22,
+                                duration: const Duration(milliseconds: 200),
+                                width: 20,
+                                height: 20,
                                 decoration: BoxDecoration(
                                   color: _saveAsDefault
-                                      ? AppColors.champagne
+                                      ? (isDark
+                                            ? AppColors.champagne
+                                            : theme.colorScheme.primary)
                                       : Colors.transparent,
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(
                                     color: _saveAsDefault
-                                        ? AppColors.champagne
-                                        : AppColors.textDim,
-                                    width: 2,
+                                        ? (isDark
+                                              ? AppColors.champagne
+                                              : theme.colorScheme.primary)
+                                        : theme.colorScheme.onSurfaceVariant
+                                              .withValues(alpha: 0.6),
+                                    width: 1.5,
                                   ),
                                 ),
                                 child: _saveAsDefault
-                                    ? const Icon(
+                                    ? Icon(
                                         Icons.check,
-                                        size: 14,
-                                        color: Colors.black,
+                                        size: 13,
+                                        color: isDark
+                                            ? Colors.black
+                                            : Colors.white,
                                       )
                                     : null,
                               ),
                               const SizedBox(width: 12),
-                              const Text(
+                              Text(
                                 "Lưu làm địa chỉ mặc định",
                                 style: TextStyle(
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.slate400,
+                                  fontWeight: _saveAsDefault
+                                      ? FontWeight.w700
+                                      : FontWeight.w600,
+                                  color: _saveAsDefault
+                                      ? theme.colorScheme.onSurface
+                                      : theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -775,37 +934,40 @@ class _EditAddressPageState extends State<EditAddressPage> {
             right: 0,
             child: Container(
               padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPadding + 16),
-              decoration: const BoxDecoration(
-                color: AppColors.background,
+              decoration: BoxDecoration(
+                color: theme.scaffoldBackgroundColor,
                 border: Border(
                   top: BorderSide(
-                    color: AppColors.borderCardStrong,
-                    width: 0.5,
+                    color: theme.colorScheme.outlineVariant,
+                    width: 0.8,
                   ),
                 ),
               ),
               child: GestureDetector(
-                onTap: _handleSave,
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  _handleSave();
+                },
                 child: Container(
                   height: 56,
                   decoration: BoxDecoration(
-                    color: AppColors.champagne,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.champagne.withValues(alpha: 0.3),
-                        blurRadius: 5,
-                      ),
-                    ],
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.15)
+                          : Colors.black.withValues(alpha: 0.08),
+                      width: 0.5,
+                    ),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
                       "XÁC NHẬN ĐỊA CHỈ",
                       style: TextStyle(
-                        color: Colors.black,
+                        color: theme.colorScheme.onPrimary,
                         fontWeight: FontWeight.w900,
                         fontSize: 14,
-                        letterSpacing: 1,
+                        letterSpacing: 0.8,
                       ),
                     ),
                   ),
@@ -819,74 +981,169 @@ class _EditAddressPageState extends State<EditAddressPage> {
   }
 
   Widget _buildTextField(
+    BuildContext context,
     TextEditingController controller,
+    FocusNode focusNode,
     String hint,
     IconData icon, {
     int maxLines = 1,
     TextInputType? keyboardType,
   }) {
-    return Container(
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final isFocused = focusNode.hasFocus;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
-        color: AppColors.cardSurfaceAltAlt,
+        color: isFocused
+            ? (isDark ? const Color(0xFF161622) : Colors.white)
+            : theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderCardStrong, width: 0.5),
+        border: Border.all(
+          color: isFocused
+              ? (isDark ? AppColors.champagne : theme.colorScheme.primary)
+              : theme.colorScheme.outlineVariant,
+          width: isFocused ? 1.2 : 0.8,
+        ),
+        boxShadow: isFocused
+            ? [
+                BoxShadow(
+                  color:
+                      (isDark ? AppColors.champagne : theme.colorScheme.primary)
+                          .withValues(alpha: 0.12),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : [],
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextField(
         controller: controller,
+        focusNode: focusNode,
         maxLines: maxLines,
         keyboardType: keyboardType,
-        style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+        style: TextStyle(
+          color: theme.colorScheme.onSurface,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
         textInputAction: TextInputAction.next,
         decoration: InputDecoration(
-          icon: Icon(icon, size: 18, color: AppColors.textDim),
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isFocused
+                  ? (isDark
+                        ? AppColors.champagne.withValues(alpha: 0.12)
+                        : theme.colorScheme.primary.withValues(alpha: 0.08))
+                  : (isDark
+                        ? const Color(0xFF20202A)
+                        : theme.colorScheme.outlineVariant.withValues(
+                            alpha: 0.25,
+                          )),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 14,
+              color: isFocused
+                  ? (isDark ? AppColors.champagne : theme.colorScheme.primary)
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
           hintText: hint,
-          hintStyle: const TextStyle(color: AppColors.textDim, fontSize: 13),
+          hintStyle: TextStyle(
+            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.65),
+            fontSize: 13,
+            fontWeight: FontWeight.normal,
+          ),
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 16),
         ),
       ),
     );
   }
 
-  Widget _buildSelector({
+  Widget _buildSelector(
+    BuildContext context, {
     required String label,
     required String hint,
     required IconData icon,
     required VoidCallback onTap,
     bool enabled = true,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final hasValue = label.isNotEmpty;
+
     return Opacity(
-      opacity: enabled ? 1.0 : 0.5,
+      opacity: enabled ? 1.0 : 0.55,
       child: GestureDetector(
         onTap: enabled ? onTap : null,
         child: Container(
           height: 56,
           decoration: BoxDecoration(
-            color: AppColors.cardSurfaceAltAlt,
+            color: theme.colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.borderCardStrong, width: 0.5),
+            border: Border.all(
+              color: hasValue
+                  ? (isDark
+                        ? AppColors.champagne.withValues(alpha: 0.35)
+                        : theme.colorScheme.primary.withValues(alpha: 0.3))
+                  : theme.colorScheme.outlineVariant,
+              width: 0.8,
+            ),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              Icon(icon, size: 18, color: AppColors.textDim),
-              const SizedBox(width: 16),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: hasValue
+                      ? (isDark
+                            ? AppColors.champagne.withValues(alpha: 0.08)
+                            : theme.colorScheme.primary.withValues(alpha: 0.05))
+                      : (isDark
+                            ? const Color(0xFF20202A)
+                            : theme.colorScheme.outlineVariant.withValues(
+                                alpha: 0.25,
+                              )),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: 14,
+                  color: hasValue
+                      ? (isDark
+                            ? AppColors.champagne
+                            : theme.colorScheme.primary)
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  label.isNotEmpty ? label : hint,
+                  hasValue ? label : hint,
                   style: TextStyle(
-                    color: label.isNotEmpty
-                        ? AppColors.textPrimary
-                        : AppColors.textDim,
+                    color: hasValue
+                        ? theme.colorScheme.onSurface
+                        : theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.65,
+                          ),
                     fontSize: 14,
+                    fontWeight: hasValue ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.keyboard_arrow_down_rounded,
                 size: 18,
-                color: AppColors.textDim,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ],
           ),
@@ -895,7 +1152,15 @@ class _EditAddressPageState extends State<EditAddressPage> {
     );
   }
 
-  static const _mapHtml = """
+  String _getMapHtml(bool isDark) {
+    final bgColor = isDark ? '#0A0A10' : '#F8F9FC';
+    final tileUrl = isDark
+        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+    final pinStroke = isDark ? '#0A0A10' : '#FFFFFF';
+    final pinFill = isDark ? '#D8B76A' : '#1A1D26';
+
+    return """
     <!DOCTYPE html>
     <html>
     <head>
@@ -903,7 +1168,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
       <style>
-        body { margin: 0; padding: 0; background: #0A0A10; position: relative; }
+        body { margin: 0; padding: 0; background: $bgColor; position: relative; }
         #map { height: 100vh; width: 100vw; }
         .center-pin {
           position: absolute;
@@ -913,21 +1178,45 @@ class _EditAddressPageState extends State<EditAddressPage> {
           z-index: 1000;
           pointer-events: none;
         }
+        @keyframes radar-pulse {
+          0% {
+            transform: translate(-50%, -50%) scale(0.2);
+            opacity: 0.8;
+          }
+          100% {
+            transform: translate(-50%, -50%) scale(1.6);
+            opacity: 0;
+          }
+        }
+        .radar-ring {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 50px;
+          height: 50px;
+          border: 3px solid $pinFill;
+          border-radius: 50%;
+          animation: radar-pulse 2.2s infinite ease-out;
+          pointer-events: none;
+          z-index: 999;
+        }
         .leaflet-control-attribution { display: none !important; }
       </style>
     </head>
     <body>
+      <div class="radar-ring"></div>
       <div class="center-pin">
         <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="#F59E0B" stroke="#0A0A10" stroke-width="2"/>
-          <circle cx="12" cy="9" r="3" fill="#0A0A10"/>
+          <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="$pinFill" stroke="$pinStroke" stroke-width="2"/>
+          <circle cx="12" cy="9" r="3" fill="$pinStroke"/>
         </svg>
       </div>
       <div id="map"></div>
       <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
       <script>
         var map = L.map('map', { zoomControl: false }).setView([21.028511, 105.804817], 14);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        L.tileLayer('$tileUrl', {
           maxZoom: 19
         }).addTo(map);
 
@@ -943,6 +1232,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
     </body>
     </html>
     """;
+  }
 }
 
 class _SectionLabel extends StatelessWidget {
@@ -951,24 +1241,22 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Row(
       children: [
-        Container(
-          width: 3,
-          height: 14,
-          decoration: BoxDecoration(
-            color: AppColors.champagne,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 8),
         Text(
           text,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textDim,
-            letterSpacing: 1.5,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w900,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Container(
+            height: 0.5,
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
           ),
         ),
       ],

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
 
 class DeliverySection extends StatelessWidget {
   final String name;
@@ -19,158 +19,137 @@ class DeliverySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool hasInfo = name.isNotEmpty && address.isNotEmpty;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              "Địa chỉ giao hàng",
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 16,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            GestureDetector(
-              onTap: onEdit,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 7,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.champagne.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.champagne.withValues(alpha: 0.25),
-                    width: 0.5,
+    final primaryTextColor = isDark ? Colors.white : const Color(0xFF111111);
+    final secondaryTextColor = isDark
+        ? const Color(0xFFA1A1AA)
+        : const Color(0xFF71717A);
+    final dividerColor = isDark
+        ? const Color(0xFF2A2A2F)
+        : const Color(0xFFE4E4E7);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF161619) : const Color(0xFFF9F9FB),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2A2A2F) : const Color(0xFFE4E4E7),
+          width: 0.8,
+        ),
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    "ĐỊA CHỈ GIAO HÀNG",
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      color: secondaryTextColor,
+                      letterSpacing: 1.2,
+                    ),
                   ),
-                ),
+                ],
+              ),
+              GestureDetector(
+                onTap: onEdit,
                 child: Text(
                   hasInfo ? "Chỉnh sửa" : "Thêm địa chỉ",
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
                     fontSize: 12,
-                    color: AppColors.champagne,
+                    color: primaryTextColor,
+                    decorationThickness: 1.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (hasInfo) ...[
+            Text(
+              name.toUpperCase(),
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 15,
+                color: primaryTextColor,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              phone,
+              style: TextStyle(
+                fontSize: 13,
+                fontFamily: 'monospace',
+                fontWeight: FontWeight.w600,
+                color: secondaryTextColor,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(width: double.infinity, height: 0.5, color: dividerColor),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                FaIcon(
+                  FontAwesomeIcons.locationDot,
+                  size: 16,
+                  color: secondaryTextColor,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    address,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: secondaryTextColor,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            GestureDetector(
+              onTap: onEdit,
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(
+                        LucideIcons.mapPin,
+                        size: 24,
+                        color: secondaryTextColor.withValues(alpha: .5),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        "CHẠM ĐỂ THÊM ĐỊA CHỈ GIAO HÀNG",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: primaryTextColor,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
           ],
-        ),
-        const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: AppColors.cardSurfaceAlt,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.borderCardStrong, width: 0.5),
-          ),
-          child: hasInfo
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          LucideIcons.user,
-                          size: 16,
-                          color: AppColors.slate400,
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        if (phone.isNotEmpty) ...[
-                          const SizedBox(width: 12),
-                          Container(
-                            width: 1,
-                            height: 14,
-                            color: AppColors.borderCardStrong,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            phone,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.slate400,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Container(
-                        height: 1,
-                        color: AppColors.borderCardStrong,
-                      ),
-                    ),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(
-                          LucideIcons.mapPin,
-                          size: 16,
-                          color: AppColors.brandBlue,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            address,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: AppColors.slate400,
-                              height: 1.5,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                )
-              : const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Column(
-                      children: [
-                        Icon(
-                          LucideIcons.mapPin,
-                          size: 28,
-                          color: AppColors.textDim,
-                        ),
-                        SizedBox(height: 10),
-                        Text(
-                          "Chưa có địa chỉ giao hàng",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.slate400,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          "Nhấn 'Thêm địa chỉ' để bắt đầu",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textDim,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

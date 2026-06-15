@@ -46,7 +46,9 @@ class _AuthPrimaryButtonState extends State<AuthPrimaryButton>
   @override
   Widget build(BuildContext context) {
     final btnColor = widget.color ?? const Color(0xFFFDE047);
-    final textColor = btnColor == const Color(0xFFFDE047) ? Colors.black : Colors.white;
+    final textColor = btnColor == const Color(0xFFFDE047)
+        ? Colors.black
+        : Colors.white;
 
     return GestureDetector(
       onTapDown: (_) => _controller.forward(),
@@ -100,4 +102,3 @@ class _AuthPrimaryButtonState extends State<AuthPrimaryButton>
     );
   }
 }
-

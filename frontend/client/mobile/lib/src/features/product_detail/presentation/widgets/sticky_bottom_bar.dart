@@ -38,11 +38,13 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final size = MediaQuery.of(context).size;
     final variant =
         widget.selectedVariant ??
-        (widget.product.variants.where((v) => v.isActive).firstOrNull ??
-            widget.product.variants.first);
+        widget.product.variants.where((v) => v.isActive).firstOrNull ??
+        widget.product.variants.firstOrNull;
 
     return BlocListener<CartCubit, CartState>(
       listener: (context, state) {
@@ -62,15 +64,12 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
           width: size.width - 48,
           height: 72,
           decoration: BoxDecoration(
-            color: const Color(0xFF07070A).withValues(alpha: 0.9),
+            color: theme.cardColor.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(40),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.1),
-              width: 1,
-            ),
+            border: Border.all(color: cs.outlineVariant, width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 30,
                 offset: const Offset(0, 10),
               ),
@@ -88,7 +87,9 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                       icon: _isAdding
                           ? LucideIcons.loader
                           : LucideIcons.shoppingBag,
-                      onTap: () => _handleAddToCart(variant),
+                      onTap: variant != null
+                          ? () => _handleAddToCart(variant)
+                          : () {},
                       isLoading: _isAdding,
                     ),
                     const SizedBox(width: 8),
@@ -97,18 +98,21 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
+                          Text(
                             "Thành tiền",
                             style: TextStyle(
-                              color: Colors.white38,
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.7),
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                           Text(
-                            formatVND(variant.price * widget.quantity),
-                            style: const TextStyle(
-                              color: Colors.white,
+                            formatVND(
+                              (variant?.price ?? widget.product.price) *
+                                  widget.quantity,
+                            ),
+                            style: TextStyle(
+                              color: cs.onSurface,
                               fontSize: 15,
                               fontWeight: FontWeight.w900,
                               letterSpacing: -0.5,
@@ -121,7 +125,9 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
 
                     _buildPrimaryButton(
                       label: "MUA NGAY",
-                      onTap: () => _handleBuyNow(variant),
+                      onTap: variant != null
+                          ? () => _handleBuyNow(variant)
+                          : () {},
                     ),
                   ],
                 ),
@@ -138,27 +144,29 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
     required VoidCallback onTap,
     bool isLoading = false,
   }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 56,
         height: 56,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: cs.onSurface.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+          border: Border.all(color: cs.outlineVariant),
         ),
         child: Center(
           child: isLoading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color: cs.onSurface,
                   ),
                 )
-              : Icon(icon, color: Colors.white, size: 20),
+              : Icon(icon, color: cs.onSurface, size: 20),
         ),
       ),
     );
@@ -168,17 +176,19 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
     required String label,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: 56,
         padding: const EdgeInsets.symmetric(horizontal: 28),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cs.onSurface,
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: Colors.white.withValues(alpha: 0.1),
+              color: cs.onSurface.withValues(alpha: 0.1),
               blurRadius: 15,
               offset: const Offset(0, 4),
             ),
@@ -187,8 +197,8 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
         child: Center(
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF07070A),
+            style: TextStyle(
+              color: theme.cardColor,
               fontSize: 12,
               fontWeight: FontWeight.w900,
             ),
@@ -206,10 +216,10 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
       return;
     }
 
-    // lay trang thai cart
+    //lấy trạng thái giỏ hàng
     final cartState = context.read<CartCubit>().state;
-    int existingQty = 0; // gia tri khoi tao
-    // lay ra san pham dau tien trung id voi sp them vao
+    int existingQty = 0; //giá trị khởi tạo
+    //lấy ra sp đầu tiên có chung id với sản phẩm thêm vào
     if (cartState.cart != null) {
       final existing = cartState.cart!.items
           .where((i) => i.productVariant.id == variant.id)
@@ -217,7 +227,7 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
       existingQty = existing?.quantity ?? 0;
     }
 
-    // vuot limit stock
+    //cảnh báo nếu vượt limit stock
     if (existingQty + widget.quantity > variant.stock) {
       StockLimitDialog.show(
         context,
@@ -244,7 +254,7 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
       return;
     }
 
-    // dem toan bo thong tin va so luong cua san pham qua trang thanh toan
+    //mang toàn bộ số lượng và thông tin sản phẩm qua trang thanh toán
     final item = CartItemEntity(
       id: "buy_now_${DateTime.now().millisecondsSinceEpoch}",
       cartId: "buy_now",
@@ -264,16 +274,21 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
   }
 
   void _showSuccessFeedback() {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Row(
+        content: Row(
           children: [
-            Icon(LucideIcons.circleCheck, color: Colors.white, size: 20),
-            SizedBox(width: 12),
-            Text("Đã thêm sản phẩm vào giỏ hàng"),
+            Icon(LucideIcons.circleCheck, color: cs.onPrimary, size: 20),
+            const SizedBox(width: 12),
+            Text(
+              "Đã thêm sản phẩm vào giỏ hàng",
+              style: TextStyle(color: cs.onPrimary),
+            ),
           ],
         ),
-        backgroundColor: Colors.black,
+        backgroundColor: cs.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         margin: const EdgeInsets.fromLTRB(24, 0, 24, 100),

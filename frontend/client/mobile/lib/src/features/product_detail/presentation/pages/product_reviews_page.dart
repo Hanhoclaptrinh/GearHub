@@ -1,3 +1,4 @@
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +10,7 @@ import 'package:mobile/src/features/product_review/presentation/state/review_sta
 import 'package:mobile/src/features/product_review/presentation/widgets/shop_reply_widget.dart';
 import 'package:mobile/src/shared/widgets/glassmorphic_header.dart';
 import 'package:mobile/src/core/theme/app_colors.dart';
+import 'package:mobile/src/shared/widgets/error_illustration_widget.dart';
 import '../../../../core/di/injection.dart';
 
 class ProductReviewsPage extends StatefulWidget {
@@ -25,6 +27,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
   double _scrollOffset = 0;
   int? _selectedRating;
   bool _hasImage = false;
+  final GlobalKey _filterKey = GlobalKey();
 
   @override
   void initState() {
@@ -45,22 +48,44 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return BlocProvider(
       create: (context) => getIt<ReviewCubit>()..loadReviews(widget.productId),
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Stack(
           children: [
-            _buildImmersiveBackground(),
+            _buildImmersiveBackground(isDark),
 
             BlocBuilder<ReviewCubit, ReviewState>(
               builder: (context, state) {
                 if (state is ReviewLoading) {
-                  return const Center(
+                  return Center(
                     child: CircularProgressIndicator(
-                      color: AppColors.accentGold,
+                      color: isDark
+                          ? const Color(0xFF818CF8)
+                          : const Color(0xFF4F46E5),
                       strokeWidth: 2,
                     ),
+                  );
+                } else if (state is ReviewError) {
+                  return Stack(
+                    children: [
+                      Center(
+                        child: ErrorIllustrationWidget(
+                          message: state.message,
+                          onRetry: () => context
+                              .read<ReviewCubit>()
+                              .loadReviews(widget.productId),
+                        ),
+                      ),
+                      GlassmorphicHeader(
+                        scrollOffset: _scrollOffset,
+                        title: 'Góc nhìn từ người dùng',
+                        onBack: () => Navigator.pop(context),
+                      ),
+                    ],
                   );
                 } else if (state is ReviewLoaded) {
                   final reviews = state.reviews;
@@ -88,7 +113,12 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const SizedBox(height: 24),
-                                  _buildRatingSummary(avgRating, summary),
+                                  _buildRatingSummary(
+                                    context,
+                                    avgRating,
+                                    summary,
+                                    isDark,
+                                  ),
                                   const SizedBox(height: 48),
                                   _buildFilterSection(context),
                                   const SizedBox(height: 40),
@@ -97,13 +127,15 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                                         CrossAxisAlignment.baseline,
                                     textBaseline: TextBaseline.alphabetic,
                                     children: [
-                                      const Flexible(
+                                      Flexible(
                                         child: Text(
                                           'ĐÁNH GIÁ TỪ CỘNG ĐỒNG',
                                           style: TextStyle(
                                             fontSize: 10,
                                             fontWeight: FontWeight.w800,
-                                            color: AppColors.textPrimary,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -114,7 +146,9 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                                         style: TextStyle(
                                           fontSize: 10,
                                           fontWeight: FontWeight.w500,
-                                          color: AppColors.textPrimary
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
                                               .withValues(alpha: 0.3),
                                         ),
                                       ),
@@ -149,40 +183,43 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
     );
   }
 
-  Widget _buildImmersiveBackground() {
+  Widget _buildImmersiveBackground(bool isDark) {
     return Positioned.fill(
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: RadialGradient(
-            center: Alignment(0, -0.6),
+            center: const Alignment(0, -0.6),
             radius: 1.5,
-            colors: [Color(0xFF1A1A25), AppColors.background],
+            colors: [
+              isDark ? const Color(0xFF161622) : const Color(0xFFEEF1F6),
+              Theme.of(context).scaffoldBackgroundColor,
+            ],
           ),
         ),
       ),
     );
   }
 
-  // bang avg rating
-  Widget _buildRatingSummary(double avgRating, Map<String, dynamic> summary) {
+  //bảng avg rating
+  Widget _buildRatingSummary(
+    BuildContext context,
+    double avgRating,
+    Map<String, dynamic> summary,
+    bool isDark,
+  ) {
     final total = (summary['total'] as num? ?? 0).toInt();
 
-    // tinh phan tram cho thanh rating
+    //tính phần trăm cho thanh rating
     double getPct(int star) {
       if (total == 0) return 0.0;
       final count = (summary['$star'] as num? ?? 0).toInt();
       return count / total;
     }
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.textPrimary.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(
-          color: AppColors.textPrimary.withValues(alpha: 0.05),
-        ),
-      ),
+    const Color accentColor = AppColors.accentGold;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       child: Row(
         children: [
           Expanded(
@@ -199,10 +236,10 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                     children: [
                       Text(
                         avgRating.toStringAsFixed(1),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 56,
                           fontWeight: FontWeight.w300,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                           height: 1,
                         ),
                       ),
@@ -212,7 +249,9 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary.withValues(alpha: 0.2),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.2),
                         ),
                       ),
                     ],
@@ -228,8 +267,10 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                         fill > 0.5 ? Icons.star : Icons.star_outline,
                         size: 14,
                         color: fill > 0.5
-                            ? AppColors.accentGold
-                            : AppColors.textPrimary.withValues(alpha: 0.05),
+                            ? accentColor
+                            : Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.05),
                       ),
                     );
                   }),
@@ -240,7 +281,9 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary.withValues(alpha: 0.3),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.3),
                   ),
                 ),
               ],
@@ -262,6 +305,8 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
   }
 
   Widget _buildStarProgress(int stars, double pct) {
+    const Color accentColor = AppColors.accentGold;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -271,7 +316,9 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w900,
-              color: AppColors.textPrimary.withValues(alpha: 0.3),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.3),
             ),
           ),
           const SizedBox(width: 12),
@@ -279,7 +326,9 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
             child: Container(
               height: 2,
               decoration: BoxDecoration(
-                color: AppColors.textPrimary.withValues(alpha: 0.05),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(1),
               ),
               child: FractionallySizedBox(
@@ -288,15 +337,15 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                 child: Container(
                   decoration: BoxDecoration(
                     color: stars >= 4
-                        ? AppColors.accentGold
-                        : AppColors.textPrimary.withValues(alpha: 0.2),
+                        ? accentColor
+                        : Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(1),
                     boxShadow: stars >= 4
                         ? [
                             BoxShadow(
-                              color: AppColors.accentGold.withValues(
-                                alpha: 0.3,
-                              ),
+                              color: accentColor.withValues(alpha: 0.3),
                               blurRadius: 8,
                             ),
                           ]
@@ -312,130 +361,254 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
   }
 
   Widget _buildFilterSection(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    String filterLabel = 'TẤT CẢ';
+    IconData filterIcon = LucideIcons.slidersHorizontal;
+    if (_selectedRating != null) {
+      filterLabel = '$_selectedRating SAO';
+      filterIcon = Icons.star;
+    } else if (_hasImage) {
+      filterLabel = 'CÓ HÌNH ẢNH';
+      filterIcon = LucideIcons.image;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'BỘ LỌC ĐÁNH GIÁ',
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
+            color: cs.onSurface.withValues(alpha: 0.4),
+            letterSpacing: 1.5,
           ),
         ),
-        const SizedBox(height: 20),
-        SizedBox(
-          height: 40,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            clipBehavior: Clip.none,
-            children: [
-              _customChip(
-                label: 'TẤT CẢ',
-                isSelected: _selectedRating == null && !_hasImage,
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() {
-                    _selectedRating = null;
-                    _hasImage = false;
-                  });
-                  context.read<ReviewCubit>().loadReviews(widget.productId);
-                },
-              ),
-              ...List.generate(5, (index) {
-                final star = 5 - index;
-                return _customChip(
-                  label: '$star SAO',
-                  icon: Icons.star_outline,
-                  isSelected: _selectedRating == star,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(() {
-                      _selectedRating = star;
-                      _hasImage = false;
-                    });
-                    context.read<ReviewCubit>().loadReviews(
-                      widget.productId,
-                      rating: star,
-                    );
-                  },
-                );
-              }),
-              _customChip(
-                label: 'CÓ HÌNH ẢNH',
-                icon: LucideIcons.image,
-                isSelected: _hasImage,
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() {
-                    _hasImage = true;
-                    _selectedRating = null;
-                  });
-                  context.read<ReviewCubit>().loadReviews(
-                    widget.productId,
-                    hasImage: true,
-                  );
-                },
-              ),
-            ],
+        const SizedBox(height: 16),
+        GestureDetector(
+          key: _filterKey,
+          onTap: () => _showFilterDialog(context),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            decoration: BoxDecoration(
+              color: theme.brightness == Brightness.dark
+                  ? cs.onSurface.withValues(alpha: 0.03)
+                  : cs.onSurface.withValues(alpha: 0.02),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: cs.onSurface.withValues(alpha: 0.08)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(filterIcon, size: 14, color: cs.onSurface),
+                const SizedBox(width: 10),
+                Text(
+                  filterLabel,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    color: cs.onSurface,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 16,
+                  color: cs.onSurface.withValues(alpha: 0.4),
+                ),
+              ],
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _customChip({
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-    IconData? icon,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.textPrimary
-              : AppColors.textPrimary.withValues(alpha: 0.03),
-          borderRadius: BorderRadius.circular(100),
-          border: Border.all(
-            color: isSelected
-                ? AppColors.textPrimary
-                : AppColors.textPrimary.withValues(alpha: 0.07),
-          ),
-        ),
-        child: Row(
+  void _showFilterDialog(BuildContext parentContext) {
+    final theme = Theme.of(parentContext);
+    final cs = theme.colorScheme;
+
+    final RenderBox? renderBox =
+        _filterKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final offset = renderBox.localToGlobal(Offset.zero);
+    final size = renderBox.size;
+    final screenWidth = MediaQuery.of(parentContext).size.width;
+
+    showGeneralDialog(
+      context: parentContext,
+      barrierDismissible: true,
+      barrierLabel: 'Dismiss Filter',
+      barrierColor: Colors.transparent,
+      transitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (context, anim1, anim2) {
+        return Stack(
           children: [
-            if (icon != null) ...[
-              Icon(
-                icon,
-                size: 12,
-                color: isSelected
-                    ? AppColors.ctaPrimaryText
-                    : AppColors.textPrimary.withValues(alpha: 0.4),
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                behavior: HitTestBehavior.opaque,
+                child: FadeTransition(
+                  opacity: anim1,
+                  child: ClipRect(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        color: Colors.black.withValues(alpha: 0.2),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-              const SizedBox(width: 8),
-            ],
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                color: isSelected
-                    ? AppColors.ctaPrimaryText
-                    : AppColors.textPrimary,
+            ),
+            Positioned(
+              top: offset.dy + size.height + 8,
+              left: offset.dx.clamp(16.0, screenWidth - 220.0 - 16.0),
+              width: 220,
+              child: FadeTransition(
+                opacity: anim1,
+                child: ScaleTransition(
+                  scale: anim1,
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: theme.brightness == Brightness.dark
+                            ? const Color(0xFF1E1E2E).withValues(alpha: 0.9)
+                            : Colors.white.withValues(alpha: 0.95),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: cs.onSurface.withValues(alpha: 0.08),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildDialogOption(
+                            context: context,
+                            label: 'TẤT CẢ',
+                            icon: LucideIcons.slidersHorizontal,
+                            isSelected: _selectedRating == null && !_hasImage,
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              setState(() {
+                                _selectedRating = null;
+                                _hasImage = false;
+                              });
+                              parentContext.read<ReviewCubit>().loadReviews(
+                                widget.productId,
+                              );
+                              Navigator.pop(context);
+                            },
+                          ),
+                          ...List.generate(5, (index) {
+                            final star = 5 - index;
+                            return _buildDialogOption(
+                              context: context,
+                              label: '$star SAO',
+                              icon: Icons.star,
+                              isSelected: _selectedRating == star,
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                setState(() {
+                                  _selectedRating = star;
+                                  _hasImage = false;
+                                });
+                                parentContext.read<ReviewCubit>().loadReviews(
+                                  widget.productId,
+                                  rating: star,
+                                );
+                                Navigator.pop(context);
+                              },
+                            );
+                          }),
+                          _buildDialogOption(
+                            context: context,
+                            label: 'CÓ HÌNH ẢNH',
+                            icon: LucideIcons.image,
+                            isSelected: _hasImage,
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              setState(() {
+                                _hasImage = true;
+                                _selectedRating = null;
+                              });
+                              parentContext.read<ReviewCubit>().loadReviews(
+                                widget.productId,
+                                hasImage: true,
+                              );
+                              Navigator.pop(context);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDialogOption({
+    required BuildContext context,
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return ListTile(
+      onTap: onTap,
+      dense: true,
+      visualDensity: VisualDensity.compact,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+      leading: Icon(
+        icon,
+        size: 14,
+        color: isSelected
+            ? AppColors.accentGold
+            : cs.onSurface.withValues(alpha: 0.6),
+      ),
+      title: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+          color: isSelected ? AppColors.accentGold : cs.onSurface,
+          letterSpacing: 0.5,
         ),
       ),
+      trailing: isSelected
+          ? const Icon(
+              Icons.check_circle_rounded,
+              size: 14,
+              color: AppColors.accentGold,
+            )
+          : null,
     );
   }
 
   Widget _buildReviewList(List<dynamic> reviews) {
+    final theme = Theme.of(context);
+
     return Column(
       children: reviews.map((review) {
         return Container(
@@ -443,7 +616,7 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
           decoration: BoxDecoration(
             border: Border(
               top: BorderSide(
-                color: AppColors.textPrimary.withValues(alpha: 0.05),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
               ),
             ),
           ),
@@ -459,21 +632,26 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: AppColors.accentGold.withValues(alpha: 0.3),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.12,
+                        ),
                       ),
                     ),
                     child: CircleAvatar(
-                      backgroundColor: AppColors.cardSurfaceAltAlt,
+                      backgroundColor:
+                          theme.colorScheme.surfaceContainerHighest,
                       backgroundImage: review.userAvatar != null
                           ? CachedNetworkImageProvider(review.userAvatar!)
                           : null,
                       child: review.userAvatar == null
                           ? Text(
                               review.userName.substring(0, 1).toUpperCase(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w900,
-                                color: AppColors.accentGold,
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.8,
+                                ),
                               ),
                             )
                           : null,
@@ -486,10 +664,10 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                       children: [
                         Text(
                           review.userName.toUpperCase(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w900,
-                            color: AppColors.textPrimary,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -498,7 +676,9 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w500,
-                            color: AppColors.textPrimary.withValues(alpha: 0.3),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.3,
+                            ),
                           ),
                         ),
                       ],
@@ -510,24 +690,32 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.accentGold.withValues(alpha: 0.05),
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.04,
+                      ),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: AppColors.accentGold.withValues(alpha: 0.1),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.08,
+                        ),
                       ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.star,
                           size: 12,
-                          color: AppColors.accentGold,
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.7,
+                          ),
                         ),
                         const SizedBox(width: 6),
                         Text(
                           '${review.rating}',
-                          style: const TextStyle(
-                            color: AppColors.accentGold,
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.8,
+                            ),
                             fontWeight: FontWeight.w900,
                             fontSize: 13,
                           ),
@@ -546,7 +734,10 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.accentGold.withValues(alpha: 0.5),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.45),
+                      letterSpacing: 0.8,
                     ),
                   ),
                 ),
@@ -556,7 +747,9 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w300,
-                    color: AppColors.textPrimary.withValues(alpha: 0.7),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
                     height: 1.8,
                   ),
                 ),
@@ -601,13 +794,17 @@ class _ProductReviewsPageState extends State<ProductReviewsPage> {
             Icon(
               LucideIcons.messageSquareDashed,
               size: 48,
-              color: AppColors.textPrimary.withValues(alpha: 0.1),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.1),
             ),
             const SizedBox(height: 24),
             Text(
               'CHƯA CÓ DỮ LIỆU TRẢI NGHIỆM',
               style: TextStyle(
-                color: AppColors.textPrimary.withValues(alpha: 0.2),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.2),
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
               ),

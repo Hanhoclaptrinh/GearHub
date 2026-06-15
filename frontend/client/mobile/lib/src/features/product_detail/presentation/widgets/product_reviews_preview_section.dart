@@ -19,6 +19,8 @@ class ProductReviewsPreviewSection extends StatelessWidget {
       create: (context) => getIt<ReviewCubit>()..loadReviews(product.id),
       child: BlocBuilder<ReviewCubit, ReviewState>(
         builder: (context, state) {
+          final theme = Theme.of(context);
+          final cs = theme.colorScheme;
           if (state is ReviewLoaded) {
             final hasReviews = state.reviews.isNotEmpty;
 
@@ -34,12 +36,12 @@ class ProductReviewsPreviewSection extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'ĐÁNH GIÁ',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
-                              color: Colors.white,
+                              color: cs.onSurface,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -49,11 +51,11 @@ class ProductReviewsPreviewSection extends StatelessWidget {
                               textBaseline: TextBaseline.alphabetic,
                               children: [
                                 Text(
-                                  '${product.averageRating.toStringAsFixed(1)}',
-                                  style: const TextStyle(
+                                  product.averageRating.toStringAsFixed(1),
+                                  style: TextStyle(
                                     fontSize: 32,
                                     fontWeight: FontWeight.w300,
-                                    color: Colors.white,
+                                    color: cs.onSurface,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -62,7 +64,7 @@ class ProductReviewsPreviewSection extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.white.withValues(alpha: 0.3),
+                                    color: cs.onSurface.withValues(alpha: 0.3),
                                   ),
                                 ),
                               ],
@@ -84,12 +86,12 @@ class ProductReviewsPreviewSection extends StatelessWidget {
                               horizontal: 16,
                               vertical: 8,
                             ),
-                            child: const Text(
+                            child: Text(
                               'XEM TẤT CẢ',
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w800,
-                                color: Colors.white,
+                                color: cs.onSurface,
                               ),
                             ),
                           ),
@@ -105,7 +107,7 @@ class ProductReviewsPreviewSection extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w300,
-                        color: Colors.white.withValues(alpha: 0.4),
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.5),
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -148,13 +150,14 @@ class _ReviewItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 24),
       decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
-        ),
+        border: Border(top: BorderSide(color: cs.outlineVariant)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,7 +173,7 @@ class _ReviewItem extends StatelessWidget {
                       size: 12,
                       color: index < rating
                           ? _starColor
-                          : Colors.white.withValues(alpha: 0.1),
+                          : cs.onSurface.withValues(alpha: 0.1),
                     ),
                   );
                 }),
@@ -181,7 +184,7 @@ class _ReviewItem extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: cs.onSurfaceVariant,
                 ),
               ),
             ],
@@ -193,7 +196,7 @@ class _ReviewItem extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w300,
-                color: Colors.white.withValues(alpha: 0.6),
+                color: cs.onSurfaceVariant,
                 height: 1.6,
               ),
             ),

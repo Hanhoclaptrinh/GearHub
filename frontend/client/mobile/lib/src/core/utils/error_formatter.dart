@@ -1,12 +1,15 @@
 import 'package:dio/dio.dart';
 
 class ErrorFormatter {
-  static String format(dynamic e, [String defaultMessage = 'Đã có lỗi xảy ra. Vui lòng thử lại sau!']) {
+  static String format(
+    dynamic e, [
+    String defaultMessage = 'Đã có lỗi xảy ra. Vui lòng thử lại sau!',
+  ]) {
     if (e is DioException) {
       if (e.response?.statusCode == 429) {
         return 'Bạn đang thao tác quá nhanh. Vui lòng chờ vài giây rồi thử lại!';
       }
-      
+
       switch (e.type) {
         case DioExceptionType.connectionTimeout:
         case DioExceptionType.sendTimeout:
@@ -23,7 +26,8 @@ class ErrorFormatter {
             }
             if (msg != null) {
               final msgStr = msg.toString();
-              if (msgStr.contains('ThrottlerException') || msgStr.toLowerCase().contains('too many requests')) {
+              if (msgStr.contains('ThrottlerException') ||
+                  msgStr.toLowerCase().contains('too many requests')) {
                 return 'Bạn đang thao tác quá nhanh. Vui lòng chờ vài giây rồi thử lại!';
               }
               return msgStr;
@@ -34,12 +38,14 @@ class ErrorFormatter {
           return defaultMessage;
       }
     }
-    
+
     final errStr = e.toString();
-    if (errStr.contains('429') || errStr.contains('ThrottlerException') || errStr.toLowerCase().contains('too many requests')) {
+    if (errStr.contains('429') ||
+        errStr.contains('ThrottlerException') ||
+        errStr.toLowerCase().contains('too many requests')) {
       return 'Bạn đang thao tác quá nhanh. Vui lòng chờ vài giây rồi thử lại!';
     }
-    
+
     return defaultMessage;
   }
 }

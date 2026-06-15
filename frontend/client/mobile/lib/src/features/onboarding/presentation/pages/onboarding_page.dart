@@ -1,8 +1,11 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/features/home/presentation/pages/main_screen.dart';
 import 'package:mobile/src/features/onboarding/domain/models/onboarding_item.dart';
 import 'package:mobile/src/features/onboarding/presentation/widgets/slide_to_action_button.dart';
+import 'package:mobile/src/features/preferences/presentation/pages/preference_welcome_page.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -43,11 +46,17 @@ class _OnboardingPageState extends State<OnboardingPage>
   }
 
   void _navigateToHome() {
+    final prefs = getIt<SharedPreferences>();
+    final isProcessed = prefs.getBool('pref_onboarding_processed') ?? false;
+
+    final Widget targetScreen = isProcessed
+        ? const MainScreen()
+        : const PreferenceWelcomePage();
+
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 300),
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const MainScreen(),
+        pageBuilder: (context, animation, secondaryAnimation) => targetScreen,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(
             opacity: animation,
@@ -81,7 +90,7 @@ class _OnboardingPageState extends State<OnboardingPage>
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // main
+          //main
           PageView.builder(
             controller: _pageController,
             itemCount: OnboardingData.items.length,
@@ -91,11 +100,11 @@ class _OnboardingPageState extends State<OnboardingPage>
               final item = OnboardingData.items[index];
               return Stack(
                 children: [
-                  // background image
+                  //background image
                   Positioned.fill(
                     child: Image.asset(item.imageUrl, fit: BoxFit.cover),
                   ),
-                  // semi-transparent gradient for readability
+                  //semi-transparent gradient for readability
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
@@ -110,7 +119,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                       ),
                     ),
                   ),
-                  // content with blur
+                  //content with blur
                   Align(
                     alignment: Alignment.bottomCenter,
                     child: Padding(
@@ -172,7 +181,7 @@ class _OnboardingPageState extends State<OnboardingPage>
             },
           ),
 
-          // top bar
+          //top bar
           Positioned(
             top: padding.top + size.height * 0.02,
             left: size.width * 0.06,
@@ -180,7 +189,7 @@ class _OnboardingPageState extends State<OnboardingPage>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // page indicator
+                //page indicator
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: BackdropFilter(
@@ -239,7 +248,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  'Skip',
+                                  'Bỏ qua',
                                   style: TextStyle(
                                     color: const Color(0xFF0F172A),
                                     fontSize: size.width * 0.04,
@@ -264,7 +273,7 @@ class _OnboardingPageState extends State<OnboardingPage>
             ),
           ),
 
-          // sliding button
+          //sliding button
           AnimatedPositioned(
             duration: const Duration(milliseconds: 500),
             curve: Curves.easeInOutCubic,

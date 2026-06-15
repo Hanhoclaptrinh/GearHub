@@ -52,8 +52,9 @@ class _ConciergeScreenState extends State<ConciergeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: BlocConsumer<ConciergeCubit, ConciergeState>(
         listenWhen: (previous, current) =>
             previous.messages.length != current.messages.length ||
@@ -63,7 +64,7 @@ class _ConciergeScreenState extends State<ConciergeScreen>
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.errorMessage!),
-                backgroundColor: AppColors.cardSurfaceAlt,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 behavior: SnackBarBehavior.floating,
               ),
             );
@@ -72,7 +73,7 @@ class _ConciergeScreenState extends State<ConciergeScreen>
         },
         builder: (context, state) {
           return Scaffold(
-            backgroundColor: AppColors.background,
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             body: Stack(
               children: [
                 const _ConciergeBackdrop(),
@@ -108,15 +109,13 @@ class _ConciergeScreenState extends State<ConciergeScreen>
   }
 
   Widget _buildBody(BuildContext context, ConciergeState state) {
+    final cs = Theme.of(context).colorScheme;
     if (state.isLoading && state.messages.isEmpty) {
-      return const Center(
+      return Center(
         child: SizedBox(
           width: 22,
           height: 22,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: AppColors.accentSilver,
-          ),
+          child: CircularProgressIndicator(strokeWidth: 2, color: cs.primary),
         ),
       );
     }
@@ -143,7 +142,7 @@ class _ConciergeScreenState extends State<ConciergeScreen>
               child: Text(
                 state.isLoadingOlder ? 'Đang tải...' : 'Xem tin nhắn cũ hơn',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.42),
+                  color: cs.onSurface.withValues(alpha: 0.42),
                   fontWeight: FontWeight.w800,
                   fontSize: 12,
                 ),
@@ -194,9 +193,9 @@ class _ConciergeHeader extends StatelessWidget {
             children: [
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(
-                  Icons.arrow_back_rounded,
-                  color: Colors.white,
+                icon: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: Theme.of(context).colorScheme.onSurface,
                   size: 24,
                 ),
               ),
@@ -205,10 +204,10 @@ class _ConciergeHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Tư vấn khách hàng',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 17,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -0.3,
@@ -223,7 +222,8 @@ class _ConciergeHeader extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: state.isConnected
                                 ? AppColors.emerald400
-                                : Colors.white.withValues(alpha: 0.24),
+                                : Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.24),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -235,7 +235,9 @@ class _ConciergeHeader extends StatelessWidget {
                               ? 'Nhân viên tư vấn'
                               : 'Đang kết nối lại',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.44),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                           ),
@@ -272,7 +274,9 @@ class _TypingIndicator extends StatelessWidget {
               height: 6,
               margin: const EdgeInsets.only(right: 5),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.34),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.34),
                 shape: BoxShape.circle,
               ),
             ),
@@ -280,7 +284,7 @@ class _TypingIndicator extends StatelessWidget {
           Text(
             '$name đang phản hồi',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.36),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
@@ -312,9 +316,13 @@ class _ClosedConversationFooter extends StatelessWidget {
             14 + MediaQuery.of(context).padding.bottom,
           ),
           decoration: BoxDecoration(
-            color: AppColors.background.withValues(alpha: 0.92),
+            color: Theme.of(
+              context,
+            ).scaffoldBackgroundColor.withValues(alpha: 0.92),
             border: Border(
-              top: BorderSide(color: Colors.white.withValues(alpha: 0.07)),
+              top: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
             ),
           ),
           child: Column(
@@ -326,7 +334,7 @@ class _ClosedConversationFooter extends StatelessWidget {
                     : 'Bạn muốn trao đổi với GearHub?',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.58),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -340,11 +348,11 @@ class _ClosedConversationFooter extends StatelessWidget {
                       ? null
                       : context.read<ConciergeCubit>().startNewConversation,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accentSilver,
-                    disabledBackgroundColor: Colors.white.withValues(
-                      alpha: 0.12,
-                    ),
-                    foregroundColor: AppColors.background,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    disabledBackgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.12),
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -376,7 +384,7 @@ class _ConciergeBackdrop extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Container(color: AppColors.background),
+        Container(color: Theme.of(context).scaffoldBackgroundColor),
         Positioned(
           top: -180,
           right: -170,
@@ -385,7 +393,9 @@ class _ConciergeBackdrop extends StatelessWidget {
             height: 420,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.accentSilver.withValues(alpha: 0.045),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.045),
             ),
           ),
         ),
@@ -397,7 +407,9 @@ class _ConciergeBackdrop extends StatelessWidget {
             height: 340,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.slate400.withValues(alpha: 0.06),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.06),
             ),
           ),
         ),
@@ -408,8 +420,8 @@ class _ConciergeBackdrop extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  AppColors.surface.withValues(alpha: 0.72),
-                  AppColors.background,
+                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.72),
+                  Theme.of(context).scaffoldBackgroundColor,
                 ],
               ),
             ),

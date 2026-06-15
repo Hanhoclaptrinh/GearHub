@@ -100,33 +100,37 @@ class _InvoicePageState extends State<InvoicePage> {
       totalAmount = subtotal + shipping - discount;
     }
 
-    // tách thuế VAT 8%
+    //tách thuế VAT 8%
     final double priceBeforeVat = subtotal / 1.08;
     final double vatAmount = subtotal - priceBeforeVat;
 
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: AppColors.background,
+          backgroundColor: theme.scaffoldBackgroundColor,
           elevation: 0,
           scrolledUnderElevation: 0,
           leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_rounded,
-              color: Colors.white,
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: cs.onSurface,
               size: 22,
             ),
             onPressed: () => Navigator.pop(context),
           ),
           centerTitle: true,
-          title: const Text(
+          title: Text(
             'Hóa đơn điện tử',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w900,
-              color: AppColors.textPrimary,
+              color: cs.onSurface,
             ),
           ),
         ),
@@ -239,7 +243,7 @@ class _InvoicePageState extends State<InvoicePage> {
                                   ),
                                 ),
                                 const SizedBox(height: 16),
-                                // thông tin chung hóa đơn
+                                //thông tin chung hóa đơn
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
@@ -306,7 +310,7 @@ class _InvoicePageState extends State<InvoicePage> {
                             ),
                           ),
 
-                          // bảng danh sách sản phẩm
+                          //bảng danh sách sản phẩm
                           Padding(
                             padding: const EdgeInsets.all(20.0),
                             child: Column(
@@ -321,7 +325,7 @@ class _InvoicePageState extends State<InvoicePage> {
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-                                // header
+                                //header
                                 const Row(
                                   children: [
                                     Expanded(
@@ -365,7 +369,7 @@ class _InvoicePageState extends State<InvoicePage> {
                                   height: 16,
                                   color: Color(0xFFE2E8F0),
                                 ),
-                                // table items
+                                //table items
                                 ...items.map((i) {
                                   final String name =
                                       i['productVariant']?['product']?['name'] ??
@@ -430,7 +434,7 @@ class _InvoicePageState extends State<InvoicePage> {
                                   color: Color(0xFFE2E8F0),
                                 ),
 
-                                // tổng cộng chi tiết
+                                //tổng cộng chi tiết
                                 _buildAmountRow(
                                   'Tạm tính:',
                                   formatVND(priceBeforeVat),
@@ -461,7 +465,7 @@ class _InvoicePageState extends State<InvoicePage> {
                                   thickness: 1.5,
                                 ),
 
-                                // tổng thanh toán
+                                //tổng thanh toán
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
@@ -486,7 +490,7 @@ class _InvoicePageState extends State<InvoicePage> {
                                 ),
                                 const SizedBox(height: 24),
 
-                                // chữ ký số
+                                //chữ ký số
                                 Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
@@ -550,7 +554,7 @@ class _InvoicePageState extends State<InvoicePage> {
                   ),
                 ),
               ),
-              // CTA
+              //CTA
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                 child: Row(
@@ -558,14 +562,12 @@ class _InvoicePageState extends State<InvoicePage> {
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: AppColors.background,
+                          backgroundColor: theme.cardColor,
+                          foregroundColor: cs.onSurface,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
-                            side: const BorderSide(
-                              color: AppColors.borderCardStrong,
-                            ),
+                            side: BorderSide(color: cs.outlineVariant),
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),

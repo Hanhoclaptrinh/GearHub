@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart' as dio_pkg;
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/core/constants/api_constant.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -25,24 +24,27 @@ class _VnpayPaymentPageState extends State<VnpayPaymentPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'THANH TOÁN VNPAY',
           style: TextStyle(
             fontWeight: FontWeight.w900,
             fontSize: 15,
-            color: AppColors.textPrimary,
+            color: cs.onSurface,
             letterSpacing: 1,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded, color: AppColors.slate400),
+          icon: Icon(Icons.close_rounded, color: cs.onSurfaceVariant),
           onPressed: () => _cancelPayment(),
         ),
       ),
@@ -95,9 +97,9 @@ class _VnpayPaymentPageState extends State<VnpayPaymentPage> {
             },
           ),
           if (_isLoading)
-            const Center(
+            Center(
               child: CircularProgressIndicator(
-                color: AppColors.accentGold,
+                color: cs.primary,
                 strokeWidth: 2,
               ),
             ),
@@ -131,7 +133,7 @@ class _VnpayPaymentPageState extends State<VnpayPaymentPage> {
           return;
         }
       }
-      // fallback giao dich that bai
+      //fallback giao dịch thất bại
       Navigator.of(context).pop(false);
     } catch (e) {
       Navigator.of(context).pop(false);
@@ -139,32 +141,31 @@ class _VnpayPaymentPageState extends State<VnpayPaymentPage> {
   }
 
   void _cancelPayment() {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.cardSurfaceAlt,
+        backgroundColor: cs.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: AppColors.borderCardStrong, width: 0.5),
+          side: BorderSide(color: cs.outlineVariant, width: 0.5),
         ),
-        title: const Text(
+        title: Text(
           'Hủy thanh toán',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w800, color: cs.onSurface),
         ),
-        content: const Text(
+        content: Text(
           'Bạn có chắc chắn muốn hủy thanh toán không?',
-          style: TextStyle(color: AppColors.slate400, height: 1.5),
+          style: TextStyle(color: cs.onSurfaceVariant, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
+            child: Text(
               'Không',
               style: TextStyle(
-                color: AppColors.slate400,
+                color: cs.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -174,12 +175,9 @@ class _VnpayPaymentPageState extends State<VnpayPaymentPage> {
               Navigator.pop(context);
               Navigator.of(context).pop(false);
             },
-            child: const Text(
+            child: Text(
               'Có, Hủy',
-              style: TextStyle(
-                color: AppColors.accentPink,
-                fontWeight: FontWeight.w800,
-              ),
+              style: TextStyle(color: cs.error, fontWeight: FontWeight.w800),
             ),
           ),
         ],

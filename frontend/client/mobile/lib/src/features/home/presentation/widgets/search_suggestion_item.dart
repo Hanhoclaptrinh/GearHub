@@ -25,9 +25,11 @@ class SearchSuggestionItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.cardSurfaceAlt,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.borderCardStrong),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
         ),
         child: Row(
           children: [
@@ -35,18 +37,20 @@ class SearchSuggestionItem extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: AppColors.cardSurfaceAltAlt,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.borderCardStrong),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(14),
                 child: product.image.isNotEmpty
                     ? Image.network(product.image, fit: BoxFit.cover)
-                    : const Icon(
+                    : Icon(
                         LucideIcons.image,
                         size: 20,
-                        color: AppColors.textDim,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
               ),
             ),
@@ -59,10 +63,10 @@ class SearchSuggestionItem extends StatelessWidget {
                     product.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -77,10 +81,10 @@ class SearchSuggestionItem extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               LucideIcons.chevronRight,
               size: 16,
-              color: AppColors.textDim,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ],
         ),

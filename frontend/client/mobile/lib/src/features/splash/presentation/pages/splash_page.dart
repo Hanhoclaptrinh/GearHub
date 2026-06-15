@@ -19,18 +19,18 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
 
-    // zoom
+    //zoom
     _zoomController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     );
 
-    // scale
+    //scale
     _scaleAnimation = Tween<double>(begin: 0.0, end: 0.65).animate(
       CurvedAnimation(parent: _zoomController, curve: Curves.easeOutBack),
     );
 
-    // pulse
+    //pulse
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -45,15 +45,13 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   }
 
   Future<void> _runSplashSequence() async {
-    // zoom in
+    //zoom in
     await _zoomController.forward();
 
-    // pulse
+    //pulse
     _pulseController.repeat(reverse: true);
 
-    await Future.delayed(const Duration(milliseconds: 1000));
-
-    // transition to onboarding
+    //transition to onboarding
     if (mounted) {
       _pulseController.stop();
       Navigator.of(context).pushReplacement(

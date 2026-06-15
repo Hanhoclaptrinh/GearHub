@@ -4,13 +4,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:mobile/src/core/di/injection.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
+import 'package:mobile/src/core/theme/app_theme.dart';
 import 'package:mobile/src/shared/widgets/glassmorphic_header.dart';
 import 'package:mobile/src/features/chat/presentation/pages/concierge_screen.dart';
 import 'package:mobile/src/features/chat/presentation/state/concierge_cubit.dart';
 import 'package:mobile/src/features/profile/presentation/pages/order_history_page.dart';
 import 'package:mobile/src/features/promotions/presentation/pages/promotions_page.dart';
 import 'package:mobile/src/features/home/presentation/pages/main_screen.dart';
+import 'package:mobile/src/shared/widgets/error_illustration_widget.dart';
 import '../widgets/notification_tile.dart';
 import '../state/notification_cubit.dart';
 import '../state/notification_state.dart';
@@ -70,118 +71,121 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
 
     return Builder(
       builder: (context) {
+        final cs = Theme.of(context).colorScheme;
         return Scaffold(
-            backgroundColor: AppColors.background,
-            body: Stack(
-              children: [
-                // danh sách thông báo chính
-                RefreshIndicator(
-                  color: AppColors.brandIndigo,
-                  backgroundColor: AppColors.cardSurfaceAlt,
-                  edgeOffset: topPadding + 120,
-                  onRefresh: () async {
-                    await context.read<NotificationCubit>().loadNotifications(
-                      type: _selectedTab,
-                    );
-                  },
-                  child: CustomScrollView(
-                    controller: _scrollController,
-                    physics: const AlwaysScrollableScrollPhysics(
-                      parent: BouncingScrollPhysics(),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: Stack(
+            children: [
+              //danh sách thông báo chính
+              RefreshIndicator(
+                color: cs.primary,
+                backgroundColor: cs.surfaceContainerHighest,
+                edgeOffset: topPadding + 120,
+                onRefresh: () async {
+                  await context.read<NotificationCubit>().loadNotifications(
+                    type: _selectedTab,
+                  );
+                },
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: SizedBox(height: topPadding + 130),
                     ),
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: SizedBox(height: topPadding + 130),
-                      ),
 
-                      // danh sách chính hoặc các trạng thái khác
-                      BlocBuilder<NotificationCubit, NotificationState>(
-                        builder: (context, state) {
-                          if (state is NotificationInitial ||
-                              state is NotificationLoading) {
-                            return SliverList(
-                              delegate: SliverChildBuilderDelegate(
-                                (context, index) => _buildShimmerTile(),
-                                childCount: 6,
-                              ),
-                            );
-                          }
+                    //danh sách chính hoặc các trạng thái khác
+                    BlocBuilder<NotificationCubit, NotificationState>(
+                      builder: (context, state) {
+                        if (state is NotificationInitial ||
+                            state is NotificationLoading) {
+                          return SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) => _buildShimmerTile(),
+                              childCount: 6,
+                            ),
+                          );
+                        }
 
-                          if (state is NotificationError) {
+                        if (state is NotificationError) {
+                          return SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: _buildErrorPlaceholder(
+                              context,
+                              state.message,
+                            ),
+                          );
+                        }
+
+                        if (state is NotificationLoaded) {
+                          final notifications = state.notifications;
+
+                          if (notifications.isEmpty) {
                             return SliverFillRemaining(
                               hasScrollBody: false,
-                              child: _buildErrorPlaceholder(
-                                context,
-                                state.message,
-                              ),
+                              child: _buildEmptyPlaceholder(context),
                             );
                           }
 
-                          if (state is NotificationLoaded) {
-                            final notifications = state.notifications;
-
-                            if (notifications.isEmpty) {
-                              return SliverFillRemaining(
-                                hasScrollBody: false,
-                                child: _buildEmptyPlaceholder(context),
-                              );
-                            }
-
-                            return SliverList(
-                              delegate: SliverChildBuilderDelegate(
-                                (context, index) {
-                                  if (index >= notifications.length) {
-                                    return const Padding(
-                                      padding: EdgeInsets.symmetric(
-                                        vertical: 16,
-                                      ),
-                                      child: Center(
-                                        child: SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: AppColors.brandIndigo,
-                                          ),
+                          return SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                if (index >= notifications.length) {
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    child: Center(
+                                      child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
                                         ),
                                       ),
-                                    );
-                                  }
-
-                                  final noti = notifications[index];
-                                  return NotificationTile(
-                                    notification: noti,
-                                    onTap: () =>
-                                        _handleNotificationTap(context, noti),
-                                    onDelete: () {
-                                      context
-                                          .read<NotificationCubit>()
-                                          .deleteNotification(noti.id);
-                                    },
+                                    ),
                                   );
-                                },
-                                childCount: state.hasReachedMax
-                                    ? notifications.length
-                                    : notifications.length + 1,
-                              ),
-                            );
-                          }
+                                }
 
-                          return const SliverToBoxAdapter(
-                            child: SizedBox.shrink(),
+                                final noti = notifications[index];
+                                return NotificationTile(
+                                  notification: noti,
+                                  onTap: () =>
+                                      _handleNotificationTap(context, noti),
+                                  onDelete: () {
+                                    context
+                                        .read<NotificationCubit>()
+                                        .deleteNotification(noti.id);
+                                  },
+                                );
+                              },
+                              childCount: state.hasReachedMax
+                                  ? notifications.length
+                                  : notifications.length + 1,
+                            ),
                           );
-                        },
-                      ),
+                        }
 
-                      const SliverToBoxAdapter(child: SizedBox(height: 50)),
-                    ],
-                  ),
+                        return const SliverToBoxAdapter(
+                          child: SizedBox.shrink(),
+                        );
+                      },
+                    ),
+
+                    const SliverToBoxAdapter(child: SizedBox(height: 50)),
+                  ],
                 ),
+              ),
 
-                _buildHeaderAndTabs(context, topPadding),
-              ],
-            ),
-          );
+              _buildHeaderAndTabs(context, topPadding),
+            ],
+          ),
+        );
       },
     );
   }
@@ -199,7 +203,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
             title: 'Thông báo',
             onBack: () => Navigator.of(context).pop(),
             actions: [
-              // mark all read
+              //mark all read
               BlocBuilder<NotificationCubit, NotificationState>(
                 builder: (context, state) {
                   final hasUnread =
@@ -207,8 +211,8 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                   return HeaderIconButton(
                     icon: Icons.done_all_rounded,
                     color: hasUnread
-                        ? AppColors.brandIndigo
-                        : AppColors.textMuted,
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                     onTap: () {
                       if (!hasUnread) return;
                       HapticFeedback.lightImpact();
@@ -217,7 +221,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                   );
                 },
               ),
-              // clear all
+              //clear all
               BlocBuilder<NotificationCubit, NotificationState>(
                 builder: (context, state) {
                   final hasNotifications =
@@ -226,8 +230,8 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                   return HeaderIconButton(
                     icon: LucideIcons.trash2,
                     color: hasNotifications
-                        ? AppColors.error
-                        : AppColors.textMuted,
+                        ? Theme.of(context).colorScheme.error
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                     onTap: () {
                       if (!hasNotifications) return;
                       HapticFeedback.lightImpact();
@@ -265,6 +269,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
   ) {
     final isSelected = _selectedTab == tab.$1;
 
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
@@ -273,9 +278,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
             Icon(
               tab.$3,
               size: 14,
-              color: isSelected
-                  ? AppColors.ctaPrimaryText
-                  : AppColors.textSecondary,
+              color: isSelected ? cs.onPrimary : cs.onSurfaceVariant,
             ),
             const SizedBox(width: 6),
             Text(tab.$2),
@@ -291,20 +294,18 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
             context.read<NotificationCubit>().loadNotifications(type: tab.$1);
           }
         },
-        selectedColor: AppColors.ctaPrimary,
-        backgroundColor: AppColors.cardSurfaceAlt,
+        selectedColor: cs.primary,
+        backgroundColor: cs.surfaceContainerHighest,
         disabledColor: Colors.transparent,
         labelStyle: TextStyle(
           fontSize: 12,
           fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
-          color: isSelected
-              ? AppColors.ctaPrimaryText
-              : AppColors.textSecondary,
+          color: isSelected ? cs.onPrimary : cs.onSurfaceVariant,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: isSelected ? Colors.transparent : AppColors.borderCardStrong,
+            color: isSelected ? Colors.transparent : cs.outlineVariant,
             width: 1,
           ),
         ),
@@ -315,24 +316,25 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
   }
 
   Widget _buildShimmerTile() {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: AppColors.borderSubtle, width: 0.5),
+          bottom: BorderSide(color: cs.outlineVariant, width: 0.5),
         ),
       ),
       child: Shimmer.fromColors(
-        baseColor: Colors.white.withValues(alpha: 0.05),
-        highlightColor: Colors.white.withValues(alpha: 0.02),
+        baseColor: cs.onSurface.withValues(alpha: 0.05),
+        highlightColor: cs.onSurface.withValues(alpha: 0.02),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               width: 42,
               height: 42,
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHighest,
                 shape: BoxShape.circle,
               ),
             ),
@@ -344,18 +346,30 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(width: 100, height: 16, color: Colors.white),
-                      Container(width: 50, height: 12, color: Colors.white),
+                      Container(
+                        width: 100,
+                        height: 16,
+                        color: cs.surfaceContainerHighest,
+                      ),
+                      Container(
+                        width: 50,
+                        height: 12,
+                        color: cs.surfaceContainerHighest,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Container(
                     width: double.infinity,
                     height: 12,
-                    color: Colors.white,
+                    color: cs.surfaceContainerHighest,
                   ),
                   const SizedBox(height: 4),
-                  Container(width: 150, height: 12, color: Colors.white),
+                  Container(
+                    width: 150,
+                    height: 12,
+                    color: cs.surfaceContainerHighest,
+                  ),
                 ],
               ),
             ),
@@ -366,6 +380,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
   }
 
   Widget _buildEmptyPlaceholder(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -375,32 +390,32 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppColors.cardSurfaceAlt,
+                color: cs.surfaceContainerHighest,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.borderCardStrong),
+                border: Border.all(color: cs.outlineVariant),
               ),
-              child: const Icon(
+              child: Icon(
                 LucideIcons.bellOff,
                 size: 48,
-                color: AppColors.textMuted,
+                color: cs.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Không có thông báo nào',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+                color: cs.onSurface,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Các cập nhật về đơn hàng, khuyến mãi và thông báo tài khoản của bạn sẽ xuất hiện ở đây.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
-                color: AppColors.textMuted,
+                color: cs.onSurfaceVariant,
                 height: 1.5,
               ),
             ),
@@ -411,56 +426,19 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
   }
 
   Widget _buildErrorPlaceholder(BuildContext context, String message) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.warning_amber_rounded,
-              size: 48,
-              color: AppColors.error,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.ctaPrimary,
-                foregroundColor: AppColors.ctaPrimaryText,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: () {
-                context.read<NotificationCubit>().loadNotifications(
-                  type: _selectedTab,
-                );
-              },
-              child: const Text(
-                'Thử lại',
-                style: TextStyle(fontWeight: FontWeight.w800),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return ErrorIllustrationWidget(
+      message: message,
+      onRetry: () {
+        context.read<NotificationCubit>().loadNotifications(type: _selectedTab);
+      },
     );
   }
 
   void _handleNotificationTap(BuildContext context, NotificationModel noti) {
-    // đánh dấu đã đọc trên cubit & db
+    // dấu đã đọc trên cubit & db
     context.read<NotificationCubit>().markAsRead(noti.id);
 
-    // điều hướng dựa theo loại thông báo
+    //điều hướng dựa theo loại thông báo
     final type = noti.type.toUpperCase();
 
     if (type == 'ORDER' || type == 'PAYMENT') {
@@ -497,15 +475,16 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
     BuildContext context,
     NotificationModel noti,
   ) {
+    final cs = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-          border: Border(top: BorderSide(color: AppColors.borderCardStrong)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          border: Border(top: BorderSide(color: cs.outlineVariant)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -516,7 +495,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                 width: 40,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: AppColors.borderCardStrong,
+                  color: cs.outlineVariant,
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -527,12 +506,12 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.brandBlue.withValues(alpha: 0.1),
+                    color: cs.info.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     LucideIcons.shieldAlert,
-                    color: AppColors.brandBlue,
+                    color: cs.info,
                     size: 20,
                   ),
                 ),
@@ -540,10 +519,10 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                 Expanded(
                   child: Text(
                     noti.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                      color: cs.onSurface,
                     ),
                   ),
                 ),
@@ -552,9 +531,9 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
             const SizedBox(height: 20),
             Text(
               noti.body,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: cs.onSurfaceVariant,
                 height: 1.6,
               ),
             ),
@@ -563,12 +542,12 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.cardSurfaceAlt,
-                  foregroundColor: AppColors.textPrimary,
+                  backgroundColor: cs.surfaceContainerHighest,
+                  foregroundColor: cs.onSurface,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
-                    side: const BorderSide(color: AppColors.borderCardStrong),
+                    side: BorderSide(color: cs.outlineVariant),
                   ),
                 ),
                 onPressed: () => Navigator.pop(ctx),
@@ -585,45 +564,37 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
   }
 
   void _confirmMarkAllRead(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (dCtx) => AlertDialog(
-        backgroundColor: AppColors.cardSurfaceAlt,
+        backgroundColor: cs.surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: AppColors.borderCardStrong),
+          side: BorderSide(color: cs.outlineVariant),
         ),
-        title: const Text(
+        title: Text(
           'Đọc tất cả',
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            color: AppColors.textPrimary,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w900, color: cs.onSurface),
         ),
-        content: const Text(
+        content: Text(
           'Bạn muốn đánh dấu tất cả các thông báo là đã đọc?',
-          style: TextStyle(color: AppColors.slate400),
+          style: TextStyle(color: cs.onSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dCtx),
-            child: const Text(
-              'Hủy',
-              style: TextStyle(color: AppColors.textDim),
-            ),
+            child: Text('Hủy', style: TextStyle(color: cs.onSurfaceVariant)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(dCtx);
               context.read<NotificationCubit>().markAllAsRead();
             },
-            child: const Text(
+            child: Text(
               'Đồng ý',
-              style: TextStyle(
-                color: AppColors.brandIndigo,
-                fontWeight: FontWeight.w800,
-              ),
+              style: TextStyle(color: cs.primary, fontWeight: FontWeight.w800),
             ),
           ),
         ],
@@ -632,45 +603,37 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
   }
 
   void _confirmClearAll(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (dCtx) => AlertDialog(
-        backgroundColor: AppColors.cardSurfaceAlt,
+        backgroundColor: cs.surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: AppColors.borderCardStrong),
+          side: BorderSide(color: cs.outlineVariant),
         ),
-        title: const Text(
+        title: Text(
           'Xóa tất cả',
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            color: AppColors.textPrimary,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w900, color: cs.onSurface),
         ),
-        content: const Text(
+        content: Text(
           'Hành động này sẽ xóa sạch toàn bộ lịch sử thông báo của bạn. Bạn chắc chắn chứ?',
-          style: TextStyle(color: AppColors.slate400),
+          style: TextStyle(color: cs.onSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dCtx),
-            child: const Text(
-              'Hủy',
-              style: TextStyle(color: AppColors.textDim),
-            ),
+            child: Text('Hủy', style: TextStyle(color: cs.onSurfaceVariant)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(dCtx);
               context.read<NotificationCubit>().clearAllNotifications();
             },
-            child: const Text(
+            child: Text(
               'Xóa sạch',
-              style: TextStyle(
-                color: AppColors.error,
-                fontWeight: FontWeight.w800,
-              ),
+              style: TextStyle(color: cs.error, fontWeight: FontWeight.w800),
             ),
           ),
         ],

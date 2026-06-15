@@ -37,23 +37,23 @@ class _SearchPageState extends State<SearchPage> {
   bool _isImageSearchMode = false;
   List<ProductModel> _searchResults = [];
 
-  // category matching
+  //category matching
   List<CategoryModel> _allCategories = [];
   List<CategoryModel> _matchedCategories = [];
 
-  // image & voice search state
+  //image & voice search state
   File? _selectedImage;
   bool _isAnalyzingImage = false;
 
-  // filtering/sorting state
-  String _sortBy = ''; // 'price_asc' | 'price_desc'
+  //filtering/sorting state
+  String _sortBy = ''; //'price_asc' | 'price_desc'
   double? _minPrice;
   double? _maxPrice;
 
-  // recent searches
+  //recent searches
   List<String> _searchHistory = [];
 
-  // rcm search keywords
+  //rcm search keywords
   List<String> _popularKeywords = [];
 
   @override
@@ -95,13 +95,13 @@ class _SearchPageState extends State<SearchPage> {
       final datasource = getIt<HomeRemoteDatasource>();
       final List<String> keywords = [];
 
-      // fetch top brands
+      //fetch top brands
       final brands = await datasource.getTopBrands();
       if (brands.isNotEmpty) {
         keywords.addAll(brands.map((b) => b.name).take(4));
       }
 
-      // fetch top categories
+      //fetch top categories
       final categories = await datasource.getTopCategories();
       if (categories.isNotEmpty) {
         keywords.addAll(categories.map((c) => c.title).take(4));
@@ -112,7 +112,7 @@ class _SearchPageState extends State<SearchPage> {
           _popularKeywords = keywords;
         });
       } else {
-        // fallback
+        //fallback
         setState(() {
           _popularKeywords = ['iPhone', 'Macbook', 'Màn hình', 'Bàn phím'];
         });
@@ -125,7 +125,7 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
-  // luu tu khoa timkiem vao local storage
+  //luu tu khoa timkiem vao local storage
   Future<void> _saveSearchKeyword(String keyword) async {
     final cleanKeyword = keyword.trim();
     if (cleanKeyword.isEmpty) return;
@@ -153,7 +153,7 @@ class _SearchPageState extends State<SearchPage> {
     });
   }
 
-  // xoa lich su tim kiem
+  //xóa lịch sử tìm kiếm
   Future<void> _removeKeywordFromHistory(String keyword) async {
     final prefs = getIt<SharedPreferences>();
     List<String> current = prefs.getStringList('recent_searches') ?? [];
@@ -233,7 +233,7 @@ class _SearchPageState extends State<SearchPage> {
       _isLoading = true;
       _isFullSearchMode = true;
       _isImageSearchMode = false;
-      // reset filter tranh xung dot
+      //reset filter tránh xung đột
       if (keyword != null || _controller.text != q) {
         _minPrice = null;
         _maxPrice = null;
@@ -296,7 +296,7 @@ class _SearchPageState extends State<SearchPage> {
   Future<void> _openImageSearch() async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      backgroundColor: AppColors.cardSurfaceAltAlt,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -350,14 +350,17 @@ class _SearchPageState extends State<SearchPage> {
       ),
       title: Text(
         title,
-        style: const TextStyle(
-          color: AppColors.textPrimary,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface,
           fontWeight: FontWeight.w800,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(color: AppColors.textSlate, fontSize: 12),
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          fontSize: 12,
+        ),
       ),
     );
   }
@@ -434,15 +437,24 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
         key: _scaffoldKey,
-        backgroundColor: AppColors.background,
+        backgroundColor: theme.scaffoldBackgroundColor,
         endDrawer: ProductFilterDrawer(
           initialMinPrice: _minPrice,
           initialMaxPrice: _maxPrice,
           initialSortBy: _sortBy.isEmpty ? 'newest' : _sortBy,
+          maxProductPrice: _searchResults.isNotEmpty
+              ? _searchResults
+                    .map((p) => p.maxPrice)
+                    .reduce((a, b) => a > b ? a : b)
+              : null,
           onApply: (min, max, sort) {
             setState(() {
               _minPrice = min;
@@ -463,9 +475,9 @@ class _SearchPageState extends State<SearchPage> {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(
-                      Icons.arrow_back_rounded,
-                      color: Colors.white,
+                    child: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: cs.onSurface,
                       size: 24,
                     ),
                   ),
@@ -474,25 +486,22 @@ class _SearchPageState extends State<SearchPage> {
                     child: Container(
                       height: 48,
                       decoration: BoxDecoration(
-                        color: AppColors.cardSurfaceAltAlt,
+                        color: cs.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.borderCardStrong),
+                        border: Border.all(color: cs.outlineVariant),
                       ),
                       child: TextField(
                         controller: _controller,
                         autofocus: true,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 15,
-                        ),
+                        style: TextStyle(color: cs.onSurface, fontSize: 15),
                         textInputAction: TextInputAction.search,
                         onChanged: _onSearchChanged,
                         onSubmitted: (_) => _executeFullSearch(),
                         decoration: InputDecoration(
-                          prefixIcon: const Icon(
+                          prefixIcon: Icon(
                             LucideIcons.search,
                             size: 18,
-                            color: AppColors.textSlate,
+                            color: cs.onSurfaceVariant,
                           ),
                           suffixIcon: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -503,28 +512,28 @@ class _SearchPageState extends State<SearchPage> {
                                     _controller.clear();
                                     _onSearchChanged('');
                                   },
-                                  child: const Icon(
+                                  child: Icon(
                                     LucideIcons.x,
                                     size: 18,
-                                    color: AppColors.textSlate,
+                                    color: cs.onSurfaceVariant,
                                   ),
                                 )
                               else ...[
                                 GestureDetector(
                                   onTap: _openVoiceSearch,
-                                  child: const Icon(
+                                  child: Icon(
                                     LucideIcons.mic,
                                     size: 18,
-                                    color: AppColors.textSlate,
+                                    color: cs.onSurfaceVariant,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
                                 GestureDetector(
                                   onTap: _openImageSearch,
-                                  child: const Icon(
+                                  child: Icon(
                                     LucideIcons.camera,
                                     size: 18,
-                                    color: AppColors.textSlate,
+                                    color: cs.onSurfaceVariant,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -532,10 +541,10 @@ class _SearchPageState extends State<SearchPage> {
                             ],
                           ),
                           hintText: 'Tìm kiếm sản phẩm...',
-                          hintStyle: const TextStyle(
+                          hintStyle: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
-                            color: AppColors.textDim,
+                            color: cs.onSurfaceVariant,
                           ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
@@ -583,6 +592,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildSearchSuggestions() {
+    final cs = Theme.of(context).colorScheme;
     final query = _controller.text.trim();
 
     return SingleChildScrollView(
@@ -616,12 +626,12 @@ class _SearchPageState extends State<SearchPage> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  const Text(
+                  Text(
                     'Sản phẩm gợi ý',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
-                      color: AppColors.textPrimary,
+                      color: cs.onSurface,
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -674,21 +684,21 @@ class _SearchPageState extends State<SearchPage> {
               ],
               const SizedBox(height: 4),
               if (_suggestions.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
                   child: Center(
                     child: Column(
                       children: [
                         Icon(
                           LucideIcons.searchX,
                           size: 48,
-                          color: AppColors.textDim,
+                          color: cs.onSurfaceVariant.withValues(alpha: 0.6),
                         ),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         Text(
                           'Không tìm thấy sản phẩm gợi ý nào.',
                           style: TextStyle(
-                            color: AppColors.textSlate,
+                            color: cs.onSurfaceVariant,
                             fontSize: 14,
                           ),
                         ),

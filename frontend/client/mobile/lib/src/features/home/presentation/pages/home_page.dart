@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/core/di/injection.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:mobile/src/features/chat/presentation/widgets/concierge_entry_button.dart';
@@ -18,9 +17,11 @@ import '../widgets/recently_viewed_section.dart';
 import '../widgets/top_categories_section.dart';
 import '../widgets/new_arrivals_section.dart';
 import '../widgets/top_rated_section.dart';
-import '../widgets/vault_section.dart';
+import 'package:mobile/src/shared/widgets/error_illustration_widget.dart';
 import '../widgets/top_brands_section.dart';
+import '../widgets/recommended_section.dart';
 import '../state/home_cubit.dart';
+import '../state/home_state.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -72,47 +73,71 @@ class _HomePageState extends State<HomePage>
     return BlocProvider(
       create: (context) => getIt<HomeCubit>()..loadHomeData(),
       child: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,
-          statusBarBrightness: Brightness.dark,
-        ),
+        value: Theme.of(context).brightness == Brightness.dark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark,
         child: Scaffold(
-          backgroundColor: AppColors.background,
-          body: Stack(
-            children: [
-              CustomScrollView(
-                controller: _scrollController,
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  const SliverToBoxAdapter(child: HeroSection()),
-
-                  SliverToBoxAdapter(child: _buildGreetingSection()),
-
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(0, 16, 0, 60),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        const RecentlyViewedSection(),
-                        const SizedBox(height: 32),
-                        const TopCategoriesSection(),
-                        const SizedBox(height: 32),
-                        const NewArrivalsSection(),
-                        const SizedBox(height: 32),
-                        const TopBrandsSection(),
-                        const SizedBox(height: 32),
-                        const TopRatedSection(),
-                        const SizedBox(height: 32),
-                        const VaultSection(),
-                        const SizedBox(height: 32),
-                      ]),
-                    ),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: BlocBuilder<HomeCubit, HomeState>(
+            builder: (context, state) {
+              if (state is HomeLoading) {
+                return const Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
                   ),
-                ],
-              ),
+                );
+              }
 
-              _buildDockedHeader(topPadding),
-            ],
+              if (state is HomeError) {
+                return Stack(
+                  children: [
+                    Center(
+                      child: ErrorIllustrationWidget(
+                        message: state.message,
+                        onRetry: () => context.read<HomeCubit>().loadHomeData(),
+                      ),
+                    ),
+                    _buildDockedHeader(topPadding),
+                  ],
+                );
+              }
+
+              return Stack(
+                children: [
+                  CustomScrollView(
+                    controller: _scrollController,
+                    physics: const BouncingScrollPhysics(),
+                    slivers: [
+                      const SliverToBoxAdapter(child: HeroSection()),
+
+                      SliverToBoxAdapter(child: _buildGreetingSection()),
+
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(0, 16, 0, 60),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate([
+                            const RecentlyViewedSection(),
+                            const SizedBox(height: 32),
+                            const TopCategoriesSection(),
+                            const SizedBox(height: 32),
+                            const NewArrivalsSection(),
+                            const SizedBox(height: 32),
+                            const TopBrandsSection(),
+                            const SizedBox(height: 32),
+                            const RecommendedSection(),
+                            const SizedBox(height: 32),
+                            const TopRatedSection(),
+                            const SizedBox(height: 32),
+                          ]),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  _buildDockedHeader(topPadding),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -143,7 +168,9 @@ class _HomePageState extends State<HomePage>
               badgeText: badgeText,
               onTap: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const NotificationCenterPage()),
+                  MaterialPageRoute(
+                    builder: (_) => const NotificationCenterPage(),
+                  ),
                 );
               },
             );
@@ -207,9 +234,13 @@ class _HomePageState extends State<HomePage>
                 end: Alignment.bottomCenter,
                 stops: const [0.0, 0.45, 1.0],
                 colors: [
-                  AppColors.background.withValues(alpha: 0.0),
-                  AppColors.background.withValues(alpha: 0.4),
-                  AppColors.background,
+                  Theme.of(
+                    context,
+                  ).scaffoldBackgroundColor.withValues(alpha: 0.0),
+                  Theme.of(
+                    context,
+                  ).scaffoldBackgroundColor.withValues(alpha: 0.4),
+                  Theme.of(context).scaffoldBackgroundColor,
                 ],
               ),
             ),
@@ -221,7 +252,9 @@ class _HomePageState extends State<HomePage>
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w300,
-                    color: Colors.white.withValues(alpha: 0.3),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.3),
                     letterSpacing: 0.2,
                   ),
                 ),
@@ -229,10 +262,10 @@ class _HomePageState extends State<HomePage>
 
                 Text(
                   name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 34,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onSurface,
                     letterSpacing: -1.2,
                     height: 1.0,
                   ),
@@ -245,7 +278,9 @@ class _HomePageState extends State<HomePage>
                     subtitle,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.35),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.35),
                       fontWeight: FontWeight.w400,
                       height: 1.6,
                     ),

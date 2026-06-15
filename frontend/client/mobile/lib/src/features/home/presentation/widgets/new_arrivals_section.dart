@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../shared/widgets/large_product_card.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../state/home_cubit.dart';
 import '../state/home_state.dart';
@@ -130,10 +129,10 @@ class _NewArrivalsSectionState extends State<NewArrivalsSection>
   }
 
   Widget _buildSkeleton() {
-    return const Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
+        const Padding(
           padding: EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,7 +143,7 @@ class _NewArrivalsSectionState extends State<NewArrivalsSection>
             ],
           ),
         ),
-        SizedBox(height: 24),
+        const SizedBox(height: 24),
         SizedBox(
           height: 640,
           child: Center(
@@ -153,7 +152,9 @@ class _NewArrivalsSectionState extends State<NewArrivalsSection>
               height: 24,
               child: CircularProgressIndicator(
                 strokeWidth: 1.2,
-                valueColor: AlwaysStoppedAnimation(AppColors.borderLight),
+                valueColor: AlwaysStoppedAnimation(
+                  Theme.of(context).colorScheme.outlineVariant,
+                ),
               ),
             ),
           ),
@@ -169,18 +170,18 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 24),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Đón đầu kỷ nguyên\ncông nghệ mới',
+            'Gia vị mới\ncho góc setup',
             style: TextStyle(
               fontSize: 26,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-              letterSpacing: -0.6,
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.onSurface,
+              letterSpacing: -0.3,
               height: 1.18,
             ),
           ),
@@ -219,7 +220,9 @@ class _PageDots extends StatelessWidget {
             height: 2,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(1),
-              color: Colors.white.withValues(alpha: opacity * 0.7),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: opacity * 0.7),
             ),
           );
         }),

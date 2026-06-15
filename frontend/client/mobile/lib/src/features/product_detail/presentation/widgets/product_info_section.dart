@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 
 class ProductInfoSection extends StatefulWidget {
@@ -19,7 +18,6 @@ class ProductInfoSection extends StatefulWidget {
   final VoidCallback onLongPressIncrement;
   final VoidCallback onLongPressDecrement;
   final VoidCallback onLongPressEnd;
-  final VoidCallback? onComparePressed;
 
   const ProductInfoSection({
     super.key,
@@ -35,7 +33,6 @@ class ProductInfoSection extends StatefulWidget {
     required this.onLongPressIncrement,
     required this.onLongPressDecrement,
     required this.onLongPressEnd,
-    this.onComparePressed,
   });
 
   @override
@@ -44,10 +41,10 @@ class ProductInfoSection extends StatefulWidget {
 
 class _ProductInfoSectionState extends State<ProductInfoSection> {
   bool _isDescriptionExpanded = false;
-  bool _isSpecsExpanded = false;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final colorKey = _getColorKey();
     final List<String> uniqueColors = colorKey.isNotEmpty
         ? _getUniqueValues(colorKey).cast<String>().toList()
@@ -63,7 +60,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (colorKey.isNotEmpty) ...[
-            _buildSectionHeader("Màu sắc"),
+            _buildSectionHeader(context, "Màu sắc"),
             const SizedBox(height: 16),
             _buildColorSelector(colorKey, uniqueColors),
             const SizedBox(height: 40),
@@ -75,65 +72,60 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionHeader(key),
+                  _buildSectionHeader(context, key),
                   const SizedBox(height: 16),
-                  _buildPillSelector(key, values),
+                  _buildPillSelector(context, key, values),
                   const SizedBox(height: 40),
                 ],
               );
             }),
           ],
 
-          // qty config
+          //qty config
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   "Số lượng",
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                _buildQuantityControl(),
+                _buildQuantityControl(context),
               ],
             ),
           ),
           const SizedBox(height: 48),
-          // specs config
+          //specs config
           if (widget.product.commonSpecs != null &&
               widget.product.commonSpecs!.isNotEmpty) ...[
-            _buildSectionHeader("THÔNG SỐ KỸ THUẬT"),
+            _buildSectionHeader(context, "THÔNG SỐ KỸ THUẬT"),
             const SizedBox(height: 24),
-            _buildSpecsTable(widget.product.commonSpecs!),
+            _buildSpecsTable(context, widget.product.commonSpecs!),
             const SizedBox(height: 48),
           ],
-          if (widget.onComparePressed != null) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: _buildCompareButton(),
-            ),
-            const SizedBox(height: 48),
-          ],
-          // desc config
-          _buildSectionHeader("MÔ TẢ SẢN PHẨM"),
+
+          //desc config
+          _buildSectionHeader(context, "MÔ TẢ SẢN PHẨM"),
           const SizedBox(height: 16),
-          _buildEditorialDescription(),
+          _buildEditorialDescription(context),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Text(
         title,
-        style: const TextStyle(
-          color: AppColors.textPrimary,
+        style: TextStyle(
+          color: theme.colorScheme.onSurface,
           fontSize: 16,
           fontWeight: FontWeight.w700,
         ),
@@ -153,6 +145,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
         itemCount: values.length,
         separatorBuilder: (_, __) => const SizedBox(width: 16),
         itemBuilder: (context, index) {
+          final theme = Theme.of(context);
           final val = values[index];
           final isSelected = selectedVal == val;
 
@@ -165,17 +158,17 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
               duration: const Duration(milliseconds: 500),
               curve: Curves.fastOutSlowIn,
               padding: const EdgeInsets.symmetric(horizontal: 4),
-
               child: Row(
                 children: [
-                  // The Color Circle
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 400),
                     padding: const EdgeInsets.all(3),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isSelected ? Colors.white : Colors.transparent,
+                        color: isSelected
+                            ? theme.colorScheme.onSurface
+                            : Colors.transparent,
                         width: 1.5,
                       ),
                     ),
@@ -184,7 +177,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                       height: 44,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppColors.surface,
+                        color: theme.colorScheme.surfaceContainerHighest,
                         image: DecorationImage(
                           image: CachedNetworkImageProvider(
                             _getColorImageUrl(key, val),
@@ -194,8 +187,6 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                       ),
                     ),
                   ),
-                  // dynamic label
-                  // click color -> hien ten mau ben duoi
                   ClipRect(
                     child: AnimatedAlign(
                       duration: const Duration(milliseconds: 400),
@@ -206,8 +197,8 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
                           val.toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface,
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 0.2,
@@ -225,7 +216,12 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
     );
   }
 
-  Widget _buildPillSelector(String key, List<String> values) {
+  Widget _buildPillSelector(
+    BuildContext context,
+    String key,
+    List<String> values,
+  ) {
+    final theme = Theme.of(context);
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -240,13 +236,17 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
               margin: const EdgeInsets.only(right: 12),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.white : AppColors.surface,
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Text(
                 val,
                 style: TextStyle(
-                  color: isSelected ? Colors.black : Colors.white,
+                  color: isSelected
+                      ? theme.colorScheme.onPrimary
+                      : theme.colorScheme.onSurface,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -258,11 +258,10 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
     );
   }
 
-  Widget _buildSpecsTable(Map<String, dynamic> specs) {
+  Widget _buildSpecsTable(BuildContext context, Map<String, dynamic> specs) {
+    final theme = Theme.of(context);
     final entries = specs.entries.toList();
-    final displayEntries = _isSpecsExpanded
-        ? entries
-        : entries.take(5).toList();
+    final displayEntries = entries.take(4).toList();
 
     return Column(
       children: [
@@ -275,7 +274,9 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                 decoration: BoxDecoration(
                   border: Border(
                     bottom: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.05,
+                      ),
                       width: 1,
                     ),
                   ),
@@ -288,7 +289,9 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                       child: Text(
                         entry.key.toUpperCase(),
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.4),
+                          color: theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.7,
+                          ),
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
                         ),
@@ -299,8 +302,8 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                       flex: 6,
                       child: Text(
                         entry.value.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface,
                           fontSize: 14,
                           fontWeight: FontWeight.w300,
                           height: 1.4,
@@ -314,37 +317,31 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
             }).toList(),
           ),
         ),
-        if (entries.length > 5) ...[
+        if (entries.length > 4) ...[
           const SizedBox(height: 24),
           GestureDetector(
             onTap: () {
               HapticFeedback.lightImpact();
-              setState(() => _isSpecsExpanded = !_isSpecsExpanded);
+              _showSpecsBottomSheet(context, specs);
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(100),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-              ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    _isSpecsExpanded ? "THU GỌN" : "XEM TẤT CẢ THÔNG SỐ",
-                    style: const TextStyle(
-                      color: Colors.white,
+                    "XEM TẤT CẢ THÔNG SỐ",
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Icon(
-                    _isSpecsExpanded
-                        ? LucideIcons.chevronUp
-                        : LucideIcons.chevronDown,
+                    LucideIcons.chevronRight,
                     size: 14,
-                    color: Colors.white,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ],
               ),
@@ -355,50 +352,157 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
     );
   }
 
-  Widget _buildCompareButton() {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        widget.onComparePressed?.call();
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-        ),
-        child: const Row(
-          children: [
-            Icon(
-              Icons.compare_arrows_rounded,
-              color: AppColors.textPrimary,
-              size: 22,
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Thêm sản phẩm vào so sánh',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
+  void _showSpecsBottomSheet(BuildContext context, Map<String, dynamic> specs) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final entries = specs.entries.toList();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      builder: (context) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
+          ),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              height: MediaQuery.of(context).size.height * 0.7,
+              decoration: BoxDecoration(
+                color: theme.cardColor.withValues(alpha: 0.85),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(30),
+                  topRight: Radius.circular(30),
+                ),
+                border: Border(
+                  top: BorderSide(
+                    color: cs.outlineVariant.withValues(alpha: 0.5),
+                  ),
+                  left: BorderSide(
+                    color: cs.outlineVariant.withValues(alpha: 0.5),
+                  ),
+                  right: BorderSide(
+                    color: cs.outlineVariant.withValues(alpha: 0.5),
+                  ),
                 ),
               ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  //drag handle
+                  Container(
+                    width: 40,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: cs.onSurface.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  //header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'THÔNG SỐ CHI TIẾT',
+                          style: TextStyle(
+                            color: cs.onSurface,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: cs.surfaceContainerHighest.withValues(
+                                alpha: 0.5,
+                              ),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: cs.outlineVariant.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: const Icon(LucideIcons.x, size: 16),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: entries.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 0),
+                      itemBuilder: (context, index) {
+                        final entry = entries[index];
+                        return Container(
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: cs.onSurface.withValues(alpha: 0.05),
+                                width: 1,
+                              ),
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 4,
+                                child: Text(
+                                  entry.key.toUpperCase(),
+                                  style: TextStyle(
+                                    color: cs.onSurfaceVariant.withValues(
+                                      alpha: 0.7,
+                                    ),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 24),
+                              Expanded(
+                                flex: 6,
+                                child: Text(
+                                  entry.value.toString(),
+                                  style: TextStyle(
+                                    color: cs.onSurface,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w300,
+                                    height: 1.4,
+                                  ),
+                                  textAlign: TextAlign.right,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
-            Icon(
-              LucideIcons.chevronRight,
-              color: AppColors.textSlate,
-              size: 18,
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildEditorialDescription() {
+  Widget _buildEditorialDescription(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
@@ -410,7 +514,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
               maxLines: 4,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
+                color: theme.colorScheme.onSurfaceVariant,
                 fontSize: 15,
                 height: 1.8,
                 fontWeight: FontWeight.w300,
@@ -420,7 +524,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
             secondChild: Text(
               widget.product.description,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
+                color: theme.colorScheme.onSurfaceVariant,
                 fontSize: 15,
                 height: 1.8,
                 fontWeight: FontWeight.w300,
@@ -440,8 +544,8 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
             },
             child: Text(
               _isDescriptionExpanded ? "ẨN BỚT" : "XEM CHI TIẾT",
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
               ),
@@ -452,7 +556,8 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
     );
   }
 
-  Widget _buildQuantityControl() {
+  Widget _buildQuantityControl(BuildContext context) {
+    final theme = Theme.of(context);
     final atMax = widget.quantity >= widget.maxQuantity;
     final atMin = widget.quantity <= 1;
 
@@ -460,15 +565,21 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Container(
+          padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.4,
+            ),
             borderRadius: BorderRadius.circular(100),
-            border: Border.all(color: AppColors.borderSubtle),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildQtyBtn(
+                context,
                 icon: LucideIcons.minus,
                 isDisabled: atMin,
                 onTap: widget.onDecrement,
@@ -476,18 +587,38 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                 onLongPressEnd: widget.onLongPressEnd,
               ),
               Container(
-                width: 40,
+                width: 44,
                 alignment: Alignment.center,
-                child: Text(
-                  "${widget.quantity}",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder:
+                      (Widget child, Animation<double> animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: ScaleTransition(
+                            scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+                              CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeOutBack,
+                              ),
+                            ),
+                            child: child,
+                          ),
+                        );
+                      },
+                  child: Text(
+                    "${widget.quantity}",
+                    key: ValueKey<int>(widget.quantity),
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
               ),
               _buildQtyBtn(
+                context,
                 icon: LucideIcons.plus,
                 isDisabled: atMax,
                 onTap: widget.onIncrement,
@@ -502,8 +633,8 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
             padding: const EdgeInsets.only(top: 8, right: 4),
             child: Text(
               "Giới hạn kho: ${widget.maxQuantity} sản phẩm",
-              style: const TextStyle(
-                color: Color(0xFFEF4444),
+              style: TextStyle(
+                color: theme.colorScheme.error,
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
               ),
@@ -513,31 +644,52 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
     );
   }
 
-  Widget _buildQtyBtn({
+  Widget _buildQtyBtn(
+    BuildContext context, {
     required IconData icon,
     required bool isDisabled,
     required VoidCallback onTap,
     required VoidCallback onLongPress,
     required VoidCallback onLongPressEnd,
   }) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: isDisabled ? null : onTap,
       onLongPress: isDisabled ? null : onLongPress,
       onLongPressUp: onLongPressEnd,
       onLongPressEnd: (_) => onLongPressEnd(),
-      child: Container(
-        width: 48,
-        height: 48,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 38,
+        height: 38,
         decoration: BoxDecoration(
-          color: isDisabled
-              ? Colors.transparent
-              : Colors.white.withValues(alpha: 0.05),
+          color: isDisabled ? Colors.transparent : theme.colorScheme.surface,
           shape: BoxShape.circle,
+          boxShadow: isDisabled
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+          border: isDisabled
+              ? null
+              : Border.all(
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.5,
+                  ),
+                ),
         ),
-        child: Icon(
-          icon,
-          size: 16,
-          color: isDisabled ? Colors.white24 : Colors.white,
+        child: Center(
+          child: Icon(
+            icon,
+            size: 14,
+            color: isDisabled
+                ? theme.colorScheme.onSurface.withValues(alpha: 0.25)
+                : theme.colorScheme.onSurface,
+          ),
         ),
       ),
     );

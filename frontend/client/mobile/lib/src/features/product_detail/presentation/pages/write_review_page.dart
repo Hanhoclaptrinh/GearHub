@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/features/product_review/presentation/state/review_cubit.dart';
 import 'package:mobile/src/features/product_review/presentation/state/review_state.dart';
 import '../../../../core/di/injection.dart';
@@ -45,7 +44,7 @@ class _WriteReviewPageState extends State<WriteReviewPage>
   final List<XFile> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
 
-  // animations
+  //animations
   late final AnimationController _labelAnim;
   late final Animation<double> _labelFade;
   late final AnimationController _pageAnim;
@@ -120,7 +119,16 @@ class _WriteReviewPageState extends State<WriteReviewPage>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final bottom = MediaQuery.of(context).padding.bottom;
+    final Color bgColor = theme.scaffoldBackgroundColor;
+    final Color textHigh = cs.onSurface;
+    final Color textMid = cs.onSurfaceVariant;
+    final Color textLow = cs.onSurfaceVariant.withValues(alpha: 0.6);
+    final Color borderCol = cs.outlineVariant;
+    final Color fillCol = cs.surfaceContainerHighest;
 
     return BlocProvider(
       create: (_) => getIt<ReviewCubit>(),
@@ -151,30 +159,29 @@ class _WriteReviewPageState extends State<WriteReviewPage>
             final isSubmitting = state is ReviewLoading;
 
             return Scaffold(
-              backgroundColor: AppColors.background,
+              backgroundColor: bgColor,
               extendBodyBehindAppBar: true,
               appBar: AppBar(
                 backgroundColor: Colors.transparent,
-                systemOverlayStyle: SystemUiOverlayStyle.light,
+                systemOverlayStyle: isDark
+                    ? SystemUiOverlayStyle.light
+                    : SystemUiOverlayStyle.dark,
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 centerTitle: true,
-                title: const Text(
+                title: Text(
                   'Đánh giá sản phẩm',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: textHigh,
                     letterSpacing: 0.2,
                   ),
                 ),
                 leading: Padding(
                   padding: const EdgeInsets.only(left: 8),
                   child: IconButton(
-                    icon: const Icon(
-                      Icons.close_rounded,
-                      color: AppColors.slate400,
-                    ),
+                    icon: Icon(Icons.close_rounded, color: textMid),
                     onPressed: () {
                       FocusScope.of(context).unfocus();
                       Navigator.of(context).pop();
@@ -193,30 +200,42 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                     children: [
                       const SizedBox(height: 12),
 
-                      // prod header
+                      //prod header
                       if (widget.productName != null ||
                           widget.productImage != null)
-                        _buildProductHeader(),
+                        _buildProductHeader(context, textHigh, textMid),
 
                       const SizedBox(height: 32),
 
-                      // star rating
-                      _buildStarSection(),
+                      //star rating
+                      _buildStarSection(context, textHigh, textMid, textLow),
 
                       const SizedBox(height: 28),
 
-                      // img upload
-                      _buildImageSection(),
+                      //cmt
+                      _buildCommentSection(
+                        context,
+                        textHigh,
+                        textMid,
+                        borderCol,
+                      ),
 
                       const SizedBox(height: 28),
 
-                      // anonymous switch
-                      _buildAnonymousSection(),
+                      //img upload
+                      _buildImageSection(
+                        context,
+                        textHigh,
+                        textMid,
+                        textLow,
+                        fillCol,
+                        borderCol,
+                      ),
 
                       const SizedBox(height: 28),
 
-                      // cmt
-                      _buildCommentSection(),
+                      //anonymous switch
+                      _buildAnonymousSection(context, textHigh, textMid),
 
                       SizedBox(height: 32 + bottom),
                     ],
@@ -228,6 +247,9 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                 context,
                 isSubmitting,
                 bottom,
+                bgColor,
+                borderCol,
+                isDark,
               ),
             );
           },
@@ -236,232 +258,225 @@ class _WriteReviewPageState extends State<WriteReviewPage>
     );
   }
 
-  Widget _buildProductHeader() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurfaceAlt,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.borderCardStrong),
-      ),
-      child: Row(
-        children: [
-          if (widget.productImage != null) ...[
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: CachedNetworkImage(
-                imageUrl: widget.productImage!,
+  Widget _buildProductHeader(
+    BuildContext context,
+    Color textHigh,
+    Color textMid,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        if (widget.productImage != null) ...[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: CachedNetworkImage(
+              imageUrl: widget.productImage!,
+              width: 56,
+              height: 56,
+              fit: BoxFit.cover,
+              placeholder: (_, __) => Container(
                 width: 56,
                 height: 56,
-                fit: BoxFit.cover,
-                placeholder: (_, __) => Container(
-                  width: 56,
-                  height: 56,
-                  alignment: Alignment.center,
-                  color: AppColors.cardSurfaceAltAlt,
-                  child: const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-                errorWidget: (_, __, ___) => Container(
-                  width: 56,
-                  height: 56,
-                  color: AppColors.cardSurfaceAltAlt,
-                  child: const Icon(
-                    LucideIcons.package,
-                    color: AppColors.textDim,
-                    size: 24,
-                  ),
+                alignment: Alignment.center,
+                color: Colors.transparent,
+                child: const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 ),
               ),
-            ),
-            const SizedBox(width: 14),
-          ],
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Đánh giá cho',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textDim,
-                    letterSpacing: 0.8,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.productName ?? 'Sản phẩm',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStarSection() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurfaceAlt,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.borderCardStrong),
-      ),
-      child: Column(
-        children: [
-          const Text(
-            'Bạn thấy sản phẩm thế nào?',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.slate400,
-              letterSpacing: 0.1,
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(5, (i) {
-              final filled = i < _selectedRating;
-              return GestureDetector(
-                onTap: () => _onStarTap(i),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: AnimatedScale(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.elasticOut,
-                    scale: _selectedRating == i + 1 ? 1.25 : 1.0,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      child: Icon(
-                        filled ? Icons.star : Icons.star_outline,
-                        size: 44,
-                        color: filled
-                            ? AppColors.accentGold
-                            : AppColors.textDim,
-                        shadows: filled
-                            ? [
-                                Shadow(
-                                  color: AppColors.accentGold.withValues(
-                                    alpha: 0.5,
-                                  ),
-                                  blurRadius: 12,
-                                ),
-                              ]
-                            : null,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }),
-          ),
-          const SizedBox(height: 16),
-
-          AnimatedBuilder(
-            animation: _labelFade,
-            builder: (_, __) => AnimatedOpacity(
-              duration: const Duration(milliseconds: 250),
-              opacity: _selectedRating > 0 ? 1.0 : 0.0,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.accentGold.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  _selectedRating > 0 ? _ratingLabels[_selectedRating] : '',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.accentGold,
-                    letterSpacing: 0.3,
-                  ),
-                ),
+              errorWidget: (_, __, ___) => Container(
+                width: 56,
+                height: 56,
+                color: Colors.transparent,
+                child: Icon(LucideIcons.package, color: textMid, size: 24),
               ),
             ),
           ),
+          const SizedBox(width: 14),
         ],
-      ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Đánh giá cho:',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: textMid,
+                  letterSpacing: 0.8,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                widget.productName ?? 'Sản phẩm',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: textHigh,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildImageSection() {
+  Widget _buildStarSection(
+    BuildContext context,
+    Color textHigh,
+    Color textMid,
+    Color textLow,
+  ) {
+    return Column(
+      children: [
+        Text(
+          'Bạn thấy sản phẩm thế nào?',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: textHigh,
+            letterSpacing: 0.1,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(5, (i) {
+            final filled = i < _selectedRating;
+            return GestureDetector(
+              onTap: () => _onStarTap(i),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: AnimatedScale(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.elasticOut,
+                  scale: _selectedRating == i + 1 ? 1.25 : 1.0,
+                  child: Icon(
+                    filled ? Icons.star : Icons.star_outline,
+                    size: 44,
+                    color: filled ? const Color(0xFFFFB800) : textLow,
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 16),
+        AnimatedBuilder(
+          animation: _labelFade,
+          builder: (_, __) => AnimatedOpacity(
+            duration: const Duration(milliseconds: 250),
+            opacity: _selectedRating > 0 ? 1.0 : 0.0,
+            child: Text(
+              _selectedRating > 0 ? _ratingLabels[_selectedRating] : '',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: textMid,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCommentSection(
+    BuildContext context,
+    Color textHigh,
+    Color textMid,
+    Color borderCol,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.brandIndigoSoft,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                LucideIcons.image,
-                size: 16,
-                color: AppColors.brandIndigo,
-              ),
-            ),
+            Icon(LucideIcons.messageSquare, size: 16, color: textMid),
             const SizedBox(width: 12),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Hình ảnh thực tế',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    'Tối đa 5 ảnh',
-                    style: TextStyle(fontSize: 12, color: AppColors.textDim),
-                  ),
-                ],
+            Text(
+              'Cảm nhận của bạn',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: textHigh,
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.cardSurfaceAltAlt,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.borderCardStrong),
-              ),
-              child: Text(
-                '${_selectedImages.length}/5',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.slate400,
+          ],
+        ),
+        const SizedBox(height: 14),
+        TextField(
+          controller: _commentController,
+          maxLines: null,
+          minLines: 3,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            height: 1.6,
+            color: textHigh,
+          ),
+          cursorColor: textHigh,
+          decoration: InputDecoration(
+            hintText:
+                'Sản phẩm dùng tốt không? Đóng gói thế nào?\nChia sẻ trải nghiệm thực tế cho mọi người...',
+            hintStyle: TextStyle(
+              color: textMid.withValues(alpha: 0.6),
+              fontSize: 14,
+              height: 1.6,
+            ),
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+            border: InputBorder.none,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImageSection(
+    BuildContext context,
+    Color textHigh,
+    Color textMid,
+    Color textLow,
+    Color fillCol,
+    Color borderCol,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(LucideIcons.image, size: 16, color: textMid),
+                const SizedBox(width: 12),
+                Text(
+                  'Hình ảnh thực tế',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: textHigh,
+                  ),
                 ),
+              ],
+            ),
+            Text(
+              '${_selectedImages.length}/5',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: textMid,
               ),
             ),
           ],
         ),
         const SizedBox(height: 16),
-
         SizedBox(
           height: 96,
           child: ListView(
@@ -475,50 +490,34 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                     height: 96,
                     margin: const EdgeInsets.only(right: 12),
                     decoration: BoxDecoration(
-                      color: AppColors.cardSurfaceAlt,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: AppColors.brandIndigo.withValues(alpha: 0.4),
-                        width: 1.5,
-                      ),
+                      color: fillCol,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: borderCol),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: AppColors.brandIndigoSoft,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.add_rounded,
-                            size: 20,
-                            color: AppColors.brandIndigo,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
+                        Icon(Icons.add_rounded, size: 24, color: textMid),
+                        const SizedBox(height: 4),
+                        Text(
                           'Thêm ảnh',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.brandIndigo,
+                            color: textMid,
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-
-              // preview img
               ..._selectedImages.asMap().entries.map((e) {
                 return Container(
                   margin: const EdgeInsets.only(right: 12),
                   child: Stack(
                     children: [
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(16),
                         child: Image.file(
                           File(e.value.path),
                           width: 96,
@@ -534,7 +533,7 @@ class _WriteReviewPageState extends State<WriteReviewPage>
                           child: Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.7),
+                              color: Colors.black.withValues(alpha: 0.6),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -556,64 +555,43 @@ class _WriteReviewPageState extends State<WriteReviewPage>
     );
   }
 
-  Widget _buildCommentSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildAnonymousSection(
+    BuildContext context,
+    Color textHigh,
+    Color textMid,
+  ) {
+    return Row(
       children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.champagneSoft,
-                borderRadius: BorderRadius.circular(10),
+        Icon(LucideIcons.hatGlasses, size: 20, color: textMid),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Đánh giá ẩn danh',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: textHigh,
+                ),
               ),
-              child: const Icon(
-                LucideIcons.messageSquare,
-                size: 16,
-                color: AppColors.champagne,
+              const SizedBox(height: 2),
+              Text(
+                'Tên tài khoản sẽ hiển thị dạng ẩn danh',
+                style: TextStyle(fontSize: 11, color: textMid),
               ),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Cảm nhận của bạn',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
-        const SizedBox(height: 14),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.cardSurfaceAlt,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.borderCardStrong),
-          ),
-          child: TextField(
-            controller: _commentController,
-            maxLines: 6,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              height: 1.65,
-              color: AppColors.textPrimary,
-            ),
-            cursorColor: AppColors.brandIndigo,
-            decoration: const InputDecoration(
-              hintText:
-                  'Sản phẩm dùng tốt không? Đóng gói thế nào?\nChia sẻ trải nghiệm thực tế cho mọi người...',
-              hintStyle: TextStyle(
-                color: AppColors.textDim,
-                fontSize: 14,
-                height: 1.6,
-              ),
-              contentPadding: EdgeInsets.all(20),
-              border: InputBorder.none,
-            ),
-          ),
+        Switch(
+          value: _isAnonymous,
+          onChanged: (val) {
+            setState(() {
+              _isAnonymous = val;
+            });
+          },
+          activeColor: const Color(0xFF6366F1),
         ),
       ],
     );
@@ -623,107 +601,60 @@ class _WriteReviewPageState extends State<WriteReviewPage>
     BuildContext context,
     bool isSubmitting,
     double bottomPadding,
+    Color bgColor,
+    Color borderCol,
+    bool isDark,
   ) {
     final canSubmit = _selectedRating > 0 && !isSubmitting;
 
+    final Color disabledBg = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.black.withValues(alpha: 0.05);
+    final Color disabledText = isDark
+        ? Colors.white.withValues(alpha: 0.3)
+        : Colors.black.withValues(alpha: 0.3);
+
+    final cs = Theme.of(context).colorScheme;
+
+    final Color enabledBg = cs.primary;
+    final Color enabledText = cs.onPrimary;
+
     return Container(
       padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + bottomPadding),
-      decoration: const BoxDecoration(
-        color: AppColors.cardSurfaceAlt,
-        border: Border(top: BorderSide(color: AppColors.borderCardStrong)),
-      ),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        child: ElevatedButton(
-          onPressed: canSubmit ? () => _submitReview(context) : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: canSubmit
-                ? Colors.white
-                : AppColors.cardSurfaceAltAlt,
-            foregroundColor: canSubmit ? Colors.black : AppColors.textDim,
-            disabledBackgroundColor: AppColors.cardSurfaceAltAlt,
-            disabledForegroundColor: AppColors.textDim,
-            elevation: canSubmit ? 0 : 0,
-            minimumSize: const Size(double.infinity, 58),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-            ),
-            shadowColor: Colors.white.withValues(alpha: 0.4),
-          ),
-          child: isSubmitting
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      canSubmit ? 'Gửi đánh giá' : 'Chọn số sao trước nhé',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.2,
-                        color: canSubmit ? Colors.black : AppColors.textDim,
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAnonymousSection() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.cardSurfaceAlt,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.borderCardStrong),
+        color: bgColor,
+        border: Border(top: BorderSide(color: borderCol, width: 1)),
       ),
-      child: Row(
-        children: [
-          const Icon(
-            LucideIcons.hatGlasses,
-            size: 20,
-            color: AppColors.textDim,
+      child: ElevatedButton(
+        onPressed: canSubmit ? () => _submitReview(context) : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: canSubmit ? enabledBg : disabledBg,
+          foregroundColor: canSubmit ? enabledText : disabledText,
+          disabledBackgroundColor: disabledBg,
+          disabledForegroundColor: disabledText,
+          elevation: 0,
+          minimumSize: const Size(double.infinity, 54),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
           ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Đánh giá ẩn danh',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
+        ),
+        child: isSubmitting
+            ? SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(enabledText),
                 ),
-                SizedBox(height: 2),
-                Text(
-                  'Tên tài khoản sẽ hiển thị dạng ẩn danh',
-                  style: TextStyle(fontSize: 11, color: AppColors.textDim),
+              )
+            : Text(
+                canSubmit ? 'Gửi đánh giá' : 'Chọn số sao trước nhé',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.2,
                 ),
-              ],
-            ),
-          ),
-          Switch(
-            value: _isAnonymous,
-            onChanged: (val) {
-              setState(() {
-                _isAnonymous = val;
-              });
-            },
-            activeColor: AppColors.brandIndigo,
-          ),
-        ],
+              ),
       ),
     );
   }

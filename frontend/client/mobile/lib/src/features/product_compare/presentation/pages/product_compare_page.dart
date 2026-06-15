@@ -41,22 +41,22 @@ class ProductCompareView extends StatelessWidget {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: AppColors.background,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           elevation: 0,
           leading: IconButton(
             icon: const Icon(
-              Icons.arrow_back_rounded,
+              Icons.arrow_back_ios_new_rounded,
               color: Colors.white,
               size: 22,
             ),
             onPressed: () => Navigator.pop(context),
           ),
-          title: const Text(
+          title: Text(
             'So sánh sản phẩm',
             style: TextStyle(
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w800,
               fontSize: 18,
             ),
@@ -138,7 +138,7 @@ class ProductCompareView extends StatelessWidget {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.cardSurfaceAlt,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -188,9 +188,9 @@ class _SelectedProductTile extends StatelessWidget {
       width: 210,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.borderCardStrong),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Row(
         children: [
@@ -205,7 +205,10 @@ class _SelectedProductTile extends StatelessWidget {
                 width: 70,
                 height: 84,
                 color: AppColors.surface,
-                child: const Icon(LucideIcons.image, color: AppColors.textDim),
+                child: Icon(
+                  LucideIcons.image,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           ),
@@ -218,8 +221,8 @@ class _SelectedProductTile extends StatelessWidget {
                   product.name,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 12,
                     height: 1.25,
                     fontWeight: FontWeight.w800,
@@ -230,10 +233,10 @@ class _SelectedProductTile extends StatelessWidget {
                   onTap: () => context
                       .read<ProductCompareCubit>()
                       .removeProduct(product.id),
-                  child: const Icon(
+                  child: Icon(
                     LucideIcons.trash2,
                     size: 16,
-                    color: AppColors.textSlate,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -263,15 +266,19 @@ class _AddProductTile extends StatelessWidget {
             color: AppColors.brandIndigo.withValues(alpha: 0.4),
           ),
         ),
-        child: const Column(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(LucideIcons.plus, color: AppColors.brandIndigo, size: 26),
-            SizedBox(height: 10),
+            const Icon(
+              LucideIcons.plus,
+              color: AppColors.brandIndigo,
+              size: 26,
+            ),
+            const SizedBox(height: 10),
             Text(
               'Thêm',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -292,9 +299,9 @@ class _NeedMoreProductsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.borderCardStrong),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         children: [
@@ -304,20 +311,20 @@ class _NeedMoreProductsCard extends StatelessWidget {
             size: 40,
           ),
           const SizedBox(height: 14),
-          const Text(
+          Text(
             'Cần ít nhất 2 sản phẩm',
             style: TextStyle(
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 18,
               fontWeight: FontWeight.w900,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Chọn thêm sản phẩm cùng nhóm để xem bảng so sánh.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: AppColors.textSlate,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               height: 1.5,
               fontWeight: FontWeight.w500,
             ),
@@ -395,8 +402,8 @@ class _CompareTable extends StatelessWidget {
           padding: const EdgeInsets.only(left: 2, bottom: 14),
           child: Text(
             result.compareKey.name,
-            style: const TextStyle(
-              color: AppColors.textSlate,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
@@ -405,7 +412,7 @@ class _CompareTable extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: Container(
-            color: AppColors.cardSurface,
+            color: Theme.of(context).colorScheme.surface,
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
@@ -440,10 +447,14 @@ class _ProductHeaderRow extends StatelessWidget {
             width: 190,
             height: 178,
             padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               border: Border(
-                left: BorderSide(color: AppColors.borderSubtle),
-                bottom: BorderSide(color: AppColors.borderSubtle),
+                left: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
+                bottom: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
               ),
             ),
             child: Column(
@@ -460,9 +471,9 @@ class _ProductHeaderRow extends StatelessWidget {
                       width: 88,
                       height: 80,
                       color: AppColors.surface,
-                      child: const Icon(
+                      child: Icon(
                         LucideIcons.image,
-                        color: AppColors.textDim,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -472,8 +483,8 @@ class _ProductHeaderRow extends StatelessWidget {
                   product.name,
                   maxLines: 4,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 12,
                     height: 1.25,
                     fontWeight: FontWeight.w800,
@@ -504,13 +515,17 @@ class _SpecRow extends StatelessWidget {
             width: 120,
             constraints: const BoxConstraints(minHeight: 66),
             padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.borderSubtle)),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
+              ),
             ),
             child: Text(
               row.label,
-              style: const TextStyle(
-                color: AppColors.textSlate,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 11,
                 height: 1.3,
                 fontWeight: FontWeight.w800,
@@ -522,18 +537,22 @@ class _SpecRow extends StatelessWidget {
               width: 190,
               constraints: const BoxConstraints(minHeight: 66),
               padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
-                  left: BorderSide(color: AppColors.borderSubtle),
-                  bottom: BorderSide(color: AppColors.borderSubtle),
+                  left: BorderSide(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                  bottom: BorderSide(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ),
               ),
               child: Text(
                 row.values[product.id]?.isNotEmpty == true
                     ? row.values[product.id]!
                     : '-',
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 12,
                   height: 1.4,
                   fontWeight: FontWeight.w600,
@@ -636,17 +655,23 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                 controller: _controller,
                 autofocus: true,
                 onChanged: _onChanged,
-                style: const TextStyle(color: AppColors.textPrimary),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
                 decoration: InputDecoration(
                   hintText: 'Tìm sản phẩm để so sánh',
-                  hintStyle: const TextStyle(color: AppColors.textSlate),
-                  prefixIcon: const Icon(
+                  hintStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  prefixIcon: Icon(
                     LucideIcons.search,
-                    color: AppColors.textSlate,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     size: 18,
                   ),
                   filled: true,
-                  fillColor: AppColors.cardSurfaceAltAlt,
+                  fillColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide.none,
@@ -662,10 +687,14 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                 ),
               Expanded(
                 child: _results.isEmpty && !_isLoading
-                    ? const Center(
+                    ? Center(
                         child: Text(
                           'Nhập tên sản phẩm để thêm vào so sánh.',
-                          style: TextStyle(color: AppColors.textSlate),
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       )
                     : ListView.separated(
@@ -716,7 +745,10 @@ class _PickerProductTile extends StatelessWidget {
             width: 58,
             height: 58,
             color: AppColors.surface,
-            child: const Icon(LucideIcons.image, color: AppColors.textDim),
+            child: Icon(
+              LucideIcons.image,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
       ),
@@ -724,21 +756,24 @@ class _PickerProductTile extends StatelessWidget {
         product.name,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: AppColors.textPrimary,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface,
           fontSize: 13,
           fontWeight: FontWeight.w800,
         ),
       ),
       subtitle: Text(
         formatVND(product.price),
-        style: const TextStyle(
-          color: AppColors.textSlate,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
           fontSize: 12,
           fontWeight: FontWeight.w700,
         ),
       ),
-      trailing: const Icon(LucideIcons.plus, color: AppColors.textPrimary),
+      trailing: Icon(
+        LucideIcons.plus,
+        color: Theme.of(context).colorScheme.onSurface,
+      ),
     );
   }
 }

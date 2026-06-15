@@ -11,24 +11,28 @@ import 'package:mobile/src/shared/widgets/auth_required_modal.dart';
 class ConciergeEntryButton extends StatelessWidget {
   final String? label;
   final bool compact;
-  final Color foreground;
+  final Color? foreground;
 
   const ConciergeEntryButton({
     super.key,
     this.label,
     this.compact = false,
-    this.foreground = Colors.white,
+    this.foreground,
   });
 
   @override
   Widget build(BuildContext context) {
+    final Color fg = foreground ??
+        IconTheme.of(context).color ??
+        Theme.of(context).colorScheme.onSurface;
+
     if (label == null || compact) {
       return GestureDetector(
         onTap: () => open(context),
         child: SizedBox(
           width: 40,
           height: 40,
-          child: Icon(LucideIcons.headset, color: foreground, size: 22),
+          child: Icon(LucideIcons.headset, color: fg, size: 22),
         ),
       );
     }
@@ -39,12 +43,12 @@ class ConciergeEntryButton extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(LucideIcons.headset, color: foreground, size: 17),
+          Icon(LucideIcons.headset, color: fg, size: 17),
           const SizedBox(width: 10),
           Text(
             label!,
             style: TextStyle(
-              color: foreground,
+              color: fg,
               fontSize: 12,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.2,

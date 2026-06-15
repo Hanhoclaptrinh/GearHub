@@ -7,11 +7,13 @@ import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/core/theme/app_colors.dart';
+import 'package:mobile/src/core/theme/app_theme.dart';
 import 'package:mobile/src/features/chat/presentation/widgets/concierge_entry_button.dart';
 import 'package:mobile/src/features/promotions/data/models/voucher_model.dart';
 import 'package:mobile/src/features/promotions/presentation/state/promotions_cubit.dart';
 import 'package:mobile/src/features/promotions/presentation/state/promotions_state.dart';
 import 'package:mobile/src/shared/widgets/glassmorphic_header.dart';
+import 'package:mobile/src/shared/widgets/error_illustration_widget.dart';
 
 class PromotionsPage extends StatefulWidget {
   const PromotionsPage({super.key});
@@ -91,6 +93,7 @@ class _PromotionsPageState extends State<PromotionsPage> {
 
   Future<void> _handleClaim(BuildContext context, String voucherId) async {
     HapticFeedback.lightImpact();
+    final theme = Theme.of(context);
 
     try {
       await context.read<PromotionsCubit>().claimVoucher(voucherId);
@@ -99,11 +102,15 @@ class _PromotionsPageState extends State<PromotionsPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Row(
+          content: Row(
             children: [
-              Icon(LucideIcons.circleCheck, color: AppColors.success, size: 18),
-              SizedBox(width: 10),
-              Expanded(
+              Icon(
+                LucideIcons.circleCheck,
+                color: theme.colorScheme.success,
+                size: 18,
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
                 child: Text(
                   'Đã lưu ưu đãi vào ví của bạn.',
                   style: TextStyle(fontWeight: FontWeight.w700),
@@ -111,12 +118,16 @@ class _PromotionsPageState extends State<PromotionsPage> {
               ),
             ],
           ),
-          backgroundColor: const Color(0xFF101A12),
+          backgroundColor: theme.brightness == Brightness.dark
+              ? const Color(0xFF101A12)
+              : const Color(0xFFE8F5E9),
           behavior: SnackBarBehavior.floating,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: AppColors.success.withValues(alpha: 0.25)),
+            side: BorderSide(
+              color: theme.colorScheme.success.withValues(alpha: 0.25),
+            ),
           ),
         ),
       );
@@ -136,9 +147,9 @@ class _PromotionsPageState extends State<PromotionsPage> {
         SnackBar(
           content: Row(
             children: [
-              const Icon(
+              Icon(
                 LucideIcons.circleAlert,
-                color: AppColors.error,
+                color: theme.colorScheme.danger,
                 size: 18,
               ),
               const SizedBox(width: 10),
@@ -150,12 +161,16 @@ class _PromotionsPageState extends State<PromotionsPage> {
               ),
             ],
           ),
-          backgroundColor: const Color(0xFF1B0F0F),
+          backgroundColor: theme.brightness == Brightness.dark
+              ? const Color(0xFF1B0F0F)
+              : const Color(0xFFFFEBEB),
           behavior: SnackBarBehavior.floating,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: AppColors.error.withValues(alpha: 0.25)),
+            side: BorderSide(
+              color: theme.colorScheme.danger.withValues(alpha: 0.25),
+            ),
           ),
         ),
       );
@@ -164,16 +179,17 @@ class _PromotionsPageState extends State<PromotionsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return BlocProvider(
       create: (_) => getIt<PromotionsCubit>()..loadData(),
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: theme.scaffoldBackgroundColor,
         body: Stack(
           children: [
             BlocBuilder<PromotionsCubit, PromotionsState>(
               builder: (context, state) {
                 if (state is PromotionsInitial || state is PromotionsLoading) {
-                  return _buildLoadingView();
+                  return _buildLoadingView(context);
                 }
 
                 if (state is PromotionsError) {
@@ -189,7 +205,7 @@ class _PromotionsPageState extends State<PromotionsPage> {
                   return RefreshIndicator(
                     onRefresh: () => context.read<PromotionsCubit>().loadData(),
                     color: AppColors.champagne,
-                    backgroundColor: AppColors.surface,
+                    backgroundColor: theme.colorScheme.surface,
                     child: CustomScrollView(
                       controller: _scrollController,
                       physics: const AlwaysScrollableScrollPhysics(
@@ -231,7 +247,7 @@ class _PromotionsPageState extends State<PromotionsPage> {
                         const SliverToBoxAdapter(child: SizedBox(height: 18)),
 
                         if (filteredVouchers.isEmpty)
-                          _buildEmptyVouchers()
+                          _buildEmptyVouchers(context)
                         else
                           SliverPadding(
                             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -281,7 +297,8 @@ class _PromotionsPageState extends State<PromotionsPage> {
     );
   }
 
-  Widget _buildLoadingView() {
+  Widget _buildLoadingView(BuildContext context) {
+    final theme = Theme.of(context);
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(
         parent: BouncingScrollPhysics(),
@@ -294,9 +311,9 @@ class _PromotionsPageState extends State<PromotionsPage> {
             child: Container(
               height: 210,
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(32),
-                border: Border.all(color: AppColors.borderCardStrong),
+                border: Border.all(color: theme.colorScheme.outlineVariant),
               ),
             ),
           ),
@@ -308,7 +325,7 @@ class _PromotionsPageState extends State<PromotionsPage> {
             delegate: SliverChildBuilderDelegate(
               (_, index) => Padding(
                 padding: const EdgeInsets.only(bottom: 14),
-                child: _buildSkeletonCard(),
+                child: _buildSkeletonCard(context),
               ),
               childCount: 4,
             ),
@@ -318,13 +335,14 @@ class _PromotionsPageState extends State<PromotionsPage> {
     );
   }
 
-  Widget _buildSkeletonCard() {
+  Widget _buildSkeletonCard(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       height: 112,
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.borderCardStrong),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Row(
         children: [
@@ -332,7 +350,7 @@ class _PromotionsPageState extends State<PromotionsPage> {
             width: 82,
             margin: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.035),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.035),
               borderRadius: BorderRadius.circular(18),
             ),
           ),
@@ -343,11 +361,11 @@ class _PromotionsPageState extends State<PromotionsPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _skeletonLine(width: 92, height: 10),
+                  _skeletonLine(context, width: 92, height: 10),
                   const SizedBox(height: 10),
-                  _skeletonLine(width: 180, height: 14),
+                  _skeletonLine(context, width: 180, height: 14),
                   const SizedBox(height: 10),
-                  _skeletonLine(width: 130, height: 10),
+                  _skeletonLine(context, width: 130, height: 10),
                 ],
               ),
             ),
@@ -357,87 +375,31 @@ class _PromotionsPageState extends State<PromotionsPage> {
     );
   }
 
-  Widget _skeletonLine({required double width, required double height}) {
+  Widget _skeletonLine(
+    BuildContext context, {
+    required double width,
+    required double height,
+  }) {
+    final theme = Theme.of(context);
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+        color: theme.colorScheme.onSurface.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(99),
       ),
     );
   }
 
   Widget _buildErrorView(BuildContext context, String message) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 68,
-              height: 68,
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.borderCardStrong),
-              ),
-              child: const Icon(
-                LucideIcons.triangleAlert,
-                color: AppColors.error,
-                size: 30,
-              ),
-            ),
-            const SizedBox(height: 18),
-            const Text(
-              'Không thể tải ưu đãi',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              style: const TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 13,
-                height: 1.45,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            _PressableButton(
-              onTap: () => context.read<PromotionsCubit>().loadData(),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 22,
-                  vertical: 13,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.champagne,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Text(
-                  'THỬ LẠI',
-                  style: TextStyle(
-                    color: Color(0xFF17130A),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return ErrorIllustrationWidget(
+      message: message,
+      onRetry: () => context.read<PromotionsCubit>().loadData(),
     );
   }
 
-  Widget _buildEmptyVouchers() {
+  Widget _buildEmptyVouchers(BuildContext context) {
+    final theme = Theme.of(context);
     return SliverFillRemaining(
       hasScrollBody: false,
       child: Center(
@@ -450,32 +412,32 @@ class _PromotionsPageState extends State<PromotionsPage> {
                 width: 76,
                 height: 76,
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: theme.colorScheme.surface,
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.borderCardStrong),
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
                 ),
-                child: const Center(
+                child: Center(
                   child: Icon(
                     LucideIcons.ticket,
-                    color: AppColors.textMuted,
+                    color: theme.colorScheme.onSurfaceVariant,
                     size: 28,
                   ),
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Chưa có ưu đãi phù hợp',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Các đặc quyền mới sẽ được cập nhật trong thời gian tới.',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: theme.colorScheme.onSurfaceVariant,
                   fontSize: 13,
                   height: 1.45,
                 ),
@@ -504,6 +466,7 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -523,8 +486,8 @@ class _SectionHeader extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 title,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface,
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.4,
@@ -533,8 +496,8 @@ class _SectionHeader extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 subtitle,
-                style: const TextStyle(
-                  color: AppColors.textMuted,
+                style: TextStyle(
+                  color: theme.colorScheme.onSurfaceVariant,
                   fontSize: 12,
                   height: 1.4,
                   fontWeight: FontWeight.w500,
@@ -547,14 +510,14 @@ class _SectionHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(99),
-              border: Border.all(color: AppColors.borderCardStrong),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
             ),
             child: Text(
               trailing!,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: TextStyle(
+                color: theme.colorScheme.onSurfaceVariant,
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
               ),
@@ -615,13 +578,14 @@ class _PrivilegeItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       width: 178,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.borderCardStrong),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -641,8 +605,8 @@ class _PrivilegeItem extends StatelessWidget {
           const Spacer(),
           Text(
             title,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
+            style: TextStyle(
+              color: theme.colorScheme.onSurface,
               fontSize: 13,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.1,
@@ -651,8 +615,8 @@ class _PrivilegeItem extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             subtitle,
-            style: const TextStyle(
-              color: AppColors.textMuted,
+            style: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant,
               fontSize: 11,
               height: 1.35,
               fontWeight: FontWeight.w500,
@@ -679,6 +643,7 @@ class _PrivilegeVoucherCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final accent = voucher.isPercent ? AppColors.champagne : AppColors.silver;
     final icon = voucher.isPercent
         ? LucideIcons.badgePercent
@@ -690,13 +655,13 @@ class _PrivilegeVoucherCard extends StatelessWidget {
       child: CustomPaint(
         painter: _VoucherPainter(
           leftWidth: 82,
-          bgColor: AppColors.surface,
-          leftColor: AppColors.surfaceElevated,
+          bgColor: theme.colorScheme.surface,
+          leftColor: theme.colorScheme.surfaceContainerHighest,
           borderColor: isClaimed
-              ? AppColors.success.withValues(alpha: 0.36)
-              : AppColors.borderCardStrong,
-          dividerColor: Colors.white.withValues(alpha: 0.08),
-          notchColor: AppColors.background,
+              ? theme.colorScheme.success.withValues(alpha: 0.36)
+              : theme.colorScheme.outlineVariant,
+          dividerColor: theme.colorScheme.onSurface.withValues(alpha: 0.08),
+          notchColor: theme.scaffoldBackgroundColor,
           notchRadius: 8,
           cornerRadius: 24,
         ),
@@ -761,18 +726,20 @@ class _PrivilegeVoucherCard extends StatelessWidget {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.success.withValues(alpha: 0.1),
+                                color: theme.colorScheme.success.withValues(
+                                  alpha: 0.1,
+                                ),
                                 borderRadius: BorderRadius.circular(99),
                                 border: Border.all(
-                                  color: AppColors.success.withValues(
+                                  color: theme.colorScheme.success.withValues(
                                     alpha: 0.18,
                                   ),
                                 ),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'ĐÃ LƯU',
                                 style: TextStyle(
-                                  color: AppColors.success,
+                                  color: theme.colorScheme.success,
                                   fontSize: 9,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 0.4,
@@ -787,8 +754,8 @@ class _PrivilegeVoucherCard extends StatelessWidget {
                         voucher.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface,
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.15,
@@ -799,8 +766,8 @@ class _PrivilegeVoucherCard extends StatelessWidget {
                         voucher.summaryText,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant,
                           fontSize: 11.5,
                           fontWeight: FontWeight.w500,
                           height: 1.25,
@@ -812,14 +779,14 @@ class _PrivilegeVoucherCard extends StatelessWidget {
                           children: [
                             const Icon(
                               LucideIcons.clock3,
-                              color: AppColors.textMuted,
+                              color: Colors.grey,
                               size: 12,
                             ),
                             const SizedBox(width: 5),
                             Text(
                               expiryText,
-                              style: const TextStyle(
-                                color: AppColors.textMuted,
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurfaceVariant,
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -862,6 +829,7 @@ class _ClaimButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOutCubic,
@@ -870,13 +838,15 @@ class _ClaimButton extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: isClaimed
-            ? AppColors.success.withValues(alpha: 0.1)
+            ? theme.colorScheme.success.withValues(alpha: 0.1)
             : isClaiming
             ? AppColors.champagne.withValues(alpha: 0.16)
             : AppColors.champagne,
         borderRadius: BorderRadius.circular(14),
         border: isClaimed
-            ? Border.all(color: AppColors.success.withValues(alpha: 0.28))
+            ? Border.all(
+                color: theme.colorScheme.success.withValues(alpha: 0.28),
+              )
             : null,
       ),
       child: isClaiming
@@ -889,7 +859,7 @@ class _ClaimButton extends StatelessWidget {
               ),
             )
           : isClaimed
-          ? const Icon(LucideIcons.check, color: AppColors.success, size: 17)
+          ? Icon(LucideIcons.check, color: theme.colorScheme.success, size: 17)
           : const Text(
               'LƯU',
               style: TextStyle(

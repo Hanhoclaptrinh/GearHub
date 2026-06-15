@@ -29,6 +29,7 @@ class _AuthTextFieldState extends State<AuthTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return FormField<String>(
       validator: widget.validator,
       initialValue: widget.controller.text,
@@ -48,22 +49,22 @@ class _AuthTextFieldState extends State<AuthTextField> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF14141E),
+                  color: cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: hasError
-                        ? const Color(0xFFFF4D4D)
+                        ? cs.error
                         : _isFocused
-                            ? const Color(0xFFFDE047)
-                            : Colors.white.withValues(alpha: 0.08),
+                        ? cs.secondary
+                        : cs.outlineVariant,
                     width: (_isFocused || hasError) ? 1.5 : 1,
                   ),
                   boxShadow: _isFocused
                       ? [
                           BoxShadow(
                             color: hasError
-                                ? const Color(0xFFFF4D4D).withValues(alpha: 0.1)
-                                : const Color(0xFFFDE047).withValues(alpha: 0.1),
+                                ? cs.error.withValues(alpha: 0.1)
+                                : cs.secondary.withValues(alpha: 0.1),
                             blurRadius: 20,
                             offset: const Offset(0, 4),
                           ),
@@ -77,11 +78,11 @@ class _AuthTextFieldState extends State<AuthTextField> {
                   onChanged: (value) {
                     state.didChange(value);
                   },
-                  cursorColor: const Color(0xFFFDE047),
-                  style: const TextStyle(
+                  cursorColor: cs.secondary,
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: cs.onSurface,
                     letterSpacing: 0.2,
                   ),
                   decoration: InputDecoration(
@@ -90,18 +91,16 @@ class _AuthTextFieldState extends State<AuthTextField> {
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       color: hasError
-                          ? const Color(0xFFFF4D4D)
+                          ? cs.error
                           : _isFocused
-                              ? const Color(0xFFFDE047)
-                              : Colors.white.withValues(alpha: 0.4),
+                          ? cs.secondary
+                          : cs.onSurfaceVariant,
                       letterSpacing: 0.1,
                     ),
                     floatingLabelStyle: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: hasError
-                          ? const Color(0xFFFF4D4D)
-                          : const Color(0xFFFDE047),
+                      color: hasError ? cs.error : cs.secondary,
                       letterSpacing: 0.5,
                     ),
                     prefixIcon: widget.prefixIcon != null
@@ -109,10 +108,10 @@ class _AuthTextFieldState extends State<AuthTextField> {
                             widget.prefixIcon,
                             size: 18,
                             color: hasError
-                                ? const Color(0xFFFF4D4D)
+                                ? cs.error
                                 : _isFocused
-                                    ? const Color(0xFFFDE047)
-                                    : Colors.white.withValues(alpha: 0.3),
+                                ? cs.secondary
+                                : cs.onSurfaceVariant,
                           )
                         : null,
                     suffixIcon: widget.isPassword
@@ -124,9 +123,7 @@ class _AuthTextFieldState extends State<AuthTextField> {
                                   ? LucideIcons.eyeOff
                                   : LucideIcons.eye,
                               size: 18,
-                              color: hasError
-                                  ? const Color(0xFFFF4D4D)
-                                  : Colors.white.withValues(alpha: 0.3),
+                              color: hasError ? cs.error : cs.onSurfaceVariant,
                             ),
                           )
                         : null,
@@ -144,10 +141,10 @@ class _AuthTextFieldState extends State<AuthTextField> {
                 padding: const EdgeInsets.only(top: 8, left: 16),
                 child: Text(
                   state.errorText!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFFFF4D4D),
+                    color: cs.error,
                     letterSpacing: 0.3,
                   ),
                 ),
@@ -158,4 +155,3 @@ class _AuthTextFieldState extends State<AuthTextField> {
     );
   }
 }
-

@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
-import 'package:mobile/src/core/utils/formatter_utils.dart';
 
 class ProductFilterDrawer extends StatefulWidget {
   final double? initialMinPrice;
   final double? initialMaxPrice;
   final String initialSortBy;
+  final double? maxProductPrice;
   final Function(double? min, double? max, String sort) onApply;
 
   const ProductFilterDrawer({
@@ -15,6 +14,7 @@ class ProductFilterDrawer extends StatefulWidget {
     this.initialMinPrice,
     this.initialMaxPrice,
     required this.initialSortBy,
+    this.maxProductPrice,
     required this.onApply,
   });
 
@@ -24,8 +24,7 @@ class ProductFilterDrawer extends StatefulWidget {
 
 class _ProductFilterDrawerState extends State<ProductFilterDrawer>
     with SingleTickerProviderStateMixin {
-  static const double _maxLimit = 1000000000.0;
-
+  late double _maxLimit;
   late double _minPrice;
   late double _maxPrice;
   late String _sortBy;
@@ -35,41 +34,39 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
   late AnimationController _animCtrl;
   late Animation<double> _fadeAnim;
 
+  //bộ lọc cơ bản
   final List<_SortOption> _sortOptions = const [
-    _SortOption('newest', 'Mới nhất', LucideIcons.clock3, 'Vừa cập nhật'),
-    _SortOption('popular', 'Phổ biến nhất', LucideIcons.flame, 'Bán chạy'),
-    _SortOption(
-      'price_asc',
-      'Giá tăng dần',
-      LucideIcons.trendingUp,
-      'Rẻ trước',
-    ),
-    _SortOption(
-      'price_desc',
-      'Giá giảm dần',
-      LucideIcons.trendingDown,
-      'Đắt trước',
-    ),
+    _SortOption('newest', 'Mới nhất', 'Sản phẩm vừa cập nhật'),
+    _SortOption('popular', 'Phổ biến', 'Bán chạy nhất'),
+    _SortOption('price_asc', 'Giá tăng dần', 'Thấp đến cao'),
+    _SortOption('price_desc', 'Giá giảm dần', 'Cao đến thấp'),
   ];
 
   @override
   void initState() {
     super.initState();
-    _minPrice = (widget.initialMinPrice ?? 0).clamp(0, _maxLimit);
+    //lọc theo khoảng giá
+    _maxLimit = widget.maxProductPrice ?? 20000000.0;
+    if (_maxLimit <= 0) _maxLimit = 20000000.0;
+
+    _minPrice = (widget.initialMinPrice ?? 0.0).clamp(0.0, _maxLimit);
     _maxPrice = (widget.initialMaxPrice ?? _maxLimit).clamp(
       _minPrice,
       _maxLimit,
     );
     _sortBy = widget.initialSortBy;
 
-    _minCtrl = TextEditingController(text: _rawNumber(_minPrice));
-    _maxCtrl = TextEditingController(text: _rawNumber(_maxPrice));
+    _minCtrl = TextEditingController(text: _formatToDisplay(_minPrice));
+    _maxCtrl = TextEditingController(text: _formatToDisplay(_maxPrice));
 
     _animCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 350),
     )..forward();
-    _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
+    _fadeAnim = CurvedAnimation(
+      parent: _animCtrl,
+      curve: Curves.easeInOutCubic,
+    );
   }
 
   @override
@@ -80,22 +77,29 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
     super.dispose();
   }
 
-  String _rawNumber(double v) => v == 0 ? '0' : v.toInt().toString();
+  String _formatToDisplay(double v) {
+    if (v == 0) return '0';
+    return v.toInt().toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]}.',
+    );
+  }
+
+  double _parseFromInput(String text) {
+    if (text.isEmpty) return 0.0;
+    final clean = text.replaceAll('.', '').replaceAll(',', '');
+    return double.tryParse(clean) ?? 0.0;
+  }
 
   void _syncFromFields() {
-    final minVal =
-        double.tryParse(
-          _minCtrl.text.replaceAll('.', '').replaceAll(',', ''),
-        ) ??
-        _minPrice;
-    final maxVal =
-        double.tryParse(
-          _maxCtrl.text.replaceAll('.', '').replaceAll(',', ''),
-        ) ??
-        _maxPrice;
+    final minVal = _parseFromInput(_minCtrl.text);
+    final maxVal = _parseFromInput(_maxCtrl.text);
+
     setState(() {
-      _minPrice = minVal.clamp(0, _maxLimit);
+      _minPrice = minVal.clamp(0.0, _maxLimit);
       _maxPrice = maxVal.clamp(_minPrice, _maxLimit);
+      _minCtrl.text = _formatToDisplay(_minPrice);
+      _maxCtrl.text = _formatToDisplay(_maxPrice);
     });
   }
 
@@ -103,8 +107,18 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
     setState(() {
       _minPrice = vals.start;
       _maxPrice = vals.end;
-      _minCtrl.text = _rawNumber(_minPrice);
-      _maxCtrl.text = _rawNumber(_maxPrice);
+      _minCtrl.text = _formatToDisplay(_minPrice);
+      _maxCtrl.text = _formatToDisplay(_maxPrice);
+    });
+  }
+
+  void _applyPreset(double min, double max) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _minPrice = min.clamp(0.0, _maxLimit);
+      _maxPrice = max.clamp(_minPrice, _maxLimit);
+      _minCtrl.text = _formatToDisplay(_minPrice);
+      _maxCtrl.text = _formatToDisplay(_maxPrice);
     });
   }
 
@@ -118,68 +132,94 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
 
   void _reset() {
     setState(() {
-      _minPrice = 0;
+      _minPrice = 0.0;
       _maxPrice = _maxLimit;
       _sortBy = 'newest';
       _minCtrl.text = '0';
-      _maxCtrl.text = _rawNumber(_maxLimit);
+      _maxCtrl.text = _formatToDisplay(_maxLimit);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final safeArea = MediaQuery.of(context).padding;
     final activeCount = _activeFilterCount;
 
+    final backgroundColor = isDark
+        ? const Color(0xFF0F0F15)
+        : const Color(0xFFF8F9FC);
+
     return Drawer(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       width: MediaQuery.of(context).size.width * 0.88,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(28),
-          bottomLeft: Radius.circular(28),
-        ),
-      ),
       child: FadeTransition(
         opacity: _fadeAnim,
         child: Container(
-          decoration: const BoxDecoration(
-            color: AppColors.background,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(28),
-              bottomLeft: Radius.circular(28),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(24),
+              bottomLeft: Radius.circular(24),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.08),
+                blurRadius: 40,
+                spreadRadius: 0,
+                offset: const Offset(-4, 0),
+              ),
+            ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(safeArea, activeCount),
-
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      _buildSectionLabel('SẮP XẾP THEO'),
-                      const SizedBox(height: 8),
-                      _buildSortList(),
-                      const SizedBox(height: 32),
-                      _buildSectionLabel('KHOẢNG GIÁ'),
-                      const SizedBox(height: 12),
-                      _buildPriceInputRow(),
-                      const SizedBox(height: 20),
-                      _buildSlider(),
-                      const SizedBox(height: 8),
-                      _buildSliderLabels(),
-                      const SizedBox(height: 40),
-                    ],
+          child: SafeArea(
+            top: false,
+            bottom: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(safeArea, activeCount),
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.5,
                   ),
                 ),
-              ),
-
-              _buildFooter(safeArea),
-            ],
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 24),
+                        _buildSectionTitle('SẮP XẾP SẢN PHẨM'),
+                        const SizedBox(height: 14),
+                        _buildSortSection(),
+                        const SizedBox(height: 36),
+                        _buildSectionTitle('KHOẢNG NGÂN SÁCH'),
+                        const SizedBox(height: 20),
+                        _buildPriceInputRow(),
+                        const SizedBox(height: 24),
+                        _buildSlider(),
+                        const SizedBox(height: 16),
+                        _buildPresetWrap(),
+                        const SizedBox(height: 32),
+                      ],
+                    ),
+                  ),
+                ),
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.5,
+                  ),
+                ),
+                _buildFooter(safeArea),
+              ],
+            ),
           ),
         ),
       ),
@@ -187,209 +227,164 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
   }
 
   Widget _buildHeader(EdgeInsets safeArea, int activeCount) {
+    final theme = Theme.of(context);
+
     return Container(
-      padding: EdgeInsets.fromLTRB(24, safeArea.top + 28, 20, 24),
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: AppColors.cardBorder, width: 0.5),
-        ),
-      ),
+      padding: EdgeInsets.fromLTRB(20, safeArea.top + 16, 12, 16),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Text(
-                      'Bộ lọc',
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.textPrimary,
-                        letterSpacing: -1,
-                        height: 1,
-                      ),
-                    ),
-                    if (activeCount > 0) ...[
-                      const SizedBox(width: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.champagne,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '$activeCount',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
+          Row(
+            children: [
+              Text(
+                'BỘ LỌC TÌM KIẾM',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.onSurface,
+                  letterSpacing: 1.2,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  activeCount == 0
-                      ? 'Chưa áp dụng bộ lọc nào'
-                      : '$activeCount bộ lọc đang được áp dụng',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSlate,
-                    fontWeight: FontWeight.w500,
+              ),
+              if (activeCount > 0) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '$activeCount',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      color: theme.colorScheme.onPrimary,
+                    ),
                   ),
                 ),
               ],
-            ),
+            ],
           ),
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.cardSurfaceAltAlt,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.cardBorder, width: 0.5),
-              ),
-              child: const Icon(
-                LucideIcons.x,
-                size: 18,
-                color: AppColors.textSlate,
-              ),
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: Icon(
+              LucideIcons.x,
+              size: 20,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSectionLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w800,
-          color: AppColors.textDim,
-          letterSpacing: 2,
-        ),
+  Widget _buildSectionTitle(String title) {
+    final theme = Theme.of(context);
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+        letterSpacing: 1.2,
       ),
     );
   }
 
-  Widget _buildSortList() {
-    return Column(
-      children: _sortOptions.asMap().entries.map((entry) {
-        final i = entry.key;
-        final opt = entry.value;
-        final isSelected = _sortBy == opt.value;
-        final isLast = i == _sortOptions.length - 1;
+  Widget _buildSortSection() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
+    return Column(
+      children: _sortOptions.map((opt) {
+        final isSel = _sortBy == opt.value;
         return GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: () {
             HapticFeedback.selectionClick();
             setState(() => _sortBy = opt.value);
           },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            margin: EdgeInsets.fromLTRB(16, i == 0 ? 0 : 0, 16, isLast ? 0 : 0),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            margin: const EdgeInsets.only(bottom: 8),
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.champagneSoft : Colors.transparent,
+              color: isSel
+                  ? theme.colorScheme.primary.withValues(
+                      alpha: isDark ? 0.08 : 0.05,
+                    )
+                  : theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSel
+                    ? theme.colorScheme.primary.withValues(alpha: 0.5)
+                    : theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                width: 1,
+              ),
+              boxShadow: isSel
+                  ? [
+                      BoxShadow(
+                        color: theme.colorScheme.primary.withValues(
+                          alpha: 0.05,
+                        ),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : [],
             ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              decoration: BoxDecoration(
-                border: Border(
-                  left: BorderSide(
-                    color: isSelected
-                        ? AppColors.champagne
-                        : Colors.transparent,
-                    width: 2,
-                  ),
-                  bottom: BorderSide(
-                    color: isLast ? Colors.transparent : AppColors.cardBorder,
-                    width: 0.5,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        opt.label,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                          color: isSel
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        opt.sub,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isSel
+                              ? theme.colorScheme.primary.withValues(alpha: 0.6)
+                              : theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.4,
+                                ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.champagne
-                          : AppColors.cardSurfaceAltAlt,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.champagne
-                            : AppColors.cardBorder,
-                        width: 0.5,
-                      ),
-                    ),
-                    child: Icon(
-                      opt.icon,
-                      size: 17,
-                      color: isSelected ? Colors.white : AppColors.textSlate,
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSel
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurface.withValues(alpha: 0.2),
+                      width: isSel ? 6 : 2,
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          opt.label,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: isSelected
-                                ? FontWeight.w800
-                                : FontWeight.w600,
-                            color: isSelected
-                                ? AppColors.textPrimary
-                                : AppColors.textSlate,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          opt.sub,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textDim,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  AnimatedOpacity(
-                    opacity: isSelected ? 1 : 0,
-                    duration: const Duration(milliseconds: 200),
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: AppColors.champagne,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );
@@ -398,93 +393,78 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
   }
 
   Widget _buildPriceInputRow() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Row(
-        children: [
-          Expanded(child: _buildPriceField('Từ', _minCtrl)),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Container(
-              width: 20,
-              height: 1.5,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.cardBorder,
-                    AppColors.champagne.withValues(alpha: 0.5),
-                    AppColors.cardBorder,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Expanded(child: _buildPriceField('Đến', _maxCtrl)),
-        ],
-      ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(child: _buildPriceField('TỪ', _minCtrl)),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 10),
+          child: Text('—', style: TextStyle(color: Colors.grey, fontSize: 12)),
+        ),
+        Expanded(child: _buildPriceField('ĐẾN', _maxCtrl)),
+      ],
     );
   }
 
   Widget _buildPriceField(String label, TextEditingController ctrl) {
+    final theme = Theme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 10,
+          style: TextStyle(
+            fontSize: 9,
             fontWeight: FontWeight.w700,
-            color: AppColors.textDim,
-            letterSpacing: 1.5,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+            letterSpacing: 1.0,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: AppColors.cardSurfaceAltAlt,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.cardBorder, width: 0.5),
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+              width: 1,
+            ),
           ),
-          child: Row(
-            children: [
-              const Padding(
-                padding: EdgeInsets.only(left: 12),
-                child: Text(
-                  '₫',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSlate,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: TextField(
-                  controller: ctrl,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                  cursorColor: AppColors.champagne,
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 12,
-                    ),
-                    isDense: true,
-                  ),
-                  onEditingComplete: _syncFromFields,
-                  onTapOutside: (_) {
-                    FocusScope.of(context).unfocus();
-                    _syncFromFields();
-                  },
-                ),
-              ),
+          child: TextField(
+            controller: ctrl,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              _CurrencyInputFormatter(),
             ],
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface,
+            ),
+            cursorColor: theme.colorScheme.primary,
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              fillColor: Colors.transparent,
+              filled: false,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 14),
+              suffixText: '₫',
+              suffixStyle: TextStyle(
+                fontSize: 14,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+              ),
+            ),
+            onEditingComplete: _syncFromFields,
+            onTapOutside: (_) {
+              FocusScope.of(context).unfocus();
+              _syncFromFields();
+            },
           ),
         ),
       ],
@@ -492,133 +472,153 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
   }
 
   Widget _buildSlider() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: SliderTheme(
-        data: const SliderThemeData(
-          trackHeight: 3,
-          activeTrackColor: AppColors.champagne,
-          inactiveTrackColor: AppColors.cardBorder,
-          thumbColor: AppColors.textPrimary,
-          overlayColor: AppColors.champagneSoft,
-          rangeThumbShape: RoundRangeSliderThumbShape(
-            enabledThumbRadius: 11,
-            elevation: 6,
-          ),
-          rangeTrackShape: RoundedRectRangeSliderTrackShape(),
-          overlayShape: RoundSliderOverlayShape(overlayRadius: 22),
+    final theme = Theme.of(context);
+    return SliderTheme(
+      data: SliderThemeData(
+        trackHeight: 3,
+        activeTrackColor: theme.colorScheme.primary,
+        inactiveTrackColor: theme.colorScheme.outlineVariant.withValues(
+          alpha: 0.5,
         ),
-        child: RangeSlider(
-          values: RangeValues(_minPrice, _maxPrice),
-          min: 0,
-          max: _maxLimit,
-          divisions: 200,
-          onChanged: (vals) {
-            HapticFeedback.selectionClick();
-            _syncFromSlider(vals);
-          },
+        thumbColor: theme.colorScheme.surface,
+        overlayColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+        rangeThumbShape: const RoundRangeSliderThumbShape(
+          enabledThumbRadius: 9,
+          elevation: 2,
+          pressedElevation: 4,
         ),
+      ),
+      child: RangeSlider(
+        values: RangeValues(_minPrice, _maxPrice),
+        min: 0,
+        max: _maxLimit,
+        divisions: 100,
+        onChanged: (vals) => _syncFromSlider(vals),
+        onChangeEnd: (_) => HapticFeedback.lightImpact(),
       ),
     );
   }
 
-  Widget _buildSliderLabels() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 28),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Text(
-            '0 ₫',
-            style: TextStyle(
-              fontSize: 11,
-              color: AppColors.textDim,
-              fontWeight: FontWeight.w600,
+  Widget _buildPresetWrap() {
+    final theme = Theme.of(context);
+    final step1 = (_maxLimit * 0.15).roundToDouble();
+    final step2 = (_maxLimit * 0.4).roundToDouble();
+    final step3 = (_maxLimit * 0.75).roundToDouble();
+
+    String formatM(double val) {
+      if (val >= 1000000) {
+        final double mVal = val / 1000000;
+        return '${mVal.toStringAsFixed(mVal % 1 == 0 ? 0 : 1)}tr';
+      }
+      return '${(val / 1000).toStringAsFixed(0)}k';
+    }
+
+    final List<_Preset> presets = [
+      _Preset('Tất cả', 0.0, _maxLimit),
+      _Preset('Dưới ${formatM(step1)}', 0.0, step1),
+      _Preset('${formatM(step1)} - ${formatM(step2)}', step1, step2),
+      _Preset('${formatM(step2)} - ${formatM(step3)}', step2, step3),
+      _Preset('Trên ${formatM(step3)}', step3, _maxLimit),
+    ];
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: presets.map((preset) {
+        final isSel = (_minPrice == preset.min && _maxPrice == preset.max);
+        return GestureDetector(
+          onTap: () => _applyPreset(preset.min, preset.max),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSel
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSel
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              preset.label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                color: isSel
+                    ? theme.colorScheme.onPrimary
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
-          Text(
-            formatVND(_maxLimit),
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textDim,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
+        );
+      }).toList(),
     );
   }
 
   Widget _buildFooter(EdgeInsets safeArea) {
+    final theme = Theme.of(context);
     return Container(
       padding: EdgeInsets.fromLTRB(20, 16, 20, safeArea.bottom + 20),
-      decoration: const BoxDecoration(
-        border: Border(
-          top: BorderSide(color: AppColors.cardBorder, width: 0.5),
-        ),
-      ),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              _reset();
-            },
-            child: Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: AppColors.cardSurfaceAltAlt,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.cardBorder, width: 0.5),
+          Expanded(
+            flex: 2,
+            child: OutlinedButton(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                _reset();
+              },
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                side: BorderSide(
+                  color: theme.colorScheme.outlineVariant,
+                  width: 1,
+                ),
               ),
-              child: const Icon(
-                LucideIcons.rotateCcw,
-                size: 18,
-                color: AppColors.textSlate,
+              child: Text(
+                'Thiết lập lại',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: GestureDetector(
-              onTap: () {
+            flex: 3,
+            child: ElevatedButton(
+              onPressed: () {
                 HapticFeedback.mediumImpact();
                 _syncFromFields();
-                widget.onApply(_minPrice, _maxPrice, _sortBy);
+                final effectiveMin = _minPrice > 0 ? _minPrice : null;
+                final effectiveMax = _maxPrice < _maxLimit ? _maxPrice : null;
+                widget.onApply(effectiveMin, effectiveMax, _sortBy);
                 Navigator.pop(context);
               },
-              child: Container(
-                height: 52,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFFDE047), Color(0xFFB49B00)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.champagne.withValues(alpha: 0.35),
-                      blurRadius: 5,
-                    ),
-                  ],
                 ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(LucideIcons.settings2, size: 16, color: Colors.black),
-                    SizedBox(width: 8),
-                    Text(
-                      'Áp dụng bộ lọc',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                  ],
+                elevation: 0,
+              ),
+              child: const Text(
+                'XEM KẾT QUẢ',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
                 ),
               ),
             ),
@@ -629,11 +629,38 @@ class _ProductFilterDrawerState extends State<ProductFilterDrawer>
   }
 }
 
+class _CurrencyInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) return newValue;
+    final int? value = int.tryParse(newValue.text.replaceAll('.', ''));
+    if (value == null) return oldValue;
+
+    final newText = value.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]}.',
+    );
+
+    return TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
+    );
+  }
+}
+
+class _Preset {
+  final String label;
+  final double min;
+  final double max;
+  const _Preset(this.label, this.min, this.max);
+}
+
 class _SortOption {
   final String value;
   final String label;
-  final IconData icon;
   final String sub;
-
-  const _SortOption(this.value, this.label, this.icon, this.sub);
+  const _SortOption(this.value, this.label, this.sub);
 }

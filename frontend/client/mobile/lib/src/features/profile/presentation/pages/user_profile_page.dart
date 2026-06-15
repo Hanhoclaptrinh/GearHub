@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/core/di/injection.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
+import 'package:mobile/src/core/theme/theme_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/pages/login_page.dart';
 import 'package:mobile/src/features/auth/presentation/pages/register_page.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
@@ -24,12 +24,17 @@ class UserProfilePage extends StatefulWidget {
 }
 
 class _UserProfilePageState extends State<UserProfilePage> {
-  bool _isDarkMode = true;
+  bool _notificationsEnabled = true;
+  String _selectedLanguage = 'Tiếng Việt';
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
+        if (ModalRoute.of(context)?.isCurrent != true) return;
         if (state is AuthError) {
           _showErrorSnackBar(context, state.message);
         }
@@ -45,9 +50,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
           ),
         ],
         child: AnnotatedRegion<SystemUiOverlayStyle>(
-          value: SystemUiOverlayStyle.light,
+          value: isDark
+              ? SystemUiOverlayStyle.light
+              : SystemUiOverlayStyle.dark,
           child: Scaffold(
-            backgroundColor: AppColors.background,
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             body: BlocBuilder<AuthCubit, AuthState>(
               builder: (context, state) {
                 final user = state is AuthAuthenticated ? state.user : null;
@@ -63,7 +70,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         height: 300,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.champagne.withValues(alpha: 0.03),
+                          color: cs.secondary.withValues(alpha: 0.03),
                         ),
                         child: BackdropFilter(
                           filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
@@ -73,8 +80,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     ),
 
                     RefreshIndicator(
-                      color: AppColors.champagne,
-                      backgroundColor: const Color(0xFF14141E),
+                      color: cs.secondary,
+                      backgroundColor: cs.surfaceContainerHighest,
                       strokeWidth: 2,
                       onRefresh: () async {
                         if (isLoggedIn) {
@@ -114,26 +121,21 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                 ],
 
                                 const SizedBox(height: 48),
+                                _buildThemeSelector(context),
+
+                                const SizedBox(height: 24),
 
                                 ProfileMenuCard(
                                   groupLabel: 'CÀI ĐẶT HỆ THỐNG',
                                   items: [
-                                    ProfileMenuItem(
-                                      title: 'Chế độ tối',
-                                      isToggle: true,
-                                      toggleValue: _isDarkMode,
-                                      onToggle: (val) {
-                                        setState(() => _isDarkMode = val);
-                                        HapticFeedback.selectionClick();
-                                      },
-                                    ),
                                     if (isLoggedIn) ...[
                                       ProfileMenuItem(
                                         title: 'Địa chỉ đã lưu',
                                         onTap: () {
                                           Navigator.of(context).push(
                                             MaterialPageRoute(
-                                              builder: (_) => const AddressesPage(),
+                                              builder: (_) =>
+                                                  const AddressesPage(),
                                             ),
                                           );
                                         },
@@ -143,6 +145,21 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                         onTap: () {},
                                       ),
                                     ],
+                                    ProfileMenuItem(
+                                      title: 'Ngôn ngữ',
+                                      badge: _selectedLanguage,
+                                      onTap: () => _showLanguagePopup(context),
+                                    ),
+                                    ProfileMenuItem(
+                                      title: 'Thông báo',
+                                      isToggle: true,
+                                      toggleValue: _notificationsEnabled,
+                                      onToggle: (val) {
+                                        setState(() {
+                                          _notificationsEnabled = val;
+                                        });
+                                      },
+                                    ),
                                   ],
                                 ),
 
@@ -167,36 +184,339 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
+  void _showLanguagePopup(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
+              width: 280,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: cs.surface,
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: cs.outlineVariant, width: 0.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildLanguageOption(
+                    context: dialogCtx,
+                    label: 'Tiếng Việt',
+                    isSelected: _selectedLanguage == 'Tiếng Việt',
+                    onTap: () {
+                      setState(() => _selectedLanguage = 'Tiếng Việt');
+                      Navigator.pop(dialogCtx);
+                    },
+                  ),
+                  Divider(
+                    color: cs.outlineVariant.withValues(alpha: 0.5),
+                    height: 1,
+                    indent: 16,
+                    endIndent: 16,
+                  ),
+                  _buildLanguageOption(
+                    context: dialogCtx,
+                    label: 'English',
+                    isSelected: _selectedLanguage == 'English',
+                    onTap: () {
+                      setState(() => _selectedLanguage = 'English');
+                      Navigator.pop(dialogCtx);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLanguageOption({
+    required BuildContext context,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Row(
+            children: [
+              Icon(
+                Icons.translate_rounded,
+                size: 18,
+                color: isSelected
+                    ? cs.primary
+                    : cs.onSurface.withValues(alpha: 0.3),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: cs.onSurface,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              if (isSelected)
+                Icon(Icons.check_circle_rounded, size: 18, color: cs.primary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeSelector(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return BlocBuilder<ThemeCubit, ThemeMode>(
+      builder: (context, currentMode) {
+        final themeOptions = [
+          {
+            'mode': ThemeMode.system,
+            'label': 'Hệ thống',
+            'icon': Icons.settings_suggest_outlined,
+          },
+          {
+            'mode': ThemeMode.light,
+            'label': 'Sáng',
+            'icon': Icons.light_mode_outlined,
+          },
+          {
+            'mode': ThemeMode.dark,
+            'label': 'Tối',
+            'icon': Icons.dark_mode_outlined,
+          },
+        ];
+        final selectedIndex = themeOptions.indexWhere(
+          (o) => o['mode'] == currentMode,
+        );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 8, bottom: 16),
+              child: Text(
+                'GIAO DIỆN',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  color: cs.onSurface.withValues(alpha: 0.2),
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
+            Container(
+              height: 72,
+              decoration: BoxDecoration(
+                color: cs.onSurface.withValues(alpha: 0.02),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: cs.onSurface.withValues(alpha: 0.05),
+                  width: 1,
+                ),
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final totalWidth = constraints.maxWidth - 12;
+                  final itemWidth = totalWidth / themeOptions.length;
+
+                  return Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Stack(
+                      children: [
+                        if (selectedIndex != -1)
+                          AnimatedPositioned(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeInOutCubic,
+                            left: selectedIndex * itemWidth,
+                            width: itemWidth,
+                            top: 0,
+                            bottom: 0,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: cs.primary,
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.08),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        Row(
+                          children: themeOptions.map((option) {
+                            final mode = option['mode'] as ThemeMode;
+                            final label = option['label'] as String;
+                            final icon = option['icon'] as IconData;
+                            final selected = mode == currentMode;
+
+                            return Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  if (mode == ThemeMode.system) {
+                                    context.read<ThemeCubit>().useSystemTheme();
+                                  } else if (mode == ThemeMode.light) {
+                                    context.read<ThemeCubit>().useLightTheme();
+                                  } else {
+                                    context.read<ThemeCubit>().useDarkTheme();
+                                  }
+                                },
+                                behavior: HitTestBehavior.opaque,
+                                child: Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        icon,
+                                        size: 18,
+                                        color: selected
+                                            ? cs.onPrimary
+                                            : cs.onSurface.withValues(
+                                                alpha: 0.3,
+                                              ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        label,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: selected
+                                              ? FontWeight.w900
+                                              : FontWeight.w500,
+                                          color: selected
+                                              ? cs.onPrimary
+                                              : cs.onSurface.withValues(
+                                                  alpha: 0.3,
+                                                ),
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildQuietLogout(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final danger = isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626);
+
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, state) {
         final isLoading = state is AuthLoading;
 
-        return Center(
-          child: GestureDetector(
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
             onTap: isLoading
                 ? null
                 : () => _showQuietLogoutConfirmation(context),
-            behavior: HitTestBehavior.opaque,
+            borderRadius: BorderRadius.circular(18),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+              height: 56,
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                color: danger.withValues(alpha: isDark ? 0.11 : 0.06),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: danger.withValues(alpha: isDark ? 0.24 : 0.16),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.03),
+                    blurRadius: 18,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
               child: isLoading
-                  ? const SizedBox(
-                      height: 12,
-                      width: 12,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 1.5,
-                        color: Colors.white24,
-                      ),
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 1.8,
+                            color: danger.withValues(alpha: 0.8),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Đang đăng xuất',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: danger.withValues(alpha: 0.82),
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
                     )
-                  : Text(
-                      'ĐĂNG XUẤT',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.error.withValues(alpha: 0.8),
-                        letterSpacing: 2,
-                      ),
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.logout_rounded,
+                          size: 18,
+                          color: danger.withValues(alpha: 0.86),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Đăng xuất',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: danger.withValues(alpha: 0.88),
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
                     ),
             ),
           ),
@@ -206,6 +526,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 
   Widget _buildLoginCTA(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -214,7 +536,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w800,
-            color: Colors.white.withValues(alpha: 0.3),
+            color: cs.onSurface.withValues(alpha: 0.3),
           ),
         ),
         const SizedBox(height: 24),
@@ -223,19 +545,19 @@ class _UserProfilePageState extends State<UserProfilePage> {
           padding: const EdgeInsets.all(40),
           decoration: BoxDecoration(
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: cs.onSurface.withValues(alpha: 0.05),
               width: 0.8,
             ),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
             children: [
-              const Text(
+              Text(
                 'MỞ KHÓA TOÀN BỘ TRẢI NGHIỆM',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w200,
-                  color: Colors.white,
+                  color: cs.onSurface,
                 ),
               ),
               const SizedBox(height: 40),
@@ -243,6 +565,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 children: [
                   Expanded(
                     child: _buildAuthTile(
+                      context,
                       'ĐĂNG NHẬP',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -252,6 +575,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   const SizedBox(width: 20),
                   Expanded(
                     child: _buildAuthTile(
+                      context,
                       'THAM GIA',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const RegisterPage()),
@@ -267,7 +591,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
-  Widget _buildAuthTile(String label, {required VoidCallback onTap}) {
+  Widget _buildAuthTile(
+    BuildContext context,
+    String label, {
+    required VoidCallback onTap,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -275,19 +605,19 @@ class _UserProfilePageState extends State<UserProfilePage> {
         height: 50,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.03),
+          color: cs.onSurface.withValues(alpha: 0.03),
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.05),
+            color: cs.onSurface.withValues(alpha: 0.05),
             width: 0.6,
           ),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w800,
-            color: Colors.white,
+            color: cs.onSurface,
             letterSpacing: 1.2,
           ),
         ),
@@ -296,73 +626,138 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 
   void _showQuietLogoutConfirmation(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final danger = isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626);
+
     showDialog(
       context: context,
+      barrierColor: Colors.black.withValues(alpha: isDark ? 0.58 : 0.34),
       builder: (dialogContext) => BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-        child: AlertDialog(
-          backgroundColor: const Color(0xFF0A0A0A),
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-          contentPadding: const EdgeInsets.fromLTRB(32, 40, 32, 24),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'XÁC NHẬN ĐĂNG XUẤT',
-                style: TextStyle(
-                  fontWeight: FontWeight.w200,
-                  fontSize: 16,
-                  color: Colors.white,
-                  letterSpacing: 2,
-                ),
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Dialog(
+          elevation: 0,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+            decoration: BoxDecoration(
+              color: cs.surface,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: cs.outlineVariant.withValues(alpha: isDark ? 0.36 : 0.7),
+                width: 0.8,
               ),
-              const SizedBox(height: 20),
-              Text(
-                'Fen chắc chắn muốn kết thúc phiên đăng nhập tuyệt vời này chứ?',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.4),
-                  fontSize: 12,
-                  height: 1.6,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.42 : 0.12),
+                  blurRadius: 34,
+                  offset: const Offset(0, 18),
                 ),
-              ),
-              const SizedBox(height: 40),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(dialogContext),
-                      child: Text(
-                        'HỦY',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.2,
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 54,
+                  height: 54,
+                  decoration: BoxDecoration(
+                    color: danger.withValues(alpha: isDark ? 0.14 : 0.08),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: danger.withValues(alpha: isDark ? 0.24 : 0.14),
+                      width: 1,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.logout_rounded,
+                    size: 22,
+                    color: danger.withValues(alpha: 0.9),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Đăng xuất khỏi GearHub?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 19,
+                    color: cs.onSurface,
+                    height: 1.25,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Bạn sẽ cần đăng nhập lại để tiếp tục theo dõi đơn hàng, voucher và các tiện ích cá nhân.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: cs.onSurface.withValues(alpha: 0.56),
+                    fontSize: 13,
+                    height: 1.55,
+                  ),
+                ),
+                const SizedBox(height: 26),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 48,
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          style: TextButton.styleFrom(
+                            foregroundColor: cs.onSurface,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(
+                                color: cs.onSurface.withValues(alpha: 0.08),
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            'Ở lại',
+                            style: TextStyle(
+                              color: cs.onSurface.withValues(alpha: 0.72),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.pop(dialogContext);
-                        context.read<AuthCubit>().logout();
-                      },
-                      child: const Text(
-                        'XÁC NHẬN',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.2,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SizedBox(
+                        height: 48,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(dialogContext);
+                            context.read<AuthCubit>().logout();
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: danger,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'Đăng xuất',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -376,7 +771,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
           message,
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
         ),
-        backgroundColor: const Color(0xFF1A1A1A),
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(32),
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/core/utils/brand_identity_helper.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class ProductTrustBadgesSection extends StatelessWidget {
   final Color accentColor;
@@ -7,19 +8,19 @@ class ProductTrustBadgesSection extends StatelessWidget {
 
   final List<Map<String, dynamic>> _badges = const [
     {
-      'icon': LucideIcons.shieldCheck,
+      'icon': FontAwesomeIcons.shield,
       'title': 'Bảo hành chính hãng',
       'desc':
           'Bảo hành toàn diện lên đến 36 tháng. Quy đổi trực tiếp nếu phát hiện lỗi từ nhà sản xuất.',
     },
     {
-      'icon': LucideIcons.truck,
+      'icon': FontAwesomeIcons.solidTruck,
       'title': 'Vận chuyển hỏa tốc',
       'desc':
           'Giao hàng tiêu chuẩn an toàn và miễn phí đến tận nhà của bạn trong vòng 24 giờ.',
     },
     {
-      'icon': LucideIcons.headset,
+      'icon': FontAwesomeIcons.solidHeadphones,
       'title': 'Đặc quyền chuyên gia',
       'desc':
           'Nhận hỗ trợ trực tiếp từ đội ngũ kỹ thuật viên cao cấp cho bất cứ yêu cầu kỹ thuật nào.',
@@ -28,6 +29,11 @@ class ProductTrustBadgesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final adaptiveAccent = BrandIdentityHelper.getAdaptiveAccent(
+      context,
+      accentColor,
+    );
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(32, 48, 32, 80),
       child: Column(
@@ -35,30 +41,31 @@ class ProductTrustBadgesSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: 24,
-                height: 1,
-                color: accentColor.withValues(alpha: 0.5),
-              ),
-              const SizedBox(width: 12),
               Text(
                 'DỊCH VỤ HẬU MÃI',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
-                  color: accentColor,
+                  color: adaptiveAccent,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 40),
-          ..._badges.map((b) => _buildBadgeItem(b)),
+          ..._badges.map((b) => _buildBadgeItem(context, b)),
         ],
       ),
     );
   }
 
-  Widget _buildBadgeItem(Map<String, dynamic> b) {
+  Widget _buildBadgeItem(BuildContext context, Map<String, dynamic> b) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final adaptiveAccent = BrandIdentityHelper.getAdaptiveAccent(
+      context,
+      accentColor,
+    );
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 40),
       child: Row(
@@ -67,11 +74,15 @@ class ProductTrustBadgesSection extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.05),
+              color: adaptiveAccent.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: accentColor.withValues(alpha: 0.1)),
+              border: Border.all(color: adaptiveAccent.withValues(alpha: 0.1)),
             ),
-            child: Icon(b['icon'] as IconData, size: 20, color: accentColor),
+            child: FaIcon(
+              b['icon'] as FaIconData,
+              size: 20,
+              color: adaptiveAccent,
+            ),
           ),
           const SizedBox(width: 24),
           Expanded(
@@ -80,10 +91,10 @@ class ProductTrustBadgesSection extends StatelessWidget {
               children: [
                 Text(
                   (b['title'] as String).toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
-                    color: Colors.white,
+                    color: cs.onSurface,
                     height: 1.2,
                   ),
                 ),
@@ -93,7 +104,7 @@ class ProductTrustBadgesSection extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w300,
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: cs.onSurfaceVariant,
                     height: 1.5,
                   ),
                 ),

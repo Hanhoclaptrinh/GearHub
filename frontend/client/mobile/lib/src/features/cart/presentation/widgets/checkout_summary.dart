@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/theme/app_colors.dart';
+import 'package:mobile/src/core/utils/formatter_utils.dart';
 
 class CheckoutSummary extends StatelessWidget {
   final double subtotal;
@@ -25,16 +26,17 @@ class CheckoutSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final padding = MediaQuery.of(context).padding;
+    final theme = Theme.of(context);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       decoration: BoxDecoration(
-        color: AppColors.cardSurfaceAlt.withValues(alpha: 0.9),
+        color: theme.colorScheme.surface.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: AppColors.borderCardStrong, width: 0.5),
+        border: Border.all(color: theme.colorScheme.outlineVariant, width: 0.5),
         boxShadow: [
           BoxShadow(
-            color: AppColors.ctaPrimaryText.withValues(alpha: 0.4),
+            color: theme.colorScheme.shadow.withValues(alpha: 0.08),
             blurRadius: 30,
             offset: const Offset(0, 10),
           ),
@@ -49,37 +51,46 @@ class CheckoutSummary extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildSummaryRow(label: 'Tạm tính', amount: subtotal),
+                _buildSummaryRow(
+                  context: context,
+                  label: 'Tạm tính',
+                  amount: subtotal,
+                ),
                 const SizedBox(height: 12),
-                _buildSummaryRow(label: 'Phí vận chuyển', amount: shipping),
+                _buildSummaryRow(
+                  context: context,
+                  label: 'Phí vận chuyển',
+                  amount: shipping,
+                ),
                 if (discount > 0) ...[
                   const SizedBox(height: 12),
                   _buildSummaryRow(
+                    context: context,
                     label: 'Giảm giá',
                     amount: -discount,
-                    amountColor: AppColors.emerald400,
+                    amountColor: const Color(0xFF34D399),
                   ),
                 ],
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   child: Container(
                     height: 1,
-                    color: AppColors.borderCardStrong,
+                    color: theme.colorScheme.outlineVariant,
                   ),
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Tổng cộng',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.slate400,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     Text(
-                      '${total.toStringAsFixed(0)} ₫',
+                      formatVND(total),
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
@@ -100,30 +111,32 @@ class CheckoutSummary extends StatelessWidget {
     );
   }
 
+  ///xây dựng dòng hiển thị tóm tắt thông tin đơn hàng
   Widget _buildSummaryRow({
+    required BuildContext context,
     required String label,
     required double amount,
     Color? amountColor,
   }) {
+    final theme = Theme.of(context);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w400,
-            color: AppColors.slate400,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         Text(
-          amount >= 0
-              ? '${amount.toStringAsFixed(0)} ₫'
-              : '-${(-amount).toStringAsFixed(0)} ₫',
+          amount >= 0 ? formatVND(amount) : '-${formatVND(amount)}',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: amountColor ?? AppColors.textPrimary,
+            color: amountColor ?? theme.colorScheme.onSurface,
           ),
         ),
       ],
@@ -175,7 +188,11 @@ class CheckoutSummary extends StatelessWidget {
                       ),
                     ),
                     SizedBox(width: 10),
-                    Icon(LucideIcons.arrowRight, color: AppColors.ctaPrimaryText, size: 18),
+                    Icon(
+                      LucideIcons.arrowRight,
+                      color: AppColors.ctaPrimaryText,
+                      size: 18,
+                    ),
                   ],
                 ),
         ),

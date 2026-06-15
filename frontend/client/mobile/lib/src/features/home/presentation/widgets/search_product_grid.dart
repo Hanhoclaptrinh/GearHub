@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/widgets/product_card.dart';
 
@@ -26,7 +25,9 @@ class SearchProductGrid extends StatelessWidget {
       children: [
         Container(
           padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
-          decoration: const BoxDecoration(color: AppColors.background),
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+          ),
           child: Column(
             children: [
               Padding(
@@ -39,18 +40,20 @@ class SearchProductGrid extends StatelessWidget {
                         children: [
                           TextSpan(
                             text: '${searchResults.length}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w900,
-                              color: AppColors.textPrimary,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
-                          const TextSpan(
+                          TextSpan(
                             text: ' kết quả',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
-                              color: AppColors.textSlate,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -64,16 +67,22 @@ class SearchProductGrid extends StatelessWidget {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.cardSurfaceAltAlt,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.borderCardStrong),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                          ),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
                             Icon(
                               LucideIcons.slidersHorizontal,
                               size: 14,
-                              color: AppColors.textSlate,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                             const SizedBox(width: 8),
                             Text(
@@ -81,7 +90,9 @@ class SearchProductGrid extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.textSlate,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -98,14 +109,26 @@ class SearchProductGrid extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
-                    _buildSortChip('newest', 'Mới nhất', LucideIcons.clock),
-                    _buildSortChip('popular', 'Bán chạy', LucideIcons.flame),
                     _buildSortChip(
+                      context,
+                      'newest',
+                      'Mới nhất',
+                      LucideIcons.clock,
+                    ),
+                    _buildSortChip(
+                      context,
+                      'popular',
+                      'Bán chạy',
+                      LucideIcons.flame,
+                    ),
+                    _buildSortChip(
+                      context,
                       'price_asc',
                       'Giá thấp',
                       LucideIcons.trendingUp,
                     ),
                     _buildSortChip(
+                      context,
                       'price_desc',
                       'Giá cao',
                       LucideIcons.trendingDown,
@@ -117,9 +140,9 @@ class SearchProductGrid extends StatelessWidget {
             ],
           ),
         ),
-        const Divider(
+        Divider(
           height: 1,
-          color: AppColors.borderCardStrong,
+          color: Theme.of(context).colorScheme.outlineVariant,
           thickness: 0.5,
         ),
         Expanded(
@@ -131,21 +154,25 @@ class SearchProductGrid extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: AppColors.cardSurfaceAltAlt,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
                           shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.borderCardStrong),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                          ),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           LucideIcons.packageSearch,
                           size: 48,
-                          color: AppColors.textDim,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 20),
-                      const Text(
+                      Text(
                         'Không tìm thấy sản phẩm nào.',
                         style: TextStyle(
-                          color: AppColors.textSlate,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -167,7 +194,12 @@ class SearchProductGrid extends StatelessWidget {
     );
   }
 
-  Widget _buildSortChip(String value, String label, IconData icon) {
+  Widget _buildSortChip(
+    BuildContext context,
+    String value,
+    String label,
+    IconData icon,
+  ) {
     final isSelected = currentSortBy == value;
     return GestureDetector(
       onTap: () {
@@ -194,7 +226,9 @@ class SearchProductGrid extends StatelessWidget {
             Icon(
               icon,
               size: 14,
-              color: isSelected ? Colors.white : AppColors.textSlate,
+              color: isSelected
+                  ? Colors.white
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: 8),
             Text(
@@ -202,7 +236,9 @@ class SearchProductGrid extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                color: isSelected ? Colors.white : AppColors.textSlate,
+                color: isSelected
+                    ? Colors.white
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
 
 class ConciergeComposer extends StatefulWidget {
   final bool disabled;
@@ -40,14 +39,15 @@ class _ConciergeComposerState extends State<ConciergeComposer> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).padding.bottom;
+    final cs = Theme.of(context).colorScheme;
 
     return Container(
       padding: EdgeInsets.fromLTRB(16, 12, 16, bottom + 14),
       decoration: BoxDecoration(
-        color: AppColors.background.withValues(alpha: 0.96),
-        border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
-        ),
+        color: Theme.of(
+          context,
+        ).scaffoldBackgroundColor.withValues(alpha: 0.96),
+        border: Border(top: BorderSide(color: cs.outlineVariant)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -58,14 +58,14 @@ class _ConciergeComposerState extends State<ConciergeComposer> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               margin: const EdgeInsets.only(bottom: 10),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.045),
+                color: cs.onSurface.withValues(alpha: 0.045),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+                border: Border.all(color: cs.outlineVariant),
               ),
               child: Text(
                 widget.disabledText!,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.54),
+                  color: cs.onSurfaceVariant,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -74,9 +74,9 @@ class _ConciergeComposerState extends State<ConciergeComposer> {
           ],
           Container(
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.055),
+              color: cs.onSurface.withValues(alpha: 0.055),
               borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              border: Border.all(color: cs.outlineVariant),
             ),
             padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
             child: Row(
@@ -89,9 +89,9 @@ class _ConciergeComposerState extends State<ConciergeComposer> {
                     minLines: 1,
                     maxLines: 5,
                     textInputAction: TextInputAction.newline,
-                    keyboardAppearance: Brightness.dark,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    keyboardAppearance: Theme.of(context).brightness,
+                    style: TextStyle(
+                      color: cs.onSurface,
                       fontSize: 14,
                       height: 1.45,
                       fontWeight: FontWeight.w600,
@@ -99,7 +99,7 @@ class _ConciergeComposerState extends State<ConciergeComposer> {
                     decoration: InputDecoration(
                       hintText: 'Trao đổi với GearHub...',
                       hintStyle: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.32),
+                        color: cs.onSurface.withValues(alpha: 0.32),
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
@@ -117,15 +117,15 @@ class _ConciergeComposerState extends State<ConciergeComposer> {
                     height: 42,
                     decoration: BoxDecoration(
                       color: widget.disabled
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : AppColors.accentSilver,
+                          ? cs.onSurface.withValues(alpha: 0.08)
+                          : cs.primary,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Icon(
                       LucideIcons.sendHorizontal,
                       color: widget.disabled
-                          ? Colors.white24
-                          : AppColors.background,
+                          ? cs.onSurfaceVariant.withValues(alpha: 0.24)
+                          : cs.onPrimary,
                       size: 18,
                     ),
                   ),

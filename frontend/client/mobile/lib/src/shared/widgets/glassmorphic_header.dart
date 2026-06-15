@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
 
 class GlassmorphicHeader extends StatelessWidget {
   final double scrollOffset;
@@ -25,8 +24,10 @@ class GlassmorphicHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
+    final cs = Theme.of(context).colorScheme;
+    final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
 
-    // calculate values based on scroll
+    //calculate values based on scroll
     double baseOpacity = isTransparentAtTop
         ? (scrollOffset / maxScroll).clamp(0.0, 1.0)
         : 1.0;
@@ -44,7 +45,7 @@ class GlassmorphicHeader extends StatelessWidget {
           child: Container(
             height: topPadding + 60,
             decoration: BoxDecoration(
-              color: AppColors.background.withValues(alpha: baseOpacity * 0.8),
+              color: scaffoldBg.withValues(alpha: baseOpacity * 0.8),
             ),
             child: Padding(
               padding: EdgeInsets.only(top: topPadding, left: 16, right: 16),
@@ -56,15 +57,15 @@ class GlassmorphicHeader extends StatelessWidget {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
+                        style: TextStyle(
+                          color: cs.onSurface,
                           fontWeight: FontWeight.w900,
                           fontSize: 20,
                         ),
                       ),
                     ),
 
-                  // not centre title -> top-left
+                  //not centre title -> top-left
                   if (!centerTitle)
                     Align(
                       alignment: Alignment.centerLeft,
@@ -74,9 +75,9 @@ class GlassmorphicHeader extends StatelessWidget {
                           if (onBack != null) ...[
                             GestureDetector(
                               onTap: onBack,
-                              child: const Icon(
-                                Icons.arrow_back_rounded,
-                                color: AppColors.textPrimary,
+                              child: Icon(
+                                Icons.arrow_back_ios_new_rounded,
+                                color: cs.onSurface,
                                 size: 24,
                               ),
                             ),
@@ -87,8 +88,8 @@ class GlassmorphicHeader extends StatelessWidget {
                               title,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
+                              style: TextStyle(
+                                color: cs.onSurface,
                                 fontWeight: FontWeight.w900,
                                 fontSize: 24,
                                 letterSpacing: -0.5,
@@ -104,9 +105,9 @@ class GlassmorphicHeader extends StatelessWidget {
                       alignment: Alignment.centerLeft,
                       child: GestureDetector(
                         onTap: onBack,
-                        child: const Icon(
-                          Icons.arrow_back_rounded,
-                          color: AppColors.textPrimary,
+                        child: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: cs.onSurface,
                           size: 24,
                         ),
                       ),
@@ -146,11 +147,9 @@ class HeaderIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget iconWidget = Icon(
-      icon,
-      size: 22,
-      color: color ?? AppColors.textPrimary,
-    );
+    final cs = Theme.of(context).colorScheme;
+
+    Widget iconWidget = Icon(icon, size: 22, color: color ?? cs.onSurface);
 
     if (badgeText != null && badgeText!.isNotEmpty) {
       iconWidget = Stack(

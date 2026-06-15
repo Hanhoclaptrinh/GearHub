@@ -22,6 +22,7 @@ class ConciergeMessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     if (message.isSystem) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 10),
@@ -29,14 +30,14 @@ class ConciergeMessageBubble extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+              color: cs.onSurface.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(color: cs.outlineVariant),
             ),
             child: Text(
               message.content,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.42),
+                color: cs.onSurface.withValues(alpha: 0.42),
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
               ),
@@ -64,7 +65,7 @@ class ConciergeMessageBubble extends StatelessWidget {
               child: Text(
                 'GearHub AI',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.38),
+                  color: cs.onSurface.withValues(alpha: 0.38),
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
                 ),
@@ -74,9 +75,7 @@ class ConciergeMessageBubble extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
             decoration: BoxDecoration(
-              color: isMine
-                  ? AppColors.champagne
-                  : Colors.white.withValues(alpha: 0.065),
+              color: isMine ? AppColors.champagne : cs.surfaceContainerHighest,
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(18),
                 topRight: const Radius.circular(18),
@@ -86,15 +85,13 @@ class ConciergeMessageBubble extends StatelessWidget {
               border: Border.all(
                 color: isMine
                     ? Colors.white.withValues(alpha: 0.20)
-                    : Colors.white.withValues(alpha: 0.065),
+                    : cs.outlineVariant,
               ),
             ),
             child: Text(
               message.content,
               style: TextStyle(
-                color: isMine
-                    ? AppColors.background
-                    : Colors.white.withValues(alpha: 0.90),
+                color: isMine ? const Color(0xFF07070A) : cs.onSurface,
                 fontSize: 14,
                 height: 1.45,
                 fontWeight: FontWeight.w600,
@@ -108,7 +105,7 @@ class ConciergeMessageBubble extends StatelessWidget {
               Text(
                 DateFormat('HH:mm').format(message.createdAt.toLocal()),
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.30),
+                  color: cs.onSurface.withValues(alpha: 0.30),
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                 ),
@@ -126,7 +123,7 @@ class ConciergeMessageBubble extends StatelessWidget {
                   style: TextStyle(
                     color: message.isFailed
                         ? AppColors.accentPink
-                        : Colors.white.withValues(alpha: 0.30),
+                        : cs.onSurface.withValues(alpha: 0.30),
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
                   ),
@@ -171,6 +168,7 @@ class ConciergeMessageBubble extends StatelessWidget {
   }
 
   Widget _buildRecommendationCard(BuildContext context, dynamic rec) {
+    final cs = Theme.of(context).colorScheme;
     final p = rec.product;
     return GestureDetector(
       onTap: () {
@@ -206,9 +204,9 @@ class ConciergeMessageBubble extends StatelessWidget {
       child: Container(
         width: 140,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.04),
+          color: cs.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(color: cs.outlineVariant),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,7 +217,7 @@ class ConciergeMessageBubble extends StatelessWidget {
                   top: Radius.circular(16),
                 ),
                 child: Container(
-                  color: Colors.white.withValues(alpha: 0.02),
+                  color: cs.onSurface.withValues(alpha: 0.02),
                   width: double.infinity,
                   child: p.thumbnailUrl != null && p.thumbnailUrl!.isNotEmpty
                       ? CachedNetworkImage(
@@ -235,15 +233,15 @@ class ConciergeMessageBubble extends StatelessWidget {
                               ),
                             ),
                           ),
-                          errorWidget: (context, url, error) => const Icon(
+                          errorWidget: (context, url, error) => Icon(
                             Icons.image_not_supported_outlined,
-                            color: Colors.white24,
+                            color: cs.onSurfaceVariant.withValues(alpha: 0.24),
                             size: 24,
                           ),
                         )
-                      : const Icon(
+                      : Icon(
                           Icons.image_not_supported_outlined,
-                          color: Colors.white24,
+                          color: cs.onSurfaceVariant.withValues(alpha: 0.24),
                           size: 24,
                         ),
                 ),
@@ -259,7 +257,7 @@ class ConciergeMessageBubble extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: cs.onSurface,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       height: 1.3,
@@ -287,7 +285,7 @@ class ConciergeMessageBubble extends StatelessWidget {
                         Text(
                           p.rating!.toStringAsFixed(1),
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
+                            color: cs.onSurface.withValues(alpha: 0.7),
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
                           ),
@@ -302,7 +300,7 @@ class ConciergeMessageBubble extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
+                        color: cs.onSurfaceVariant,
                         fontSize: 9,
                         fontStyle: FontStyle.italic,
                       ),

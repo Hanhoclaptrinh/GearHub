@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/core/notifications/push_notification_service.dart';
 import 'package:mobile/src/core/theme/app_colors.dart';
@@ -17,6 +19,9 @@ import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:mobile/src/features/explore/presentation/pages/explore_page.dart';
 import 'package:mobile/src/features/promotions/presentation/pages/promotions_page.dart';
 import 'package:mobile/src/features/notifications/presentation/state/notification_cubit.dart';
+import 'package:mobile/src/features/preferences/domain/repositories/preferences_repository.dart';
+import 'package:mobile/src/features/preferences/data/models/shopping_preferences_model.dart';
+import 'package:mobile/src/features/preferences/presentation/state/preferences_cubit.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -43,6 +48,63 @@ class MainScreenState extends State<MainScreen> {
     super.dispose();
   }
 
+  void _syncLocalPreferences(BuildContext context, String userId) async {
+    final prefs = getIt<SharedPreferences>();
+    final preferencesRepo = getIt<PreferencesRepository>();
+
+    try {
+      //fetch preferences from Server
+      final serverPrefs = await preferencesRepo.getPreferences();
+
+      //check if server already has completed preferences
+      final bool hasServerPrefs =
+          (serverPrefs.categoryIds.isNotEmpty ||
+          serverPrefs.brandIds.isNotEmpty ||
+          serverPrefs.styleTags.isNotEmpty ||
+          serverPrefs.useCases.isNotEmpty ||
+          serverPrefs.budgetRange?.min != null ||
+          serverPrefs.budgetRange?.max != null);
+
+      if (hasServerPrefs) {
+        //server có preferences -> ưu tiên server, clear local, set cờ true
+        await prefs.setBool('pref_onboarding_processed', true);
+        await prefs.remove('local_shopping_preferences');
+        debugPrint(
+          'Sync: Preferences loaded from server. Cleared local temporary preferences.',
+        );
+      } else {
+        //server không có preferences -> check local preferences
+        final localPrefJson = prefs.getString('local_shopping_preferences');
+        if (localPrefJson != null) {
+          final decoded = jsonDecode(localPrefJson) as Map<String, dynamic>;
+          final localPreferences = ShoppingPreferencesModel.fromJson(decoded);
+
+          //upload local preferences lên server
+          if (context.mounted) {
+            await context.read<PreferencesCubit>().save(
+              userId: userId,
+              preferences: localPreferences,
+            );
+          }
+
+          await prefs.remove('local_shopping_preferences');
+          await prefs.setBool('pref_onboarding_processed', true);
+          debugPrint(
+            'Sync: Successfully uploaded local preferences to server and marked onboarding processed.',
+          );
+        } else {
+          //không có local preferences & không có server preferences -> set cờ false
+          await prefs.setBool('pref_onboarding_processed', false);
+          debugPrint(
+            'Sync: No preferences on server or local. Marked onboarding processed as false.',
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Sync: Failed to sync preferences: $e');
+    }
+  }
+
   void onItemTapped(int index) {
     if (_selectedIndex == index) return;
     setState(() {
@@ -50,7 +112,6 @@ class MainScreenState extends State<MainScreen> {
       _isBottomBarVisible = true;
     });
     if (index == 2) {
-      // cart page is at index 2
       context.read<CartCubit>().loadCart();
     }
     _pageController.animateToPage(
@@ -76,11 +137,13 @@ class MainScreenState extends State<MainScreen> {
           context.read<CartCubit>().syncCart();
           context.read<NotificationCubit>().loadNotifications();
           getIt<PushNotificationService>().syncTokenIfAuthenticated();
+          _syncLocalPreferences(context, state.user.id);
         } else if (state is AuthUnauthenticated) {
           if (!_isBottomBarVisible) {
             setState(() => _isBottomBarVisible = true);
           }
           context.read<CartCubit>().loadCart();
+          Navigator.of(context).popUntil((route) => route.isFirst);
         }
       },
       child: Scaffold(
@@ -140,6 +203,13 @@ class CustomBottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final navBg = isDark
+        ? const Color(0xFF07070A).withValues(alpha: 0.85)
+        : const Color(0xFFFFFFFF).withValues(alpha: 0.88);
+    final navBorder = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.black.withValues(alpha: 0.06);
 
     return Container(
       width: double.infinity,
@@ -151,15 +221,12 @@ class CustomBottomNavBar extends StatelessWidget {
           child: Container(
             height: 72,
             decoration: BoxDecoration(
-              color: const Color(0xFF07070A).withValues(alpha: 0.85),
+              color: navBg,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.08),
-                width: 1,
-              ),
+              border: Border.all(color: navBorder, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
+                  color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -222,18 +289,19 @@ class _ArchitecturalNavItem extends StatelessWidget {
                   duration: const Duration(milliseconds: 400),
                   opacity: isSelected ? 1.0 : 0.0,
                 ),
-                _buildIconLayer(),
+                _buildIconLayer(context),
               ],
             ),
             const SizedBox(height: 6),
-            _buildLabelLayer(),
+            _buildLabelLayer(context),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildIconLayer() {
+  Widget _buildIconLayer(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     Widget iconWidget = AnimatedScale(
       duration: const Duration(milliseconds: 400),
       scale: isSelected ? 1.1 : 1.0,
@@ -241,7 +309,7 @@ class _ArchitecturalNavItem extends StatelessWidget {
       child: Icon(
         icon,
         size: 22,
-        color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.3),
+        color: isSelected ? cs.onSurface : cs.onSurface.withValues(alpha: 0.3),
       ),
     );
 
@@ -273,11 +341,12 @@ class _ArchitecturalNavItem extends StatelessWidget {
     );
   }
 
-  Widget _buildLabelLayer() {
+  Widget _buildLabelLayer(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return AnimatedDefaultTextStyle(
       duration: const Duration(milliseconds: 300),
       style: TextStyle(
-        color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.3),
+        color: isSelected ? cs.onSurface : cs.onSurface.withValues(alpha: 0.3),
         fontSize: 9,
         fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
         letterSpacing: isSelected ? 1.2 : 0.5,

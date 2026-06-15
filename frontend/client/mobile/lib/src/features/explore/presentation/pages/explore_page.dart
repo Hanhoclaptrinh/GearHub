@@ -12,6 +12,7 @@ import 'package:mobile/src/shared/widgets/search_bar_widget.dart';
 import 'package:mobile/src/shared/widgets/glassmorphic_header.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'category_detail_page.dart';
+import 'package:mobile/src/shared/widgets/error_illustration_widget.dart';
 
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});
@@ -44,12 +45,19 @@ class _ExplorePageState extends State<ExplorePage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return BlocProvider(
       create: (context) => getIt<HomeCubit>()..loadHomeData(),
       child: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.light,
+        value: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+          statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+        ),
         child: Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: Stack(
             children: [
               CustomScrollView(
@@ -95,7 +103,11 @@ class _ExplorePageState extends State<ExplorePage> {
                       }
                       if (state is HomeError) {
                         return SliverFillRemaining(
-                          child: Center(child: Text(state.message)),
+                          child: ErrorIllustrationWidget(
+                            message: state.message,
+                            onRetry: () =>
+                                context.read<HomeCubit>().loadHomeData(),
+                          ),
                         );
                       }
                       return const SliverToBoxAdapter(child: SizedBox.shrink());
@@ -146,16 +158,16 @@ class _CategoryCard extends StatelessWidget {
                       imageUrl: category.iconUrl!,
                       fit: BoxFit.contain,
                       placeholder: (context, url) => Container(),
-                      errorWidget: (context, url, error) => const Icon(
+                      errorWidget: (context, url, error) => Icon(
                         LucideIcons.package,
                         size: 32,
-                        color: AppColors.textDim,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     )
-                  : const Icon(
+                  : Icon(
                       LucideIcons.package,
                       size: 40,
-                      color: AppColors.textDim,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
             ),
           ),
@@ -166,10 +178,10 @@ class _CategoryCard extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 14,
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
                 letterSpacing: -0.2,
               ),
             ),

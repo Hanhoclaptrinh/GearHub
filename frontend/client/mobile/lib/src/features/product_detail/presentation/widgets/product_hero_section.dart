@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/src/shared/models/product_asset_model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -7,14 +8,7 @@ import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/models/product_variant_model.dart';
-
-const _bg = Color(0xFF07070A);
-const _surface = Color(0xFF14141E);
-const _surfaceAlt = Color(0xFF1C1C28);
-const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFF6366F1);
-const _textHigh = Color(0xFFF1F1F5);
-const _textLow = Color(0xFF4A4A62);
+import 'package:mobile/src/core/utils/brand_identity_helper.dart';
 
 class ProductHeroSection extends StatefulWidget {
   final ProductModel product;
@@ -60,6 +54,18 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final Color bgColor = theme.scaffoldBackgroundColor;
+    final Color surfaceAlt = cs.surfaceContainerHighest;
+    final Color borderCol = cs.outlineVariant;
+    final Color textHigh = cs.onSurface;
+    final Color textLow = cs.onSurfaceVariant;
+    final Color brandAccent = BrandIdentityHelper.getIdentity(
+      widget.product.brandName ?? '',
+    ).accent;
+
     final size = MediaQuery.of(context).size;
     final currentVariant = widget.currentVariant;
     final isOutOfStock = (currentVariant?.stock ?? 0) <= 0;
@@ -100,7 +106,7 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
       }
     }
 
-    // parallax scroll
+    //parallax scroll
     final double brandParallax = widget.scrollOffset < 150
         ? widget.scrollOffset * 0.1
         : (150 * 0.1) + (widget.scrollOffset - 150) * 0.8;
@@ -110,26 +116,34 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
       color: Colors.transparent,
       child: Stack(
         children: [
-          // brand name xoay doc trai
+          //brand name xoay dọc giữa
           Positioned(
-            top: 40 + brandParallax,
-            left: -20,
+            top: 80 + brandParallax,
+            left: 0,
+            right: 0,
             child: Opacity(
-              opacity: 0.03,
-              child: RotatedBox(
-                quarterTurns: 1,
-                child: SizedBox(
-                  width: 500,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      widget.product.brandName?.toUpperCase() ?? "GEARHUB",
-                      style: const TextStyle(
-                        fontSize: 120,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: -1,
+              opacity: 0.08,
+              child: Center(
+                child: RotatedBox(
+                  quarterTurns: 1,
+                  child: SizedBox(
+                    width: 600,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.center,
+                      child: Text(
+                        widget.product.brandName?.toUpperCase() ?? "GEARHUB",
+                        maxLines: 1,
+                        softWrap: false,
+                        style: GoogleFonts.boldonse(
+                          textStyle: TextStyle(
+                            fontSize: 80,
+                            fontWeight: FontWeight.w400,
+                            fontStyle: FontStyle.italic,
+                            color: textHigh,
+                            letterSpacing: 1,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -150,10 +164,10 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                   children: [
                     Text(
                       displayName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w900,
-                        color: _textHigh,
+                        color: textHigh,
                         height: 1.1,
                         letterSpacing: -0.5,
                       ),
@@ -162,7 +176,7 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                     Container(
                       height: 1,
                       width: 40,
-                      color: _accent.withValues(alpha: 0.5),
+                      color: brandAccent.withValues(alpha: 0.5),
                     ),
                     const SizedBox(height: 24),
                     Row(
@@ -172,21 +186,21 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                           formatVND(
                             currentVariant?.price ?? widget.product.price,
                           ),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 36,
                             fontWeight: FontWeight.w200,
-                            color: _textHigh,
+                            color: textHigh,
                             height: 1.0,
                           ),
                         ),
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: 6, left: 8),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6, left: 8),
                           child: Text(
                             "NIÊM YẾT",
                             style: TextStyle(
                               fontSize: 8,
                               fontWeight: FontWeight.w800,
-                              color: _textLow,
+                              color: textLow.withValues(alpha: 0.6),
                               letterSpacing: 1.3,
                             ),
                           ),
@@ -212,7 +226,7 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: _accent.withValues(alpha: 0.08),
+                              color: brandAccent.withValues(alpha: 0.08),
                               blurRadius: 100,
                               spreadRadius: 20,
                             ),
@@ -224,136 +238,158 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                     widget.is3DMode && widget.product.has3DModel
                         ? _build3DViewer()
                         : _buildImageGallery(galleryUrls, isOutOfStock),
+
+                    if (widget.product.has3DModel || widget.product.hasAR)
+                      Positioned(
+                        top: 12,
+                        right: 24,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (widget.product.has3DModel)
+                              GestureDetector(
+                                onTap: () {
+                                  HapticFeedback.mediumImpact();
+                                  widget.on3DToggle();
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 300),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: widget.is3DMode
+                                        ? textHigh
+                                        : surfaceAlt.withValues(alpha: 0.85),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: widget.is3DMode
+                                          ? Colors.transparent
+                                          : borderCol.withValues(alpha: 0.5),
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.05,
+                                        ),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        widget.is3DMode
+                                            ? LucideIcons.image
+                                            : LucideIcons.rotate3d,
+                                        size: 14,
+                                        color: widget.is3DMode
+                                            ? bgColor
+                                            : textHigh,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        widget.is3DMode ? '2D' : '3D',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                          color: widget.is3DMode
+                                              ? bgColor
+                                              : textHigh,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            if (widget.product.hasAR) ...[
+                              if (widget.product.has3DModel)
+                                const SizedBox(width: 6),
+                              GestureDetector(
+                                onTap: () {
+                                  HapticFeedback.lightImpact();
+                                  widget.onARPressed();
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: surfaceAlt.withValues(alpha: 0.85),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: borderCol.withValues(alpha: 0.5),
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.05,
+                                        ),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        LucideIcons.box,
+                                        size: 14,
+                                        color: brandAccent,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'AR',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                          color: textHigh,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ),
-
-              if ((!widget.is3DMode && galleryUrls.length > 1) ||
-                  widget.product.has3DModel ||
-                  widget.product.hasAR)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // indicator
-                      if (!widget.is3DMode && galleryUrls.length > 1)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
+              if (!widget.is3DMode && galleryUrls.length > 1) ...[
+                const SizedBox(height: 16),
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(galleryUrls.length, (i) {
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                          width: _currentPage == i ? 12 : 5,
+                          height: 2,
                           decoration: BoxDecoration(
-                            color: _surfaceAlt.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: _border.withValues(alpha: 0.5),
-                            ),
+                            color: _currentPage == i
+                                ? brandAccent
+                                : textLow.withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(2.5),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: List.generate(galleryUrls.length, (i) {
-                              return AnimatedContainer(
-                                duration: const Duration(milliseconds: 300),
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 2,
-                                ),
-                                width: _currentPage == i ? 16 : 4,
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  color: _currentPage == i
-                                      ? _accent
-                                      : _textLow.withValues(alpha: 0.5),
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              );
-                            }),
-                          ),
-                        )
-                      else
-                        const SizedBox.shrink(),
-
-                      // toggle button
-                      if (widget.product.has3DModel)
-                        GestureDetector(
-                          onTap: () {
-                            HapticFeedback.mediumImpact();
-                            widget.on3DToggle();
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: widget.is3DMode ? _textHigh : _surfaceAlt,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: widget.is3DMode
-                                    ? Colors.transparent
-                                    : _border,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  widget.is3DMode
-                                      ? LucideIcons.image
-                                      : LucideIcons.rotate3d,
-                                  size: 16,
-                                  color: widget.is3DMode ? _bg : _textHigh,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  widget.is3DMode ? '2D' : '3D',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w800,
-                                    color: widget.is3DMode ? _bg : _textHigh,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                      else if (widget.product.hasAR)
-                        GestureDetector(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            widget.onARPressed();
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _surfaceAlt,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: _border),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(LucideIcons.box, size: 16, color: _accent),
-                                SizedBox(width: 6),
-                                Text(
-                                  'AR Mode',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w800,
-                                    color: _textHigh,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                    ],
+                        );
+                      }),
+                    ),
                   ),
                 ),
+              ],
 
               const SizedBox(height: 16),
             ],
@@ -363,7 +399,7 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
     );
   }
 
-  // 2d viwer
+  //2d viewer
   Widget _buildImageGallery(List<String> urls, bool isOutOfStock) {
     if (urls.isEmpty) {
       return const Center(
@@ -480,34 +516,36 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
               ),
             )
           : url.isNotEmpty
-              ? Image.asset(
-                  url,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.broken_image_outlined,
-                    size: 40,
-                    color: Colors.grey,
-                  ),
-                )
-              : const Icon(
-                  Icons.image_not_supported_outlined,
-                  size: 40,
-                  color: Colors.grey,
-                ),
+          ? Image.asset(
+              url,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.broken_image_outlined,
+                size: 40,
+                color: Colors.grey,
+              ),
+            )
+          : const Icon(
+              Icons.image_not_supported_outlined,
+              size: 40,
+              color: Colors.grey,
+            ),
     );
   }
 
-  // 3D viewer
+  //3D viewer
   Widget _build3DViewer() {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final glbAsset = widget.product.glbAsset;
     if (glbAsset == null) return const SizedBox.shrink();
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
       decoration: BoxDecoration(
-        color: _surface,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: _border),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(32),
@@ -556,13 +594,21 @@ class _ProductGalleryModalState extends State<_ProductGalleryModal> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final surface = theme.cardColor;
+    final border = cs.outlineVariant;
+    final surfaceAlt = cs.surfaceContainerHighest;
+    final textHigh = cs.onSurface;
+    final textLow = cs.onSurfaceVariant.withValues(alpha: 0.4);
+
     return Container(
       width: double.infinity,
       height: MediaQuery.of(context).size.height * 0.58,
       decoration: BoxDecoration(
-        color: _surface,
+        color: surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _border),
+        border: Border.all(color: border),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.3),
@@ -582,11 +628,11 @@ class _ProductGalleryModalState extends State<_ProductGalleryModal> {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: _surfaceAlt,
+                  color: surfaceAlt,
                   shape: BoxShape.circle,
-                  border: Border.all(color: _border),
+                  border: Border.all(color: border),
                 ),
-                child: const Icon(LucideIcons.x, color: _textHigh, size: 20),
+                child: Icon(LucideIcons.x, color: textHigh, size: 20),
               ),
             ),
           ),
@@ -627,20 +673,20 @@ class _ProductGalleryModalState extends State<_ProductGalleryModal> {
                                   ),
                                 )
                               : url.isNotEmpty
-                                  ? Image.asset(
-                                      url,
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (_, __, ___) => const Icon(
-                                        Icons.broken_image_outlined,
-                                        size: 40,
-                                        color: Colors.grey,
-                                      ),
-                                    )
-                                  : const Icon(
-                                      Icons.image_not_supported_outlined,
-                                      size: 40,
-                                      color: Colors.grey,
-                                    ),
+                              ? Image.asset(
+                                  url,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.broken_image_outlined,
+                                    size: 40,
+                                    color: Colors.grey,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.image_not_supported_outlined,
+                                  size: 40,
+                                  color: Colors.grey,
+                                ),
                         ),
                       );
                     },
@@ -656,7 +702,7 @@ class _ProductGalleryModalState extends State<_ProductGalleryModal> {
                       width: _currentIndex == index ? 8 : 6,
                       height: _currentIndex == index ? 8 : 6,
                       decoration: BoxDecoration(
-                        color: _currentIndex == index ? _textHigh : _textLow,
+                        color: _currentIndex == index ? textHigh : textLow,
                         shape: BoxShape.circle,
                       ),
                     );

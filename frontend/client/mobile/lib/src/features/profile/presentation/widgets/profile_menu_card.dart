@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
 
 class ProfileMenuCard extends StatelessWidget {
   final String groupLabel;
@@ -15,6 +14,8 @@ class ProfileMenuCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -25,17 +26,17 @@ class ProfileMenuCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w900,
-              color: Colors.white.withValues(alpha: 0.2),
+              color: cs.onSurface.withValues(alpha: 0.2),
               letterSpacing: 1.0,
             ),
           ),
         ),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.02),
+            color: cs.onSurface.withValues(alpha: 0.02),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: cs.onSurface.withValues(alpha: 0.05),
               width: 1,
             ),
           ),
@@ -51,7 +52,7 @@ class ProfileMenuCard extends StatelessWidget {
                     Divider(
                       height: 1,
                       thickness: 0.5,
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: cs.onSurface.withValues(alpha: 0.05),
                       indent: 20,
                       endIndent: 20,
                     ),
@@ -72,6 +73,8 @@ class _MenuItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     if (item.isToggle) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
@@ -80,10 +83,10 @@ class _MenuItemWidget extends StatelessWidget {
           children: [
             Text(
               item.title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: Colors.white,
+                color: cs.onSurface,
                 letterSpacing: 0.2,
               ),
             ),
@@ -92,10 +95,8 @@ class _MenuItemWidget extends StatelessWidget {
               child: Switch.adaptive(
                 value: item.toggleValue ?? false,
                 onChanged: item.onToggle,
-                activeTrackColor: const Color(
-                  0xFFFDE047,
-                ).withValues(alpha: 0.3),
-                activeColor: AppColors.champagne,
+                activeTrackColor: cs.primary.withValues(alpha: 0.2),
+                activeColor: cs.primary,
               ),
             ),
           ],
@@ -121,10 +122,10 @@ class _MenuItemWidget extends StatelessWidget {
                 children: [
                   Text(
                     item.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                      color: cs.onSurface,
                       letterSpacing: 0.2,
                     ),
                   ),
@@ -136,7 +137,7 @@ class _MenuItemWidget extends StatelessWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
+                        color: cs.onSurface.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
@@ -144,7 +145,7 @@ class _MenuItemWidget extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 7,
                           fontWeight: FontWeight.w900,
-                          color: Colors.white.withValues(alpha: 0.3),
+                          color: cs.onSurface.withValues(alpha: 0.3),
                           letterSpacing: 1,
                         ),
                       ),
@@ -155,7 +156,7 @@ class _MenuItemWidget extends StatelessWidget {
               Icon(
                 LucideIcons.chevronRight,
                 size: 14,
-                color: Colors.white.withValues(alpha: 0.1),
+                color: cs.onSurface.withValues(alpha: 0.1),
               ),
             ],
           ),

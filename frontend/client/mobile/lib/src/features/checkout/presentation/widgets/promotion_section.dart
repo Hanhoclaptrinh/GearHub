@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
 import 'package:mobile/src/features/checkout/presentation/state/checkout_promotion_cubit.dart';
 import 'package:mobile/src/features/checkout/presentation/state/checkout_promotion_state.dart';
@@ -14,21 +14,24 @@ class PromotionSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? Colors.white : const Color(0xFF111111);
+
     return BlocBuilder<CheckoutPromotionCubit, CheckoutPromotionState>(
       builder: (context, state) {
         if (state.isLoading) {
-          return _buildLoadingState();
+          return _buildLoadingState(context);
         }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               "Ưu đãi",
               style: TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 16,
-                color: AppColors.textPrimary,
+                color: primaryTextColor,
               ),
             ),
             const SizedBox(height: 12),
@@ -39,22 +42,14 @@ class PromotionSection extends StatelessWidget {
     );
   }
 
-  Widget _buildLoadingState() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurfaceAlt,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.borderCardStrong, width: 0.5),
-      ),
-      child: const Center(
+  Widget _buildLoadingState(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 16),
+      child: Center(
         child: SizedBox(
           width: 20,
           height: 20,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: AppColors.slate400,
-          ),
+          child: CircularProgressIndicator(strokeWidth: 2),
         ),
       ),
     );
@@ -67,53 +62,39 @@ class PromotionSection extends StatelessWidget {
     return GestureDetector(
       onTap: () => _showVoucherBottomSheet(context, state),
       child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: hasVoucher
-              ? AppColors.champagneSoft
-              : AppColors.cardSurfaceAlt,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: hasVoucher
-                ? AppColors.champagne.withValues(alpha: 0.3)
-                : AppColors.borderCardStrong,
-            width: 0.5,
-          ),
-        ),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        color: Colors.transparent,
         child: hasVoucher
             ? _buildSelectedVoucher(context, selected)
-            : _buildVoucherPlaceholder(state),
+            : _buildVoucherPlaceholder(context, state),
       ),
     );
   }
 
-  Widget _buildVoucherPlaceholder(CheckoutPromotionState state) {
+  Widget _buildVoucherPlaceholder(
+    BuildContext context,
+    CheckoutPromotionState state,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? Colors.white : const Color(0xFF111111);
+    final secondaryTextColor = isDark
+        ? const Color(0xFFA1A1AA)
+        : const Color(0xFF71717A);
+
     return Row(
       children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppColors.champagneSoft,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(
-            LucideIcons.tag,
-            size: 18,
-            color: AppColors.champagne,
-          ),
-        ),
+        FaIcon(FontAwesomeIcons.tag, size: 20, color: primaryTextColor),
         const SizedBox(width: 14),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 "Chọn mã ưu đãi",
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
-                  color: AppColors.textPrimary,
+                  color: primaryTextColor,
                 ),
               ),
               const SizedBox(height: 2),
@@ -121,38 +102,27 @@ class PromotionSection extends StatelessWidget {
                 state.myVouchers.isEmpty
                     ? "Bạn chưa có mã ưu đãi nào"
                     : "${state.myVouchers.length} mã có thể dùng",
-                style: const TextStyle(fontSize: 12, color: AppColors.slate400),
+                style: TextStyle(fontSize: 12, color: secondaryTextColor),
               ),
             ],
           ),
         ),
-        if (state.myVouchers.isNotEmpty)
-          const Icon(
-            LucideIcons.chevronRight,
-            size: 18,
-            color: AppColors.slate400,
-          ),
+        Icon(LucideIcons.chevronRight, size: 18, color: secondaryTextColor),
       ],
     );
   }
 
   Widget _buildSelectedVoucher(BuildContext context, VoucherModel voucher) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? Colors.white : const Color(0xFF111111);
+    final secondaryTextColor = isDark
+        ? const Color(0xFFA1A1AA)
+        : const Color(0xFF71717A);
     final discount = _calcVoucherDiscount(voucher);
+
     return Row(
       children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppColors.champagne.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(
-            LucideIcons.tag,
-            size: 18,
-            color: AppColors.champagne,
-          ),
-        ),
+        FaIcon(FontAwesomeIcons.tag, size: 20, color: primaryTextColor),
         const SizedBox(width: 14),
         Expanded(
           child: Column(
@@ -160,10 +130,10 @@ class PromotionSection extends StatelessWidget {
             children: [
               Text(
                 voucher.code,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 14,
-                  color: AppColors.champagne,
+                  color: primaryTextColor,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -172,7 +142,7 @@ class PromotionSection extends StatelessWidget {
                 "Giảm ${formatVND(discount)}",
                 style: const TextStyle(
                   fontSize: 12,
-                  color: AppColors.emerald400,
+                  color: Color(0xFF10B981),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -181,19 +151,7 @@ class PromotionSection extends StatelessWidget {
         ),
         GestureDetector(
           onTap: () => context.read<CheckoutPromotionCubit>().removeVoucher(),
-          child: Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: AppColors.cardSurfaceAltAlt,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              LucideIcons.x,
-              size: 16,
-              color: AppColors.slate400,
-            ),
-          ),
+          child: Icon(LucideIcons.x, size: 18, color: secondaryTextColor),
         ),
       ],
     );
@@ -253,60 +211,65 @@ class _VoucherBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? Colors.white : const Color(0xFF111111);
+    final secondaryTextColor = isDark
+        ? const Color(0xFFA1A1AA)
+        : const Color(0xFF71717A);
+    final dividerColor = isDark
+        ? const Color(0xFF2A2A2F)
+        : const Color(0xFFE4E4E7);
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final sheetBgColor = isDark ? const Color(0xFF121214) : Colors.white;
 
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.65,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(
-          top: BorderSide(color: AppColors.borderCardStrong, width: 0.5),
-        ),
+      decoration: BoxDecoration(
+        color: sheetBgColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border(top: BorderSide(color: dividerColor, width: 0.5)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle
           Padding(
             padding: const EdgeInsets.only(top: 12, bottom: 8),
             child: Container(
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.borderCardStrong,
+                color: dividerColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
-          // Title
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Row(
               children: [
-                Icon(LucideIcons.tag, size: 20, color: AppColors.champagne),
-                SizedBox(width: 10),
+                FaIcon(FontAwesomeIcons.tag, size: 20, color: primaryTextColor),
+                const SizedBox(width: 10),
                 Text(
                   "Chọn mã ưu đãi",
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 18,
-                    color: AppColors.textPrimary,
+                    color: primaryTextColor,
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(color: AppColors.borderCardStrong, height: 1),
+          Divider(color: dividerColor, height: 1),
           Flexible(
             child: vouchers.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.all(40),
+                ? Padding(
+                    padding: const EdgeInsets.all(40),
                     child: Text(
                       "Bạn chưa có mã ưu đãi nào.",
-                      style: TextStyle(color: AppColors.slate400, fontSize: 14),
+                      style: TextStyle(color: secondaryTextColor, fontSize: 14),
                     ),
                   )
                 : ListView.separated(
@@ -318,13 +281,22 @@ class _VoucherBottomSheet extends StatelessWidget {
                     ),
                     shrinkWrap: true,
                     itemCount: vouchers.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    separatorBuilder: (_, __) => Divider(
+                      color: dividerColor,
+                      height: 24,
+                      thickness: 0.5,
+                    ),
                     itemBuilder: (_, index) {
                       final v = vouchers[index];
                       final eligible = subtotal >= v.minOrderAmount;
                       final isSelected = v.id == selectedId;
 
-                      return _buildVoucherItem(v, eligible, isSelected);
+                      return _buildVoucherItem(
+                        context,
+                        v,
+                        eligible,
+                        isSelected,
+                      );
                     },
                   ),
           ),
@@ -333,39 +305,34 @@ class _VoucherBottomSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildVoucherItem(VoucherModel v, bool eligible, bool isSelected) {
+  Widget _buildVoucherItem(
+    BuildContext context,
+    VoucherModel v,
+    bool eligible,
+    bool isSelected,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? Colors.white : const Color(0xFF111111);
+    final secondaryTextColor = isDark
+        ? const Color(0xFFA1A1AA)
+        : const Color(0xFF71717A);
+
     return GestureDetector(
       onTap: eligible ? () => onSelect(v) : null,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.champagneSoft
-              : eligible
-              ? AppColors.cardSurfaceAlt
-              : AppColors.cardSurface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected
-                ? AppColors.champagne.withValues(alpha: 0.4)
-                : AppColors.borderCardStrong,
-            width: isSelected ? 1.5 : 0.5,
-          ),
-        ),
+      child: Container(
+        color: Colors.transparent,
         child: Opacity(
           opacity: eligible ? 1.0 : 0.45,
           child: Row(
             children: [
-              // Voucher icon
               Container(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: v.isPercent
-                      ? AppColors.champagneSoft
-                      : AppColors.brandIndigoSoft,
-                  borderRadius: BorderRadius.circular(14),
+                  color: isDark
+                      ? const Color(0xFF1E1E22)
+                      : const Color(0xFFF4F4F5),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
                   child: Text(
@@ -375,35 +342,29 @@ class _VoucherBottomSheet extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: v.isPercent ? 16 : 13,
-                      color: v.isPercent
-                          ? AppColors.champagne
-                          : AppColors.brandIndigo,
+                      color: primaryTextColor,
                     ),
                   ),
                 ),
               ),
               const SizedBox(width: 14),
-              // Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       v.code,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
-                        color: AppColors.textPrimary,
+                        color: primaryTextColor,
                         letterSpacing: 0.5,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       v.summaryText,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.slate400,
-                      ),
+                      style: TextStyle(fontSize: 12, color: secondaryTextColor),
                     ),
                     if (!eligible)
                       Padding(
@@ -412,7 +373,7 @@ class _VoucherBottomSheet extends StatelessWidget {
                           "Đơn tối thiểu ${formatVND(v.minOrderAmount)}",
                           style: const TextStyle(
                             fontSize: 11,
-                            color: AppColors.accentPink,
+                            color: Color(0xFFEF4444),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -421,10 +382,10 @@ class _VoucherBottomSheet extends StatelessWidget {
                 ),
               ),
               if (isSelected)
-                const Icon(
+                Icon(
                   LucideIcons.circleCheck,
                   size: 22,
-                  color: AppColors.champagne,
+                  color: primaryTextColor,
                 ),
             ],
           ),

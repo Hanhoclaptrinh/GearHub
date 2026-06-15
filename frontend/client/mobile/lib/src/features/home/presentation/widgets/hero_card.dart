@@ -45,7 +45,7 @@ class HeroCard extends StatelessWidget {
                 state.newArrivals
                     .where((p) => p.id == product.id)
                     .firstOrNull ??
-                state.vaultProducts
+                state.topRatedProducts
                     .where((p) => p.id == product.id)
                     .firstOrNull;
           }
@@ -70,10 +70,15 @@ class HeroCard extends StatelessWidget {
           margin: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(36),
-            border: Border.all(color: AppColors.cardBorder, width: 0.8),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              width: 0.8,
+            ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.ctaPrimaryText.withValues(alpha: 0.50),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.ctaPrimaryText.withValues(alpha: 0.50)
+                    : Colors.black.withValues(alpha: 0.08),
                 blurRadius: 40,
                 offset: const Offset(0, 20),
               ),
@@ -88,30 +93,32 @@ class HeroCard extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           child: Stack(
             children: [
-              // l1 - background
-              const Positioned.fill(
+              Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [AppColors.background, AppColors.cardSurface],
+                      colors: [
+                        Theme.of(context).scaffoldBackgroundColor,
+                        Theme.of(context).colorScheme.surface,
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                   ),
                 ),
               ),
-
-              // l2 - dot grid texture
               Positioned.fill(
                 child: IgnorePointer(
                   child: Opacity(
                     opacity: 0.35,
-                    child: CustomPaint(painter: GridPainter()),
+                    child: CustomPaint(
+                      painter: GridPainter(
+                        Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                    ),
                   ),
                 ),
               ),
-
-              // l3 - radial glow
               Positioned.fill(
                 child: IgnorePointer(
                   child: DecoratedBox(
@@ -120,7 +127,9 @@ class HeroCard extends StatelessWidget {
                         center: const Alignment(0.4, -0.4),
                         radius: 1.1,
                         colors: [
-                          AppColors.textPrimary.withValues(alpha: 0.07),
+                          Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.07),
                           Colors.transparent,
                         ],
                       ),
@@ -128,8 +137,6 @@ class HeroCard extends StatelessWidget {
                   ),
                 ),
               ),
-
-              // l4 - corner marks
               const Positioned(
                 top: 20,
                 left: 20,
@@ -150,8 +157,6 @@ class HeroCard extends StatelessWidget {
                 right: 20,
                 child: _CornerMark(flip: true, flipV: true),
               ),
-
-              // l5 - title & accent line
               Positioned(
                 top: 44,
                 left: 36,
@@ -163,20 +168,24 @@ class HeroCard extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          const Text(
+                          Text(
                             'FEATURED',
                             style: TextStyle(
-                              color: AppColors.textDim,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 1.6,
                             ),
                           ),
                           const SizedBox(width: 6),
-                          const Text(
+                          Text(
                             '//',
                             style: TextStyle(
-                              color: AppColors.textDim,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                               fontSize: 9,
                             ),
                           ),
@@ -197,11 +206,10 @@ class HeroCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      // prod name
                       Text(
                         product.name.toUpperCase(),
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.5,
@@ -239,8 +247,6 @@ class HeroCard extends StatelessWidget {
                   ),
                 ),
               ),
-
-              // l6 - prod img
               Positioned.fill(
                 child: Transform.translate(
                   offset: Offset(
@@ -258,10 +264,12 @@ class HeroCard extends StatelessWidget {
                                 width: 240,
                                 filterQuality: FilterQuality.medium,
                                 placeholder: (_, __) => const SizedBox.shrink(),
-                                errorWidget: (_, __, ___) => const Icon(
+                                errorWidget: (_, __, ___) => Icon(
                                   Icons.broken_image_outlined,
                                   size: 40,
-                                  color: AppColors.textDim,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                               )
                             : Image.asset(
@@ -274,8 +282,6 @@ class HeroCard extends StatelessWidget {
                   ),
                 ),
               ),
-
-              // l7 - bottom
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -286,10 +292,14 @@ class HeroCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(24, 16, 24, 22),
                       decoration: BoxDecoration(
-                        color: AppColors.ctaPrimaryText.withValues(alpha: 0.28),
-                        border: const Border(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.ctaPrimaryText.withValues(alpha: 0.28)
+                            : Theme.of(
+                                context,
+                              ).colorScheme.surface.withValues(alpha: 0.6),
+                        border: Border(
                           top: BorderSide(
-                            color: AppColors.cardBorder,
+                            color: Theme.of(context).colorScheme.outlineVariant,
                             width: 0.5,
                           ),
                         ),
@@ -308,8 +318,10 @@ class HeroCard extends StatelessWidget {
                                 children: [
                                   Text(
                                     product.tagline,
-                                    style: const TextStyle(
-                                      color: AppColors.textDim,
+                                    style: TextStyle(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w500,
                                       letterSpacing: 0.1,
@@ -326,7 +338,9 @@ class HeroCard extends StatelessWidget {
                                         width: i == 0 ? 16 : 6,
                                         height: 1,
                                         margin: const EdgeInsets.only(right: 3),
-                                        color: AppColors.borderCardStrong,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.outlineVariant,
                                       ),
                                     ),
                                   ),
@@ -351,51 +365,63 @@ class HeroCard extends StatelessWidget {
   }
 }
 
-// CTA button
 class _CTAButton extends StatelessWidget {
   const _CTAButton();
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
-    decoration: BoxDecoration(
-      color: AppColors.accentGoldDim,
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(
-        color: AppColors.accentGold.withValues(alpha: 0.35),
-        width: 0.5,
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.accentGoldDim : AppColors.accentGoldSoft,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isDark
+              ? AppColors.accentGold.withValues(alpha: 0.35)
+              : AppColors.accentGold.withValues(alpha: 0.5),
+          width: 0.5,
+        ),
       ),
-    ),
-    child: const Text(
-      'KHÁM PHÁ',
-      style: TextStyle(
-        color: AppColors.accentGold,
-        fontSize: 11,
-        fontWeight: FontWeight.w800,
-        letterSpacing: 1.2,
+      child: Text(
+        'KHÁM PHÁ',
+        style: TextStyle(
+          color: isDark ? AppColors.accentGold : AppColors.champagne,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.2,
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
-// corner mark
 class _CornerMark extends StatelessWidget {
   final bool flip, flipV;
   const _CornerMark({required this.flip, required this.flipV});
 
   @override
-  Widget build(BuildContext context) => Transform.scale(
-    scaleX: flip ? -1 : 1,
-    scaleY: flipV ? -1 : 1,
-    child: CustomPaint(size: const Size(14, 14), painter: _CornerPainter()),
-  );
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.outlineVariant;
+    return Transform.scale(
+      scaleX: flip ? -1 : 1,
+      scaleY: flipV ? -1 : 1,
+      child: CustomPaint(
+        size: const Size(14, 14),
+        painter: _CornerPainter(color),
+      ),
+    );
+  }
 }
 
 class _CornerPainter extends CustomPainter {
+  final Color color;
+  _CornerPainter(this.color);
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.borderCardStrong
+      ..color = color
       ..strokeWidth = 1.2
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.square;
@@ -405,10 +431,10 @@ class _CornerPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_) => false;
+  bool shouldRepaint(covariant _CornerPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
-// hieu ung di chuyen len xuong
 class FloatingAnimation extends StatefulWidget {
   final Widget child;
   const FloatingAnimation({super.key, required this.child});
@@ -448,10 +474,13 @@ class _FloatingAnimationState extends State<FloatingAnimation>
 }
 
 class GridPainter extends CustomPainter {
+  final Color color;
+  GridPainter(this.color);
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.cardBorder
+      ..color = color
       ..strokeWidth = 0.4;
 
     for (double x = 0; x <= size.width; x += 28) {
@@ -463,5 +492,6 @@ class GridPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter _) => false;
+  bool shouldRepaint(covariant GridPainter oldDelegate) =>
+      oldDelegate.color != color;
 }

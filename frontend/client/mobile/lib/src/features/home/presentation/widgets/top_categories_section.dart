@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -21,6 +20,7 @@ class TopCategoriesSection extends StatefulWidget {
 
 class _TopCategoriesSectionState extends State<TopCategoriesSection> {
   late Future<List<Map<String, dynamic>>> _visibleCategoriesFuture;
+  int _selectedCategoryIndex = 0;
 
   @override
   void initState() {
@@ -36,22 +36,18 @@ class _TopCategoriesSectionState extends State<TopCategoriesSection> {
     final repo = getIt<ExploreRepository>();
     final List<Map<String, dynamic>> visibleItems = [];
 
-    // sap xep theo totalSold
-    final sortedParents = List<CategoryEntity>.from(state.parentCategories)
-      ..sort((a, b) => b.totalSold.compareTo(a.totalSold));
-
-    final parents = sortedParents.take(5).toList();
+    final categories = List<CategoryEntity>.from(state.topCategories);
 
     final results = await Future.wait(
-      parents.map((cat) => repo.getProducts(categoryId: cat.id, limit: 5)),
+      categories.map((cat) => repo.getProducts(categoryId: cat.id, limit: 5)),
     );
 
-    for (int i = 0; i < parents.length; i++) {
+    for (int i = 0; i < categories.length; i++) {
       final products = results[i];
       if (products.isNotEmpty) {
         products.sort((a, b) => b.soldCount.compareTo(a.soldCount));
         visibleItems.add({
-          'category': parents[i],
+          'category': categories[i],
           'products': products.take(5).toList(),
         });
       }
@@ -72,45 +68,183 @@ class _TopCategoriesSectionState extends State<TopCategoriesSection> {
 
         final visibleItems = snapshot.data!;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: visibleItems.asMap().entries.map((entry) {
-            final idx = entry.key;
-            final item = entry.value;
-            return _CategoryVisibleRow(
-              category: item['category'] as CategoryEntity,
-              products: item['products'] as List<ProductModel>,
-              index: idx,
-            );
-          }).toList(),
+        if (_selectedCategoryIndex >= visibleItems.length) {
+          _selectedCategoryIndex = 0;
+        }
+
+        final activeItem = visibleItems[_selectedCategoryIndex];
+        final activeCategory = activeItem['category'] as CategoryEntity;
+        final activeProducts = activeItem['products'] as List<ProductModel>;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 40),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  'Danh mục nổi bật',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w500,
+                    color: Theme.of(context).colorScheme.onSurface,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              SizedBox(
+                height: 48,
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: visibleItems.length,
+                  itemBuilder: (context, idx) {
+                    final item = visibleItems[idx];
+                    final cat = item['category'] as CategoryEntity;
+                    final rank = '#0${idx + 1}';
+                    final isSelected = idx == _selectedCategoryIndex;
+
+                    return _CategoryTab(
+                      label: cat.title,
+                      rank: rank,
+                      isSelected: isSelected,
+                      onTap: () {
+                        setState(() {
+                          _selectedCategoryIndex = idx;
+                        });
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 350),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0.03, 0),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
+                    ),
+                  );
+                },
+                child: _CategoryProductsDeck(
+                  key: ValueKey<String>(activeCategory.id),
+                  products: activeProducts,
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
   }
 }
 
-class _CategoryVisibleRow extends StatefulWidget {
-  final CategoryEntity category;
-  final List<ProductModel> products;
-  final int index;
+class _CategoryTab extends StatelessWidget {
+  final String label;
+  final String rank;
+  final bool isSelected;
+  final VoidCallback onTap;
 
-  const _CategoryVisibleRow({
-    required this.category,
-    required this.products,
-    required this.index,
+  const _CategoryTab({
+    required this.label,
+    required this.rank,
+    required this.isSelected,
+    required this.onTap,
   });
 
   @override
-  State<_CategoryVisibleRow> createState() => _CategoryVisibleRowState();
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        margin: const EdgeInsets.only(right: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(25),
+          color: isSelected
+              ? (isDark ? Colors.white : Colors.black)
+              : (isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.03)),
+          border: Border.all(
+            color: isSelected
+                ? Colors.transparent
+                : (isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.05)),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              rank,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: isSelected
+                    ? (isDark
+                          ? Colors.black.withValues(alpha: 0.6)
+                          : Colors.white.withValues(alpha: 0.6))
+                    : (isDark
+                          ? Colors.white.withValues(alpha: 0.3)
+                          : Colors.black.withValues(alpha: 0.3)),
+                letterSpacing: 1,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: isSelected
+                    ? (isDark ? Colors.black : Colors.white)
+                    : (isDark
+                          ? Colors.white.withValues(alpha: 0.7)
+                          : Colors.black.withValues(alpha: 0.7)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _CategoryVisibleRowState extends State<_CategoryVisibleRow>
-    with AutomaticKeepAliveClientMixin {
-  late PageController _pageController;
-  double _currentPage = 0.0;
+class _CategoryProductsDeck extends StatefulWidget {
+  final List<ProductModel> products;
+
+  const _CategoryProductsDeck({super.key, required this.products});
 
   @override
-  bool get wantKeepAlive => true;
+  State<_CategoryProductsDeck> createState() => _CategoryProductsDeckState();
+}
+
+class _CategoryProductsDeckState extends State<_CategoryProductsDeck> {
+  late PageController _pageController;
+  double _currentPage = 0.0;
 
   @override
   void initState() {
@@ -133,60 +267,30 @@ class _CategoryVisibleRowState extends State<_CategoryVisibleRow>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
-    final rank = '#0${widget.index + 1}';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 64),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  rank,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white.withValues(alpha: 0.2),
-                    letterSpacing: 3,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  widget.category.title,
-                  style: const TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                    letterSpacing: -0.8,
-                  ),
-                ),
-              ],
-            ),
+    return Column(
+      children: [
+        SizedBox(
+          height: 480,
+          child: PageView.builder(
+            controller: _pageController,
+            physics: const BouncingScrollPhysics(),
+            itemCount: widget.products.length,
+            itemBuilder: (context, idx) {
+              final p = widget.products[idx];
+              final double relativePosition = idx - _currentPage;
+              return _CategoryProductCard(
+                product: p,
+                relativePosition: relativePosition,
+              );
+            },
           ),
-          const SizedBox(height: 24),
-          SizedBox(
-            height: 480,
-            child: PageView.builder(
-              controller: _pageController,
-              physics: const BouncingScrollPhysics(),
-              itemCount: widget.products.length,
-              itemBuilder: (context, idx) {
-                final p = widget.products[idx];
-                final double relativePosition = idx - _currentPage;
-                return _CategoryProductCard(
-                  product: p,
-                  relativePosition: relativePosition,
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 16),
+        _PageIndicator(
+          count: widget.products.length,
+          currentPage: _currentPage,
+        ),
+      ],
     );
   }
 }
@@ -202,19 +306,21 @@ class _CategoryProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double absPos = relativePosition.abs();
-    final double scale = (1.0 - (absPos * 0.12)).clamp(0.85, 1.0);
-    final double opacity = (1.0 - (absPos * 0.45)).clamp(0.6, 1.0);
-    final double imageParallax = relativePosition * 140.0;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final screenSize = MediaQuery.of(context).size;
 
-    // spotlight factor
-    final bool isMain = absPos < 0.5;
+    final double absPos = relativePosition.abs();
+    final double scale = (1.0 - (absPos * 0.08)).clamp(0.9, 1.0);
+    final double opacity = (1.0 - (absPos * 0.5)).clamp(0.4, 1.0);
+
+    final double imageParallax = relativePosition * 80.0;
 
     return Center(
-      child: Transform.scale(
-        scale: scale,
-        child: Opacity(
-          opacity: opacity,
+      child: Opacity(
+        opacity: opacity,
+        child: Transform.scale(
+          scale: scale,
           child: GestureDetector(
             onTap: () {
               HapticFeedback.selectionClick();
@@ -226,159 +332,109 @@ class _CategoryProductCard extends StatelessWidget {
             },
             child: Container(
               width: double.infinity,
-              height: 440,
-              margin: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(40),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppColors.cardSurface, AppColors.background],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isMain ? 0.6 : 0.3),
-                    blurRadius: 40,
-                    offset: const Offset(0, 25),
-                  ),
-                ],
-              ),
+              height: 460,
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              color: Colors.transparent,
               child: Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(40),
-                        gradient: RadialGradient(
-                          center: Alignment.center,
-                          radius: 1.2,
-                          colors: [
-                            Colors.white.withValues(alpha: isMain ? 0.03 : 0.0),
-                            Colors.transparent,
-                          ],
+                  Positioned(
+                    top: 20,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Text(
+                        'GEAR',
+                        style: TextStyle(
+                          fontSize: screenSize.width * 0.24,
+                          fontWeight: FontWeight.w900,
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.04)
+                              : Colors.black.withValues(alpha: 0.03),
+                          letterSpacing: -2,
                         ),
                       ),
                     ),
                   ),
 
-                  // ambient glow
-                  if (isMain)
-                    Positioned(
-                      top: 40,
-                      left: 60,
-                      right: 60,
-                      height: 160,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.brandBlue.withValues(alpha: 0.1),
-                              blurRadius: 80,
-                              spreadRadius: 5,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                  // content
                   Padding(
-                    padding: const EdgeInsets.all(32.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: Center(
-                            child: Stack(
-                              alignment: Alignment.bottomCenter,
-                              children: [
-                                if (isMain)
-                                  Container(
-                                    width: 120,
-                                    height: 10,
-                                    margin: const EdgeInsets.only(bottom: 20),
-                                    decoration: BoxDecoration(
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(
-                                            alpha: 0.5,
-                                          ),
-                                          blurRadius: 25,
-                                          spreadRadius: 5,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                Transform.translate(
-                                  offset: Offset(imageParallax * 0.4, -10),
-                                  child: CachedNetworkImage(
-                                    imageUrl: product.image,
-                                    fit: BoxFit.contain,
-                                  ),
-                                ),
-                              ],
+                            child: Transform.translate(
+                              offset: Offset(imageParallax, -10),
+                              child: CachedNetworkImage(
+                                imageUrl: product.image,
+                                width: screenSize.width * 0.65,
+                                fit: BoxFit.contain,
+                              ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
 
-                        // metadata
                         Text(
                           '${formatCompactNumber(product.soldCount)} đã bán'
                               .toUpperCase(),
                           style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.champagne.withValues(
-                              alpha: isMain ? 0.5 : 0.2,
-                            ),
-                            letterSpacing: 1.8,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-
-                        Text(
-                          product.baseName,
-                          maxLines: 1,
-                          style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                            letterSpacing: -0.6,
-                            height: 1.1,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: theme.colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.5),
+                            letterSpacing: 1.5,
                           ),
                         ),
                         const SizedBox(height: 6),
 
                         Text(
+                          product.baseName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            color: theme.colorScheme.onSurface,
+                            letterSpacing: -0.5,
+                            height: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+
+                        Text(
                           product.tagline,
                           maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w400,
-                            color: Colors.white.withValues(alpha: 0.3),
+                            color: theme.colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.7),
                           ),
                         ),
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 16),
 
-                        // CTA
                         Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               'Chi tiết'.toUpperCase(),
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white.withValues(alpha: 0.8),
+                                color: theme.colorScheme.onSurface,
                                 letterSpacing: 1.2,
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             Icon(
                               Icons.arrow_forward_rounded,
-                              size: 14,
-                              color: Colors.white.withValues(alpha: 0.6),
+                              size: 12,
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.6,
+                              ),
                             ),
                           ],
                         ),
@@ -391,6 +447,38 @@ class _CategoryProductCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PageIndicator extends StatelessWidget {
+  final int count;
+  final double currentPage;
+
+  const _PageIndicator({required this.count, required this.currentPage});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(count, (index) {
+        final double delta = (index - currentPage).abs();
+        final double width = ((1.0 - delta).clamp(0.0, 1.0) * 12.0) + 6.0;
+        final double opacity = (1.0 - delta).clamp(0.2, 1.0);
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          height: 2,
+          width: width,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(2.5),
+            color: (isDark ? Colors.white : Colors.black).withValues(
+              alpha: opacity * (isDark ? 0.8 : 0.6),
+            ),
+          ),
+        );
+      }),
     );
   }
 }

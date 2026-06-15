@@ -30,16 +30,20 @@ class SearchBarWidget extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(LucideIcons.search, size: 20),
+            Icon(
+              LucideIcons.search,
+              size: 20,
+              color: colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(width: 14),
-            const Expanded(
+            Expanded(
               child: Text(
                 'Tìm kiếm sản phẩm, thương hiệu...',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                   letterSpacing: -0.2,
-                  color: Color(0xFFF1F1F5),
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -49,7 +53,11 @@ class SearchBarWidget extends StatelessWidget {
                 color: colorScheme.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(LucideIcons.camera, size: 16),
+              child: Icon(
+                LucideIcons.camera,
+                size: 16,
+                color: colorScheme.primary,
+              ),
             ),
           ],
         ),

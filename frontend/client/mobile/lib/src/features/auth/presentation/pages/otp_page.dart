@@ -2,13 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/core/storage/secure_storage_service.dart';
 import 'package:mobile/src/core/utils/device_utils.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
-import '../widgets/auth_primary_button.dart';
 import 'reset_password_page.dart';
 
 enum OtpPurpose { register, resetPassword }
@@ -35,11 +35,15 @@ class _OtpPageState extends State<OtpPage> {
   );
 
   Timer? _resendTimer;
-  int _resendCountdown = 60; // bo dem nguoc thoi gian gui lai otp
+  int _resendCountdown = 60;
   bool _canResend = false;
 
-  Timer? _expiryTimer; // bo dem nguoc thoi gian otp con han dung
-  int _expiryCountdown = 300; // 5 phut
+  Timer? _expiryTimer;
+  int _expiryCountdown = 300;
+
+  bool _isSuccess = false;
+  bool _isError = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -86,16 +90,10 @@ class _OtpPageState extends State<OtpPage> {
       if (_expiryCountdown <= 0) {
         timer.cancel();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Mã OTP đã hết hạn. Vui lòng gửi lại.'),
-              backgroundColor: Colors.redAccent,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
+          setState(() {
+            _isError = true;
+            _errorMessage = 'Mã OTP đã hết hạn. Vui lòng gửi lại.';
+          });
         }
       } else {
         if (mounted) setState(() => _expiryCountdown--);
@@ -111,14 +109,25 @@ class _OtpPageState extends State<OtpPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final size = MediaQuery.of(context).size;
 
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
+        if (ModalRoute.of(context)?.isCurrent != true) return;
         if (state is AuthAuthenticated) {
+          setState(() {
+            _isSuccess = true;
+            _isError = false;
+            _errorMessage = null;
+          });
           Navigator.of(context).popUntil((route) => route.isFirst);
         } else if (state is AuthForgotPasswordOtpVerified) {
-          Navigator.of(context).push(
+          setState(() {
+            _isSuccess = true;
+            _isError = false;
+            _errorMessage = null;
+          });
+          Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (_) => BlocProvider.value(
                 value: context.read<AuthCubit>(),
@@ -127,116 +136,200 @@ class _OtpPageState extends State<OtpPage> {
             ),
           );
         } else if (state is AuthError) {
-          _showError(state.message);
+          setState(() {
+            _isError = true;
+            _isSuccess = false;
+            _errorMessage = state.message;
+          });
+          //clear all
+          for (var c in _controllers) {
+            c.clear();
+          }
+          //focus first
+          _focusNodes[0].requestFocus();
         }
       },
       child: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.light,
+        value: Theme.of(context).brightness == Brightness.dark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark,
         child: Scaffold(
-          backgroundColor: const Color(0xFF07070A),
-          body: SafeArea(
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 28),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 12),
-                          _buildBackButton(),
-                          const SizedBox(height: 48),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          resizeToAvoidBottomInset: false,
+          body: Stack(
+            children: [
+              Positioned(
+                top: size.height * 0.4,
+                left: -size.width * 0.45,
+                child: SvgPicture.asset(
+                  'assets/logo/union-login.svg',
+                  width: size.width * 1.4,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              SafeArea(
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 28),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 12),
+                              _buildBackButton(),
+                              const SizedBox(height: 48),
 
-                          const Text(
-                            'XÁC THỰC\nMÃ OTP',
-                            style: TextStyle(
-                              fontSize: 36,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              letterSpacing: -1.5,
-                              height: 1.1,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          RichText(
-                            text: TextSpan(
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: Colors.white.withValues(alpha: 0.5),
-                                height: 1.6,
-                                letterSpacing: 0.1,
-                                fontFamily: 'Inter',
-                              ),
-                              children: [
-                                const TextSpan(
-                                  text:
-                                      'Vui lòng nhập mã 6 số đã được gửi tới ',
+                              Text(
+                                'Xác thực mã OTP',
+                                style: TextStyle(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.w900,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
+                                  letterSpacing: -1.5,
+                                  height: 1.1,
                                 ),
-                                TextSpan(
-                                  text: widget.email,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w900,
-                                    color: Color(0xFFFDE047),
+                              ),
+                              const SizedBox(height: 16),
+                              RichText(
+                                text: TextSpan(
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                    height: 1.6,
+                                    letterSpacing: 0.1,
+                                    fontFamily: 'Inter',
+                                  ),
+                                  children: [
+                                    const TextSpan(
+                                      text:
+                                          'Vui lòng nhập mã 6 số đã được gửi tới ',
+                                    ),
+                                    TextSpan(
+                                      text: widget.email,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w900,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: 48),
+
+                              //OTP input group
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: List.generate(
+                                  _otpLength,
+                                  (index) => _buildOtpBox(index),
+                                ),
+                              ),
+
+                              if (_errorMessage != null) ...[
+                                const SizedBox(height: 16),
+                                Center(
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: const TextStyle(
+                                      color: Colors.redAccent,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    textAlign: TextAlign.center,
                                   ),
                                 ),
                               ],
-                            ),
+
+                              const SizedBox(height: 48),
+
+                              //countdown & resend
+                              Center(
+                                child: Column(
+                                  children: [
+                                    _buildExpiryTimer(),
+                                    const SizedBox(height: 40),
+                                    _buildResendSection(),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: 48),
+
+                              BlocBuilder<AuthCubit, AuthState>(
+                                builder: (context, state) {
+                                  final isLoading = state is AuthLoading;
+                                  final theme = Theme.of(context);
+                                  return SizedBox(
+                                    width: double.infinity,
+                                    height: 56,
+                                    child: OutlinedButton(
+                                      onPressed: isLoading
+                                          ? null
+                                          : () {
+                                              HapticFeedback.lightImpact();
+                                              _handleVerify();
+                                            },
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor:
+                                            theme.colorScheme.primary,
+                                        side: BorderSide(
+                                          color: theme.colorScheme.primary
+                                              .withValues(alpha: 0.4),
+                                          width: 1.2,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            32,
+                                          ),
+                                        ),
+                                      ),
+                                      child: isLoading
+                                          ? SizedBox(
+                                              width: 24,
+                                              height: 24,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2.5,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                      Color
+                                                    >(
+                                                      theme.colorScheme.primary,
+                                                    ),
+                                              ),
+                                            )
+                                          : const Text(
+                                              "XÁC NHẬN",
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                letterSpacing: 1.0,
+                                              ),
+                                            ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 36),
+                            ],
                           ),
-
-                          const SizedBox(height: 48),
-
-                          // OTP input group
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: List.generate(
-                              _otpLength,
-                              (index) => _buildOtpBox(index),
-                            ),
-                          ),
-
-                          const SizedBox(height: 48),
-
-                          // countdown & resend
-                          Center(
-                            child: Column(
-                              children: [
-                                _buildExpiryTimer(),
-                                const SizedBox(height: 40),
-                                _buildResendSection(),
-                              ],
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-
-                Container(
-                  padding: EdgeInsets.fromLTRB(28, 20, 28, bottomPadding + 20),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF07070A),
-                    border: Border(
-                      top: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                  child: BlocBuilder<AuthCubit, AuthState>(
-                    builder: (context, state) {
-                      return AuthPrimaryButton(
-                        label: 'XÁC NHẬN',
-                        isLoading: state is AuthLoading,
-                        onTap: _handleVerify,
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -246,16 +339,15 @@ class _OtpPageState extends State<OtpPage> {
   void _handleVerify() async {
     final otp = _controllers.map((c) => c.text).join();
     if (otp.length < _otpLength) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Vui lòng nhập mã OTP gồm 6 chữ số'),
-          backgroundColor: const Color(0xFFFF4D4D),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-      );
+      setState(() {
+        _isError = true;
+        _isSuccess = false;
+        _errorMessage = 'Vui lòng nhập mã OTP gồm 6 chữ số';
+      });
+      for (var c in _controllers) {
+        c.clear();
+      }
+      _focusNodes[0].requestFocus();
       return;
     }
 
@@ -283,60 +375,57 @@ class _OtpPageState extends State<OtpPage> {
     HapticFeedback.lightImpact();
 
     if (widget.otpPurpose == OtpPurpose.register) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Vui lòng quay lại và gửi lại form đăng ký'),
-          backgroundColor: const Color(0xFFFF4D4D),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-      );
+      setState(() {
+        _isError = true;
+        _isSuccess = false;
+        _errorMessage = 'Vui lòng quay lại và gửi lại form đăng ký';
+      });
     } else {
       context.read<AuthCubit>().forgotPassword(email: widget.email);
       setState(() {
         _resendCountdown = 60;
         _canResend = false;
         _expiryCountdown = 300;
+        _isError = false;
+        _errorMessage = null;
       });
       _startTimers();
     }
   }
 
   Widget _buildOtpBox(int index) {
+    Color borderColor = Theme.of(context).colorScheme.outlineVariant;
+    if (_isSuccess) {
+      borderColor = Colors.green;
+    } else if (_isError) {
+      borderColor = Colors.redAccent;
+    }
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      width: 48,
-      height: 64,
+      width: 46,
+      height: 46,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: const Color(0xFF14141E),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _focusNodes[index].hasFocus
-              ? const Color(0xFFFDE047)
-              : Colors.white.withValues(alpha: 0.08),
-          width: 1.5,
-        ),
-        boxShadow: _focusNodes[index].hasFocus
-            ? [
-                BoxShadow(
-                  color: const Color(0xFFFDE047).withValues(alpha: 0.15),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : [],
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        shape: BoxShape.circle,
+        border: Border.all(color: borderColor, width: 1.5),
       ),
       child: Center(
         child: Focus(
           onKeyEvent: (node, event) {
             if (event is KeyDownEvent &&
-                event.logicalKey == LogicalKeyboardKey.backspace &&
-                _controllers[index].text.isEmpty &&
-                index > 0) {
-              _focusNodes[index - 1].requestFocus();
-              return KeyEventResult.handled;
+                event.logicalKey == LogicalKeyboardKey.backspace) {
+              if (_isError) {
+                setState(() {
+                  _isError = false;
+                  _errorMessage = null;
+                });
+              }
+              if (_controllers[index].text.isEmpty && index > 0) {
+                _focusNodes[index - 1].requestFocus();
+                return KeyEventResult.handled;
+              }
             }
             return KeyEventResult.ignored;
           },
@@ -344,6 +433,12 @@ class _OtpPageState extends State<OtpPage> {
             controller: _controllers[index],
             focusNode: _focusNodes[index],
             onChanged: (value) {
+              if (_isError) {
+                setState(() {
+                  _isError = false;
+                  _errorMessage = null;
+                });
+              }
               if (value.isNotEmpty) {
                 if (index < _otpLength - 1) {
                   _focusNodes[index + 1].requestFocus();
@@ -359,15 +454,23 @@ class _OtpPageState extends State<OtpPage> {
               LengthLimitingTextInputFormatter(1),
               FilteringTextInputFormatter.digitsOnly,
             ],
-            style: const TextStyle(
-              fontSize: 24,
+            style: TextStyle(
+              fontSize: 20,
               fontWeight: FontWeight.w900,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
               fontFamily: 'Inter',
             ),
             decoration: const InputDecoration(
               border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              errorBorder: InputBorder.none,
+              focusedErrorBorder: InputBorder.none,
+              disabledBorder: InputBorder.none,
+              filled: false,
+              fillColor: Colors.transparent,
               counterText: '',
+              contentPadding: EdgeInsets.zero,
             ),
           ),
         ),
@@ -382,12 +485,12 @@ class _OtpPageState extends State<OtpPage> {
       decoration: BoxDecoration(
         color: isUrgent
             ? const Color(0xFFFF4D4D).withValues(alpha: 0.1)
-            : const Color(0xFF14141E),
+            : Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isUrgent
               ? const Color(0xFFFF4D4D).withValues(alpha: 0.2)
-              : Colors.white.withValues(alpha: 0.05),
+              : Theme.of(context).colorScheme.outlineVariant,
         ),
       ),
       child: Row(
@@ -396,7 +499,9 @@ class _OtpPageState extends State<OtpPage> {
           Icon(
             LucideIcons.clock,
             size: 14,
-            color: isUrgent ? const Color(0xFFFF4D4D) : Colors.white54,
+            color: isUrgent
+                ? const Color(0xFFFF4D4D)
+                : Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           const SizedBox(width: 8),
           Text(
@@ -404,7 +509,9 @@ class _OtpPageState extends State<OtpPage> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w900,
-              color: isUrgent ? const Color(0xFFFF4D4D) : Colors.white,
+              color: isUrgent
+                  ? const Color(0xFFFF4D4D)
+                  : Theme.of(context).colorScheme.onSurface,
               letterSpacing: 0.5,
             ),
           ),
@@ -417,11 +524,13 @@ class _OtpPageState extends State<OtpPage> {
     return Column(
       children: [
         Text(
-          "KHÔNG NHẬN ĐƯỢC MÃ?",
+          'KHÔNG NHẬN ĐƯỢC MÃ?',
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w900,
-            color: Colors.white.withValues(alpha: 0.4),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
             letterSpacing: 1.0,
           ),
         ),
@@ -438,7 +547,9 @@ class _OtpPageState extends State<OtpPage> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w900,
-                color: _canResend ? const Color(0xFFFDE047) : Colors.white,
+                color: _canResend
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurface,
                 letterSpacing: 0.5,
               ),
             ),
@@ -450,31 +561,24 @@ class _OtpPageState extends State<OtpPage> {
 
   Widget _buildBackButton() {
     return GestureDetector(
-      onTap: () => Navigator.pop(context),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        Navigator.pop(context);
+      },
       child: Container(
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: const Color(0xFF14141E),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.black.withValues(alpha: 0.05),
+          shape: BoxShape.circle,
         ),
-        child: const Icon(
+        child: Icon(
           Icons.arrow_back_ios_new_rounded,
-          color: Colors.white,
-          size: 18,
+          color: Theme.of(context).colorScheme.onSurface,
+          size: 22,
         ),
-      ),
-    );
-  }
-
-  void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: const Color(0xFFFF4D4D),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
   }

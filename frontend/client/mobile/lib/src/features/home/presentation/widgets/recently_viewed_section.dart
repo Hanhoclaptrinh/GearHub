@@ -1,13 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/widgets/small_product_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/src/core/di/injection.dart';
-import 'package:mobile/src/features/product_detail/data/datasources/product_detail_remote_datasource.dart';
-import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/features/wishlist/presentation/state/wishlist_cubit.dart';
 import 'package:mobile/src/features/wishlist/presentation/state/wishlist_state.dart';
@@ -89,13 +86,13 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Đã xem gần đây',
                 style: TextStyle(
                   fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: -0.5,
+                  fontWeight: FontWeight.w500,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  letterSpacing: -0.3,
                 ),
               ),
               GestureDetector(
@@ -103,13 +100,12 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> {
                   HapticFeedback.mediumImpact();
                   _clearAll();
                 },
-                child: const Text(
+                child: Text(
                   'Xóa tất cả',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.slate400,
-                    decoration: TextDecoration.underline,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -131,11 +127,6 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> {
                 final prod = _recentProducts[index];
                 final double priceVal =
                     double.tryParse(prod['price']?.toString() ?? '0') ?? 0;
-                final attributes =
-                    (prod['attributes'] as Map<dynamic, dynamic>?)
-                        ?.cast<String, String>() ??
-                    {};
-
                 final productModel = ProductModel(
                   id: prod['id']!,
                   name: prod['name']!,
@@ -151,31 +142,8 @@ class _RecentlyViewedSectionState extends State<RecentlyViewedSection> {
                     builder: (context, state) {
                       return SmallProductCard(
                         product: productModel,
-                        heroTag: 'recent_${productModel.id}_$index',
-                        onTap: () async {
-                          HapticFeedback.mediumImpact();
-                          try {
-                            final pDetail =
-                                await getIt<ProductDetailRemoteDatasource>()
-                                    .getProductDetail(prod['id']!);
-                            if (context.mounted) {
-                              Navigator.of(context)
-                                  .push(
-                                    MaterialPageRoute(
-                                      builder: (_) => ProductDetailPage(
-                                        product: pDetail,
-                                        initialAttributes: attributes,
-                                      ),
-                                    ),
-                                  )
-                                  .then((_) => _loadRecentlyViewed());
-                            }
-                          } catch (e) {
-                            debugPrint(
-                              'Error fetching product detail on click: $e',
-                            );
-                          }
-                        },
+                        initialAttributes:
+                            prod['attributes'] as Map<String, String>?,
                       );
                     },
                   ),

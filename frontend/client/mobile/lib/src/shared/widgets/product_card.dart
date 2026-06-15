@@ -13,18 +13,17 @@ import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/widgets/auth_required_modal.dart';
 import 'package:mobile/src/shared/widgets/color_bubble_selector.dart';
 
-const _surface = Color(0xFF14141E);
-const _surfaceAlt = Color(0xFF1C1C28);
-const _border = Color(0xFF2A2A38);
-const _accent = Color(0xFFFFCC00);
-const _textHigh = Color(0xFFF1F1F5);
-const _textLow = Color(0xFF4A4A62);
 const _starColor = Color(0xFFFFCC00);
 
 class ProductCard extends StatefulWidget {
   final ProductModel product;
+  final bool borderless;
 
-  const ProductCard({super.key, required this.product});
+  const ProductCard({
+    super.key,
+    required this.product,
+    this.borderless = false,
+  });
 
   @override
   State<ProductCard> createState() => _ProductCardState();
@@ -89,6 +88,8 @@ class _ProductCardState extends State<ProductCard>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final colorKey = _getColorKey(widget.product);
     final otherSpecs = _getOtherSpecs(widget.product, colorKey);
 
@@ -100,14 +101,27 @@ class _ProductCardState extends State<ProductCard>
         ),
       ),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          color: _surface,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: _border, width: 1),
-        ),
+        margin: widget.borderless
+            ? EdgeInsets.zero
+            : const EdgeInsets.only(bottom: 10),
+        decoration: widget.borderless
+            ? BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: cs.outlineVariant.withValues(alpha: 0.5),
+                    width: 1,
+                  ),
+                ),
+              )
+            : BoxDecoration(
+                color: cs.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: cs.outlineVariant, width: 1),
+              ),
         child: Padding(
-          padding: const EdgeInsets.all(18),
+          padding: widget.borderless
+              ? const EdgeInsets.symmetric(vertical: 20, horizontal: 4)
+              : const EdgeInsets.all(18),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -116,13 +130,13 @@ class _ProductCardState extends State<ProductCard>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // name
+                    //name
                     Text(
                       widget.product.baseName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
-                        color: _textHigh,
+                        color: cs.onSurface,
                         height: 1.3,
                         letterSpacing: -0.2,
                       ),
@@ -131,7 +145,7 @@ class _ProductCardState extends State<ProductCard>
                     ),
                     const SizedBox(height: 10),
 
-                    // rating row
+                    //rating row
                     Row(
                       children: [
                         const Icon(Icons.star, color: _starColor, size: 15),
@@ -141,31 +155,34 @@ class _ProductCardState extends State<ProductCard>
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: _accent,
+                            color: _starColor,
                           ),
                         ),
                         const SizedBox(width: 4),
                         Text(
                           '(${widget.product.reviewCount})',
-                          style: const TextStyle(fontSize: 12, color: _textLow),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: cs.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
 
-                    // price
+                    //price
                     Text(
                       formatVND(widget.product.price),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
-                        color: _textHigh,
+                        color: cs.onSurface,
                         letterSpacing: -0.5,
                       ),
                     ),
                     const SizedBox(height: 16),
 
-                    // color bubbles
+                    //color bubbles
                     if (colorKey.isNotEmpty)
                       ColorBubbleSelector(
                         product: widget.product,
@@ -178,14 +195,14 @@ class _ProductCardState extends State<ProductCard>
                     if (colorKey.isNotEmpty && otherSpecs.isNotEmpty)
                       const SizedBox(height: 12),
 
-                    // other specs
+                    //other specs
                     if (otherSpecs.isNotEmpty)
                       Text(
                         otherSpecs.join(' · '),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: _textLow,
+                          color: cs.onSurfaceVariant,
                           height: 1.5,
                         ),
                         maxLines: 2,
@@ -196,7 +213,7 @@ class _ProductCardState extends State<ProductCard>
               ),
               const SizedBox(width: 14),
 
-              // im & wishlist
+              //im & wishlist
               SizedBox(
                 width: 120,
                 child: Column(
@@ -212,12 +229,12 @@ class _ProductCardState extends State<ProductCard>
                           decoration: BoxDecoration(
                             color: _isWishlisted
                                 ? const Color(0x22EF4444)
-                                : _surfaceAlt,
+                                : cs.surfaceContainerHighest,
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: _isWishlisted
                                   ? const Color(0x55EF4444)
-                                  : _border,
+                                  : cs.outlineVariant,
                             ),
                           ),
                           child: Icon(
@@ -226,7 +243,7 @@ class _ProductCardState extends State<ProductCard>
                                 : LucideIcons.heart,
                             color: _isWishlisted
                                 ? const Color(0xFFEF4444)
-                                : _textLow,
+                                : cs.onSurfaceVariant,
                             size: 16,
                           ),
                         ),
@@ -234,26 +251,26 @@ class _ProductCardState extends State<ProductCard>
                     ),
                     const SizedBox(height: 8),
 
-                    // img
+                    //img
                     CachedNetworkImage(
                       imageUrl: widget.product.image,
                       height: 110,
                       fit: BoxFit.contain,
-                      placeholder: (_, __) => const SizedBox(
+                      placeholder: (_, __) => SizedBox(
                         height: 110,
                         child: Center(
                           child: CircularProgressIndicator(
                             strokeWidth: 1.5,
-                            color: _textLow,
+                            color: cs.onSurfaceVariant,
                           ),
                         ),
                       ),
-                      errorWidget: (_, __, ___) => const SizedBox(
+                      errorWidget: (_, __, ___) => SizedBox(
                         height: 110,
                         child: Icon(
                           LucideIcons.package,
                           size: 36,
-                          color: _textLow,
+                          color: cs.onSurfaceVariant,
                         ),
                       ),
                     ),

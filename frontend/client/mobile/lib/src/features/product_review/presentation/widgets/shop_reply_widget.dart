@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-const _accent = Color(0xFFE2B93B);
-const _textHigh = Color(0xFFFFFFFF);
-const _textMid = Color(0xFF9494A1);
-
 class ShopReplyWidget extends StatefulWidget {
   final String reply;
   const ShopReplyWidget({super.key, required this.reply});
@@ -18,6 +14,21 @@ class _ShopReplyWidgetState extends State<ShopReplyWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final Color accentLineColor = isDark
+        ? const Color(0xFF6366F1)
+        : const Color(0xFF4F46E5);
+    final Color textHigh = isDark
+        ? const Color(0xFFFFFFFF)
+        : const Color(0xFF111111);
+    final Color textMid = isDark
+        ? const Color(0xFF9CA3AF)
+        : const Color(0xFF4B5563);
+    final Color actionColor = isDark
+        ? const Color(0xFF818CF8)
+        : const Color(0xFF4F46E5);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -27,17 +38,17 @@ class _ShopReplyWidgetState extends State<ShopReplyWidget> {
               width: 2,
               height: 14,
               decoration: BoxDecoration(
-                color: _accent,
+                color: accentLineColor,
                 borderRadius: BorderRadius.circular(1),
               ),
             ),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               'PHẢN HỒI TỪ GEARHUB',
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w900,
-                color: _textHigh,
+                color: textHigh,
                 letterSpacing: 1.0,
               ),
             ),
@@ -48,9 +59,9 @@ class _ShopReplyWidgetState extends State<ShopReplyWidget> {
           widget.reply,
           maxLines: _isExpanded ? null : 3,
           overflow: _isExpanded ? null : TextOverflow.ellipsis,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
-            color: _textMid,
+            color: textMid,
             height: 1.6,
             fontWeight: FontWeight.w400,
           ),
@@ -64,10 +75,10 @@ class _ShopReplyWidgetState extends State<ShopReplyWidget> {
               children: [
                 Text(
                   _isExpanded ? 'THU GỌN' : 'XEM THÊM',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
-                    color: _accent,
+                    color: actionColor,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -75,7 +86,7 @@ class _ShopReplyWidgetState extends State<ShopReplyWidget> {
                 Icon(
                   _isExpanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
                   size: 12,
-                  color: _accent,
+                  color: actionColor,
                 ),
               ],
             ),

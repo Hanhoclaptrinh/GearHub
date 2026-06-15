@@ -25,7 +25,7 @@ class RatingBadge extends StatelessWidget {
           const Icon(LucideIcons.star, color: _kGold, size: 12),
           const SizedBox(width: 4),
           Text(
-            rating.toString(),
+            rating.toStringAsFixed(1),
             style: const TextStyle(
               color: _kGold,
               fontSize: 10,

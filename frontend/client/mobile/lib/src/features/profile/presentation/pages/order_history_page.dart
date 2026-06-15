@@ -1,3 +1,4 @@
+import 'package:lottie/lottie.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -5,12 +6,12 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
-import 'package:mobile/src/features/chat/presentation/widgets/concierge_entry_button.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
 import 'package:mobile/src/features/profile/presentation/state/orders_state.dart';
 import 'package:mobile/src/features/cart/presentation/state/cart_cubit.dart';
 import 'package:mobile/src/features/checkout/presentation/pages/checkout_page.dart';
-import 'package:mobile/src/features/profile/presentation/pages/invoice_page.dart';
+import 'package:mobile/src/shared/widgets/error_illustration_widget.dart';
+import 'package:mobile/src/features/profile/presentation/pages/order_detail_page.dart';
 
 double _toDouble(dynamic val) {
   if (val == null) return 0.0;
@@ -18,6 +19,12 @@ double _toDouble(dynamic val) {
   if (val is String) return double.tryParse(val) ?? 0.0;
   return 0.0;
 }
+
+const _lightPageBg = Color(0xFFF5F6FA);
+const _darkPageBg = Color(0xFF080A12);
+const _darkCardBg = Color(0xFF12141E);
+const _darkCardBorder = Color(0xFF252A3A);
+const _techAccent = AppColors.gearBlue;
 
 class OrderHistoryPage extends StatefulWidget {
   final String initialStatus;
@@ -77,34 +84,40 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final pageBg = isDark ? _darkPageBg : _lightPageBg;
+
     return BlocProvider(
       create: (context) => getIt<OrdersCubit>()..fetchMyOrders(status: 'ALL'),
       child: Builder(
         builder: (context) {
           return AnnotatedRegion<SystemUiOverlayStyle>(
-            value: SystemUiOverlayStyle.light,
+            value: isDark
+                ? SystemUiOverlayStyle.light
+                : SystemUiOverlayStyle.dark,
             child: Scaffold(
-              backgroundColor: AppColors.background,
+              backgroundColor: pageBg,
               appBar: AppBar(
-                backgroundColor: AppColors.background,
+                backgroundColor: pageBg,
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 centerTitle: true,
                 leading: IconButton(
-                  icon: const Icon(
-                    Icons.arrow_back_rounded,
-                    color: Colors.white,
+                  icon: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: isDark ? Colors.white : const Color(0xFF111827),
                     size: 24,
                   ),
                   onPressed: () => Navigator.pop(context),
                 ),
-                title: const Text(
+                title: Text(
                   'Lịch sử đơn hàng',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.textPrimary,
-                    letterSpacing: 0.5,
+                    color: isDark ? Colors.white : const Color(0xFF161922),
+                    letterSpacing: -0.1,
                   ),
                 ),
                 bottom: PreferredSize(
@@ -113,9 +126,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                     decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
-                          color: AppColors.borderCardStrong.withValues(
-                            alpha: 0.5,
-                          ),
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.06)
+                              : const Color(0xFFE6E8EF),
                         ),
                       ),
                     ),
@@ -124,11 +137,14 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                       isScrollable: true,
                       physics: const BouncingScrollPhysics(),
                       tabAlignment: TabAlignment.start,
-                      indicatorColor: AppColors.brandIndigo,
+                      indicatorColor: _techAccent,
                       indicatorWeight: 3,
+                      indicatorSize: TabBarIndicatorSize.label,
                       dividerColor: Colors.transparent,
-                      labelColor: AppColors.brandIndigo,
-                      unselectedLabelColor: AppColors.textDim,
+                      labelColor: _techAccent,
+                      unselectedLabelColor: isDark
+                          ? Colors.white.withValues(alpha: 0.56)
+                          : const Color(0xFF6B7280),
                       labelStyle: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 13,
@@ -163,14 +179,6 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                       ),
                     );
                     _handleReorderSuccess(context, state.variantIds);
-                  } else if (state is OrdersError) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(state.message),
-                        backgroundColor: const Color(0xFFEF4444),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
                   }
                 },
                 builder: (context, state) {
@@ -197,103 +205,29 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                       }
                       if (matchingOrder != null) {
                         WidgetsBinding.instance.addPostFrameCallback((_) {
-                          _showOrderDetailModal(context, matchingOrder);
+                          _navigateToOrderDetail(context, matchingOrder);
                         });
                       }
                     }
 
-                    final currentTab =
-                        _statusTabs[_tabController.index]['status'];
-
-                    // filter the list on the client side dynamically
-                    final filteredOrders = orders.where((order) {
-                      if (currentTab == 'ALL') return true;
-                      final String status = order['status'] ?? 'PENDING';
-                      if (currentTab == 'PENDING') {
-                        return status == 'PENDING' || status == 'CONFIRMED';
-                      }
-                      if (currentTab == 'DELIVERED') {
-                        return status == 'DELIVERED' || status == 'COMPLETED';
-                      }
-                      return status == currentTab;
-                    }).toList();
-
-                    if (filteredOrders.isEmpty) {
-                      return RefreshIndicator(
-                        color: AppColors.brandIndigo,
-                        backgroundColor: AppColors.cardSurfaceAlt,
-                        onRefresh: () async {
-                          await context.read<OrdersCubit>().fetchMyOrders(
-                            status: 'ALL',
-                          );
-                        },
-                        child: ListView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          children: [
-                            SizedBox(
-                              height: MediaQuery.of(context).size.height * 0.25,
-                            ),
-                            Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(20),
-                                    decoration: const BoxDecoration(
-                                      color: AppColors.cardSurfaceAlt,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      LucideIcons.shoppingBag,
-                                      size: 40,
-                                      color: AppColors.textDim,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 24),
-                                  const Text(
-                                    'Trống trải quá fen',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w800,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  const Text(
-                                    'Đơn hàng của fen sẽ hiện ở đây khi mua sắm.',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: AppColors.textDim,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    return RefreshIndicator(
-                      color: AppColors.brandIndigo,
-                      backgroundColor: AppColors.cardSurfaceAlt,
-                      onRefresh: () async {
-                        await context.read<OrdersCubit>().fetchMyOrders(
-                          status: 'ALL',
+                    return TabBarView(
+                      controller: _tabController,
+                      physics: const BouncingScrollPhysics(),
+                      children: _statusTabs.map((tab) {
+                        final filteredOrders = _filterOrdersForStatus(
+                          orders,
+                          tab['status']!,
                         );
-                      },
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        itemCount: filteredOrders.length,
-                        itemBuilder: (context, index) {
-                          final order = filteredOrders[index];
-                          return _buildOrderCard(context, order);
-                        },
+                        return _buildOrdersTab(context, filteredOrders);
+                      }).toList(),
+                    );
+                  }
+
+                  if (state is OrdersError) {
+                    return ErrorIllustrationWidget(
+                      message: state.message,
+                      onRetry: () => context.read<OrdersCubit>().fetchMyOrders(
+                        status: 'ALL',
                       ),
                     );
                   }
@@ -305,6 +239,94 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
           );
         },
       ),
+    );
+  }
+
+  List<dynamic> _filterOrdersForStatus(List<dynamic> orders, String tabStatus) {
+    return orders.where((order) {
+      if (tabStatus == 'ALL') return true;
+      final String status = order['status'] ?? 'PENDING';
+      if (tabStatus == 'PENDING') {
+        return status == 'PENDING' || status == 'CONFIRMED';
+      }
+      if (tabStatus == 'DELIVERED') {
+        return status == 'DELIVERED' || status == 'COMPLETED';
+      }
+      return status == tabStatus;
+    }).toList();
+  }
+
+  Widget _buildOrdersTab(BuildContext context, List<dynamic> orders) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return RefreshIndicator(
+      color: _techAccent,
+      backgroundColor: isDark ? _darkCardBg : Colors.white,
+      onRefresh: () async {
+        await context.read<OrdersCubit>().fetchMyOrders(status: 'ALL');
+      },
+      child: orders.isEmpty
+          ? _buildEmptyState(context)
+          : ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              itemCount: orders.length,
+              itemBuilder: (context, index) {
+                final order = orders[index];
+                return _buildOrderCard(context, order);
+              },
+            ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
+      children: [
+        SizedBox(height: MediaQuery.of(context).size.height * 0.22),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Lottie.asset(
+                'assets/animations/emptyorder.json',
+                width: 200,
+                height: 200,
+              ),
+              const SizedBox(height: 28),
+              Text(
+                'Góc này đang chờ chốt đơn!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: cs.onSurface,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Góc sáng tạo của fen vẫn chưa có gear mới à? Đi dạo một vòng Hub và chốt đơn ngay thôi fen!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  height: 1.45,
+                  color: cs.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -333,17 +355,33 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
           ).toLocal().toString().substring(0, 16)
         : '';
     final bool isExpanded = _expandedOrderIds.contains(order['id']);
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final cardBg = isDark ? _darkCardBg : Colors.white;
+    final cardBorder = isDark ? _darkCardBorder : const Color(0xFFE1E5EE);
+    final subtleText = isDark
+        ? Colors.white.withValues(alpha: 0.58)
+        : const Color(0xFF667085);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 18),
       decoration: BoxDecoration(
-        color: AppColors.cardSurfaceAlt,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.borderCardStrong),
+        color: cardBg,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: cardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.06),
+            blurRadius: 26,
+            offset: const Offset(0, 14),
+          ),
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => _showOrderDetailModal(context, order),
+        onTap: () => _navigateToOrderDetail(context, order),
+        borderRadius: BorderRadius.circular(4),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -351,72 +389,79 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        "Mã đơn: #${order['id'].toString().substring(0, 8).toUpperCase()}",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 14,
-                          color: AppColors.textPrimary,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                      if (items.length > 1) ...[
-                        const SizedBox(width: 4),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              if (isExpanded) {
-                                _expandedOrderIds.remove(order['id']);
-                              } else {
-                                _expandedOrderIds.add(order['id']);
-                              }
-                            });
-                          },
-                          child: Icon(
-                            isExpanded
-                                ? Icons.keyboard_arrow_up_rounded
-                                : Icons.keyboard_arrow_down_rounded,
-                            size: 20,
-                            color: AppColors.textDim,
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            "Mã đơn: #${order['id'].toString().substring(0, 8).toUpperCase()}",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 14,
+                              color: cs.onSurface,
+                              letterSpacing: -0.2,
+                            ),
                           ),
                         ),
+                        if (items.length > 1) ...[
+                          const SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                if (isExpanded) {
+                                  _expandedOrderIds.remove(order['id']);
+                                } else {
+                                  _expandedOrderIds.add(order['id']);
+                                }
+                              });
+                            },
+                            child: Icon(
+                              isExpanded
+                                  ? Icons.keyboard_arrow_up_rounded
+                                  : Icons.keyboard_arrow_down_rounded,
+                              size: 20,
+                              color: subtleText,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
+                  const SizedBox(width: 12),
                   _buildStatusBadge(status),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 createdAt,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.textDim,
+                  color: subtleText,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 14),
-                child: Divider(height: 1, color: AppColors.borderCardStrong),
-              ),
+              const SizedBox(height: 22),
               if (items.isNotEmpty) ...[
                 if (!isExpanded) ...[
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        width: 54,
-                        height: 54,
+                        width: 58,
+                        height: 58,
                         decoration: BoxDecoration(
-                          color: AppColors.cardSurfaceAltAlt,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.borderCardStrong),
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.04)
+                              : const Color(0xFFF6F7FA),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: cardBorder),
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(11),
+                          borderRadius: BorderRadius.circular(12),
                           child:
                               items.first['productVariant']?['imageUrl'] != null
                               ? Image.network(
@@ -434,13 +479,10 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                                   errorBuilder: (c, e, s) =>
                                       const Icon(LucideIcons.package),
                                 )
-                              : const Icon(
-                                  LucideIcons.package,
-                                  color: AppColors.textDim,
-                                ),
+                              : Icon(LucideIcons.package, color: subtleText),
                         ),
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -450,19 +492,20 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                                   'Sản phẩm GearHub',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
                                 fontSize: 14,
-                                color: AppColors.textPrimary,
+                                color: cs.onSurface,
+                                height: 1.25,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 6),
                             Text(
                               "Số lượng: ${items.first['quantity']}",
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 12,
-                                color: AppColors.textDim,
+                                color: subtleText,
                               ),
                             ),
                             if (items.length > 1) ...[
@@ -479,7 +522,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                                       "và ${items.length - 1} sản phẩm khác (Xem thêm)...",
                                       style: const TextStyle(
                                         fontSize: 12,
-                                        color: AppColors.brandIndigo,
+                                        color: _techAccent,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -487,7 +530,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                                     const Icon(
                                       Icons.keyboard_arrow_down_rounded,
                                       size: 16,
-                                      color: AppColors.brandIndigo,
+                                      color: _techAccent,
                                     ),
                                   ],
                                 ),
@@ -509,11 +552,11 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                             width: 50,
                             height: 50,
                             decoration: BoxDecoration(
-                              color: AppColors.cardSurfaceAltAlt,
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.04)
+                                  : const Color(0xFFF6F7FA),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: AppColors.borderCardStrong,
-                              ),
+                              border: Border.all(color: cardBorder),
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(10),
@@ -545,10 +588,10 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                                       'Sản phẩm',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 13,
-                                    color: AppColors.textPrimary,
+                                    color: cs.onSurface,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -562,18 +605,18 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                                           i['priceAtPurchase'] ?? i['price'],
                                         ),
                                       ),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 13,
-                                        color: AppColors.slate400,
+                                        color: subtleText,
                                       ),
                                     ),
                                     Text(
                                       "x${i['quantity']}",
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.w800,
                                         fontSize: 13,
-                                        color: AppColors.textDim,
+                                        color: subtleText,
                                       ),
                                     ),
                                   ],
@@ -591,65 +634,66 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                         _expandedOrderIds.remove(order['id']);
                       });
                     },
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           "Thu gọn",
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.textDim,
+                            color: subtleText,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        SizedBox(width: 4),
+                        const SizedBox(width: 4),
                         Icon(
                           Icons.keyboard_arrow_up_rounded,
                           size: 16,
-                          color: AppColors.textDim,
+                          color: subtleText,
                         ),
                       ],
                     ),
                   ),
                 ],
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 14),
-                  child: Divider(height: 1, color: AppColors.borderCardStrong),
-                ),
+                const SizedBox(height: 24),
               ],
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Tổng số tiền",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textDim,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Tổng số tiền",
+                          style: TextStyle(fontSize: 12, color: subtleText),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        formatVND(totalAmount),
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.textPrimary,
-                          letterSpacing: -0.2,
+                        const SizedBox(height: 4),
+                        Text(
+                          formatVND(totalAmount),
+                          style: TextStyle(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w900,
+                            color: cs.onSurface,
+                            letterSpacing: -0.3,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  Row(
+                  const SizedBox(width: 12),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.end,
                     children: [
                       if (status == 'PENDING' || status == 'CONFIRMED') ...[
                         if (latestStatusLabel == 'Yêu cầu hủy')
                           _buildActionButton(
                             context,
                             'Đang yêu cầu hủy',
-                            AppColors.slate400,
+                            Theme.of(context).colorScheme.onSurfaceVariant,
                             () {},
                           )
                         else
@@ -671,7 +715,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                           context,
                           'Đã nhận hàng',
                           const Color(0xFF10B981),
-                          () => context.read<OrdersCubit>().confirmReceipt(order['id']),
+                          () => context.read<OrdersCubit>().confirmReceipt(
+                            order['id'],
+                          ),
                         ),
                       if (status == 'COMPLETED' || status == 'CANCELLED')
                         _buildActionButton(
@@ -685,9 +731,12 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
                 ],
               ),
               if (status == 'SHIPPING') ...[
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 10),
-                  child: Divider(height: 1, color: AppColors.borderCardStrong),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Divider(
+                    height: 1,
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -737,7 +786,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (bCtx) {
-        return _ReorderBottomSheet(
+        return ReorderBottomSheet(
           order: order,
           items: items,
           parentContext: context,
@@ -830,58 +879,55 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
   }
 
   Widget _buildStatusBadge(String status) {
-    Color bg = AppColors.borderCardStrong;
-    Color fg = AppColors.slate400;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    Color base = isDark ? Colors.white : const Color(0xFF475467);
+    Color bg = base.withValues(alpha: isDark ? 0.12 : 0.08);
+    Color fg = base;
     String text = status;
 
     switch (status) {
       case 'PENDING':
-        bg = const Color(0xFFEA580C).withValues(alpha: 0.15);
-        fg = const Color(0xFFEA580C);
+        base = isDark ? const Color(0xFFFFB86B) : const Color(0xFFB45309);
         text = 'Chờ xác nhận';
         break;
       case 'CONFIRMED':
-        bg = AppColors.brandIndigo.withValues(alpha: 0.15);
-        fg = AppColors.brandIndigo;
+        base = isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4338CA);
         text = 'Đã xác nhận';
         break;
       case 'PROCESSING':
-        bg = const Color(0xFF22C55E).withValues(alpha: 0.15);
-        fg = const Color(0xFF22C55E);
+        base = isDark ? const Color(0xFF86EFAC) : const Color(0xFF15803D);
         text = 'Đang xử lý';
         break;
       case 'SHIPPING':
-        bg = const Color(0xFF06B6D4).withValues(alpha: 0.15);
-        fg = const Color(0xFF06B6D4);
+        base = isDark ? const Color(0xFF67E8F9) : const Color(0xFF0E7490);
         text = 'Đang giao';
         break;
       case 'DELIVERED':
-        bg = const Color(0xFF10B981).withValues(alpha: 0.15);
-        fg = const Color(0xFF10B981);
+        base = isDark ? const Color(0xFF6EE7B7) : const Color(0xFF047857);
         text = 'Đã giao';
         break;
       case 'COMPLETED':
-        bg = const Color(0xFF10B981).withValues(alpha: 0.15);
-        fg = const Color(0xFF10B981);
+        base = isDark ? const Color(0xFF6EE7B7) : const Color(0xFF047857);
         text = 'Hoàn thành';
         break;
       case 'CANCELLED':
-        bg = const Color(0xFFEF4444).withValues(alpha: 0.15);
-        fg = const Color(0xFFEF4444);
+        base = isDark ? const Color(0xFFFCA5A5) : const Color(0xFFB91C1C);
         text = 'Đã hủy';
         break;
     }
+    bg = base.withValues(alpha: isDark ? 0.15 : 0.12);
+    fg = base;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: fg.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: fg.withValues(alpha: isDark ? 0.26 : 0.18)),
       ),
       child: Text(
         text,
-        style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w800),
+        style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w900),
       ),
     );
   }
@@ -892,25 +938,49 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
     Color color,
     VoidCallback onTap,
   ) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap();
-      },
-      child: Container(
-        margin: const EdgeInsets.only(left: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: color,
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isReorder = text == 'Mua lại';
+    final isCancel = text.contains('hủy') || text.contains('Hủy');
+    final fg = isReorder
+        ? (isDark ? const Color(0xFF111827) : Colors.white)
+        : isCancel
+        ? (isDark
+              ? Colors.white.withValues(alpha: 0.62)
+              : const Color(0xFF667085))
+        : color;
+    final bg = isReorder
+        ? (isDark ? Colors.white : const Color(0xFF111827))
+        : Colors.transparent;
+    final borderColor = isReorder
+        ? Colors.transparent
+        : isCancel
+        ? (isDark
+              ? Colors.white.withValues(alpha: 0.12)
+              : const Color(0xFFD0D5DD))
+        : color.withValues(alpha: isDark ? 0.32 : 0.22);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(32),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 11),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: borderColor, width: 1),
+          ),
+          child: Text(
+            text,
+            style: TextStyle(
+              color: fg,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ),
       ),
@@ -924,10 +994,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
   ) {
     showDialog<String>(
       context: context,
-      builder: (dCtx) => _CancelOrderReasonDialog(
-        orderId: orderId,
-        isProcessing: isProcessing,
-      ),
+      builder: (dCtx) =>
+          CancelOrderReasonDialog(orderId: orderId, isProcessing: isProcessing),
     ).then((reason) {
       if (reason != null && context.mounted) {
         context.read<OrdersCubit>().cancelOrder(orderId, reason);
@@ -935,453 +1003,39 @@ class _OrderHistoryPageState extends State<OrderHistoryPage>
     });
   }
 
-  void _showOrderDetailModal(BuildContext context, dynamic order) {
-    final String status = order['status'] ?? 'PENDING';
-    final List<dynamic> trackingList = order['tracking'] ?? [];
-    final String? latestStatusLabel = trackingList.isNotEmpty
-        ? trackingList.first['statusLabel']
-        : null;
-    final List<dynamic> items = order['items'] ?? [];
-    double subtotal = _toDouble(order['subtotal']);
-    if (subtotal == 0.0) {
-      subtotal = items.fold(0.0, (sum, i) {
-        final price = _toDouble(i['priceAtPurchase'] ?? i['price']);
-        final qty = (i['quantity'] as num?)?.toInt() ?? 1;
-        return sum + (price * qty);
-      });
-    }
-    final double shipping = _toDouble(order['shippingFee'] ?? 0.0);
-    final double discount = _toDouble(order['discount']);
-    double totalAmount = _toDouble(order['totalAmount'] ?? order['total']);
-    if (totalAmount == 0.0) {
-      totalAmount = subtotal + shipping - discount;
-    }
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        decoration: const BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
-        ),
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: AppColors.borderCardStrong,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  "Chi tiết đơn hàng",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                Row(
-                  children: [
-                    if (status != 'CANCELLED')
-                      IconButton(
-                        tooltip: 'Xuất hóa đơn điện tử',
-                        icon: const Icon(
-                          Icons.receipt_long_rounded,
-                          color: AppColors.brandIndigo,
-                          size: 22,
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => InvoicePage(order: order),
-                            ),
-                          );
-                        },
-                      ),
-                    const SizedBox(width: 4),
-                    _buildStatusBadge(status),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (status == 'SHIPPING') ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444).withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: const Color(0xFFEF4444).withValues(alpha: 0.2),
-                  ),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(
-                      Icons.warning_amber_rounded,
-                      size: 16,
-                      color: Color(0xFFEF4444),
-                    ),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        "Đơn hàng đang trên đường giao, không thể hủy. Vui lòng liên hệ Hotline/Chat để được hỗ trợ hoặc từ chối nhận hàng khi shipper gọi.",
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFFEF4444),
-                          height: 1.3,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            if ((status == 'PENDING' || status == 'CONFIRMED') &&
-                latestStatusLabel == 'Yêu cầu hủy') ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEA580C).withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: const Color(0xFFEA580C).withValues(alpha: 0.2),
-                  ),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(LucideIcons.clock, size: 16, color: Color(0xFFEA580C)),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        "Bạn đã gửi yêu cầu hủy đơn hàng này. Vui lòng chờ phản hồi từ cửa hàng.",
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFFEA580C),
-                          height: 1.3,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            const ConciergeEntryButton(label: 'Hỗ trợ đơn hàng'),
-            const SizedBox(height: 16),
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // thong tin nhan hang
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppColors.cardSurfaceAlt,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.borderCardStrong),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Thông tin nhận hàng",
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 13,
-                              color: AppColors.textDim,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              const Icon(
-                                LucideIcons.user,
-                                size: 16,
-                                color: AppColors.slate400,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                order['receiverName'] ?? 'Chưa cập nhật',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 14,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              const Icon(
-                                LucideIcons.phone,
-                                size: 16,
-                                color: AppColors.slate400,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                order['receiverPhone'] ?? 'Chưa cập nhật',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.slate400,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(
-                                LucideIcons.mapPin,
-                                size: 16,
-                                color: AppColors.slate400,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  order['shippingAddress'] ?? 'Chưa cập nhật',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.slate400,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    // list items
-                    const Text(
-                      "Sản phẩm",
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 14,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    ...items.map((i) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color: AppColors.cardSurfaceAltAlt,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: AppColors.borderCardStrong,
-                                ),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: i['productVariant']?['imageUrl'] != null
-                                    ? Image.network(
-                                        i['productVariant']['imageUrl'],
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (c, e, s) =>
-                                            const Icon(LucideIcons.package),
-                                      )
-                                    : i['productVariant']?['product']?['thumbnailUrl'] !=
-                                          null
-                                    ? Image.network(
-                                        i['productVariant']['product']['thumbnailUrl'],
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (c, e, s) =>
-                                            const Icon(LucideIcons.package),
-                                      )
-                                    : const Icon(LucideIcons.package),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    i['productVariant']?['product']?['name'] ??
-                                        'Sản phẩm',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 13,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        formatVND(
-                                          _toDouble(
-                                            i['priceAtPurchase'] ?? i['price'],
-                                          ),
-                                        ),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 13,
-                                          color: AppColors.slate400,
-                                        ),
-                                      ),
-                                      Text(
-                                        "x${i['quantity']}",
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 13,
-                                          color: AppColors.textDim,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: 12),
-                    // breakdown
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppColors.cardSurfaceAlt,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.borderCardStrong),
-                      ),
-                      child: Column(
-                        children: [
-                          _priceRow("Tạm tính", formatVND(subtotal)),
-                          const SizedBox(height: 8),
-                          _priceRow("Phí vận chuyển", formatVND(shipping)),
-                          const SizedBox(height: 8),
-                          _priceRow(
-                            "Giảm giá",
-                            "-${formatVND(discount)}",
-                            valueColor: const Color(0xFF22C55E),
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 12),
-                            child: Divider(
-                              height: 1,
-                              color: AppColors.borderCardStrong,
-                            ),
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                "Tổng cộng",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 14,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              Text(
-                                formatVND(totalAmount),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 20,
-                                  color: AppColors.brandIndigo,
-                                  letterSpacing: -0.2,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          const Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              "(Giá đã bao gồm thuế VAT 8%)",
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: AppColors.slate400,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+  void _navigateToOrderDetail(BuildContext context, dynamic order) {
+    final ordersCubit = BlocProvider.of<OrdersCubit>(context);
+    final cartCubit = BlocProvider.of<CartCubit>(context);
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => MultiBlocProvider(
+          providers: [
+            BlocProvider.value(value: ordersCubit),
+            BlocProvider.value(value: cartCubit),
           ],
+          child: OrderDetailPage(order: order),
         ),
       ),
     );
   }
-
-  Widget _priceRow(String label, String value, {Color? valueColor}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.textDim,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 13,
-            color: valueColor ?? AppColors.textPrimary,
-          ),
-        ),
-      ],
-    );
-  }
 }
 
-class _CancelOrderReasonDialog extends StatefulWidget {
+class CancelOrderReasonDialog extends StatefulWidget {
   final String orderId;
   final bool isProcessing;
 
-  const _CancelOrderReasonDialog({
+  const CancelOrderReasonDialog({
+    super.key,
     required this.orderId,
     required this.isProcessing,
   });
 
   @override
-  State<_CancelOrderReasonDialog> createState() =>
-      _CancelOrderReasonDialogState();
+  State<CancelOrderReasonDialog> createState() =>
+      CancelOrderReasonDialogState();
 }
 
-class _CancelOrderReasonDialogState extends State<_CancelOrderReasonDialog> {
+class CancelOrderReasonDialogState extends State<CancelOrderReasonDialog> {
   int _selectedReasonIndex = -1;
   final TextEditingController _customReasonController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -1404,11 +1058,11 @@ class _CancelOrderReasonDialogState extends State<_CancelOrderReasonDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: AppColors.cardSurfaceAlt,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(28),
-        side: const BorderSide(color: AppColors.borderCardStrong),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Form(
         key: _formKey,
@@ -1439,10 +1093,10 @@ class _CancelOrderReasonDialogState extends State<_CancelOrderReasonDialog> {
                         widget.isProcessing
                             ? 'Yêu cầu hủy đơn'
                             : 'Hủy đơn hàng',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                           letterSpacing: -0.5,
                         ),
                       ),
@@ -1450,19 +1104,21 @@ class _CancelOrderReasonDialogState extends State<_CancelOrderReasonDialog> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Vui lòng chọn lý do hủy đơn hàng của fen:',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textDim,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 12),
                 ...List.generate(_predefinedReasons.length, (index) {
                   return Theme(
                     data: Theme.of(context).copyWith(
-                      unselectedWidgetColor: AppColors.borderCardStrong,
+                      unselectedWidgetColor: Theme.of(
+                        context,
+                      ).colorScheme.outlineVariant,
                     ),
                     child: RadioListTile<int>(
                       value: index,
@@ -1470,10 +1126,10 @@ class _CancelOrderReasonDialogState extends State<_CancelOrderReasonDialog> {
                       activeColor: AppColors.brandIndigo,
                       title: Text(
                         _predefinedReasons[index],
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       contentPadding: EdgeInsets.zero,
@@ -1492,25 +1148,29 @@ class _CancelOrderReasonDialogState extends State<_CancelOrderReasonDialog> {
                     controller: _customReasonController,
                     maxLines: 3,
                     maxLength: 150,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                     decoration: InputDecoration(
                       hintText: 'Nhập lý do khác của fen (tối đa 150 ký tự)...',
-                      hintStyle: const TextStyle(color: AppColors.textDim),
+                      hintStyle: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                       filled: true,
-                      fillColor: AppColors.cardSurfaceAltAlt,
+                      fillColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(
-                          color: AppColors.borderCardStrong,
+                        borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.outlineVariant,
                         ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(
-                          color: AppColors.borderCardStrong,
+                        borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.outlineVariant,
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
@@ -1539,10 +1199,10 @@ class _CancelOrderReasonDialogState extends State<_CancelOrderReasonDialog> {
                   children: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text(
+                      child: Text(
                         'Quay lại',
                         style: TextStyle(
-                          color: AppColors.textDim,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -1602,22 +1262,23 @@ class _CancelOrderReasonDialogState extends State<_CancelOrderReasonDialog> {
   }
 }
 
-class _ReorderBottomSheet extends StatefulWidget {
+class ReorderBottomSheet extends StatefulWidget {
   final dynamic order;
   final List<dynamic> items;
   final BuildContext parentContext;
 
-  const _ReorderBottomSheet({
+  const ReorderBottomSheet({
+    super.key,
     required this.order,
     required this.items,
     required this.parentContext,
   });
 
   @override
-  State<_ReorderBottomSheet> createState() => _ReorderBottomSheetState();
+  State<ReorderBottomSheet> createState() => ReorderBottomSheetState();
 }
 
-class _ReorderBottomSheetState extends State<_ReorderBottomSheet> {
+class ReorderBottomSheetState extends State<ReorderBottomSheet> {
   final Map<String, bool> _selectedItemMap = {};
 
   @override
@@ -1648,9 +1309,9 @@ class _ReorderBottomSheetState extends State<_ReorderBottomSheet> {
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
       ),
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
       child: Column(
@@ -1661,7 +1322,7 @@ class _ReorderBottomSheetState extends State<_ReorderBottomSheet> {
               width: 40,
               height: 5,
               decoration: BoxDecoration(
-                color: AppColors.borderCardStrong,
+                color: Theme.of(context).colorScheme.outlineVariant,
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
@@ -1670,46 +1331,51 @@ class _ReorderBottomSheetState extends State<_ReorderBottomSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 "Mua lại sản phẩm",
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close, color: AppColors.textDim),
+                icon: Icon(
+                  Icons.close,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 onPressed: () => Navigator.pop(context),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             "Chọn các sản phẩm fen muốn mua lại và thêm vào giỏ hàng:",
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppColors.textDim,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 16),
           Theme(
-            data: Theme.of(
-              context,
-            ).copyWith(unselectedWidgetColor: AppColors.borderCardStrong),
+            data: Theme.of(context).copyWith(
+              unselectedWidgetColor: Theme.of(
+                context,
+              ).colorScheme.outlineVariant,
+            ),
             child: CheckboxListTile(
               value: _isAllSelected,
               activeColor: AppColors.brandIndigo,
               checkColor: Colors.white,
               controlAffinity: ListTileControlAffinity.leading,
               contentPadding: EdgeInsets.zero,
-              title: const Text(
+              title: Text(
                 "Chọn tất cả",
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               onChanged: (val) {
@@ -1717,7 +1383,10 @@ class _ReorderBottomSheetState extends State<_ReorderBottomSheet> {
               },
             ),
           ),
-          const Divider(color: AppColors.borderCardStrong, height: 1),
+          Divider(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            height: 1,
+          ),
           const SizedBox(height: 8),
           Expanded(
             child: ListView.builder(
@@ -1734,7 +1403,9 @@ class _ReorderBottomSheetState extends State<_ReorderBottomSheet> {
                     children: [
                       Theme(
                         data: Theme.of(context).copyWith(
-                          unselectedWidgetColor: AppColors.borderCardStrong,
+                          unselectedWidgetColor: Theme.of(
+                            context,
+                          ).colorScheme.outlineVariant,
                         ),
                         child: Checkbox(
                           value: isSelected,
@@ -1751,9 +1422,13 @@ class _ReorderBottomSheetState extends State<_ReorderBottomSheet> {
                         width: 50,
                         height: 50,
                         decoration: BoxDecoration(
-                          color: AppColors.cardSurfaceAltAlt,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.borderCardStrong),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                          ),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(10),
@@ -1785,10 +1460,10 @@ class _ReorderBottomSheetState extends State<_ReorderBottomSheet> {
                                   'Sản phẩm',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 13,
-                                color: AppColors.textPrimary,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -1801,18 +1476,22 @@ class _ReorderBottomSheetState extends State<_ReorderBottomSheet> {
                                       i['priceAtPurchase'] ?? i['price'],
                                     ),
                                   ),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 12,
-                                    color: AppColors.slate400,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                                 Text(
                                   "x${i['quantity']}",
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 12,
-                                    color: AppColors.textDim,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                               ],
@@ -1838,7 +1517,9 @@ class _ReorderBottomSheetState extends State<_ReorderBottomSheet> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
-                disabledBackgroundColor: AppColors.borderCardStrong,
+                disabledBackgroundColor: Theme.of(
+                  context,
+                ).colorScheme.outlineVariant,
               ),
               onPressed: _selectedCount > 0
                   ? () {

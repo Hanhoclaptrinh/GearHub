@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:lottie/lottie.dart';
 import 'package:mobile/src/features/checkout/presentation/state/checkout_promotion_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,7 +19,6 @@ import 'package:mobile/src/features/checkout/presentation/widgets/price_breakdow
 import 'package:mobile/src/features/checkout/presentation/widgets/promotion_section.dart';
 import 'vnpay_payment_page.dart';
 import 'package:mobile/src/features/profile/presentation/pages/order_history_page.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/features/address/presentation/pages/addresses_page.dart';
 import 'package:mobile/src/features/address/data/models/address_model.dart';
 import 'package:mobile/src/features/address/domain/repositories/address_repository.dart';
@@ -55,16 +54,22 @@ class _CheckoutPageState extends State<CheckoutPage> {
     _loadDefaultShippingInfo();
   }
 
+  ///tải thông tin vận chuyển mặc định
+  ///ưu tiên lấy từ api, nếu không có thì lấy từ bộ nhớ cục bộ
   Future<void> _loadDefaultShippingInfo() async {
-    // địa chỉ mặc định từ api
+    //lấy địa chỉ từ api
     try {
       final repository = getIt<AddressRepository>();
       final addresses = await repository.getAddresses();
+
+      //nếu có địa chỉ thì tìm địa chỉ mặc định
       if (addresses.isNotEmpty) {
         final defaultAddr = addresses.firstWhere(
           (addr) => addr.isDefault,
           orElse: () => addresses.first,
         );
+
+        //cập nhật giao diện với thông tin api
         setState(() {
           _nameController.text = defaultAddr.fullName;
           _phoneController.text = defaultAddr.phone;
@@ -74,13 +79,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
       }
     } catch (_) {}
 
-    // fallback
+    //lấy thông tin từ local làm fallback
     try {
       final prefs = getIt<SharedPreferences>();
       final savedName = prefs.getString('default_receiver_name');
       final savedPhone = prefs.getString('default_receiver_phone');
       final savedAddress = prefs.getString('default_shipping_address');
 
+      //nếu có thông tin lưu sẵn thì cập nhật
       if (savedName != null && savedName.isNotEmpty) {
         setState(() {
           _nameController.text = savedName;
@@ -91,10 +97,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
     } catch (_) {}
   }
 
+  ///lưu thông tin vận chuyển vào local
+  ///chỉ thực hiện nếu người dùng chọn lưu làm mặc định
   Future<void> _saveDefaultShippingInfo() async {
+    //kiểm tra điều kiện lưu
     if (!_saveAsDefault) return;
+
     try {
       final prefs = getIt<SharedPreferences>();
+
+      //lưu lần lượt tên, số điện thoại và địa chỉ
       await prefs.setString(
         'default_receiver_name',
         _nameController.text.trim(),
@@ -125,9 +137,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
   double get _shipping => 0.0;
   double get _vat =>
       _subtotal -
-      (_subtotal / 1.08); // trích xuất 8% thuế VAT từ tổng phụ đã bao gồm VAT
+      (_subtotal / 1.08); //trích xuất 8% thuế VAT từ tổng phụ đã bao gồm VAT
 
-  // subtotal đã bao gồm VAT sẵn
+  //subtotal đã bao gồm VAT sẵn
   double get _subtotalWithVat => _subtotal;
 
   @override
@@ -137,13 +149,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => getIt<CheckoutCubit>()),
+        //nạp cubit xử lý khuyến mãi và tải dữ liệu khuyến mãi ban đầu
         BlocProvider(
           create: (_) => getIt<CheckoutPromotionCubit>()..loadPromotionData(),
         ),
       ],
       child: BlocConsumer<CheckoutCubit, CheckoutState>(
+        ///lắng nghe trạng thái từ checkoutcubit để xử lý điều hướng và thông báo
+        ///bao gồm xử lý thanh toán vnpay và hoàn tất đơn hàng
         listener: (context, state) async {
+          //xử lý khi đặt hàng thành công
           if (state is OrderPlacedSuccess) {
+            //lưu thông tin mặc định nếu user chọn
             if (_saveAsDefault) {
               await _saveDefaultShippingInfo();
             }
@@ -169,11 +186,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 _showSuccessDialog();
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
+                  SnackBar(
+                    content: const Text(
                       'Thanh toán VNPay không thành công hoặc đã bị hủy.',
                     ),
-                    backgroundColor: AppColors.accentPink,
+                    backgroundColor: Theme.of(context).colorScheme.error,
                   ),
                 );
               }
@@ -190,14 +207,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Lỗi đặt hàng: ${state.message}'),
-                backgroundColor: AppColors.accentPink,
+                backgroundColor: Theme.of(context).colorScheme.error,
               ),
             );
           }
         },
         builder: (context, state) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          final bgColor = isDark ? const Color(0xFF121214) : Colors.white;
+
           return Scaffold(
-            backgroundColor: AppColors.background,
+            backgroundColor: bgColor,
             body: Stack(
               children: [
                 CustomScrollView(
@@ -230,13 +250,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                       address: _addressController.text,
                                       onEdit: () => _navigateToSelectAddress(),
                                     ),
-                                    const SizedBox(height: 24),
+                                    _buildSectionDivider(isDark),
                                     CheckoutItemsSection(
                                       items: widget.args.items,
                                     ),
-                                    const SizedBox(height: 24),
+                                    _buildSectionDivider(isDark),
                                     _buildNoteSection(),
-                                    const SizedBox(height: 24),
+                                    _buildSectionDivider(isDark),
                                     PaymentSelectionSection(
                                       selectedMethod: _selectedPaymentMethod,
                                       onMethodChanged: (method) {
@@ -245,11 +265,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                         );
                                       },
                                     ),
-                                    const SizedBox(height: 24),
+                                    _buildSectionDivider(isDark),
                                     PromotionSection(
                                       subtotal: _subtotalWithVat,
                                     ),
-                                    const SizedBox(height: 24),
+                                    _buildSectionDivider(isDark),
                                     PriceBreakdownSection(
                                       subtotal: _subtotal,
                                       shipping: _shipping,
@@ -275,25 +295,40 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
+  Widget _buildSectionDivider(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Divider(
+        color: isDark ? const Color(0xFF2A2A2F) : const Color(0xFFE4E4E7),
+        height: 1,
+        thickness: 0.5,
+      ),
+    );
+  }
+
   Widget _buildAppBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF121214) : Colors.white;
+    final primaryTextColor = isDark ? Colors.white : const Color(0xFF111111);
+
     return SliverAppBar(
       pinned: true,
       centerTitle: true,
       elevation: 0,
       scrolledUnderElevation: 0,
-      backgroundColor: AppColors.background,
+      backgroundColor: bgColor,
       leading: GestureDetector(
         onTap: () => Navigator.pop(context),
-        child: const Icon(
-          Icons.arrow_back_rounded,
-          color: AppColors.textPrimary,
+        child: Icon(
+          Icons.arrow_back_ios_new_rounded,
+          color: primaryTextColor,
           size: 22,
         ),
       ),
-      title: const Text(
+      title: Text(
         "Thanh toán",
         style: TextStyle(
-          color: AppColors.textPrimary,
+          color: primaryTextColor,
           fontWeight: FontWeight.w800,
           fontSize: 20,
           letterSpacing: -0.5,
@@ -303,38 +338,50 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Widget _buildNoteSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? Colors.white : const Color(0xFF111111);
+    final secondaryTextColor = isDark
+        ? const Color(0xFFA1A1AA)
+        : const Color(0xFF71717A);
+    final dividerColor = isDark
+        ? const Color(0xFF2A2A2F)
+        : const Color(0xFFE4E4E7);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           "Ghi chú",
           style: TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: 16,
-            color: AppColors.textPrimary,
+            color: primaryTextColor,
           ),
         ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.cardSurfaceAlt,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.borderCardStrong, width: 0.5),
-          ),
-          child: TextField(
-            controller: _noteController,
-            maxLines: 1,
-            style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
-            decoration: const InputDecoration(
-              icon: Icon(
-                LucideIcons.fileText,
-                size: 18,
-                color: AppColors.textDim,
-              ),
-              hintText: "Thêm ghi chú cho đơn hàng...",
-              hintStyle: TextStyle(color: AppColors.textDim, fontSize: 13),
-              border: InputBorder.none,
+        const SizedBox(height: 8),
+        TextField(
+          controller: _noteController,
+          maxLines: 1,
+          style: TextStyle(color: primaryTextColor, fontSize: 14),
+          decoration: InputDecoration(
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+            icon: FaIcon(
+              FontAwesomeIcons.solidNoteSticky,
+              size: 18,
+              color: secondaryTextColor,
+            ),
+            hintText: "Thêm ghi chú cho đơn hàng...",
+            hintStyle: TextStyle(color: secondaryTextColor, fontSize: 13),
+            filled: false,
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: dividerColor, width: 1.0),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: primaryTextColor, width: 1.5),
+            ),
+            border: UnderlineInputBorder(
+              borderSide: BorderSide(color: dividerColor),
             ),
           ),
         ),
@@ -348,6 +395,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
     CheckoutState state,
   ) {
     final bool isLoading = state is CheckoutLoading;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final barBgColor = isDark ? const Color(0xFF1A1A1E) : Colors.white;
+    final primaryTextColor = isDark ? Colors.white : const Color(0xFF111111);
+    final secondaryTextColor = isDark
+        ? const Color(0xFFA1A1AA)
+        : const Color(0xFF71717A);
+
+    final buttonBgColor = isDark ? Colors.white : const Color(0xFF111111);
+    final buttonTextColor = isDark ? const Color(0xFF111111) : Colors.white;
 
     return Positioned(
       bottom: 0,
@@ -365,11 +422,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
           return Container(
             padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPadding + 16),
-            decoration: const BoxDecoration(
-              color: AppColors.background,
-              border: Border(
-                top: BorderSide(color: AppColors.borderCardStrong, width: 0.5),
-              ),
+            decoration: BoxDecoration(
+              color: barBgColor,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
+                  blurRadius: 16,
+                  offset: const Offset(0, -4),
+                ),
+              ],
             ),
             child: Row(
               children: [
@@ -377,22 +438,22 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "TỔNG THANH TOÁN",
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textDim,
+                        color: secondaryTextColor,
                         letterSpacing: 1,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       formatVND(total),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
-                        color: AppColors.textPrimary,
+                        color: primaryTextColor,
                       ),
                     ),
                   ],
@@ -406,11 +467,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             if (_nameController.text.trim().isEmpty ||
                                 _addressController.text.trim().isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
+                                SnackBar(
+                                  content: const Text(
                                     'Vui lòng thêm đầy đủ thông tin giao hàng.',
                                   ),
-                                  backgroundColor: AppColors.accentPink,
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.error,
                                 ),
                               );
                               return;
@@ -420,31 +483,26 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     child: Container(
                       height: 56,
                       decoration: BoxDecoration(
-                        color: AppColors.champagne,
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.champagne.withValues(alpha: 0.3),
-                            blurRadius: 5,
-                          ),
-                        ],
+                        color: buttonBgColor,
+                        borderRadius: BorderRadius.circular(28),
                       ),
                       child: Center(
                         child: isLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 22,
                                 height: 22,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2.5,
-                                  color: AppColors.ctaPrimaryText,
+                                  color: buttonTextColor,
                                 ),
                               )
-                            : const Text(
+                            : Text(
                                 "ĐẶT HÀNG",
                                 style: TextStyle(
-                                  color: AppColors.ctaPrimaryText,
+                                  color: buttonTextColor,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 14,
+                                  letterSpacing: 0.5,
                                 ),
                               ),
                       ),
@@ -461,21 +519,31 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   void _showConfirmOrderDialog(BuildContext context, double total) {
     final promoState = context.read<CheckoutPromotionCubit>().state;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? Colors.white : const Color(0xFF111111);
+    final secondaryTextColor = isDark
+        ? const Color(0xFFA1A1AA)
+        : const Color(0xFF71717A);
+    final buttonBgColor = isDark ? Colors.white : const Color(0xFF111111);
+    final buttonTextColor = isDark ? const Color(0xFF111111) : Colors.white;
 
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppColors.cardSurfaceAlt,
+        backgroundColor: isDark ? const Color(0xFF1E1E22) : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: AppColors.borderCardStrong, width: 0.5),
+          side: BorderSide(
+            color: isDark ? const Color(0xFF2A2A2F) : const Color(0xFFE4E4E7),
+            width: 0.5,
+          ),
         ),
-        title: const Text(
+        title: Text(
           "Xác nhận đặt hàng",
           style: TextStyle(
             fontWeight: FontWeight.w900,
             fontSize: 20,
-            color: AppColors.textPrimary,
+            color: primaryTextColor,
             letterSpacing: -0.5,
           ),
         ),
@@ -485,8 +553,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
           children: [
             Text(
               "Bạn có chắc chắn muốn đặt đơn hàng này với tổng số tiền là ${formatVND(total)}?",
-              style: const TextStyle(
-                color: AppColors.slate400,
+              style: TextStyle(
+                color: secondaryTextColor,
                 fontSize: 14,
                 height: 1.5,
               ),
@@ -498,14 +566,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   const Icon(
                     Icons.local_offer_rounded,
                     size: 14,
-                    color: AppColors.emerald400,
+                    color: Color(0xFF10B981),
                   ),
                   const SizedBox(width: 6),
                   Text(
                     "Voucher: ${promoState.selectedVoucher!.code}",
                     style: const TextStyle(
                       fontSize: 13,
-                      color: AppColors.emerald400,
+                      color: Color(0xFF10B981),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -518,10 +586,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text(
+            child: Text(
               "Hủy",
               style: TextStyle(
-                color: AppColors.slate400,
+                color: secondaryTextColor,
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
               ),
@@ -544,15 +612,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
-                color: AppColors.champagne,
+                color: buttonBgColor,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Text(
+              child: Text(
                 "Xác nhận",
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 14,
-                  color: AppColors.ctaPrimaryText,
+                  color: buttonTextColor,
                 ),
               ),
             ),
@@ -577,14 +645,25 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   void _showSuccessDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? Colors.white : const Color(0xFF111111);
+    final secondaryTextColor = isDark
+        ? const Color(0xFFA1A1AA)
+        : const Color(0xFF71717A);
+    final buttonBgColor = isDark ? Colors.white : const Color(0xFF111111);
+    final buttonTextColor = isDark ? const Color(0xFF111111) : Colors.white;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.cardSurfaceAlt,
+        backgroundColor: isDark ? const Color(0xFF1E1E22) : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(28),
-          side: const BorderSide(color: AppColors.borderCardStrong, width: 0.5),
+          side: BorderSide(
+            color: isDark ? const Color(0xFF2A2A2F) : const Color(0xFFE4E4E7),
+            width: 0.5,
+          ),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -599,19 +678,19 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               "Đặt hàng thành công!",
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
-                color: AppColors.textPrimary,
+                color: primaryTextColor,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               "Đơn hàng của bạn đang được xử lý.",
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.slate400, fontSize: 14),
+              style: TextStyle(color: secondaryTextColor, fontSize: 14),
             ),
             const SizedBox(height: 28),
             GestureDetector(
@@ -629,21 +708,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 width: double.infinity,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: AppColors.champagne,
+                  color: buttonBgColor,
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.champagne.withValues(alpha: 0.3),
-                      blurRadius: 14,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
                 ),
-                child: const Center(
+                child: Center(
                   child: Text(
                     "XEM ĐƠN HÀNG",
                     style: TextStyle(
-                      color: AppColors.ctaPrimaryText,
+                      color: buttonTextColor,
                       fontWeight: FontWeight.w900,
                       fontSize: 14,
                       letterSpacing: 1,

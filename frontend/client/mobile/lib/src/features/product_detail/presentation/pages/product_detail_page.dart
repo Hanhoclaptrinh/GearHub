@@ -1,15 +1,18 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/di/injection.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
 import 'package:mobile/src/core/utils/brand_identity_helper.dart';
 import 'package:mobile/src/features/chat/presentation/widgets/concierge_entry_button.dart';
 import 'package:mobile/src/features/product_compare/presentation/pages/product_compare_page.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 import 'package:mobile/src/shared/models/product_variant_model.dart';
+import 'package:mobile/src/shared/widgets/error_illustration_widget.dart';
 import '../widgets/product_hero_section.dart';
 import '../widgets/product_info_section.dart';
 import '../widgets/sticky_bottom_bar.dart';
@@ -73,6 +76,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
     super.initState();
     _scrollController = ScrollController()..addListener(_onScroll);
     _initializeAttributes(widget.initialProduct);
+    _saveRecentlyViewed(widget.initialProduct);
   }
 
   @override
@@ -84,11 +88,11 @@ class _ProductDetailViewState extends State<ProductDetailView> {
   void _onScroll() {
     final offset = _scrollController.offset;
 
-    // hieu ung show hide cho header
+    //hiệu ứng show/hide cho header
     if (offset > 100 && !_showHeader) setState(() => _showHeader = true);
     if (offset <= 100 && _showHeader) setState(() => _showHeader = false);
 
-    // show hide bottom bar
+    //show hide bottom bar
     if (offset > _lastScrollOffset && offset > 200) {
       if (_isBottomBarVisible) setState(() => _isBottomBarVisible = false);
     } else if (offset < _lastScrollOffset) {
@@ -137,6 +141,25 @@ class _ProductDetailViewState extends State<ProductDetailView> {
     }
   }
 
+  void _saveRecentlyViewed(ProductModel product) async {
+    try {
+      final prefs = getIt<SharedPreferences>();
+      final List<String> list = prefs.getStringList('recently_viewed') ?? [];
+      final attributesJson = jsonEncode(_selectedAttributes);
+      final entry =
+          '${product.id}|${product.name}|${product.price}|${product.image}|$attributesJson';
+
+      list.removeWhere((item) => item.startsWith('${product.id}|'));
+      list.insert(0, entry);
+      if (list.length > 10) {
+        list.removeRange(10, list.length);
+      }
+      await prefs.setStringList('recently_viewed', list);
+    } catch (e) {
+      debugPrint('Error saving recently viewed: $e');
+    }
+  }
+
   ProductVariantModel? _getCurrentVariant(ProductModel product) {
     for (final v in product.variants) {
       if (v.isActive &&
@@ -149,7 +172,21 @@ class _ProductDetailViewState extends State<ProductDetailView> {
     return product.variants.isNotEmpty ? product.variants.first : null;
   }
 
+  void _navigateToCompare(ProductModel product) {
+    final currentVariant = _getCurrentVariant(product);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProductComparePage(
+          initialProduct: product,
+          initialVariant: currentVariant,
+        ),
+      ),
+    );
+  }
+
   Widget _buildDynamicAura(String brandName) {
+    final theme = Theme.of(context);
     final identity = BrandIdentityHelper.getIdentity(brandName);
     final accent = identity.accent;
 
@@ -164,7 +201,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
 
           return Stack(
             children: [
-              Container(color: const Color(0xFF07070A)),
+              Container(color: theme.scaffoldBackgroundColor),
               Positioned(
                 top: auraTop - 50,
                 right: -150,
@@ -231,17 +268,48 @@ class _ProductDetailViewState extends State<ProductDetailView> {
   Widget build(BuildContext context) {
     return BlocBuilder<ProductDetailCubit, ProductDetailState>(
       builder: (context, state) {
+        if (state is ProductDetailError) {
+          final theme = Theme.of(context);
+          return Scaffold(
+            appBar: AppBar(
+              backgroundColor: theme.scaffoldBackgroundColor,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: theme.colorScheme.onSurface,
+                ),
+                onPressed: () => Navigator.pop(context),
+              ),
+              title: Text(
+                'Lỗi tải sản phẩm',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
+                ),
+              ),
+              centerTitle: true,
+            ),
+            body: ErrorIllustrationWidget(
+              message: state.message,
+              onRetry: () => context.read<ProductDetailCubit>().loadProduct(
+                widget.initialProduct.id,
+              ),
+            ),
+          );
+        }
+
         final product = state is ProductDetailLoaded
             ? state.product
             : widget.initialProduct;
         final variant = _getCurrentVariant(product);
 
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           extendBodyBehindAppBar: true,
           body: Stack(
             children: [
-              // dynamic bg
               _buildDynamicAura(product.brandName ?? ""),
 
               CustomScrollView(
@@ -264,13 +332,16 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                               setState(() => _selectedAttributes[k] = v),
                           on3DToggle: () =>
                               setState(() => _is3DMode = !_is3DMode),
-                          onARPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  ProductARViewPage(product: product),
-                            ),
-                          ),
+                          onARPressed: () {
+                            setState(() => _is3DMode = false);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    ProductARViewPage(product: product),
+                              ),
+                            );
+                          },
                         );
                       },
                     ),
@@ -284,7 +355,6 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                       onAttributeChanged: (k, v) {
                         setState(() {
                           _selectedAttributes[k] = v;
-                          // reset qty neu vuot qua stock
                           final newVariant = _getCurrentVariant(product);
                           if (_quantity > (newVariant?.stock ?? 0)) {
                             _quantity = (newVariant?.stock ?? 0).clamp(1, 99);
@@ -310,76 +380,6 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                       onLongPressDecrement: () =>
                           _startUpdateQuantity(false, variant?.stock ?? 0),
                       onLongPressEnd: _stopUpdateQuantity,
-                      onComparePressed: () {
-                        final currentVariant = _getCurrentVariant(product);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ProductComparePage(
-                              initialProduct: product,
-                              initialVariant: currentVariant,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: ProductTrustBadgesSection(
-                      accentColor: BrandIdentityHelper.getIdentity(
-                        product.brandName ?? '',
-                      ).accent,
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.035),
-                          borderRadius: BorderRadius.circular(22),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.07),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Cần tư vấn setup?',
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.92,
-                                      ),
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: -0.2,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    'Trao đổi với GearHub để chọn cấu hình phù hợp.',
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.42,
-                                      ),
-                                      fontSize: 12,
-                                      height: 1.45,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            const ConciergeEntryButton(label: 'Trao đổi'),
-                          ],
-                        ),
-                      ),
                     ),
                   ),
                   SliverToBoxAdapter(
@@ -392,11 +392,18 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                           : [],
                     ),
                   ),
+                  SliverToBoxAdapter(
+                    child: ProductTrustBadgesSection(
+                      accentColor: BrandIdentityHelper.getIdentity(
+                        product.brandName ?? '',
+                      ).accent,
+                    ),
+                  ),
                   const SliverPadding(padding: EdgeInsets.only(bottom: 140)),
                 ],
               ),
 
-              _buildHeader(),
+              _buildHeader(product),
 
               Positioned(
                 bottom: 32,
@@ -416,7 +423,9 @@ class _ProductDetailViewState extends State<ProductDetailView> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(ProductModel product) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 400),
       opacity: _showHeader ? 1.0 : 0.0,
@@ -426,27 +435,44 @@ class _ProductDetailViewState extends State<ProductDetailView> {
           child: Container(
             height: 100,
             padding: const EdgeInsets.only(top: 40, left: 8, right: 8),
-            color: AppColors.background.withValues(alpha: 0.8),
+            color: theme.scaffoldBackgroundColor.withValues(alpha: 0.8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  icon: const Icon(
-                    Icons.arrow_back_rounded,
-                    color: Colors.white,
+                  icon: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: cs.onSurface,
                     size: 24,
                   ),
                   onPressed: () => Navigator.pop(context),
                 ),
-                const Text(
+                Text(
                   "Trải nghiệm sản phẩm",
                   style: TextStyle(
-                    color: Colors.white,
+                    color: cs.onSurface,
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                   ),
                 ),
-                const ConciergeEntryButton(compact: true),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        LucideIcons.gitCompare,
+                        color: cs.onSurface,
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        _navigateToCompare(product);
+                      },
+                    ),
+                    const SizedBox(width: 4),
+                    const ConciergeEntryButton(compact: true),
+                  ],
+                ),
               ],
             ),
           ),

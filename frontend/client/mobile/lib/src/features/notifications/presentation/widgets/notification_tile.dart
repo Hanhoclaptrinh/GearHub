@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/src/core/theme/app_colors.dart';
+import 'package:mobile/src/core/theme/app_theme.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
 import '../../data/models/notification_model.dart';
 
@@ -20,6 +21,7 @@ class NotificationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    final cs = theme.colorScheme;
     return Dismissible(
       key: Key(notification.id),
       direction: DismissDirection.endToStart,
@@ -27,8 +29,8 @@ class NotificationTile extends StatelessWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 24),
-        color: AppColors.error.withValues(alpha: 0.15),
-        child: const Icon(LucideIcons.trash2, color: AppColors.error, size: 20),
+        color: cs.error.withValues(alpha: 0.15),
+        child: Icon(LucideIcons.trash2, color: cs.error, size: 20),
       ),
       child: InkWell(
         onTap: onTap,
@@ -37,15 +39,15 @@ class NotificationTile extends StatelessWidget {
           decoration: BoxDecoration(
             color: notification.isRead
                 ? Colors.transparent
-                : AppColors.surfaceElevated.withValues(alpha: 0.25),
-            border: const Border(
-              bottom: BorderSide(color: AppColors.borderSubtle, width: 0.5),
+                : cs.surfaceContainerHighest,
+            border: Border(
+              bottom: BorderSide(color: cs.outlineVariant, width: 0.5),
             ),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildCategoryIcon(),
+              _buildCategoryIcon(context),
               const SizedBox(width: 14),
 
               Expanded(
@@ -66,8 +68,8 @@ class NotificationTile extends StatelessWidget {
                                   ? FontWeight.w500
                                   : FontWeight.w700,
                               color: notification.isRead
-                                  ? AppColors.textPrimary.withValues(alpha: 0.8)
-                                  : AppColors.textPrimary,
+                                  ? cs.onSurface.withValues(alpha: 0.8)
+                                  : cs.onSurface,
                             ),
                           ),
                         ),
@@ -75,7 +77,7 @@ class NotificationTile extends StatelessWidget {
                         Text(
                           _getRelativeTime(notification.createdAt),
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: AppColors.textMuted,
+                            color: cs.onSurfaceVariant,
                             fontSize: 11,
                           ),
                         ),
@@ -88,8 +90,8 @@ class NotificationTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: notification.isRead
-                            ? AppColors.textMuted
-                            : AppColors.textSecondary,
+                            ? cs.onSurfaceVariant.withValues(alpha: 0.6)
+                            : cs.onSurfaceVariant,
                         height: 1.4,
                       ),
                     ),
@@ -116,7 +118,10 @@ class NotificationTile extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryIcon() {
+  Widget _buildCategoryIcon(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     IconData iconData;
     Color iconColor;
     Color bgColor;
@@ -124,19 +129,19 @@ class NotificationTile extends StatelessWidget {
     switch (notification.type.toUpperCase()) {
       case 'ORDER':
         iconData = LucideIcons.package;
-        iconColor = AppColors.accentGold;
-        bgColor = AppColors.accentGoldSoft;
+        iconColor = cs.secondary;
+        bgColor = cs.secondary.withValues(alpha: 0.1);
         break;
       case 'PAYMENT':
         iconData = LucideIcons.creditCard;
-        iconColor = AppColors.success;
-        bgColor = AppColors.success.withValues(alpha: 0.1);
+        iconColor = cs.success;
+        bgColor = cs.success.withValues(alpha: 0.1);
         break;
       case 'VOUCHER':
       case 'PROMOTION':
         iconData = LucideIcons.ticket;
         iconColor = AppColors.accentPink;
-        bgColor = AppColors.accentPink.withValues(alpha: 0.1);
+        bgColor = AppColors.accentPink.withValues(alpha: isDark ? 0.1 : 0.15);
         break;
       case 'CHAT':
         iconData = LucideIcons.messageSquare;
@@ -146,8 +151,8 @@ class NotificationTile extends StatelessWidget {
       case 'SYSTEM':
       default:
         iconData = LucideIcons.shieldAlert;
-        iconColor = AppColors.brandBlue;
-        bgColor = AppColors.brandBlue.withValues(alpha: 0.1);
+        iconColor = cs.info;
+        bgColor = cs.info.withValues(alpha: 0.1);
         break;
     }
 

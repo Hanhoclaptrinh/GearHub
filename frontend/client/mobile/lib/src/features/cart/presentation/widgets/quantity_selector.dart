@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
+
 
 class QuantitySelector extends StatefulWidget {
   final int quantity;
@@ -71,6 +71,7 @@ class _QuantitySelectorState extends State<QuantitySelector>
       mainAxisSize: MainAxisSize.min,
       children: [
         _buildButton(
+          context: context,
           icon: LucideIcons.minus,
           onPressed: widget.onDecrement,
           enabled: widget.quantity > 1,
@@ -80,14 +81,15 @@ class _QuantitySelectorState extends State<QuantitySelector>
           child: Text(
             '${widget.quantity}',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w900,
               fontSize: 13,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ),
         _buildButton(
+          context: context,
           icon: LucideIcons.plus,
           onPressed: widget.onIncrement,
           enabled:
@@ -99,6 +101,7 @@ class _QuantitySelectorState extends State<QuantitySelector>
   }
 
   Widget _buildButton({
+    required BuildContext context,
     required IconData icon,
     required VoidCallback onPressed,
     required bool enabled,
@@ -132,13 +135,19 @@ class _QuantitySelectorState extends State<QuantitySelector>
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: enabled
-                ? Colors.white.withValues(alpha: 0.05)
+                ? Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.05)
                 : Colors.transparent,
           ),
           child: Icon(
             icon,
             size: 12,
-            color: enabled ? AppColors.champagne : AppColors.slate600,
+            color: enabled
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
           ),
         ),
       ),
