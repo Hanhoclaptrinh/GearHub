@@ -9,16 +9,14 @@ import { Role } from '@prisma/client';
 
 @Controller()
 export class FlashSaleController {
-    constructor(private readonly flashSaleService: FlashSaleService) {}
+    constructor(private readonly flashSaleService: FlashSaleService) { }
 
-    // API public cho mobile/web client lấy danh sách flash sale
     @Get('flash-sale/active')
     async getActiveFlashSales(@Query('status') status?: 'active' | 'upcoming' | 'all') {
         const safeStatus = (status === 'active' || status === 'upcoming') ? status : 'all';
         return this.flashSaleService.getClientFlashSales(safeStatus);
     }
 
-    // Admin: Thêm sản phẩm vào Flash Sale
     @Post('admin/flash-sale')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN, Role.STAFF)
@@ -26,7 +24,6 @@ export class FlashSaleController {
         return this.flashSaleService.createFlashSaleProduct(dto);
     }
 
-    // Admin: Cập nhật thời gian hàng loạt
     @Patch('admin/flash-sale/bulk-time')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN, Role.STAFF)
@@ -34,7 +31,6 @@ export class FlashSaleController {
         return this.flashSaleService.updateFlashSaleTimeBulk(dto);
     }
 
-    // Admin: Lấy danh sách phân trang tất cả Flash Sale
     @Get('admin/flash-sale')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN, Role.STAFF)
@@ -48,7 +44,6 @@ export class FlashSaleController {
         return this.flashSaleService.findAllAdmin(safePage, safeLimit, search);
     }
 
-    // Admin: Xoá sản phẩm khỏi Flash Sale
     @Delete('admin/flash-sale/:id')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN, Role.STAFF)
