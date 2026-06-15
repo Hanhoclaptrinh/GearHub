@@ -13,7 +13,8 @@ class CartModel extends CartEntity {
     return CartModel(
       id: json['id'] ?? '',
       userId: json['userId'] ?? '',
-      items: (json['items'] as List?)
+      items:
+          (json['items'] as List?)
               ?.map((item) => CartItemModel.fromJson(item))
               .toList() ??
           [],

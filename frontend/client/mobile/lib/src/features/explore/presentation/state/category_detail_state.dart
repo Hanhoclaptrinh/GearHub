@@ -38,8 +38,8 @@ class CategoryDetailLoaded extends CategoryDetailState {
     List<ProductModel>? products,
     CategoryEntity? category,
     CategoryEntity? Function()? selectedSubCategory,
-    double? minPrice,
-    double? maxPrice,
+    double? Function()? minPrice,
+    double? Function()? maxPrice,
     String? sortBy,
     bool? isLoadingMore,
     bool? hasReachedMax,
@@ -47,9 +47,11 @@ class CategoryDetailLoaded extends CategoryDetailState {
     return CategoryDetailLoaded(
       products: products ?? this.products,
       category: category ?? this.category,
-      selectedSubCategory: selectedSubCategory != null ? selectedSubCategory() : this.selectedSubCategory,
-      minPrice: minPrice ?? this.minPrice,
-      maxPrice: maxPrice ?? this.maxPrice,
+      selectedSubCategory: selectedSubCategory != null
+          ? selectedSubCategory()
+          : this.selectedSubCategory,
+      minPrice: minPrice != null ? minPrice() : this.minPrice,
+      maxPrice: maxPrice != null ? maxPrice() : this.maxPrice,
       sortBy: sortBy ?? this.sortBy,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasReachedMax: hasReachedMax ?? this.hasReachedMax,
@@ -58,15 +60,15 @@ class CategoryDetailLoaded extends CategoryDetailState {
 
   @override
   List<Object?> get props => [
-        products,
-        category,
-        selectedSubCategory,
-        minPrice,
-        maxPrice,
-        sortBy,
-        isLoadingMore,
-        hasReachedMax,
-      ];
+    products,
+    category,
+    selectedSubCategory,
+    minPrice,
+    maxPrice,
+    sortBy,
+    isLoadingMore,
+    hasReachedMax,
+  ];
 }
 
 class CategoryDetailError extends CategoryDetailState {

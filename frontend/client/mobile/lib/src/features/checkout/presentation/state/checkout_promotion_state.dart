@@ -57,10 +57,5 @@ class CheckoutPromotionState extends Equatable {
   }
 
   @override
-  List<Object?> get props => [
-    myVouchers,
-    selectedVoucher,
-    isLoading,
-    error,
-  ];
+  List<Object?> get props => [myVouchers, selectedVoucher, isLoading, error];
 }

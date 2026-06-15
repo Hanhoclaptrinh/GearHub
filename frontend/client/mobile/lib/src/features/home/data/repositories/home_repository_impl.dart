@@ -47,6 +47,15 @@ class HomeRepositoryImpl implements HomeRepository {
   }
 
   @override
+  Future<List<BrandEntity>> getBrands() async {
+    try {
+      return await remoteDatasource.getBrands();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
   Future<List<ProductModel>> getNewArrivalsProducts({int limit = 8}) async {
     try {
       return await remoteDatasource.getNewArrivalsProducts(limit: limit);
@@ -65,9 +74,9 @@ class HomeRepositoryImpl implements HomeRepository {
   }
 
   @override
-  Future<List<ProductModel>> getVaultProducts() async {
+  Future<List<ProductModel>> getRecommendedProducts({int limit = 8}) async {
     try {
-      return await remoteDatasource.getVaultProducts();
+      return await remoteDatasource.getRecommendedProducts(limit: limit);
     } catch (e) {
       rethrow;
     }

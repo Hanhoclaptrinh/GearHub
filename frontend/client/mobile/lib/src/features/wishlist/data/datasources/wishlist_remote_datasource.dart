@@ -25,14 +25,14 @@ class WishlistRemoteDatasource {
     }
   }
 
-  Future<Map<String, dynamic>> getWishlist({int page = 1, int limit = 20}) async {
+  Future<Map<String, dynamic>> getWishlist({
+    int page = 1,
+    int limit = 20,
+  }) async {
     try {
       final response = await dio.get(
         '/wishlist',
-        queryParameters: {
-          'page': page,
-          'limit': limit,
-        },
+        queryParameters: {'page': page, 'limit': limit},
       );
       return response.data;
     } catch (e) {

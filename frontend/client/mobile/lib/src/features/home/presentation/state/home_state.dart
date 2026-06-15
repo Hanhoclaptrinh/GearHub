@@ -22,7 +22,7 @@ class HomeLoaded extends HomeState {
   final List<BrandEntity> topBrands;
   final List<ProductModel> newArrivals;
   final List<ProductModel> topRatedProducts;
-  final List<ProductModel> vaultProducts;
+  final List<ProductModel> recommendedProducts;
 
   const HomeLoaded({
     required this.featuredProducts,
@@ -31,7 +31,7 @@ class HomeLoaded extends HomeState {
     required this.topBrands,
     required this.newArrivals,
     required this.topRatedProducts,
-    required this.vaultProducts,
+    this.recommendedProducts = const [],
   });
 
   HomeLoaded copyWith({
@@ -41,7 +41,7 @@ class HomeLoaded extends HomeState {
     List<BrandEntity>? topBrands,
     List<ProductModel>? newArrivals,
     List<ProductModel>? topRatedProducts,
-    List<ProductModel>? vaultProducts,
+    List<ProductModel>? recommendedProducts,
   }) {
     return HomeLoaded(
       featuredProducts: featuredProducts ?? this.featuredProducts,
@@ -50,20 +50,20 @@ class HomeLoaded extends HomeState {
       topBrands: topBrands ?? this.topBrands,
       newArrivals: newArrivals ?? this.newArrivals,
       topRatedProducts: topRatedProducts ?? this.topRatedProducts,
-      vaultProducts: vaultProducts ?? this.vaultProducts,
+      recommendedProducts: recommendedProducts ?? this.recommendedProducts,
     );
   }
 
   @override
   List<Object?> get props => [
-        featuredProducts,
-        topCategories,
-        parentCategories,
-        topBrands,
-        newArrivals,
-        topRatedProducts,
-        vaultProducts,
-      ];
+    featuredProducts,
+    topCategories,
+    parentCategories,
+    topBrands,
+    newArrivals,
+    topRatedProducts,
+    recommendedProducts,
+  ];
 }
 
 class HomeError extends HomeState {

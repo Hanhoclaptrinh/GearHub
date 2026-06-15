@@ -16,7 +16,7 @@ class AuthLoading extends AuthState {
   const AuthLoading();
 }
 
-// gui otp dang ky tai khoan
+///gửi otp register
 class AuthRegisterOtpSent extends AuthState {
   final String message;
   final String email;
@@ -27,7 +27,7 @@ class AuthRegisterOtpSent extends AuthState {
   List<Object?> get props => [message, email];
 }
 
-// gui otp quen pass
+///gửi otp quên pass
 class AuthForgotPasswordOtpSent extends AuthState {
   final String message;
   final String email;
@@ -38,7 +38,7 @@ class AuthForgotPasswordOtpSent extends AuthState {
   List<Object?> get props => [message, email];
 }
 
-// xac nhan otp quen pass
+///xác nhận otp quên pass
 class AuthForgotPasswordOtpVerified extends AuthState {
   final String email;
   final String otp;
@@ -49,7 +49,7 @@ class AuthForgotPasswordOtpVerified extends AuthState {
   List<Object?> get props => [email, otp];
 }
 
-// cap nhat pass thanh cong
+///cập nhật pass thành công
 class AuthPasswordResetSuccess extends AuthState {
   final String message;
 
@@ -59,7 +59,7 @@ class AuthPasswordResetSuccess extends AuthState {
   List<Object?> get props => [message];
 }
 
-// login thanh cong
+///login thành công
 class AuthAuthenticated extends AuthState {
   final UserEntity user;
 
@@ -69,12 +69,26 @@ class AuthAuthenticated extends AuthState {
   List<Object?> get props => [user];
 }
 
-// unauthenticated - 401
+class AuthProfileUpdateSuccess extends AuthAuthenticated {
+  final bool emailChangeOtpSent;
+  final String? pendingEmail;
+
+  const AuthProfileUpdateSuccess({
+    required super.user,
+    required this.emailChangeOtpSent,
+    this.pendingEmail,
+  });
+
+  @override
+  List<Object?> get props => [user, emailChangeOtpSent, pendingEmail];
+}
+
+///unauthenticated - 401
 class AuthUnauthenticated extends AuthState {
   const AuthUnauthenticated();
 }
 
-// error
+///error
 class AuthError extends AuthState {
   final String message;
 

@@ -9,9 +9,14 @@ class BrandModel extends BrandEntity {
     super.bannerUrl,
     super.quote,
     super.philosophy,
+    super.productCount,
+    super.isActive,
   });
 
   factory BrandModel.fromJson(Map<String, dynamic> json) {
+    final countMap = json['_count'] as Map<String, dynamic>?;
+    final parsedCount = countMap?['products'] as int? ?? json['productCount'] as int?;
+
     return BrandModel(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? 'Unknown',
@@ -20,6 +25,8 @@ class BrandModel extends BrandEntity {
       bannerUrl: json['bannerUrl'] as String? ?? json['banner_url'] as String?,
       quote: json['quote'] as String?,
       philosophy: json['philosophy'] as String?,
+      productCount: parsedCount,
+      isActive: json['isActive'] as bool?,
     );
   }
 }

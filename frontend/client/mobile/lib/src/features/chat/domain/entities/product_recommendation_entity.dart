@@ -25,10 +25,7 @@ class ProductRecommendationEntity extends Equatable {
   final RecommendedProductEntity product;
   final String? reason;
 
-  const ProductRecommendationEntity({
-    required this.product,
-    this.reason,
-  });
+  const ProductRecommendationEntity({required this.product, this.reason});
 
   @override
   List<Object?> get props => [product, reason];

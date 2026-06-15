@@ -6,6 +6,8 @@ class BrandEntity {
   final String? bannerUrl;
   final String? quote;
   final String? philosophy;
+  final int? productCount;
+  final bool? isActive;
 
   const BrandEntity({
     required this.id,
@@ -15,5 +17,7 @@ class BrandEntity {
     this.bannerUrl,
     this.quote,
     this.philosophy,
+    this.productCount,
+    this.isActive,
   });
 }

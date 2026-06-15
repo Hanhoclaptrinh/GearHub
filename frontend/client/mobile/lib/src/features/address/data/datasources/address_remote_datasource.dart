@@ -9,7 +9,9 @@ class AddressRemoteDataSource {
   Future<List<AddressModel>> getAddresses() async {
     final response = await dio.get('/address');
     final list = response.data as List;
-    return list.map((e) => AddressModel.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .map((e) => AddressModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<AddressModel> createAddress({

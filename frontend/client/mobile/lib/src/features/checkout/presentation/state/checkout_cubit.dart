@@ -57,7 +57,9 @@ class CheckoutCubit extends Cubit<CheckoutState> {
         ),
       );
     } catch (e) {
-      emit(CheckoutError(message: ErrorFormatter.format(e, 'Không thể đặt hàng.')));
+      emit(
+        CheckoutError(message: ErrorFormatter.format(e, 'Không thể đặt hàng.')),
+      );
     }
   }
 }

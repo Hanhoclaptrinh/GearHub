@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:mobile/src/features/home/domain/entities/brand_entity.dart';
 import 'package:mobile/src/features/home/domain/entities/category_entity.dart';
 import 'package:mobile/src/features/home/domain/entities/hero_product_entity.dart';
@@ -6,13 +7,12 @@ import '../../../../shared/models/product_model.dart';
 import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/core/storage/secure_storage_service.dart';
 import 'package:mobile/src/core/utils/device_utils.dart';
-import 'package:mobile/src/core/utils/error_formatter.dart';
 import 'home_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class HomeCubit extends Cubit<HomeState> {
   final HomeRepository _repository;
-  // dung Set de luu cac productId da xem trong phien lam viec nay
+  //dùng set để lưu các id sp đã xem trong phiên
   final Set<String> _viewedProducts = {};
 
   HomeCubit({required HomeRepository repository})
@@ -28,7 +28,7 @@ class HomeCubit extends Cubit<HomeState> {
         _repository.getNewArrivalsProducts(limit: 8),
         _repository.getTopBrands(),
         _repository.getTopRatedProducts(limit: 5),
-        _repository.getVaultProducts(),
+        _loadRecommendedProducts(),
         _repository.getParentCategories(),
       ]);
 
@@ -39,25 +39,46 @@ class HomeCubit extends Cubit<HomeState> {
           newArrivals: results[2] as List<ProductModel>,
           topBrands: results[3] as List<BrandEntity>,
           topRatedProducts: results[4] as List<ProductModel>,
-          vaultProducts: results[5] as List<ProductModel>,
+          recommendedProducts: results[5] as List<ProductModel>,
           parentCategories: results[6] as List<CategoryEntity>,
         ),
       );
     } catch (e) {
-      emit(HomeError(message: ErrorFormatter.format(e, 'Không thể tải dữ liệu trang chủ.')));
+      String errMsg = 'Không thể tải dữ liệu trang chủ.';
+      if (e is DioException) {
+        if (e.response?.data != null && e.response!.data is Map) {
+          final data = e.response!.data;
+          if (data['message'] != null) {
+            errMsg = data['message'].toString();
+          }
+        } else {
+          errMsg = e.toString();
+        }
+      } else {
+        errMsg = e.toString();
+      }
+      emit(HomeError(message: errMsg));
+    }
+  }
+
+  Future<List<ProductModel>> _loadRecommendedProducts() async {
+    try {
+      return await _repository.getRecommendedProducts(limit: 8);
+    } catch (_) {
+      return const [];
     }
   }
 
   Future<void> incrementView(String productId) async {
-    // neu san pham nay da duoc tang view trong phien nay thi bo qua
+    //nếu sp đã được tăng view trong phiên thì skip
     if (_viewedProducts.contains(productId)) return;
 
     final currentState = state;
     if (currentState is HomeLoaded) {
-      // danh dau da xem de khong tang tiep tren UI va BE (tranh buff view ao)
+      //mark đã xem tránh buff view
       _viewedProducts.add(productId);
 
-      // update local state ngay lap tuc
+      //cập nhật trạng thái local
       final updatedNewArrivals = currentState.newArrivals.map((product) {
         if (product.id == productId) {
           return product.copyWith(viewsCount: product.viewsCount + 1);
@@ -65,7 +86,21 @@ class HomeCubit extends Cubit<HomeState> {
         return product;
       }).toList();
 
-      emit(currentState.copyWith(newArrivals: updatedNewArrivals));
+      final updatedRecommendedProducts = currentState.recommendedProducts.map((
+        product,
+      ) {
+        if (product.id == productId) {
+          return product.copyWith(viewsCount: product.viewsCount + 1);
+        }
+        return product;
+      }).toList();
+
+      emit(
+        currentState.copyWith(
+          newArrivals: updatedNewArrivals,
+          recommendedProducts: updatedRecommendedProducts,
+        ),
+      );
 
       try {
         final deviceId = await DeviceUtils.getDeviceId(
@@ -73,7 +108,6 @@ class HomeCubit extends Cubit<HomeState> {
         );
         await _repository.incrementProductView(productId, deviceId);
       } catch (e) {
-        // cho phep thu lai neu co loi
         _viewedProducts.remove(productId);
       }
     }

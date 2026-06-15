@@ -13,7 +13,6 @@ class ProductModel {
   final double averageRating;
   final int reviewCount;
   final String description;
-  final Map<String, dynamic>? vaultSpecs;
   final Map<String, dynamic>? commonSpecs;
   final String? brandName;
   final String? categoryId;
@@ -34,7 +33,6 @@ class ProductModel {
     this.soldCount = 0,
     this.averageRating = 0.0,
     this.reviewCount = 0,
-    this.vaultSpecs,
     this.commonSpecs,
     this.brandName,
     this.categoryId,
@@ -42,13 +40,14 @@ class ProductModel {
     this.variants = const [],
     this.assets = const [],
     this.attributeConfig = const [],
-  })  : baseName = name,
-        basePrice = price,
-        baseImage = image;
+  }) : baseName = name,
+       basePrice = price,
+       baseImage = image;
 
   String get name {
     if (variants.isEmpty) return baseName;
-    final firstVariant = variants.where((v) => v.isActive).firstOrNull ?? variants.first;
+    final firstVariant =
+        variants.where((v) => v.isActive).firstOrNull ?? variants.first;
     String displayName = baseName;
     final nonColorConfigs = <String>[];
     firstVariant.attributes.forEach((key, val) {
@@ -65,7 +64,8 @@ class ProductModel {
 
   double get price {
     if (variants.isEmpty) return basePrice;
-    final firstVariant = variants.where((v) => v.isActive).firstOrNull ?? variants.first;
+    final firstVariant =
+        variants.where((v) => v.isActive).firstOrNull ?? variants.first;
     return firstVariant.price;
   }
 
@@ -152,7 +152,6 @@ class ProductModel {
     double? averageRating,
     int? reviewCount,
     String? description,
-    Map<String, dynamic>? vaultSpecs,
     Map<String, dynamic>? commonSpecs,
     String? brandName,
     String? categoryId,
@@ -173,7 +172,6 @@ class ProductModel {
       averageRating: averageRating ?? this.averageRating,
       reviewCount: reviewCount ?? this.reviewCount,
       description: description ?? this.description,
-      vaultSpecs: vaultSpecs ?? this.vaultSpecs,
       commonSpecs: commonSpecs ?? this.commonSpecs,
       brandName: brandName ?? this.brandName,
       categoryId: categoryId ?? this.categoryId,
@@ -235,7 +233,6 @@ class ProductModel {
           double.tryParse(json['averageRating']?.toString() ?? '0.0') ?? 0.0,
       reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
       description: desc,
-      vaultSpecs: json['vaultSpecs'] != null ? Map<String, dynamic>.from(json['vaultSpecs']) : null,
       commonSpecs: commonSpecs,
       brandName: json['brand']?['name'] as String?,
       categoryId: json['category']?['parent'] != null
@@ -244,7 +241,7 @@ class ProductModel {
       categoryName: json['category']?['parent'] != null
           ? json['category']!['parent']['name'] as String?
           : (json['category']?['title'] as String? ??
-              json['category']?['name'] as String?),
+                json['category']?['name'] as String?),
       variants: variants,
       assets: assets,
       attributeConfig: attributeConfig,
@@ -274,7 +271,6 @@ class ProductModel {
       'averageRating': averageRating,
       'reviewCount': reviewCount,
       'description': description,
-      'vaultSpecs': vaultSpecs,
       'brand': brandName != null ? {'name': brandName} : null,
       'variants': variants.map((e) => e.toJson()).toList(),
       'attributeConfig': attributeConfig,

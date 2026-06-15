@@ -15,24 +15,14 @@ class CheckoutPromotionCubit extends Cubit<CheckoutPromotionState> {
     emit(state.copyWith(isLoading: true, clearError: true));
     try {
       final vouchers = await _repository.getMyVouchers();
-      emit(
-        state.copyWith(
-          myVouchers: vouchers,
-          isLoading: false,
-        ),
-      );
+      emit(state.copyWith(myVouchers: vouchers, isLoading: false));
     } catch (e) {
       emit(state.copyWith(isLoading: false, error: _extractErrorMessage(e)));
     }
   }
 
   void selectVoucher(VoucherModel voucher) {
-    emit(
-      state.copyWith(
-        selectedVoucher: voucher,
-        clearError: true,
-      ),
-    );
+    emit(state.copyWith(selectedVoucher: voucher, clearError: true));
   }
 
   void removeVoucher() {

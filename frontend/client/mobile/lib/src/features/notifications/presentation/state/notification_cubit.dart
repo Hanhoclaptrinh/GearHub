@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/notification_model.dart';
 import '../../domain/repositories/notification_repository.dart';
@@ -178,12 +177,6 @@ class NotificationCubit extends Cubit<NotificationState> {
   }
 
   String _extractErrorMessage(dynamic e) {
-    if (e is DioException && e.response?.data != null) {
-      final data = e.response!.data;
-      if (data is Map && data['message'] != null) {
-        return data['message'].toString();
-      }
-    }
-    return 'Không thể tải thông báo. Vui lòng thử lại.';
+    return e.toString();
   }
 }

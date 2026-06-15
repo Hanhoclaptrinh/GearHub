@@ -4,6 +4,7 @@ import 'package:mobile/src/features/auth/data/datasources/auth_remote_datasource
 import 'package:mobile/src/features/auth/data/models/auth_tokens_model.dart';
 import 'package:mobile/src/features/auth/data/models/user_model.dart';
 import 'package:mobile/src/features/auth/domain/entities/auth_tokens.dart';
+import 'package:mobile/src/features/auth/domain/entities/profile_update_result.dart';
 import 'package:mobile/src/features/auth/domain/entities/user_entity.dart';
 import 'package:mobile/src/features/auth/domain/repositories/auth_repository.dart';
 
@@ -167,28 +168,38 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<UserEntity> updateProfile({
+  Future<ProfileUpdateResult> updateProfile({
+    String? email,
     String? fullName,
     String? phone,
     String? address,
     String? avatarUrl,
+    DateTime? dateOfBirth,
+    String? gender,
     String? filePath,
   }) async {
     final response = await _remoteDatasource.updateProfile(
+      email: email,
       fullName: fullName,
       phone: phone,
       address: address,
       avatarUrl: avatarUrl,
+      dateOfBirth: dateOfBirth,
+      gender: gender,
       filePath: filePath,
     );
 
-    if (response.containsKey('data')) {
-      final data = response['data'];
-      if (data is Map<String, dynamic> && data.containsKey('user')) {
-        return UserModel.fromJson(data['user'] as Map<String, dynamic>);
-      }
-      return UserModel.fromJson(response);
-    }
+    final user = UserModel.fromJson(response);
+    return ProfileUpdateResult(
+      user: user,
+      emailChangeOtpSent: response['emailChangeOtpSent'] == true,
+      pendingEmail: response['pendingEmail'] as String?,
+    );
+  }
+
+  @override
+  Future<UserEntity> verifyEmailChange({required String otp}) async {
+    final response = await _remoteDatasource.verifyEmailChange(otp: otp);
     return UserModel.fromJson(response);
   }
 

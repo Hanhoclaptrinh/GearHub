@@ -12,14 +12,21 @@ class ProductCompareCubit extends Cubit<ProductCompareState> {
     : _repository = repository,
       super(const ProductCompareState());
 
-  Future<void> startWithProduct(ProductModel product, [String? variantId]) async {
-    final defaultVariantId = variantId ??
+  Future<void> startWithProduct(
+    ProductModel product, [
+    String? variantId,
+  ]) async {
+    final defaultVariantId =
+        variantId ??
         (product.variants.isNotEmpty ? product.variants.first.id : '');
-    final selectedProduct =
-        _productWithSelectedVariant(product, defaultVariantId);
+    final selectedProduct = _productWithSelectedVariant(
+      product,
+      defaultVariantId,
+    );
 
-    final existingIndex =
-        state.selectedProducts.indexWhere((p) => p.id == product.id);
+    final existingIndex = state.selectedProducts.indexWhere(
+      (p) => p.id == product.id,
+    );
     if (existingIndex != -1) {
       final rollbackProducts = state.selectedProducts;
       final rollbackVariantIds = state.selectedVariantIds;
@@ -57,7 +64,8 @@ class ProductCompareCubit extends Cubit<ProductCompareState> {
       return;
     }
 
-    if (state.selectedProducts.isNotEmpty && state.selectedProducts.length < 3) {
+    if (state.selectedProducts.isNotEmpty &&
+        state.selectedProducts.length < 3) {
       final nextProducts = [...state.selectedProducts, selectedProduct];
       final nextVariantIds = Map<String, String>.from(state.selectedVariantIds)
         ..[product.id] = defaultVariantId;
@@ -78,15 +86,15 @@ class ProductCompareCubit extends Cubit<ProductCompareState> {
           ),
         );
         return;
-      } catch (_) {
-        // Fallback to resetting list if category/compatibility mismatch occurs
-      }
+      } catch (_) {}
     }
 
-    emit(ProductCompareState(
-      selectedProducts: [selectedProduct],
-      selectedVariantIds: {product.id: defaultVariantId},
-    ));
+    emit(
+      ProductCompareState(
+        selectedProducts: [selectedProduct],
+        selectedVariantIds: {product.id: defaultVariantId},
+      ),
+    );
   }
 
   Future<bool> addProduct(ProductModel product) async {
@@ -102,20 +110,25 @@ class ProductCompareCubit extends Cubit<ProductCompareState> {
       return false;
     }
 
-    final defaultVariantId =
-        product.variants.isNotEmpty ? product.variants.first.id : '';
-    final selectedProduct =
-        _productWithSelectedVariant(product, defaultVariantId);
+    final defaultVariantId = product.variants.isNotEmpty
+        ? product.variants.first.id
+        : '';
+    final selectedProduct = _productWithSelectedVariant(
+      product,
+      defaultVariantId,
+    );
     final nextProducts = [...current, selectedProduct];
     final nextVariantIds = Map<String, String>.from(state.selectedVariantIds)
       ..[product.id] = defaultVariantId;
 
     if (nextProducts.length < 2) {
-      emit(state.copyWith(
-        selectedProducts: nextProducts,
-        selectedVariantIds: nextVariantIds,
-        clearError: true,
-      ));
+      emit(
+        state.copyWith(
+          selectedProducts: nextProducts,
+          selectedVariantIds: nextVariantIds,
+          clearError: true,
+        ),
+      );
       return true;
     }
 
@@ -167,16 +180,14 @@ class ProductCompareCubit extends Cubit<ProductCompareState> {
 
     try {
       final ids = products.map((product) => product.id).toList();
-      final vIds = variantIds ??
+      final vIds =
+          variantIds ??
           products
               .map((p) => state.selectedVariantIds[p.id] ?? '')
               .where((id) => id.isNotEmpty)
               .toList();
 
-      final result = await _repository.compareProducts(
-        ids,
-        variantIds: vIds,
-      );
+      final result = await _repository.compareProducts(ids, variantIds: vIds);
 
       emit(
         state.copyWith(

@@ -60,10 +60,7 @@ class AuthRemoteDatasource {
   }) async {
     final response = await _dio.post(
       '/auth/google',
-      data: {
-        'idToken': idToken,
-        'deviceId': deviceId,
-      },
+      data: {'idToken': idToken, 'deviceId': deviceId},
     );
     return response.data as Map<String, dynamic>;
   }
@@ -121,17 +118,25 @@ class AuthRemoteDatasource {
   }
 
   Future<Map<String, dynamic>> updateProfile({
+    String? email,
     String? fullName,
     String? phone,
     String? address,
     String? avatarUrl,
+    DateTime? dateOfBirth,
+    String? gender,
     String? filePath,
   }) async {
     final Map<String, dynamic> map = {};
+    if (email != null) map['email'] = email;
     if (fullName != null) map['fullName'] = fullName;
     if (phone != null) map['phone'] = phone;
     if (address != null) map['address'] = address;
     if (avatarUrl != null) map['avatarUrl'] = avatarUrl;
+    if (dateOfBirth != null) {
+      map['dateOfBirth'] = dateOfBirth.toIso8601String();
+    }
+    if (gender != null) map['gender'] = gender;
 
     if (filePath != null && filePath.isNotEmpty) {
       map['file'] = await MultipartFile.fromFile(
@@ -142,10 +147,27 @@ class AuthRemoteDatasource {
 
     final formData = FormData.fromMap(map);
 
-    final response = await _dio.patch(
-      '/users/update-profile',
-      data: formData,
+    final response = await _dio.patch('/users/update-profile', data: formData);
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> verifyEmailChange({required String otp}) async {
+    final response = await _dio.post(
+      '/users/verify-email-change',
+      data: {'otp': otp},
     );
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getPreferences() async {
+    final response = await _dio.get('/users/preferences');
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updatePreferences({
+    required Map<String, dynamic> data,
+  }) async {
+    final response = await _dio.patch('/users/preferences', data: data);
     return response.data as Map<String, dynamic>;
   }
 

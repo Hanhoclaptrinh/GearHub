@@ -71,7 +71,10 @@ class CartRepositoryImpl implements CartRepository {
 
   @override
   Future<Either<Failure, CartEntity>> addToCart(
-      ProductVariantModel variant, ProductModel product, int quantity) async {
+    ProductVariantModel variant,
+    ProductModel product,
+    int quantity,
+  ) async {
     try {
       final isLoggedIn = await authRepository.isLoggedIn();
       if (isLoggedIn) {
@@ -81,13 +84,21 @@ class CartRepositoryImpl implements CartRepository {
         } catch (e) {
           if (e.toString().contains('401')) {
             await authRepository.logout();
-            final cart = await localDataSource.addToCart(variant, product, quantity);
+            final cart = await localDataSource.addToCart(
+              variant,
+              product,
+              quantity,
+            );
             return right(cart);
           }
           rethrow;
         }
       } else {
-        final cart = await localDataSource.addToCart(variant, product, quantity);
+        final cart = await localDataSource.addToCart(
+          variant,
+          product,
+          quantity,
+        );
         return right(cart);
       }
     } catch (e) {
@@ -96,7 +107,10 @@ class CartRepositoryImpl implements CartRepository {
   }
 
   @override
-  Future<Either<Failure, CartEntity>> updateQuantity(String itemId, int quantity) async {
+  Future<Either<Failure, CartEntity>> updateQuantity(
+    String itemId,
+    int quantity,
+  ) async {
     try {
       final isLoggedIn = await authRepository.isLoggedIn();
       if (isLoggedIn) {
@@ -137,7 +151,9 @@ class CartRepositoryImpl implements CartRepository {
   }
 
   @override
-  Future<Either<Failure, CartEntity>> clearSelectedItems(List<String> variantIds) async {
+  Future<Either<Failure, CartEntity>> clearSelectedItems(
+    List<String> variantIds,
+  ) async {
     try {
       final isLoggedIn = await authRepository.isLoggedIn();
       if (isLoggedIn) {
@@ -173,31 +189,62 @@ class CartRepositoryImpl implements CartRepository {
     try {
       final isLoggedIn = await authRepository.isLoggedIn();
       if (!isLoggedIn) {
-        // Nếu chưa đăng nhập thì ko làm gì cả, trả về local cart
+        //nếu chưa đăng nhập thì ko làm gì cả, trả về local cart
         final cart = await localDataSource.getCart();
         return right(cart);
       }
 
       final localCart = await localDataSource.getCart();
       if (localCart.items.isEmpty) {
-        // Không có gì ở local để sync, lấy luôn từ remote
+        //không có gì ở local để sync, lấy luôn từ remote
         final cart = await remoteDataSource.getCart();
         return right(cart);
       }
 
-      // Convert local items to sync payload
-      final syncPayload = localCart.items.map((item) => {
-        'variantId': item.productVariant.id,
-        'quantity': item.quantity,
-      }).toList();
+      //convert local items to sync payload
+      final syncPayload = localCart.items
+          .map(
+            (item) => {
+              'variantId': item.productVariant.id,
+              'quantity': item.quantity,
+            },
+          )
+          .toList();
 
-      // Gọi remote sync
+      //gọi remote sync
       final mergedCart = await remoteDataSource.syncCart(syncPayload);
-      
-      // Xóa local sau khi sync xong
+
+      //xóa local sau khi sync xong
       await localDataSource.clearCart();
 
       return right(mergedCart);
+    } catch (e) {
+      return left(Failure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<ProductModel>>> getRecommendations({
+    int limit = 8,
+  }) async {
+    try {
+      final isLoggedIn = await authRepository.isLoggedIn();
+      if (!isLoggedIn) {
+        return right(const []);
+      }
+
+      try {
+        final products = await remoteDataSource.getRecommendations(
+          limit: limit,
+        );
+        return right(products);
+      } catch (e) {
+        if (e.toString().contains('401')) {
+          await authRepository.logout();
+          return right(const []);
+        }
+        rethrow;
+      }
     } catch (e) {
       return left(Failure(e.toString()));
     }

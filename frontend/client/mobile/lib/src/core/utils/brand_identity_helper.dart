@@ -170,4 +170,28 @@ class BrandIdentityHelper {
       accent: _defaultAccent,
     );
   }
+
+  static Color getAdaptiveAccent(BuildContext context, Color baseColor) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    if (isDark) {
+      if (baseColor.computeLuminance() < 0.15) {
+        final hsl = HSLColor.fromColor(baseColor);
+        if (hsl.saturation < 0.1) {
+          return theme.colorScheme.primary;
+        }
+        return hsl.withLightness(0.65).toColor();
+      }
+      return baseColor;
+    } else {
+      if (baseColor.computeLuminance() > 0.5) {
+        final hsl = HSLColor.fromColor(baseColor);
+        if (hsl.saturation < 0.1) {
+          return theme.colorScheme.primary;
+        }
+        return hsl.withLightness(0.4).toColor();
+      }
+      return baseColor;
+    }
+  }
 }

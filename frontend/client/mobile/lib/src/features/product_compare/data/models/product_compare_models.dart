@@ -38,9 +38,7 @@ class CompareSpecRowModel {
     final rawValues = json['values'] as Map<String, dynamic>? ?? {};
     return CompareSpecRowModel(
       label: json['label'] as String? ?? '',
-      values: rawValues.map(
-        (key, value) => MapEntry(key, value?.toString()),
-      ),
+      values: rawValues.map((key, value) => MapEntry(key, value?.toString())),
       isDifferent: json['isDifferent'] as bool? ?? false,
     );
   }
@@ -70,9 +68,8 @@ class ProductCompareResultModel {
           .toList(),
       specRows: rowData
           .map(
-            (item) => CompareSpecRowModel.fromJson(
-              item as Map<String, dynamic>,
-            ),
+            (item) =>
+                CompareSpecRowModel.fromJson(item as Map<String, dynamic>),
           )
           .toList(),
     );

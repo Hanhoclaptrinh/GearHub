@@ -13,9 +13,12 @@ class CartCubit extends Cubit<CartState> {
   Future<void> loadCart() async {
     emit(CartLoading());
     final result = await repository.getCart();
-    result.fold(
-      (failure) => emit(CartError(message: failure.message)),
-      (cart) => emit(CartLoaded(cart: cart)),
+    await result.fold<Future<void>>(
+      (failure) async => emit(CartError(message: failure.message)),
+      (cart) async {
+        emit(CartLoaded(cart: cart));
+        await loadRecommendations();
+      },
     );
   }
 
@@ -25,10 +28,14 @@ class CartCubit extends Cubit<CartState> {
     int quantity,
   ) async {
     final result = await repository.addToCart(variant, product, quantity);
-    result.fold((failure) => emit(CartError(message: failure.message)), (cart) {
-      emit(CartLoaded(cart: cart));
-      emit(CartAddSuccess(cart: cart));
-    });
+    await result.fold<Future<void>>(
+      (failure) async => emit(CartError(message: failure.message)),
+      (cart) async {
+        emit(CartLoaded(cart: cart));
+        emit(CartAddSuccess(cart: cart));
+        await loadRecommendations();
+      },
+    );
   }
 
   Future<void> updateQuantity(String itemId, int quantity) async {
@@ -38,17 +45,17 @@ class CartCubit extends Cubit<CartState> {
     }
 
     final result = await repository.updateQuantity(itemId, quantity);
-    result.fold(
-      (failure) => emit(CartError(message: failure.message)),
-      (cart) => emit(CartLoaded(cart: cart)),
+    await result.fold<Future<void>>(
+      (failure) async => emit(CartError(message: failure.message)),
+      (cart) async => _emitCartAndRefreshRecommendations(cart),
     );
   }
 
   Future<void> removeItem(String itemId) async {
     final result = await repository.removeItem(itemId);
-    result.fold(
-      (failure) => emit(CartError(message: failure.message)),
-      (cart) => emit(CartLoaded(cart: cart)),
+    await result.fold<Future<void>>(
+      (failure) async => emit(CartError(message: failure.message)),
+      (cart) async => _emitCartAndRefreshRecommendations(cart),
     );
   }
 
@@ -68,7 +75,13 @@ class CartCubit extends Cubit<CartState> {
         return item;
       }).toList();
 
-      emit(CartLoaded(cart: currentCart.copyWith(items: updatedItems)));
+      emit(
+        CartLoaded(
+          cart: currentCart.copyWith(items: updatedItems),
+          recommendations: state.recommendations,
+          isRecommendationsLoading: state.isRecommendationsLoading,
+        ),
+      );
     }
   }
 
@@ -85,30 +98,36 @@ class CartCubit extends Cubit<CartState> {
         return item.copyWith(isSelected: selectAll);
       }).toList();
 
-      emit(CartLoaded(cart: currentCart.copyWith(items: updatedItems)));
+      emit(
+        CartLoaded(
+          cart: currentCart.copyWith(items: updatedItems),
+          recommendations: state.recommendations,
+          isRecommendationsLoading: state.isRecommendationsLoading,
+        ),
+      );
     }
   }
 
   Future<void> clearSelectedItems(List<String> variantIds) async {
     final result = await repository.clearSelectedItems(variantIds);
-    result.fold(
-      (failure) => emit(CartError(message: failure.message)),
-      (cart) => emit(CartLoaded(cart: cart)),
+    await result.fold<Future<void>>(
+      (failure) async => emit(CartError(message: failure.message)),
+      (cart) async => _emitCartAndRefreshRecommendations(cart),
     );
   }
 
   Future<void> syncCart() async {
     final result = await repository.syncCart();
-    result.fold(
-      (failure) => emit(CartError(message: failure.message)),
-      (cart) => emit(CartLoaded(cart: cart)),
+    await result.fold<Future<void>>(
+      (failure) async => emit(CartError(message: failure.message)),
+      (cart) async => _emitCartAndRefreshRecommendations(cart),
     );
   }
 
   Future<void> clearCart() async {
     emit(CartLoading());
     final result = await repository.clearCart();
-    await result.fold(
+    await result.fold<Future<void>>(
       (failure) async => emit(CartError(message: failure.message)),
       (_) async => loadCart(),
     );
@@ -131,15 +150,59 @@ class CartCubit extends Cubit<CartState> {
       currentQuantity,
     );
 
-    await addResult.fold(
+    await addResult.fold<Future<void>>(
       (failure) async => emit(CartError(message: failure.message)),
       (cartAfterAdd) async {
         final removeResult = await repository.removeItem(oldItemId);
-        removeResult.fold(
-          (failure) => emit(CartError(message: failure.message)),
-          (finalCart) => emit(CartLoaded(cart: finalCart)),
+        await removeResult.fold<Future<void>>(
+          (failure) async => emit(CartError(message: failure.message)),
+          (finalCart) async => _emitCartAndRefreshRecommendations(finalCart),
         );
       },
     );
+  }
+
+  Future<void> loadRecommendations({int limit = 8}) async {
+    final currentCart = state.cart;
+    if (currentCart == null || currentCart.items.isEmpty) return;
+
+    emit(
+      CartLoaded(
+        cart: currentCart,
+        recommendations: state.recommendations,
+        isRecommendationsLoading: true,
+      ),
+    );
+
+    final result = await repository.getRecommendations(limit: limit);
+    result.fold(
+      (_) => emit(
+        CartLoaded(
+          cart: currentCart,
+          recommendations: const [],
+          isRecommendationsLoading: false,
+        ),
+      ),
+      (products) => emit(
+        CartLoaded(
+          cart: currentCart,
+          recommendations: products,
+          isRecommendationsLoading: false,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _emitCartAndRefreshRecommendations(CartEntity cart) async {
+    emit(
+      CartLoaded(
+        cart: cart,
+        recommendations: state.recommendations,
+        isRecommendationsLoading: state.isRecommendationsLoading,
+      ),
+    );
+
+    if (cart.items.isEmpty) return;
+    await loadRecommendations();
   }
 }

@@ -1,10 +1,13 @@
 import 'package:equatable/equatable.dart';
 import 'package:mobile/src/features/cart/domain/entities/cart_entity.dart';
+import 'package:mobile/src/shared/models/product_model.dart';
 
 abstract class CartState extends Equatable {
   const CartState();
 
   CartEntity? get cart => null;
+  List<ProductModel> get recommendations => const [];
+  bool get isRecommendationsLoading => false;
 
   @override
   List<Object?> get props => [];
@@ -17,10 +20,23 @@ class CartLoading extends CartState {}
 class CartLoaded extends CartState {
   @override
   final CartEntity cart;
-  const CartLoaded({required this.cart});
+  @override
+  final List<ProductModel> recommendations;
+  @override
+  final bool isRecommendationsLoading;
+
+  const CartLoaded({
+    required this.cart,
+    this.recommendations = const [],
+    this.isRecommendationsLoading = false,
+  });
 
   @override
-  List<Object?> get props => [cart];
+  List<Object?> get props => [
+    cart,
+    recommendations,
+    isRecommendationsLoading,
+  ];
 }
 
 class CartError extends CartState {
@@ -34,8 +50,21 @@ class CartError extends CartState {
 class CartAddSuccess extends CartState {
   @override
   final CartEntity cart;
-  const CartAddSuccess({required this.cart});
+  @override
+  final List<ProductModel> recommendations;
+  @override
+  final bool isRecommendationsLoading;
+
+  const CartAddSuccess({
+    required this.cart,
+    this.recommendations = const [],
+    this.isRecommendationsLoading = false,
+  });
 
   @override
-  List<Object?> get props => [cart];
+  List<Object?> get props => [
+    cart,
+    recommendations,
+    isRecommendationsLoading,
+  ];
 }

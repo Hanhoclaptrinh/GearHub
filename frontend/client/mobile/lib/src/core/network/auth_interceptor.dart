@@ -1,89 +1,178 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/core/storage/secure_storage_service.dart';
+import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 
 class AuthInterceptor extends Interceptor {
+  static const _retryKey = 'auth_retry';
+  static const _refreshBuffer = Duration(minutes: 5);
+
   final SecureStorageService storageService;
   final Dio dio;
+  Future<String>? _refreshFuture;
 
   AuthInterceptor({required this.storageService, required this.dio});
 
-  // kiem tra truoc khi request gui len server
   @override
   void onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    // cac API khong can token
-    final noAuthPaths = [
-      '/auth/login',
-      '/auth/register/request',
-      '/auth/register/verify',
-      '/auth/forgot-password',
-      '/auth/reset-password',
-      '/auth/refresh',
-    ];
+    if (_isPublicPath(options.path)) {
+      handler.next(options);
+      return;
+    }
 
-    // kiem tra xem req hien tai can token khong
-    final needsAuth = !noAuthPaths.any((p) => options.path.contains(p));
+    try {
+      var token = await storageService.accessToken;
 
-    if (needsAuth) {
-      // lay token tu storage
-      final token = await storageService.accessToken;
+      if (token != null && token.isNotEmpty && _isExpiringSoon(token)) {
+        token = await _refreshAccessToken();
+      }
 
-      // them vao header
       if (token != null && token.isNotEmpty) {
         options.headers['Authorization'] = 'Bearer $token';
       }
-    }
 
-    // cho req tiep tuc di den server
-    handler.next(options);
+      handler.next(options);
+    } catch (error) {
+      await _logout();
+      handler.reject(
+        DioException(
+          requestOptions: options,
+          error: error,
+          type: DioExceptionType.unknown,
+        ),
+      );
+    }
   }
 
-  // xu ly refresh token khi token het han
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    // loi phai la het han hoac sai token moi duoc refresh
-    // req bi loi khong duoc phep cap refresh (tranh loop)
-    if (err.response?.statusCode == 401 &&
-        !err.requestOptions.path.contains('/auth/refresh')) {
+    final request = err.requestOptions;
+    final canRefresh =
+        err.response?.statusCode == 401 &&
+        !_isPublicPath(request.path) &&
+        request.extra[_retryKey] != true;
+
+    if (canRefresh) {
       try {
-        // lay rt, user id, device id tu storage
-        final rt = await storageService.refreshToken;
-        final uid = await storageService.userId;
-        final did = await storageService.deviceId;
+        final newAccessToken = await _refreshAccessToken();
 
-        if (rt != null && uid != null) {
-          // xin cap token moi
-          final response = await dio.post(
-            '/auth/refresh',
-            data: {
-              'refreshToken': rt,
-              'userId': uid,
-              'deviceId': did ?? 'mobile',
-            },
-          );
+        request.extra[_retryKey] = true;
+        request.headers['Authorization'] = 'Bearer $newAccessToken';
 
-          final newAt = response.data['accessToken'] as String;
-          final newRt = response.data['refreshToken'] as String;
-
-          // luu token moi
-          await storageService.saveTokens(
-            accessToken: newAt,
-            refreshToken: newRt,
-          );
-
-          // sua lai header cua req bi loi ban new token
-          err.requestOptions.headers['Authorization'] = 'Bearer $newAt';
-          // retry req
-          final retryResponse = await dio.fetch(err.requestOptions);
-          return handler.resolve(retryResponse);
-        }
+        final retryResponse = await dio.fetch(request);
+        return handler.resolve(retryResponse);
       } catch (_) {
-        await storageService.clearAll();
+        await _logout();
       }
     }
 
     handler.next(err);
+  }
+
+  bool _isPublicPath(String path) {
+    const publicPaths = [
+      '/auth/login',
+      '/auth/google',
+      '/auth/register/request',
+      '/auth/register/verify',
+      '/auth/forgot-password',
+      '/auth/verify-forgot-password',
+      '/auth/reset-password',
+      '/auth/refresh',
+    ];
+
+    return publicPaths.any((publicPath) => path.contains(publicPath));
+  }
+
+  bool _isExpiringSoon(String token) {
+    final expiresAt = _readJwtExpiresAt(token);
+    if (expiresAt == null) return false;
+
+    return DateTime.now().add(_refreshBuffer).isAfter(expiresAt);
+  }
+
+  DateTime? _readJwtExpiresAt(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+
+      final payload = utf8.decode(
+        base64Url.decode(base64Url.normalize(parts[1])),
+      );
+      final data = jsonDecode(payload);
+      final exp = data is Map<String, dynamic> ? data['exp'] : null;
+
+      if (exp is int) {
+        return DateTime.fromMillisecondsSinceEpoch(exp * 1000);
+      }
+
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<String> _refreshAccessToken() {
+    final activeRefresh = _refreshFuture;
+    if (activeRefresh != null) return activeRefresh;
+
+    final refresh = _doRefreshAccessToken();
+    _refreshFuture = refresh;
+
+    return refresh.whenComplete(() {
+      if (identical(_refreshFuture, refresh)) {
+        _refreshFuture = null;
+      }
+    });
+  }
+
+  Future<String> _doRefreshAccessToken() async {
+    final refreshToken = await storageService.refreshToken;
+    final userId = await storageService.userId;
+    final deviceId = await storageService.deviceId;
+
+    if (refreshToken == null || refreshToken.isEmpty || userId == null) {
+      throw StateError('Missing refresh token or user id');
+    }
+
+    final response = await dio.post(
+      '/auth/refresh',
+      data: {
+        'refreshToken': refreshToken,
+        'userId': userId,
+        'deviceId': deviceId ?? 'mobile',
+      },
+    );
+
+    final data = response.data;
+    if (data is! Map<String, dynamic>) {
+      throw StateError('Invalid refresh response');
+    }
+
+    final newAccessToken = data['accessToken'];
+    final newRefreshToken = data['refreshToken'];
+
+    if (newAccessToken is! String ||
+        newAccessToken.isEmpty ||
+        newRefreshToken is! String ||
+        newRefreshToken.isEmpty) {
+      throw StateError('Invalid refresh tokens');
+    }
+
+    await storageService.saveTokens(
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+    );
+
+    return newAccessToken;
+  }
+
+  Future<void> _logout() async {
+    await storageService.clearAll();
+    getIt<AuthCubit>().forceLogout();
   }
 }

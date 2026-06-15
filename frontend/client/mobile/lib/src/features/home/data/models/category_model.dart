@@ -21,8 +21,8 @@ class CategoryModel extends CategoryEntity {
       totalSold: json['totalSold'] ?? 0,
       children: json['children'] != null
           ? (json['children'] as List)
-              .map((i) => CategoryModel.fromJson(i as Map<String, dynamic>))
-              .toList()
+                .map((i) => CategoryModel.fromJson(i as Map<String, dynamic>))
+                .toList()
           : const [],
     );
   }

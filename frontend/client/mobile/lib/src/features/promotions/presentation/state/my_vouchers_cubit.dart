@@ -37,8 +37,8 @@ class MyVouchersCubit extends Cubit<MyVouchersState> {
   final PromotionsRepository _repository;
 
   MyVouchersCubit({required PromotionsRepository repository})
-      : _repository = repository,
-        super(MyVouchersInitial());
+    : _repository = repository,
+      super(MyVouchersInitial());
 
   Future<void> fetchMyVouchers() async {
     emit(MyVouchersLoading());
@@ -46,7 +46,11 @@ class MyVouchersCubit extends Cubit<MyVouchersState> {
       final vouchers = await _repository.getMyVouchers();
       emit(MyVouchersLoaded(vouchers: vouchers));
     } catch (e) {
-      emit(MyVouchersError(message: ErrorFormatter.format(e, 'Không thể tải danh sách ưu đãi.')));
+      emit(
+        MyVouchersError(
+          message: ErrorFormatter.format(e, 'Không thể tải danh sách ưu đãi.'),
+        ),
+      );
     }
   }
 }

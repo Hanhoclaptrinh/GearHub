@@ -1,7 +1,7 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/features/wishlist/domain/repositories/wishlist_repository.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
-import 'package:mobile/src/core/utils/error_formatter.dart';
 import 'wishlist_state.dart';
 
 class WishlistCubit extends Cubit<WishlistState> {
@@ -37,24 +37,52 @@ class WishlistCubit extends Cubit<WishlistState> {
       final total = meta['total'] ?? 0;
       final lastPage = meta['lastPage'] ?? 1;
 
-      emit(WishlistLoaded(
-        products: currentProducts + newProducts,
-        total: total,
-        page: page,
-        hasReachedMax: page >= lastPage,
-      ));
+      emit(
+        WishlistLoaded(
+          products: currentProducts + newProducts,
+          total: total,
+          page: page,
+          hasReachedMax: page >= lastPage,
+        ),
+      );
     } catch (e) {
-      emit(WishlistError(ErrorFormatter.format(e, 'Không thể tải danh sách yêu thích.')));
+      String errMsg = 'Không thể tải danh sách yêu thích.';
+      if (e is DioException) {
+        if (e.response?.data != null && e.response!.data is Map) {
+          final data = e.response!.data;
+          if (data['message'] != null) {
+            errMsg = data['message'].toString();
+          }
+        } else {
+          errMsg = e.toString();
+        }
+      } else {
+        errMsg = e.toString();
+      }
+      emit(WishlistError(errMsg));
     }
   }
 
   Future<void> toggleWishlist(String productId) async {
     try {
       await repository.toggleWishlist(productId);
-     
+
       fetchWishlist(refresh: true);
     } catch (e) {
-      emit(WishlistError(ErrorFormatter.format(e, 'Không thể thay đổi trạng thái yêu thích.')));
+      String errMsg = 'Không thể thay đổi trạng thái yêu thích.';
+      if (e is DioException) {
+        if (e.response?.data != null && e.response!.data is Map) {
+          final data = e.response!.data;
+          if (data['message'] != null) {
+            errMsg = data['message'].toString();
+          }
+        } else {
+          errMsg = e.toString();
+        }
+      } else {
+        errMsg = e.toString();
+      }
+      emit(WishlistError(errMsg));
     }
   }
 }

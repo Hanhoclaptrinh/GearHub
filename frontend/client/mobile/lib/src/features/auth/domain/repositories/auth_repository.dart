@@ -1,5 +1,6 @@
 import 'package:mobile/src/features/auth/domain/entities/user_entity.dart';
 import 'package:mobile/src/features/auth/domain/entities/auth_tokens.dart';
+import 'package:mobile/src/features/auth/domain/entities/profile_update_result.dart';
 
 abstract class AuthRepository {
   Future<String> requestRegister({
@@ -48,13 +49,18 @@ abstract class AuthRepository {
 
   Future<UserEntity> getMe();
 
-  Future<UserEntity> updateProfile({
+  Future<ProfileUpdateResult> updateProfile({
+    String? email,
     String? fullName,
     String? phone,
     String? address,
     String? avatarUrl,
+    DateTime? dateOfBirth,
+    String? gender,
     String? filePath,
   });
+
+  Future<UserEntity> verifyEmailChange({required String otp});
 
   Future<void> logout();
 

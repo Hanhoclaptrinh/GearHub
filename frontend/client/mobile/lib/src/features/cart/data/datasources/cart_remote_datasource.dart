@@ -1,5 +1,6 @@
 import 'package:mobile/src/core/network/api_client.dart';
 import 'package:mobile/src/features/cart/data/models/cart_model.dart';
+import 'package:mobile/src/shared/models/product_model.dart';
 
 abstract class CartRemoteDataSource {
   Future<CartModel> getCart();
@@ -10,6 +11,7 @@ abstract class CartRemoteDataSource {
   Future<CartModel> clearSelectedItems(List<String> variantIds);
   Future<void> clearCart();
   Future<CartModel> syncCart(List<Map<String, dynamic>> items);
+  Future<List<ProductModel>> getRecommendations({int limit = 8});
 }
 
 class CartRemoteDataSourceImpl implements CartRemoteDataSource {
@@ -31,18 +33,19 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
 
   @override
   Future<CartModel> addToCart(String variantId, int quantity) async {
-    final response = await apiClient.dio.post('/cart', data: {
-      'variantId': variantId,
-      'quantity': quantity,
-    });
+    final response = await apiClient.dio.post(
+      '/cart',
+      data: {'variantId': variantId, 'quantity': quantity},
+    );
     return CartModel.fromJson(response.data);
   }
 
   @override
   Future<CartModel> updateQuantity(String itemId, int quantity) async {
-    final response = await apiClient.dio.patch('/cart/item/$itemId', data: {
-      'quantity': quantity,
-    });
+    final response = await apiClient.dio.patch(
+      '/cart/item/$itemId',
+      data: {'quantity': quantity},
+    );
     return CartModel.fromJson(response.data);
   }
 
@@ -54,9 +57,10 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
 
   @override
   Future<CartModel> clearSelectedItems(List<String> variantIds) async {
-    final response = await apiClient.dio.delete('/cart/clear-selected', data: {
-      'variantIds': variantIds,
-    });
+    final response = await apiClient.dio.delete(
+      '/cart/clear-selected',
+      data: {'variantIds': variantIds},
+    );
     return CartModel.fromJson(response.data);
   }
 
@@ -67,9 +71,22 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
 
   @override
   Future<CartModel> syncCart(List<Map<String, dynamic>> items) async {
-    final response = await apiClient.dio.post('/cart/sync', data: {
-      'items': items,
-    });
+    final response = await apiClient.dio.post(
+      '/cart/sync',
+      data: {'items': items},
+    );
     return CartModel.fromJson(response.data);
+  }
+
+  @override
+  Future<List<ProductModel>> getRecommendations({int limit = 8}) async {
+    final response = await apiClient.dio.get(
+      '/cart/recommendations',
+      queryParameters: {'limit': limit},
+    );
+    final data = response.data as List;
+    return data
+        .map((json) => ProductModel.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 }

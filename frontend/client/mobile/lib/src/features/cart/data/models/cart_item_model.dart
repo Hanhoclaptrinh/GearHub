@@ -17,12 +17,21 @@ class CartItemModel extends CartItemEntity {
     return CartItemModel(
       id: json['id'] ?? '',
       cartId: json['cartId'] ?? '',
-      productVariant: ProductVariantModel.fromJson(json['productVariant'] ?? {}),
+      productVariant: ProductVariantModel.fromJson(
+        json['productVariant'] ?? {},
+      ),
       product: json['product'] != null
           ? ProductModel.fromJson(json['product'])
           : (json['productVariant']?['product'] != null
-              ? ProductModel.fromJson(json['productVariant']['product'])
-              : const ProductModel(id: '', name: '', tagline: '', price: 0, image: '', description: '')),
+                ? ProductModel.fromJson(json['productVariant']['product'])
+                : const ProductModel(
+                    id: '',
+                    name: '',
+                    tagline: '',
+                    price: 0,
+                    image: '',
+                    description: '',
+                  )),
       quantity: json['quantity'] ?? 1,
       isAvailable: json['isAvailable'] ?? true,
       isSelected: json['isSelected'] ?? true,

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:mobile/src/core/theme/app_colors.dart';
 
 class ConciergeEmptyState extends StatelessWidget {
   const ConciergeEmptyState({super.key});
@@ -23,21 +22,25 @@ class ConciergeEmptyState extends StatelessWidget {
             height: 56,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
-              color: Colors.white.withValues(alpha: 0.05),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.05),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
             ),
-            child: const Icon(
+            child: Icon(
               LucideIcons.sparkles,
-              color: AppColors.accentSilver,
+              color: Theme.of(context).colorScheme.primary,
               size: 24,
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'GearHub có thể hỗ trợ gì cho bạn hôm nay?',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 22,
               height: 1.15,
               fontWeight: FontWeight.w900,
@@ -49,7 +52,7 @@ class ConciergeEmptyState extends StatelessWidget {
             'Tư vấn sản phẩm, đơn hàng hoặc setup phù hợp với không gian của bạn.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.52),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 13,
               height: 1.6,
               fontWeight: FontWeight.w600,
@@ -67,21 +70,25 @@ class ConciergeEmptyState extends StatelessWidget {
                   vertical: 11,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.04),
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.06),
+                    color: Theme.of(context).colorScheme.outlineVariant,
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(item.$2, color: AppColors.accentSilver, size: 15),
+                    Icon(
+                      item.$2,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      size: 15,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       item.$1,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.76),
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                       ),

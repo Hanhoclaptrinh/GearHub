@@ -6,7 +6,7 @@ class DeviceUtils {
     final existing = await storage.deviceId;
     if (existing != null && existing.isNotEmpty) return existing;
 
-    // tao device id
+    //create device id - mockup
     final id =
         'mobile_${DateTime.now().millisecondsSinceEpoch}_${UniqueKey().toString()}';
     await storage.saveDeviceId(id);

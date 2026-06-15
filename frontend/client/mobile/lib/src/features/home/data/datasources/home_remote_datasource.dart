@@ -59,11 +59,23 @@ class HomeRemoteDatasource {
     }
   }
 
+  Future<List<BrandModel>> getBrands() async {
+    try {
+      final response = await dio.get('/brands');
+      final List data = response.data;
+      return data
+          .map((json) => BrandModel.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<List<ProductModel>> getNewArrivalsProducts({int limit = 8}) async {
     try {
       final response = await dio.get(
         '/products',
-        queryParameters: {'limit': limit},
+        queryParameters: {'limit': limit, 'sortBy': 'newest'},
       );
       final List data = response.data['data'];
       return data
@@ -76,7 +88,10 @@ class HomeRemoteDatasource {
 
   Future<List<ProductModel>> getTopRatedProducts({int limit = 5}) async {
     try {
-      final response = await dio.get('/products/top-rated');
+      final response = await dio.get(
+        '/products/top-rated',
+        queryParameters: {'limit': limit},
+      );
       final List data = response.data;
       return data
           .map((json) => ProductModel.fromJson(json as Map<String, dynamic>))
@@ -86,9 +101,12 @@ class HomeRemoteDatasource {
     }
   }
 
-  Future<List<ProductModel>> getVaultProducts() async {
+  Future<List<ProductModel>> getRecommendedProducts({int limit = 8}) async {
     try {
-      final response = await dio.get('/products/vault');
+      final response = await dio.get(
+        '/products/recommendations',
+        queryParameters: {'limit': limit},
+      );
       final List data = response.data;
       return data
           .map((json) => ProductModel.fromJson(json as Map<String, dynamic>))
@@ -105,10 +123,7 @@ class HomeRemoteDatasource {
     try {
       final response = await dio.post(
         '/api/v1/ai/image-search',
-        data: {
-          'imageBase64': imageBase64,
-          'limit': limit,
-        },
+        data: {'imageBase64': imageBase64, 'limit': limit},
       );
       final List data = response.data['results'] ?? [];
       return data
@@ -121,10 +136,7 @@ class HomeRemoteDatasource {
 
   Future<void> incrementProductView(String id, String deviceId) async {
     try {
-      await dio.post(
-        '/products/$id/view',
-        data: {'deviceId': deviceId},
-      );
+      await dio.post('/products/$id/view', data: {'deviceId': deviceId});
     } catch (e) {
       rethrow;
     }

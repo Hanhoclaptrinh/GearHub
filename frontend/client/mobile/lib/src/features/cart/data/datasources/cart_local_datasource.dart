@@ -7,7 +7,11 @@ import 'package:mobile/src/shared/models/product_variant_model.dart';
 
 abstract class CartLocalDataSource {
   Future<CartModel> getCart();
-  Future<CartModel> addToCart(ProductVariantModel variant, ProductModel product, int quantity);
+  Future<CartModel> addToCart(
+    ProductVariantModel variant,
+    ProductModel product,
+    int quantity,
+  );
   Future<CartModel> updateQuantity(String itemId, int quantity);
   Future<CartModel> removeItem(String itemId);
   Future<void> clearCart();
@@ -48,15 +52,19 @@ class CartLocalDataSourceImpl implements CartLocalDataSource {
     );
   }
 
-
   @override
-  Future<CartModel> addToCart(ProductVariantModel variant, ProductModel product, int quantity) async {
+  Future<CartModel> addToCart(
+    ProductVariantModel variant,
+    ProductModel product,
+    int quantity,
+  ) async {
     var cart = await getCart();
-    
-    // Check if variant exists
-    final index = cart.items.indexWhere((i) => i.productVariant.id == variant.id);
+
+    final index = cart.items.indexWhere(
+      (i) => i.productVariant.id == variant.id,
+    );
     List<CartItemModel> newItems = List.from(cart.items);
-    
+
     if (index >= 0) {
       final existingItem = newItems[index];
       newItems[index] = CartItemModel(
@@ -74,7 +82,7 @@ class CartLocalDataSourceImpl implements CartLocalDataSource {
           productVariant: variant,
           product: product,
           quantity: quantity,
-        )
+        ),
       );
     }
 
@@ -121,7 +129,8 @@ class CartLocalDataSourceImpl implements CartLocalDataSource {
   @override
   Future<CartModel> removeItem(String itemId) async {
     var cart = await getCart();
-    List<CartItemModel> newItems = List.from(cart.items)..removeWhere((i) => i.id == itemId);
+    List<CartItemModel> newItems = List.from(cart.items)
+      ..removeWhere((i) => i.id == itemId);
     double newTotal = newItems.fold(0, (sum, item) => sum + item.itemTotal);
     final updatedCart = CartModel(
       id: cart.id,
@@ -141,7 +150,8 @@ class CartLocalDataSourceImpl implements CartLocalDataSource {
   @override
   Future<CartModel> clearSelectedItems(List<String> variantIds) async {
     var cart = await getCart();
-    List<CartItemModel> newItems = List.from(cart.items)..removeWhere((i) => variantIds.contains(i.productVariant.id));
+    List<CartItemModel> newItems = List.from(cart.items)
+      ..removeWhere((i) => variantIds.contains(i.productVariant.id));
     double newTotal = newItems.fold(0, (sum, item) => sum + item.itemTotal);
     final updatedCart = CartModel(
       id: cart.id,

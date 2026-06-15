@@ -28,18 +28,20 @@ class NotificationModel {
       title: json['title'] as String? ?? '',
       body: json['body'] as String? ?? '',
       type: json['type'] as String? ?? 'SYSTEM',
-      data: json['data'] != null ? Map<String, dynamic>.from(json['data'] as Map) : null,
+      data: json['data'] != null
+          ? Map<String, dynamic>.from(json['data'] as Map)
+          : null,
       isRead: json['isRead'] as bool? ?? json['is_read'] as bool? ?? false,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
           : json['created_at'] != null
-              ? DateTime.parse(json['created_at'] as String)
-              : DateTime.now(),
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.now(),
       readAt: json['readAt'] != null
           ? DateTime.parse(json['readAt'] as String)
           : json['read_at'] != null
-              ? DateTime.parse(json['read_at'] as String)
-              : null,
+          ? DateTime.parse(json['read_at'] as String)
+          : null,
     );
   }
 

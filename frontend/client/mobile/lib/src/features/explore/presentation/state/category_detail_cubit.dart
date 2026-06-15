@@ -1,6 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/features/explore/domain/repositories/explore_repository.dart';
-import 'package:mobile/src/core/utils/error_formatter.dart';
 import '../../../home/domain/entities/category_entity.dart';
 import 'category_detail_state.dart';
 
@@ -33,7 +32,7 @@ class CategoryDetailCubit extends Cubit<CategoryDetailState> {
         ),
       );
     } catch (e) {
-      emit(CategoryDetailError(message: ErrorFormatter.format(e, 'Không thể tải danh sách sản phẩm.')));
+      emit(CategoryDetailError(message: e.toString()));
     }
   }
 
@@ -70,7 +69,7 @@ class CategoryDetailCubit extends Cubit<CategoryDetailState> {
         ),
       );
     } catch (e) {
-      emit(CategoryDetailError(message: ErrorFormatter.format(e, 'Không thể lọc sản phẩm.')));
+      emit(CategoryDetailError(message: e.toString()));
     }
   }
 
@@ -84,8 +83,8 @@ class CategoryDetailCubit extends Cubit<CategoryDetailState> {
 
     emit(
       currentState.copyWith(
-        minPrice: minPrice,
-        maxPrice: maxPrice,
+        minPrice: () => minPrice,
+        maxPrice: () => maxPrice,
         sortBy: sortBy,
         products: [],
         isLoadingMore: true,
@@ -107,8 +106,8 @@ class CategoryDetailCubit extends Cubit<CategoryDetailState> {
 
       emit(
         currentState.copyWith(
-          minPrice: minPrice,
-          maxPrice: maxPrice,
+          minPrice: () => minPrice,
+          maxPrice: () => maxPrice,
           sortBy: sortBy ?? currentState.sortBy,
           products: products,
           isLoadingMore: false,
@@ -116,7 +115,7 @@ class CategoryDetailCubit extends Cubit<CategoryDetailState> {
         ),
       );
     } catch (e) {
-      emit(CategoryDetailError(message: ErrorFormatter.format(e, 'Không thể lọc sản phẩm.')));
+      emit(CategoryDetailError(message: e.toString()));
     }
   }
 

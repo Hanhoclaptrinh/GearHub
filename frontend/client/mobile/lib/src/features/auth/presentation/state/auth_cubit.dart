@@ -11,9 +11,9 @@ class AuthCubit extends Cubit<AuthState> {
   AuthCubit({
     required AuthRepository repository,
     required GoogleAuthService googleAuthService,
-  })  : _repository = repository,
-        _googleAuthService = googleAuthService,
-        super(const AuthInitial());
+  }) : _repository = repository,
+       _googleAuthService = googleAuthService,
+       super(const AuthInitial());
 
   Future<void> checkAuthStatus() async {
     try {
@@ -150,21 +150,43 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   Future<void> updateProfile({
+    String? email,
     String? fullName,
     String? phone,
     String? address,
     String? avatarUrl,
+    DateTime? dateOfBirth,
+    String? gender,
     String? filePath,
   }) async {
     emit(const AuthLoading());
     try {
-      final user = await _repository.updateProfile(
+      final result = await _repository.updateProfile(
+        email: email,
         fullName: fullName,
         phone: phone,
         address: address,
         avatarUrl: avatarUrl,
+        dateOfBirth: dateOfBirth,
+        gender: gender,
         filePath: filePath,
       );
+      emit(
+        AuthProfileUpdateSuccess(
+          user: result.user,
+          emailChangeOtpSent: result.emailChangeOtpSent,
+          pendingEmail: result.pendingEmail,
+        ),
+      );
+    } catch (e) {
+      emit(AuthError(message: _extractError(e)));
+    }
+  }
+
+  Future<void> verifyEmailChange({required String otp}) async {
+    emit(const AuthLoading());
+    try {
+      final user = await _repository.verifyEmailChange(otp: otp);
       emit(AuthAuthenticated(user: user));
     } catch (e) {
       emit(AuthError(message: _extractError(e)));
@@ -183,6 +205,10 @@ class AuthCubit extends Cubit<AuthState> {
       emit(AuthError(message: _extractError(e)));
       return;
     }
+    emit(const AuthUnauthenticated());
+  }
+
+  void forceLogout() {
     emit(const AuthUnauthenticated());
   }
 

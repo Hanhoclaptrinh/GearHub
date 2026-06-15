@@ -5,28 +5,41 @@ import 'package:mobile/src/shared/models/product_variant_model.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
 
 abstract class CartRepository {
-  // lay gio hang local hoac remote tuy theo trang thai login
+  ///lấy giỏ local hoặc remote tùy trạng thái auth
   Future<Either<Failure, CartEntity>> getCart();
 
-  // dem so luong san pham
+  ///đếm số lượng sp
   Future<Either<Failure, int>> getCartCount();
 
-  // them san pham vao gio hang
+  ///thêm sp vào cart
   Future<Either<Failure, CartEntity>> addToCart(
-      ProductVariantModel variant, ProductModel product, int quantity);
+    ProductVariantModel variant,
+    ProductModel product,
+    int quantity,
+  );
 
-  // cap nhat so luong cua mot cart item
-  Future<Either<Failure, CartEntity>> updateQuantity(String itemId, int quantity);
+  //cập nhật số lượng của một cart item
+  Future<Either<Failure, CartEntity>> updateQuantity(
+    String itemId,
+    int quantity,
+  );
 
-  // xoa 1 san pham khoi gio hang
+  ///xóa một sp khỏi giỏ hàng
   Future<Either<Failure, CartEntity>> removeItem(String itemId);
 
-  // xoa danh sach cac san pham da chon (thanh toan xong hoac chu dong xoa)
-  Future<Either<Failure, CartEntity>> clearSelectedItems(List<String> variantIds);
+  ///xóa các sp được chọn khỏi giỏ - chủ động xóa hoặc auto xóa khi thanh toán xong
+  Future<Either<Failure, CartEntity>> clearSelectedItems(
+    List<String> variantIds,
+  );
 
-  // xoa toan bo gio hang
+  ///clear all
   Future<Either<Failure, void>> clearCart();
 
-  // dong bo local cart len server (sau khi auth)
+  ///sync local cart to server
   Future<Either<Failure, CartEntity>> syncCart();
+
+  ///gợi ý sp cho giỏ hàng
+  Future<Either<Failure, List<ProductModel>>> getRecommendations({
+    int limit = 8,
+  });
 }

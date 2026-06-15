@@ -47,15 +47,19 @@ class BrandProductsCubit extends Cubit<BrandProductsState> {
   final ExploreRepository _exploreRepository;
   final BrandEntity brand;
 
-  BrandProductsCubit(this._exploreRepository, this.brand) : super(BrandProductsInitial());
+  BrandProductsCubit(this._exploreRepository, this.brand)
+    : super(BrandProductsInitial());
 
   Future<void> loadBrandData() async {
     emit(BrandProductsLoading());
     try {
-      // fetch prod of brd
-      final products = await _exploreRepository.getProducts(brandId: brand.id, limit: 100);
-      
-      // get unique cate from prod
+      //fetch prod của brand
+      final products = await _exploreRepository.getProducts(
+        brandId: brand.id,
+        limit: 100,
+      );
+
+      //get unique cate from prod
       final Map<String, CategoryEntity> uniqueCatsMap = {};
       for (var p in products) {
         if (p.categoryId != null && p.categoryName != null) {
@@ -68,39 +72,48 @@ class BrandProductsCubit extends Cubit<BrandProductsState> {
           );
         }
       }
-      
-      final List<CategoryEntity> categoriesList = uniqueCatsMap.values.toList();
-      // show all first
-      categoriesList.insert(0, const CategoryEntity(
-        id: 'all', 
-        title: 'Tất cả', 
-        slug: 'all', 
-        totalSold: 0,
-        iconUrl: '',
-      ));
 
-      emit(BrandProductsLoaded(
-        allProducts: products,
-        displayProducts: products,
-        categories: categoriesList,
-        selectedCategoryId: 'all',
-      ));
+      final List<CategoryEntity> categoriesList = uniqueCatsMap.values.toList();
+      //show all first
+      categoriesList.insert(
+        0,
+        const CategoryEntity(
+          id: 'all',
+          title: 'Tất cả',
+          slug: 'all',
+          totalSold: 0,
+          iconUrl: '',
+        ),
+      );
+
+      emit(
+        BrandProductsLoaded(
+          allProducts: products,
+          displayProducts: products,
+          categories: categoriesList,
+          selectedCategoryId: 'all',
+        ),
+      );
     } catch (e) {
-      emit(BrandProductsError('Không thể kết nối với không gian thương hiệu: $e'));
+      emit(BrandProductsError(e.toString()));
     }
   }
 
   void filterByCategory(String categoryId) {
     if (state is! BrandProductsLoaded) return;
     final currentState = state as BrandProductsLoaded;
-    
-    final filtered = categoryId == 'all' 
-      ? currentState.allProducts 
-      : currentState.allProducts.where((p) => p.categoryId == categoryId).toList();
-    
-    emit(currentState.copyWith(
-      displayProducts: filtered,
-      selectedCategoryId: categoryId,
-    ));
+
+    final filtered = categoryId == 'all'
+        ? currentState.allProducts
+        : currentState.allProducts
+              .where((p) => p.categoryId == categoryId)
+              .toList();
+
+    emit(
+      currentState.copyWith(
+        displayProducts: filtered,
+        selectedCategoryId: categoryId,
+      ),
+    );
   }
 }
