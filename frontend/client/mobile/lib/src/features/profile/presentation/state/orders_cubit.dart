@@ -24,7 +24,11 @@ class OrdersCubit extends Cubit<OrdersState> {
       final List<dynamic> orders = response.data['data'] ?? [];
       emit(OrdersLoaded(orders: orders));
     } catch (e) {
-      emit(OrdersError(message: _extractErrorMessage(e, 'Không thể tải danh sách đơn hàng.')));
+      emit(
+        OrdersError(
+          message: _extractErrorMessage(e, 'Không thể tải danh sách đơn hàng.'),
+        ),
+      );
     }
   }
 
@@ -35,23 +39,31 @@ class OrdersCubit extends Cubit<OrdersState> {
         '/orders/$orderId/cancel',
         data: {'reason': reason},
       );
-      emit(OrderActionSuccess(message: 'Yêu cầu hủy đơn đã được gửi thành công!'));
+      emit(
+        OrderActionSuccess(message: 'Yêu cầu hủy đơn đã được gửi thành công!'),
+      );
       await fetchMyOrders();
     } catch (e) {
-      emit(OrdersError(message: _extractErrorMessage(e, 'Không thể hủy đơn hàng.')));
+      emit(
+        OrdersError(
+          message: _extractErrorMessage(e, 'Không thể hủy đơn hàng.'),
+        ),
+      );
     }
   }
 
   Future<void> confirmReceipt(String orderId) async {
     emit(OrdersLoading());
     try {
-      await apiClient.dio.patch(
-        '/orders/$orderId/confirm',
-      );
+      await apiClient.dio.patch('/orders/$orderId/confirm');
       emit(OrderActionSuccess(message: 'Xác nhận nhận hàng thành công!'));
       await fetchMyOrders();
     } catch (e) {
-      emit(OrdersError(message: _extractErrorMessage(e, 'Không thể xác nhận nhận hàng.')));
+      emit(
+        OrdersError(
+          message: _extractErrorMessage(e, 'Không thể xác nhận nhận hàng.'),
+        ),
+      );
     }
   }
 
@@ -62,7 +74,8 @@ class OrdersCubit extends Cubit<OrdersState> {
         '/orders/$orderId/re-order',
         data: {'orderItemIds': orderItemIds},
       );
-      final message = response.data['message'] ?? 'Đã thêm sản phẩm vào giỏ hàng!';
+      final message =
+          response.data['message'] ?? 'Đã thêm sản phẩm vào giỏ hàng!';
       final List<dynamic> addedItems = response.data['addedItems'] ?? [];
       final List<String> variantIds = addedItems
           .map((item) => item['variantId']?.toString() ?? '')
@@ -72,7 +85,11 @@ class OrdersCubit extends Cubit<OrdersState> {
       emit(ReorderSuccess(message: message, variantIds: variantIds));
       await fetchMyOrders();
     } catch (e) {
-      emit(OrdersError(message: _extractErrorMessage(e, 'Không thể mua lại đơn hàng.')));
+      emit(
+        OrdersError(
+          message: _extractErrorMessage(e, 'Không thể mua lại đơn hàng.'),
+        ),
+      );
     }
   }
 
