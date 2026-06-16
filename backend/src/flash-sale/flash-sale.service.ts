@@ -2,14 +2,16 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateFlashSaleProductDto } from './dto/create-flash-sale-product.dto';
 import { UpdateFlashSaleTimeBulkDto } from './dto/update-flash-sale-time-bulk.dto';
-import { Prisma } from '@prisma/client';
+import { Prisma, NotificationType } from '@prisma/client';
 import { RedisService } from 'src/redis/redis.service';
+import { NotificationService } from 'src/notification/notification.service';
 
 @Injectable()
 export class FlashSaleService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly redisService: RedisService,
+        private readonly notificationService: NotificationService,
     ) { }
 
     // lấy danh sách các sản phẩm đang chạy chương trình fs
@@ -57,7 +59,8 @@ export class FlashSaleService {
 
         // kiểm tra biến thể tồn tại
         const variant = await this.prisma.productVariant.findUnique({
-            where: { id: productVariantId }
+            where: { id: productVariantId },
+            include: { product: true }
         });
         if (!variant) {
             throw new NotFoundException('Không tìm thấy biến thể sản phẩm này');
@@ -144,6 +147,27 @@ export class FlashSaleService {
             await this.redisService.set(redisKey, stockLimit, 'PX', ttlMs);
         }
 
+        // gửi thông báo đẩy đến tất cả user
+        try {
+            const formattedPrice = new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND',
+                maximumFractionDigits: 0,
+            }).format(flashPrice);
+
+            await this.notificationService.sendToAll({
+                notification: {
+                    title: '🔥 SIÊU KHUYẾN MÃI! 🔥',
+                    body: `Sản phẩm "${variant.product.name}" sẽ được mở bán Flash Sale với giá cực sốc ${formattedPrice} vào lúc ${starts.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} ngày ${starts.toLocaleDateString('vi-VN')}!`,
+                },
+                data: {
+                    type: 'flash_sale',
+                    productVariantId,
+                },
+                type: NotificationType.SYSTEM,
+            });
+        } catch (err) { }
+
         return newFsProduct;
     }
 
@@ -179,7 +203,7 @@ export class FlashSaleService {
             }
         }
 
-        return this.prisma.$transaction(async (tx) => {
+        const result = await this.prisma.$transaction(async (tx) => {
             const createdProducts: any[] = [];
 
             for (const variant of variants) {
@@ -249,6 +273,22 @@ export class FlashSaleService {
                 count: createdProducts.length
             };
         });
+
+        // gửi thông báo đẩy đến tất cả user
+        try {
+            await this.notificationService.sendToAll({
+                notification: {
+                    title: '🔥 ĐẠI TIỆC FLASH SALE GIỜ VÀNG! 🔥',
+                    body: `Có thêm ${variants.length} sản phẩm cực hot vừa được lên lịch mở bán Flash Sale vào lúc ${starts.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} ngày ${starts.toLocaleDateString('vi-VN')}! Đừng bỏ lỡ!`,
+                },
+                data: {
+                    type: 'flash_sale',
+                },
+                type: NotificationType.SYSTEM,
+            });
+        } catch (err) { }
+
+        return result;
     }
 
     // cập nhật thời gian hàng loạt

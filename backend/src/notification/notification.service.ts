@@ -179,6 +179,77 @@ export class NotificationService implements OnModuleInit {
   }
 
   /**
+   * gửi thông báo đẩy đến tất cả người dùng trong hệ thống (broadcast)
+   * 
+   * tự động tạo lịch sử in-app notification cho mọi người dùng
+   * gom toàn bộ token FCM đang hoạt động để đẩy multicast
+   */
+  async sendToAll(payload: Omit<PushPayload, 'userId'>) {
+    try {
+      const users = await this.prisma.user.findMany({
+        select: { id: true }
+      });
+
+      if (users.length > 0) {
+        await this.prisma.notification.createMany({
+          data: users.map((user) => ({
+            userId: user.id,
+            title: payload.notification.title,
+            body: payload.notification.body,
+            type: payload.type || NotificationType.SYSTEM,
+            data: payload.data ? JSON.parse(JSON.stringify(payload.data)) : null,
+          })),
+        });
+      }
+
+      if (!this.firebaseReady) {
+        this.logger.warn('Firebase Admin is not configured; push skipped');
+        return;
+      }
+
+      const tokens = await this.prisma.fcmToken.findMany({
+        select: { token: true }
+      });
+
+      if (tokens.length === 0) return;
+
+      const tokenValues = tokens.map((item) => item.token);
+
+      const response = await admin.messaging().sendEachForMulticast({
+        tokens: tokenValues,
+        notification: payload.notification,
+        data: this.stringifyData(payload.data || {}),
+        android: {
+          priority: 'high',
+        },
+        apns: {
+          payload: {
+            aps: {
+              sound: 'default',
+            },
+          },
+        },
+      });
+
+      const invalidTokens = response.responses
+        .map((result, index) =>
+          !result.success && this.isInvalidTokenError(result.error)
+            ? tokenValues[index]
+            : null,
+        )
+        .filter((token): token is string => Boolean(token));
+
+      if (invalidTokens.length > 0) {
+        await this.prisma.fcmToken.deleteMany({
+          where: { token: { in: invalidTokens } },
+        });
+      }
+    } catch (error) {
+      this.logger.error(`Failed to broadcast push notification: ${this.errorMessage(error)}`);
+    }
+  }
+
+  /**
    * lấy danh sách thông báo của người dùng kèm phân trang
    * 
    * phân giải tham số phân trang
