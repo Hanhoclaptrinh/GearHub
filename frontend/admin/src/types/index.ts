@@ -221,3 +221,4 @@ export interface Review {
   user?: User;
   variantName?: string;
 }
+export * from './flash-sale.types';

@@ -18,6 +18,7 @@ import { authService } from './services/auth.service';
 import { VoucherList } from './features/vouchers/VoucherList';
 import { ReviewList } from './features/reviews/ReviewList';
 import { ActivityLogList } from './features/activity-logs/ActivityLogList';
+import { FlashSaleList } from './features/products/FlashSaleList';
 import { Toaster } from 'sonner';
 
 
@@ -97,6 +98,7 @@ const App: React.FC = () => {
             <Route path="products" element={<ProductList />} />
             <Route path="products/create" element={<ProductPage />} />
             <Route path="products/edit/:slug" element={<ProductPage />} />
+            <Route path="flash-sales" element={<FlashSaleList />} />
             <Route path="inventory" element={<InventoryPage />} />
             <Route path="orders" element={<OrderList />} />
             <Route path="chat" element={<ChatCenterPage />} />

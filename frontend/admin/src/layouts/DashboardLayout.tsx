@@ -41,6 +41,7 @@ const navigation = [
   { name: 'Quản lý danh mục', icon: Tag, path: '/categories', roles: ['ADMIN', 'STAFF'] },
   { name: 'Quản lý thương hiệu', icon: Briefcase, path: '/brands', roles: ['ADMIN', 'STAFF'] },
   { name: 'Quản lý ưu đãi', icon: Ticket, path: '/vouchers', roles: ['ADMIN', 'STAFF'] },
+  { name: 'Quản lý Flash Sale', icon: Ticket, path: '/flash-sales', roles: ['ADMIN', 'STAFF'] },
   { name: 'Quản lý giao dịch', icon: CreditCard, path: '/transactions', roles: ['ADMIN'] },
   { name: 'Lịch sử hoạt động', icon: History, path: '/activity-logs', roles: ['ADMIN'] },
 ];
