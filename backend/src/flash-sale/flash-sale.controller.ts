@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { FlashSaleService } from './flash-sale.service';
 import { CreateFlashSaleProductDto } from './dto/create-flash-sale-product.dto';
+import { CreateFlashSaleBulkDto } from './dto/create-flash-sale-bulk.dto';
 import { UpdateFlashSaleTimeBulkDto } from './dto/update-flash-sale-time-bulk.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
@@ -22,6 +23,13 @@ export class FlashSaleController {
     @Roles(Role.ADMIN, Role.STAFF)
     async create(@Body() dto: CreateFlashSaleProductDto) {
         return this.flashSaleService.createFlashSaleProduct(dto);
+    }
+
+    @Post('admin/flash-sale/bulk')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.STAFF)
+    async createBulk(@Body() dto: CreateFlashSaleBulkDto) {
+        return this.flashSaleService.createFlashSaleBulk(dto);
     }
 
     @Patch('admin/flash-sale/bulk-time')

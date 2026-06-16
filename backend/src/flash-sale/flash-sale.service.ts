@@ -3,10 +3,14 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateFlashSaleProductDto } from './dto/create-flash-sale-product.dto';
 import { UpdateFlashSaleTimeBulkDto } from './dto/update-flash-sale-time-bulk.dto';
 import { Prisma } from '@prisma/client';
+import { RedisService } from 'src/redis/redis.service';
 
 @Injectable()
 export class FlashSaleService {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly redisService: RedisService,
+    ) { }
 
     // lấy danh sách các sản phẩm đang chạy chương trình fs
     async getClientFlashSales(status: 'active' | 'upcoming' | 'all' = 'all') {
@@ -109,7 +113,7 @@ export class FlashSaleService {
             throw new BadRequestException('Sản phẩm đã có lịch tham gia Flash Sale khác trùng thời gian này');
         }
 
-        return this.prisma.flashSaleProduct.create({
+        const newFsProduct = await this.prisma.flashSaleProduct.create({
             data: {
                 productVariantId,
                 flashPrice: new Prisma.Decimal(flashPrice),
@@ -118,6 +122,116 @@ export class FlashSaleService {
                 expiresAt: expires,
                 soldCount: 0
             }
+        });
+
+        /**
+         * đồng bộ tồn kho flashsale từ db lên redis
+         * xử lý chịu tải cao
+         * hạn chế nghẽn cổ chai - nhiều user truy cập cùng lúc
+        */
+        // key định danh
+        const redisKey = `flash_sale:stock:${productVariantId}`;
+        // thời gian hết hạn key - milisecond
+        const ttlMs = expires.getTime() - Date.now();
+        if (ttlMs > 0) {
+            await this.redisService.set(redisKey, stockLimit, 'PX', ttlMs);
+        }
+
+        return newFsProduct;
+    }
+
+    // thêm sản phẩm vào danh sách fs hàng loạt - admin flow
+    async createFlashSaleBulk(dto: any) {
+        const { productVariantIds, discountType, discountValue, stockLimit, startsAt, expiresAt } = dto;
+        const starts = new Date(startsAt);
+        const expires = new Date(expiresAt);
+        const now = new Date();
+
+        if (starts >= expires) {
+            throw new BadRequestException('Thời gian bắt đầu phải trước thời gian kết thúc');
+        }
+        if (expires <= now) {
+            throw new BadRequestException('Thời gian kết thúc phải lớn hơn thời gian hiện tại');
+        }
+
+        // lấy tất cả thông tin biến thể
+        const variants = await this.prisma.productVariant.findMany({
+            where: { id: { in: productVariantIds } }
+        });
+
+        if (variants.length !== productVariantIds.length) {
+            throw new NotFoundException('Một hoặc nhiều biến thể sản phẩm không được tìm thấy');
+        }
+
+        return this.prisma.$transaction(async (tx) => {
+            const createdProducts: any[] = [];
+
+            for (const variant of variants) {
+                // tính toán giá flash sale
+                let flashPrice = 0;
+                const basePrice = Number(variant.price); // giá ban đầu
+
+                // thực hiện cập nhật giá fs dựa trên loại giảm giá
+                // theo %, fix cứng giá được giảm hoặc niêm yết giá cuối (giá fs)
+                if (discountType === 'PERCENT') {
+                    flashPrice = basePrice * (1 - discountValue / 100);
+                } else if (discountType === 'FIXED_AMOUNT') {
+                    flashPrice = Math.max(0, basePrice - discountValue);
+                } else if (discountType === 'PRICE') {
+                    flashPrice = discountValue;
+                }
+
+                // kiểm tra trùng lịch
+                const overlap = await tx.flashSaleProduct.findFirst({
+                    where: {
+                        productVariantId: variant.id,
+                        OR: [
+                            {
+                                startsAt: { lte: starts },
+                                expiresAt: { gte: expires }
+                            },
+                            {
+                                startsAt: { lte: starts },
+                                expiresAt: { gt: starts }
+                            },
+                            {
+                                startsAt: { lt: expires },
+                                expiresAt: { gte: expires }
+                            }
+                        ]
+                    }
+                });
+
+                if (overlap) {
+                    throw new BadRequestException(
+                        `Sản phẩm SKU ${variant.sku} đã có lịch tham gia Flash Sale khác trùng thời gian này`
+                    );
+                }
+
+                const newFsProduct = await tx.flashSaleProduct.create({
+                    data: {
+                        productVariantId: variant.id,
+                        flashPrice: new Prisma.Decimal(flashPrice),
+                        stockLimit,
+                        startsAt: starts,
+                        expiresAt: expires,
+                        soldCount: 0
+                    }
+                });
+                createdProducts.push(newFsProduct);
+
+                // đồng bộ tồn kho lên redis
+                const redisKey = `flash_sale:stock:${variant.id}`;
+                const ttlMs = expires.getTime() - Date.now();
+                if (ttlMs > 0) {
+                    await this.redisService.set(redisKey, stockLimit, 'PX', ttlMs);
+                }
+            }
+
+            return {
+                message: `Đã lên lịch thành công cho ${createdProducts.length} sản phẩm Flash Sale`,
+                count: createdProducts.length
+            };
         });
     }
 
@@ -179,6 +293,23 @@ export class FlashSaleService {
                 expiresAt: expires
             }
         });
+
+        // lấy thông tin mới nhất từ db của các sp fs vừa được update thời gian
+        const updatedProducts = await this.prisma.flashSaleProduct.findMany({
+            where: { id: { in: ids } }
+        });
+        // duyệt từng sp để update lại cấu hình trên redis
+        for (const fp of updatedProducts) {
+            const redisKey = `flash_sale:stock:${fp.productVariantId}`;
+            // tính lại thời gian hết hạn mới dựa trên thời gian expire mới vừa được update
+            const ttlMs = fp.expiresAt.getTime() - Date.now();
+            if (ttlMs > 0) {
+                const remaining = fp.stockLimit - fp.soldCount;
+                await this.redisService.set(redisKey, remaining, 'PX', ttlMs);
+            } else {
+                await this.redisService.del(redisKey);
+            }
+        }
 
         return {
             message: `Đã cập nhật thời gian thành công cho ${result.count} sản phẩm Flash Sale`,
@@ -243,53 +374,63 @@ export class FlashSaleService {
             throw new NotFoundException('Không tìm thấy bản ghi Flash Sale này');
         }
 
-        return this.prisma.flashSaleProduct.delete({
+        const deleted = await this.prisma.flashSaleProduct.delete({
             where: { id }
         });
+
+        // xóa khỏi Redis
+        const redisKey = `flash_sale:stock:${deleted.productVariantId}`;
+        await this.redisService.del(redisKey);
+
+        return deleted;
     }
 
     // helper
     // xác thực và lấy giá flash sale trong flow đặt hàng
     async validateAndGetFlashSale(productVariantId: string, quantity: number, tx: Prisma.TransactionClient) {
         const now = new Date();
+        // kiểm tra có chương trình fs nào đang hoạt động không
+        const flashSale = await tx.flashSaleProduct.findFirst({
+            where: {
+                productVariantId,
+                startsAt: { lte: now },
+                expiresAt: { gte: now }
+            }
+        });
 
-        /**
-         * lock dòng dữ liệu tránh race-condition
-         * 
-         * tránh vấn đề mua lố trong fs
-         * 
-         * thực hiện tìm chính xác biến thể mà người dùng muốn mua
-         * đảm bảo thời điểm user nhấn mua phải nằm trong khoảng thời gian fs đang chạy
-         * nếu chưa tới (click sớm) hoặc hết giờ (click trễ) thì skip
-         * đảm bảo tại một thời điểm chỉ có tối đa một đợt fs hoạt động
-        */
-        const flashSales = await tx.$queryRaw<any[]>`
-            SELECT id, flash_price as flashPrice, stock_limit as stockLimit, sold_count as soldCount 
-            FROM flash_sale_products
-            WHERE product_variant_id = ${productVariantId}
-              AND starts_at <= ${now}
-              AND expires_at >= ${now}
-            LIMIT 1
-            FOR UPDATE;
-        `;
-
-        if (!flashSales || flashSales.length === 0) {
+        if (!flashSale) {
             return null; // không có flash sale đang diễn ra cho sản phẩm này
         }
 
-        const flashSale = flashSales[0];
+        // tự động nạp tồn kho vào redis nếu bị mất cache
+        const redisKey = `flash_sale:stock:${productVariantId}`;
+        let redisStock = await this.redisService.get(redisKey);
+        if (redisStock === null) {
+            const remaining = flashSale.stockLimit - flashSale.soldCount;
+            const ttlMs = flashSale.expiresAt.getTime() - now.getTime();
+            if (ttlMs > 0) {
+                await this.redisService.set(redisKey, remaining, 'PX', ttlMs);
+                redisStock = remaining.toString();
+            } else {
+                return null;
+            }
+        }
 
-        // kiểm tra xem lượng mua có vượt quá stock giới hạn không
-        if (Number(flashSale.soldCount) + quantity > Number(flashSale.stockLimit)) {
+        // dùng decrby trừ đi số lượng user muốn mua trực tiếp trên RAM
+        const remaining = await this.redisService.decrby(redisKey, quantity);
+
+        if (remaining < 0) {
+            // nếu mua lố, rollback cộng lại số lượng đã trừ
+            await this.redisService.incrby(redisKey, quantity);
             throw new BadRequestException('Sản phẩm Flash Sale đã hết hàng trong khung giờ này!');
         }
 
-        // thực hiện trừ kho fs
-        // hạn mức khuyến mãi
+        // bán sp fs thành công
+        // đồng bộ số lượng bán vào db
         await tx.flashSaleProduct.update({
             where: { id: flashSale.id },
             data: {
-                soldCount: { increment: quantity } // tăng sold count
+                soldCount: { increment: quantity }
             }
         });
 
@@ -312,12 +453,23 @@ export class FlashSaleService {
         });
 
         if (flashSale) {
-            // giảm sold count đi, giới hạn tối thiểu là 0
             const newSoldCount = Math.max(0, flashSale.soldCount - quantity);
             await tx.flashSaleProduct.update({
                 where: { id: flashSale.id },
                 data: { soldCount: newSoldCount }
             });
+
+            // Cập nhật lại kho trên Redis
+            await this.incrbyRedisStock(productVariantId, quantity);
+        }
+    }
+
+    // helper để hoàn trả kho Redis trực tiếp
+    async incrbyRedisStock(productVariantId: string, quantity: number) {
+        const redisKey = `flash_sale:stock:${productVariantId}`;
+        const exists = await this.redisService.exists(redisKey);
+        if (exists) {
+            await this.redisService.incrby(redisKey, quantity);
         }
     }
 }

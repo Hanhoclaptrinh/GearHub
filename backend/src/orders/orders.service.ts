@@ -49,155 +49,176 @@ export class OrdersService {
     const { items, voucherId, ...shippingInfor } = data;
     const variantIds = items.map((i) => i.variantId);
 
-    return await this.prisma.$transaction(async (tx) => {
-      // lấy thông tin giá bán và tồn kho tại thời điểm mua
-      // ngăn chặn việc gian lận hoặc thay đổi giá từ phía client
-      const variants = await tx.productVariant.findMany({
-        where: { id: { in: variantIds } },
-        include: {
-          product: { select: { name: true } },
-        },
-      });
+    // mảng lưu trạng thái
+    // lưu lại danh sách các sản phẩm fs mà user đã trừ kho trên redis thành công - mua fs thành công
+    const decrementedFlashSales: { variantId: string; quantity: number }[] = [];
 
-      if (variants.length !== items.length) {
-        throw new NotFoundException(
-          'Một số sản phẩm không tồn tại trong hệ thống',
-        );
-      }
-
-      // tính tổng giá trị tạm tính và kiểm tra tồn kho để đảm bảo cửa hàng có đủ số lượng sản phẩm cung ứng
-      let totalAmount = 0;
-      const orderItemsData: any[] = [];
-
-      // tìm sản phẩm và kiểm tra tồn kho
-      for (const item of items) {
-        const variant = variants.find((v) => v.id === item.variantId);
-        if (!variant) {
-          throw new NotFoundException(
-            `Sản phẩm với ID ${item.variantId} không tồn tại`,
-          );
-        }
-
-        // chặn xử lý tạo đơn hàng nếu số lượng mua vượt quá số lượng tồn kho khả dụng của sản phẩm
-        if (variant.stock < item.quantity) {
-          throw new BadRequestException(
-            `Sản phẩm ${variant.name} chỉ còn ${variant.stock} sản phẩm`,
-          );
-        }
-
-        // kiểm tra sản phẩm này có đang chạy flash sale không
-        // nếu luồng order bị lỗi - hủy toàn bộ các hành động trừ kho flash sale
-        const flashSale = await this.flashSaleService.validateAndGetFlashSale(
-          item.variantId,
-          item.quantity,
-          tx,
-        );
-        // quyết định giá mua thực tế và cộng dồn tiền vào đơn hàng
-        // nếu có chương trình flash sale thì lấy giá được giảm
-        // không thì lấy giá gốc của biến thể
-        const priceAtPurchase = flashSale ? flashSale.flashPrice : Number(variant.price);
-        totalAmount += priceAtPurchase * item.quantity; // tổng tiền đơn
-
-        orderItemsData.push({
-          productVariantId: item.variantId,
-          quantity: item.quantity,
-          priceAtPurchase: new Prisma.Decimal(priceAtPurchase), // snap lại giá lúc user mua, tránh làm sai lệch lịch sử đơn hàng khi hết đợt flash sale
-          productName: variant.product.name,
-          variantName: variant.name,
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        // lấy thông tin giá bán và tồn kho tại thời điểm mua
+        // ngăn chặn việc gian lận hoặc thay đổi giá từ phía client
+        const variants = await tx.productVariant.findMany({
+          where: { id: { in: variantIds } },
+          include: {
+            product: { select: { name: true } },
+          },
         });
-      }
 
-      // mô hình giá đã bao gồm VAT
-      const subtotal = totalAmount; // tổng tiền đã bao gồm thuế
-      // trích xuất 8% thuế từ bên trong (8% theo mức thuế cho các sản phẩm phần cứng công nghệ hiện tại ở VN)
-      const vatAmount = (subtotal / 1.08) * 0.08;
-      const baseAmount = subtotal - vatAmount; // giá gốc chưa thuế
+        if (variants.length !== items.length) {
+          throw new NotFoundException(
+            'Một số sản phẩm không tồn tại trong hệ thống',
+          );
+        }
 
-      let voucherDiscount = 0;
+        // tính tổng giá trị tạm tính và kiểm tra tồn kho để đảm bảo cửa hàng có đủ số lượng sản phẩm cung ứng
+        let totalAmount = 0;
+        const orderItemsData: any[] = [];
 
-      // xác thực và tính toán giá trị được giảm từ voucher (nếu có áp dụng)
-      if (voucherId) {
-        const voucher = await this.promotionService.validateVoucherForCheckout(
-          userId,
-          voucherId,
-          subtotal,
-          tx,
-        );
-        voucherDiscount = this.promotionService.calculateVoucherDiscount(
-          voucher,
-          subtotal,
-        );
-      }
+        // tìm sản phẩm và kiểm tra tồn kho
+        for (const item of items) {
+          const variant = variants.find((v) => v.id === item.variantId);
+          if (!variant) {
+            throw new NotFoundException(
+              `Sản phẩm với ID ${item.variantId} không tồn tại`,
+            );
+          }
 
-      const finalTotal = Math.max(0, subtotal - voucherDiscount);
+          // chặn xử lý tạo đơn hàng nếu số lượng mua vượt quá số lượng tồn kho khả dụng của sản phẩm
+          if (variant.stock < item.quantity) {
+            throw new BadRequestException(
+              `Sản phẩm ${variant.name} chỉ còn ${variant.stock} sản phẩm`,
+            );
+          }
 
-      // khởi tạo đơn hàng chính thức và thực hiện tracking đơn
-      const order = await tx.order.create({
-        data: {
-          userId,
-          totalAmount: new Prisma.Decimal(finalTotal),
-          ...shippingInfor,
-          voucherDiscount: new Prisma.Decimal(voucherDiscount),
-          items: {
-            create: orderItemsData,
-          },
-          tracking: {
-            create: {
-              statusLabel: 'Đặt hàng thành công',
-              description:
-                'Đơn hàng đã được hệ thống tiếp nhận và đang chờ xử lý',
-            },
-          },
-        },
-      });
-
-      const isCOD =
-        shippingInfor.paymentMethod === PaymentMethod.COD ||
-        !shippingInfor.paymentMethod;
-
-      // với COD voucher được đánh dấu sử dụng ngay
-      // với thanh toán online, chỉ liên kết voucher vào đơn hàng tạm thời và sẽ hoàn trả lại 
-      // nếu khách hàng hủy thanh toán hoặc giao dịch thất bại giữa chừng
-      if (isCOD) {
-        if (voucherId) {
-          await this.promotionService.markVoucherUsed(
-            userId,
-            voucherId,
-            order.id,
+          // kiểm tra sản phẩm này có đang chạy flash sale không
+          // nếu luồng order bị lỗi - hủy toàn bộ các hành động trừ kho flash sale
+          const flashSale = await this.flashSaleService.validateAndGetFlashSale(
+            item.variantId,
+            item.quantity,
             tx,
           );
-        }
-      } else {
-        if (voucherId) {
-          await tx.userVoucher.update({
-            where: { userId_voucherId: { userId, voucherId } },
-            data: { orderId: order.id },
+          // nếu sp này đang được fs và trừ kho thành công
+          // lưu vào temp arr
+          if (flashSale) {
+            decrementedFlashSales.push({ variantId: item.variantId, quantity: item.quantity });
+          }
+          // quyết định giá mua thực tế và cộng dồn tiền vào đơn hàng
+          // nếu có chương trình flash sale thì lấy giá được giảm
+          // không thì lấy giá gốc của biến thể
+          const priceAtPurchase = flashSale ? flashSale.flashPrice : Number(variant.price);
+          totalAmount += priceAtPurchase * item.quantity; // tổng tiền đơn
+
+          orderItemsData.push({
+            productVariantId: item.variantId,
+            quantity: item.quantity,
+            priceAtPurchase: new Prisma.Decimal(priceAtPurchase), // snap lại giá lúc user mua, tránh làm sai lệch lịch sử đơn hàng khi hết đợt flash sale
+            productName: variant.product.name,
+            variantName: variant.name,
           });
         }
-      }
 
-      // trừ tồn kho thông qua InventoriesService để tự động ghi lại lịch sử giao dịch kho bán hàng
-      for (const item of items) {
-        await this.inventoriesService.adjustStock({
-          variantId: item.variantId,
-          type: InventoryTransactionType.SALE,
-          quantity: item.quantity,
-          referenceId: order.id,
-          reason: `Trừ kho cho đơn hàng #${order.id.slice(0, 8)}`,
-          tx,
+        // mô hình giá đã bao gồm VAT
+        const subtotal = totalAmount; // tổng tiền đã bao gồm thuế
+        // trích xuất 8% thuế từ bên trong (8% theo mức thuế cho các sản phẩm phần cứng công nghệ hiện tại ở VN)
+        const vatAmount = (subtotal / 1.08) * 0.08;
+        const baseAmount = subtotal - vatAmount; // giá gốc chưa thuế
+
+        let voucherDiscount = 0;
+
+        // xác thực và tính toán giá trị được giảm từ voucher (nếu có áp dụng)
+        if (voucherId) {
+          const voucher = await this.promotionService.validateVoucherForCheckout(
+            userId,
+            voucherId,
+            subtotal,
+            tx,
+          );
+          voucherDiscount = this.promotionService.calculateVoucherDiscount(
+            voucher,
+            subtotal,
+          );
+        }
+
+        const finalTotal = Math.max(0, subtotal - voucherDiscount);
+
+        // khởi tạo đơn hàng chính thức và thực hiện tracking đơn
+        const order = await tx.order.create({
+          data: {
+            userId,
+            totalAmount: new Prisma.Decimal(finalTotal),
+            ...shippingInfor,
+            voucherDiscount: new Prisma.Decimal(voucherDiscount),
+            items: {
+              create: orderItemsData,
+            },
+            tracking: {
+              create: {
+                statusLabel: 'Đặt hàng thành công',
+                description:
+                  'Đơn hàng đã được hệ thống tiếp nhận và đang chờ xử lý',
+              },
+            },
+          },
         });
-      }
 
-      // giải phóng các item đã được mua khỏi giỏ hàng của user
-      await tx.cartItem.deleteMany({
-        where: {
-          cart: { userId },
-          productVariantId: { in: variantIds },
-        },
+        const isCOD =
+          shippingInfor.paymentMethod === PaymentMethod.COD ||
+          !shippingInfor.paymentMethod;
+
+        // với COD voucher được đánh dấu sử dụng ngay
+        // với thanh toán online, chỉ liên kết voucher vào đơn hàng tạm thời và sẽ hoàn trả lại 
+        // nếu khách hàng hủy thanh toán hoặc giao dịch thất bại giữa chừng
+        if (isCOD) {
+          if (voucherId) {
+            await this.promotionService.markVoucherUsed(
+              userId,
+              voucherId,
+              order.id,
+              tx,
+            );
+          }
+        } else {
+          if (voucherId) {
+            await tx.userVoucher.update({
+              where: { userId_voucherId: { userId, voucherId } },
+              data: { orderId: order.id },
+            });
+          }
+        }
+
+        // trừ tồn kho thông qua InventoriesService để tự động ghi lại lịch sử giao dịch kho bán hàng
+        for (const item of items) {
+          await this.inventoriesService.adjustStock({
+            variantId: item.variantId,
+            type: InventoryTransactionType.SALE,
+            quantity: item.quantity,
+            referenceId: order.id,
+            reason: `Trừ kho cho đơn hàng #${order.id.slice(0, 8)}`,
+            tx,
+          });
+        }
+
+        // giải phóng các item đã được mua khỏi giỏ hàng của user
+        await tx.cartItem.deleteMany({
+          where: {
+            cart: { userId },
+            productVariantId: { in: variantIds },
+          },
+        });
+
+        return order;
       });
-
-      return order;
-    });
+    } catch (error) {
+      // hoàn trả tồn kho redis cho các sản phẩm flash sale đã trừ kho
+      for (const df of decrementedFlashSales) {
+        try {
+          await this.flashSaleService.incrbyRedisStock(df.variantId, df.quantity);
+        } catch (redisError) {
+          this.logger.error(`Failed to rollback Redis stock for variant ${df.variantId}:`, redisError);
+        }
+      }
+      throw error;
+    }
   }
 
   /**
