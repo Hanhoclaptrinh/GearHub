@@ -63,6 +63,13 @@ export class FlashSaleService {
             throw new NotFoundException('Không tìm thấy biến thể sản phẩm này');
         }
 
+        // kiểm tra số lượng limit so với tồn kho thực tế
+        if (stockLimit > variant.stock) {
+            throw new BadRequestException(
+                `Số lượng giới hạn Flash Sale (${stockLimit}) không được vượt quá số lượng tồn kho thực tế của sản phẩm (Hiện có: ${variant.stock})`
+            );
+        }
+
         // time validate
         const starts = new Date(startsAt);
         const expires = new Date(expiresAt);
@@ -161,6 +168,15 @@ export class FlashSaleService {
 
         if (variants.length !== productVariantIds.length) {
             throw new NotFoundException('Một hoặc nhiều biến thể sản phẩm không được tìm thấy');
+        }
+
+        // kiểm tra số lượng limit so với tồn kho thực tế của từng sản phẩm trước khi tạo
+        for (const variant of variants) {
+            if (stockLimit > variant.stock) {
+                throw new BadRequestException(
+                    `Sản phẩm SKU ${variant.sku} chỉ còn ${variant.stock} sản phẩm trong kho, không thể thiết lập giới hạn Flash Sale là ${stockLimit}`
+                );
+            }
         }
 
         return this.prisma.$transaction(async (tx) => {
