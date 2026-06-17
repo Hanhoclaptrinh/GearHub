@@ -613,6 +613,7 @@ export class FlashSaleService {
                     data: {
                         type: 'flash_sale',
                         productVariantId: representative.productVariantId,
+                        productId: productId,
                     },
                     type: NotificationType.PROMOTION,
                 });

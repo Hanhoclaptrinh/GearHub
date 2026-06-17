@@ -11,6 +11,8 @@ import 'package:mobile/src/core/storage/secure_storage_service.dart';
 import 'package:mobile/src/features/chat/presentation/pages/concierge_screen.dart';
 import 'package:mobile/src/features/chat/presentation/state/concierge_cubit.dart';
 import 'package:mobile/src/features/profile/presentation/pages/order_history_page.dart';
+import 'package:mobile/src/features/product_detail/data/datasources/product_detail_remote_datasource.dart';
+import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 
 ///quản lý vòng đời push notification của app
 ///xin quyền nhận thông báo, khởi tạo local notification
@@ -226,6 +228,61 @@ class PushNotificationService {
           ),
         ),
       );
+      return;
+    }
+    if (type == 'flash_sale') {
+      final productVariantId = data['productVariantId'] as String?;
+      final productId = data['productId'] as String?;
+
+      if (productId != null || productVariantId != null) {
+        _navigateToProductDetail(navigator, productId, productVariantId);
+      }
+    }
+  }
+
+  ///helper tải chi tiết sản phẩm và điều hướng từ notification
+  Future<void> _navigateToProductDetail(
+    NavigatorState navigator,
+    String? productId,
+    String? productVariantId,
+  ) async {
+    final context = navigator.context;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+    try {
+      String targetProductId = productId ?? '';
+
+      if (targetProductId.isEmpty && productVariantId != null) {
+        //giả lập lấy productId nếu backend truyền qua payload
+      }
+      if (targetProductId.isEmpty) {
+        //fallback nếu không có ID hợp lệ
+        if (context.mounted) Navigator.of(context).pop();
+        return;
+      }
+
+      final pDetail = await getIt<ProductDetailRemoteDatasource>()
+          .getProductDetail(targetProductId);
+
+      if (context.mounted) {
+        Navigator.of(context).pop();
+
+        //điều hướng trực tiếp sang trang chi tiết sp
+        navigator.push(
+          MaterialPageRoute(
+            builder: (_) => ProductDetailPage(product: pDetail),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('[Push] Error navigating to product detail: $e');
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
     }
   }
 
