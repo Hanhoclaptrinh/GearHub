@@ -20,7 +20,7 @@ class CartItemEntity {
     this.isSelected = true,
   });
 
-  double get itemTotal => quantity * productVariant.price;
+  double get itemTotal => quantity * (productVariant.hasActiveFlashSale ? productVariant.flashPrice! : productVariant.price);
 
   CartItemEntity copyWith({
     String? id,

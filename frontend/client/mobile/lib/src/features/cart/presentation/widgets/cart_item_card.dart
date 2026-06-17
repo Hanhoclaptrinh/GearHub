@@ -301,7 +301,11 @@ class _CartItemCardState extends State<CartItemCard>
   Widget build(BuildContext context) {
     final isSelected = widget.item.isSelected;
     final productName = widget.item.product.baseName;
-    final productPrice = widget.item.productVariant.price;
+    final isFlashSale = widget.item.productVariant.hasActiveFlashSale;
+    final productPrice = isFlashSale
+        ? widget.item.productVariant.flashPrice!
+        : widget.item.productVariant.price;
+    final originalPrice = widget.item.productVariant.price;
     final productImage =
         widget.item.productVariant.imageUrl ?? widget.item.product.image;
     final variantName = _getVariantComboName(widget.item.productVariant);
@@ -460,29 +464,64 @@ class _CartItemCardState extends State<CartItemCard>
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Expanded(
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    formatVND(productPrice),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 22,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface,
-                                      letterSpacing: -0.5,
-                                      height: 1.0,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Row(
+                                        children: [
+                                          Text(
+                                            formatVND(productPrice),
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 20,
+                                              color: isFlashSale
+                                                  ? const Color(0xFFF59E0B)
+                                                  : Theme.of(
+                                                      context,
+                                                    ).colorScheme.onSurface,
+                                              letterSpacing: -0.5,
+                                              height: 1.0,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
+                                    if (isFlashSale) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        formatVND(originalPrice),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant
+                                              .withValues(alpha: 0.5),
+                                          decoration:
+                                              TextDecoration.lineThrough,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              QuantitySelector(
-                                quantity: widget.item.quantity,
-                                maxQuantity: widget.item.productVariant.stock,
-                                onIncrement: widget.onIncrement,
-                                onDecrement: widget.onDecrement,
+                              Builder(
+                                builder: (context) {
+                                  int maxAvailable = widget.item.productVariant.stock;
+                                  if (widget.item.productVariant.hasActiveFlashSale) {
+                                    final remainingFlash = (widget.item.productVariant.flashStockLimit ?? 0) - (widget.item.productVariant.flashSoldCount ?? 0);
+                                    maxAvailable = remainingFlash > 0 ? remainingFlash : 0;
+                                  }
+                                  return QuantitySelector(
+                                    quantity: widget.item.quantity,
+                                    maxQuantity: maxAvailable,
+                                    onIncrement: widget.onIncrement,
+                                    onDecrement: widget.onDecrement,
+                                  );
+                                },
                               ),
                             ],
                           ),

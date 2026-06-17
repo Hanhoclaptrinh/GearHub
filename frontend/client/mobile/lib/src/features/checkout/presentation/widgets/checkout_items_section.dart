@@ -321,14 +321,34 @@ class _CheckoutItemsSectionState extends State<CheckoutItemsSection> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(
-              formatVND(item.productVariant.price),
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-                color: primaryTextColor,
+            if (item.productVariant.hasActiveFlashSale) ...[
+              Text(
+                formatVND(item.productVariant.flashPrice!),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                  color: Color(0xFFF59E0B),
+                ),
               ),
-            ),
+              const SizedBox(height: 2),
+              Text(
+                formatVND(item.productVariant.price),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: secondaryTextColor.withValues(alpha: 0.5),
+                  decoration: TextDecoration.lineThrough,
+                ),
+              ),
+            ] else ...[
+              Text(
+                formatVND(item.productVariant.price),
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  color: primaryTextColor,
+                ),
+              ),
+            ],
             const SizedBox(height: 2),
             Text(
               "x${item.quantity}",

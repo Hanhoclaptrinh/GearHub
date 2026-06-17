@@ -108,7 +108,9 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                           ),
                           Text(
                             formatVND(
-                              (variant?.price ?? widget.product.price) *
+                              ((variant != null && variant.hasActiveFlashSale)
+                                      ? variant.flashPrice!
+                                      : (variant?.price ?? widget.product.price)) *
                                   widget.quantity,
                             ),
                             style: TextStyle(
@@ -228,12 +230,17 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
     }
 
     //cảnh báo nếu vượt limit stock
-    if (existingQty + widget.quantity > variant.stock) {
+    final remainingFlash = (variant.flashStockLimit ?? 0) - (variant.flashSoldCount ?? 0);
+    final maxAvailable = variant.hasActiveFlashSale ? remainingFlash : variant.stock;
+
+    if (existingQty + widget.quantity > maxAvailable) {
       StockLimitDialog.show(
         context,
-        stockCount: variant.stock,
+        stockCount: maxAvailable,
         currentQty: existingQty,
-        message: "Vượt giới hạn kho.",
+        message: variant.hasActiveFlashSale 
+            ? "Vượt giới hạn Flash Sale còn lại." 
+            : "Vượt giới hạn kho.",
       );
       return;
     }

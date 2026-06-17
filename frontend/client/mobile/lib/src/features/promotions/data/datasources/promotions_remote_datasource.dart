@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../models/flash_sale_product_model.dart';
 import '../models/voucher_model.dart';
 
 class PromotionsRemoteDatasource {
@@ -34,6 +35,18 @@ class PromotionsRemoteDatasource {
       final List data = response.data;
       return data
           .map((json) => VoucherModel.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<FlashSaleProductModel>> getActiveFlashSales() async {
+    try {
+      final response = await dio.get('/flash-sale/active');
+      final List data = response.data;
+      return data
+          .map((json) => FlashSaleProductModel.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
       rethrow;

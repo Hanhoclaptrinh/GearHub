@@ -179,34 +179,104 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                       color: brandAccent.withValues(alpha: 0.5),
                     ),
                     const SizedBox(height: 24),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          formatVND(
-                            currentVariant?.price ?? widget.product.price,
+                    if (currentVariant != null && currentVariant.hasActiveFlashSale) ...[
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: [
+                              Text(
+                                formatVND(currentVariant.flashPrice!),
+                                style: const TextStyle(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFFF59E0B),
+                                  height: 1.0,
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.flash_on_rounded, size: 12, color: Color(0xFFF59E0B)),
+                                    SizedBox(width: 2),
+                                    Text(
+                                      "FLASH SALE",
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w900,
+                                        color: Color(0xFFF59E0B),
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          style: TextStyle(
-                            fontSize: 36,
-                            fontWeight: FontWeight.w200,
-                            color: textHigh,
-                            height: 1.0,
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Text(
+                                formatVND(currentVariant.price),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: textLow.withValues(alpha: 0.5),
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                "Tiết kiệm ${formatVND(currentVariant.price - currentVariant.flashPrice!)}",
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF22C55E).withValues(alpha: 0.85),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 6, left: 8),
-                          child: Text(
-                            "NIÊM YẾT",
+                        ],
+                      ),
+                    ] else ...[
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            formatVND(
+                              currentVariant?.price ?? widget.product.price,
+                            ),
                             style: TextStyle(
-                              fontSize: 8,
-                              fontWeight: FontWeight.w800,
-                              color: textLow.withValues(alpha: 0.6),
-                              letterSpacing: 1.3,
+                              fontSize: 36,
+                              fontWeight: FontWeight.w200,
+                              color: textHigh,
+                              height: 1.0,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6, left: 8),
+                            child: Text(
+                              "NIÊM YẾT",
+                              style: TextStyle(
+                                fontSize: 8,
+                                fontWeight: FontWeight.w800,
+                                color: textLow.withValues(alpha: 0.6),
+                                letterSpacing: 1.3,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),

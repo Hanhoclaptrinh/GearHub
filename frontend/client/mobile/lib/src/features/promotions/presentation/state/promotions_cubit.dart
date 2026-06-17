@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../data/models/flash_sale_product_model.dart';
+import '../../data/models/voucher_model.dart';
 import '../../domain/repositories/promotions_repository.dart';
 import 'promotions_state.dart';
 
@@ -17,14 +19,17 @@ class PromotionsCubit extends Cubit<PromotionsState> {
       final results = await Future.wait([
         _repository.getAvailableVouchers(),
         _repository.getMyVouchers(),
+        _repository.getActiveFlashSales(),
       ]);
-      final vouchers = results[0];
-      final myVouchers = results[1];
+      final vouchers = results[0] as List<VoucherModel>;
+      final myVouchers = results[1] as List<VoucherModel>;
+      final flashSales = results[2] as List<FlashSaleProductModel>;
       final claimedIds = myVouchers.map((voucher) => voucher.id).toSet();
 
       emit(
         PromotionsLoaded(
           vouchers: vouchers,
+          flashSales: flashSales,
           claimedIds: claimedIds,
           claimingIds: const <String>{},
         ),

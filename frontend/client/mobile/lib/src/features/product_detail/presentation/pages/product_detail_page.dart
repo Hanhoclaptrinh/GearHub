@@ -305,6 +305,12 @@ class _ProductDetailViewState extends State<ProductDetailView> {
             : widget.initialProduct;
         final variant = _getCurrentVariant(product);
 
+        int maxStock = variant?.stock ?? 0;
+        if (variant != null && variant.hasActiveFlashSale) {
+          final remainingFlash = (variant.flashStockLimit ?? 0) - (variant.flashSoldCount ?? 0);
+          maxStock = remainingFlash > 0 ? remainingFlash : 0;
+        }
+
         return Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           extendBodyBehindAppBar: true,
@@ -351,20 +357,25 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                       product: product,
                       selectedAttributes: _selectedAttributes,
                       quantity: _quantity,
-                      maxQuantity: variant?.stock ?? 0,
+                      maxQuantity: maxStock,
                       onAttributeChanged: (k, v) {
                         setState(() {
                           _selectedAttributes[k] = v;
                           final newVariant = _getCurrentVariant(product);
-                          if (_quantity > (newVariant?.stock ?? 0)) {
-                            _quantity = (newVariant?.stock ?? 0).clamp(1, 99);
+                          int newMaxStock = newVariant?.stock ?? 0;
+                          if (newVariant != null && newVariant.hasActiveFlashSale) {
+                            final remainingFlash = (newVariant.flashStockLimit ?? 0) - (newVariant.flashSoldCount ?? 0);
+                            newMaxStock = remainingFlash > 0 ? remainingFlash : 0;
+                          }
+                          if (_quantity > newMaxStock) {
+                            _quantity = newMaxStock.clamp(1, 99);
                           }
                         });
                       },
                       isComboAvailable: (_, __) => true,
                       isValueInStock: (_, __) => true,
                       onIncrement: () {
-                        if (_quantity < (variant?.stock ?? 0)) {
+                        if (_quantity < maxStock) {
                           setState(() => _quantity++);
                           HapticFeedback.lightImpact();
                         }
@@ -376,9 +387,9 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                         }
                       },
                       onLongPressIncrement: () =>
-                          _startUpdateQuantity(true, variant?.stock ?? 0),
+                          _startUpdateQuantity(true, maxStock),
                       onLongPressDecrement: () =>
-                          _startUpdateQuantity(false, variant?.stock ?? 0),
+                          _startUpdateQuantity(false, maxStock),
                       onLongPressEnd: _stopUpdateQuantity,
                     ),
                   ),

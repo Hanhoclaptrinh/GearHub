@@ -1,5 +1,6 @@
 import '../datasources/promotions_remote_datasource.dart';
 import '../../domain/repositories/promotions_repository.dart';
+import '../models/flash_sale_product_model.dart';
 import '../models/voucher_model.dart';
 
 class PromotionsRepositoryImpl implements PromotionsRepository {
@@ -29,6 +30,15 @@ class PromotionsRepositoryImpl implements PromotionsRepository {
   Future<List<VoucherModel>> getMyVouchers() async {
     try {
       return await remoteDatasource.getMyVouchers();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<FlashSaleProductModel>> getActiveFlashSales() async {
+    try {
+      return await remoteDatasource.getActiveFlashSales();
     } catch (e) {
       rethrow;
     }

@@ -14,12 +14,15 @@ class CartItemModel extends CartItemEntity {
   });
 
   factory CartItemModel.fromJson(Map<String, dynamic> json) {
+    final variantMap = Map<String, dynamic>.from(json['productVariant'] ?? {});
+    if (json['flashSale'] != null) {
+      variantMap['flashSaleProducts'] = [json['flashSale']];
+    }
+
     return CartItemModel(
       id: json['id'] ?? '',
       cartId: json['cartId'] ?? '',
-      productVariant: ProductVariantModel.fromJson(
-        json['productVariant'] ?? {},
-      ),
+      productVariant: ProductVariantModel.fromJson(variantMap),
       product: json['product'] != null
           ? ProductModel.fromJson(json['product'])
           : (json['productVariant']?['product'] != null
