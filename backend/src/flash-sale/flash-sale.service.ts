@@ -1,13 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateFlashSaleProductDto } from './dto/create-flash-sale-product.dto';
 import { UpdateFlashSaleTimeBulkDto } from './dto/update-flash-sale-time-bulk.dto';
 import { Prisma, NotificationType } from '@prisma/client';
 import { RedisService } from 'src/redis/redis.service';
 import { NotificationService } from 'src/notification/notification.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class FlashSaleService {
+    private readonly logger = new Logger(FlashSaleService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly redisService: RedisService,
@@ -526,6 +529,96 @@ export class FlashSaleService {
         const exists = await this.redisService.exists(redisKey);
         if (exists) {
             await this.redisService.incrby(redisKey, quantity);
+        }
+    }
+
+    // cronjob chạy mỗi phút quét các chương trình fs chuẩn bị bắt đầu
+    @Cron(CronExpression.EVERY_MINUTE)
+    async handleFlashSaleStartNotifications() {
+        const now = new Date();
+        // lấy thời gian của phút hiện tại
+        // có thể trễ/sớm vài giây
+        const currentMinuteStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), 0);
+        const currentMinuteEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), 59, 999);
+
+        try {
+            // lấy danh sách sản phẩm fs bắt đầu trong phút này
+            const startingFlashSales = await this.prisma.flashSaleProduct.findMany({
+                where: {
+                    startsAt: {
+                        gte: currentMinuteStart,
+                        lte: currentMinuteEnd,
+                    },
+                },
+                include: {
+                    productVariant: {
+                        include: {
+                            product: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+
+            if (startingFlashSales.length === 0) return;
+
+            // nhóm các fs prod theo productId của sản phẩm gốc
+            const groupedByProduct: Record<string, typeof startingFlashSales> = {};
+            for (const fs of startingFlashSales) {
+                const productId = fs.productVariant.product.id;
+                if (!groupedByProduct[productId]) {
+                    groupedByProduct[productId] = [];
+                }
+                groupedByProduct[productId].push(fs);
+            }
+
+            // duyệt qua từng sản phẩm gốc để gửi thông báo
+            for (const productId of Object.keys(groupedByProduct)) {
+                const group = groupedByProduct[productId];
+                // biến thể đầu tiên cho deeplink
+                const representative = group[0];
+
+                // tìm giá fs thấp nhất trong nhóm để hiển thị
+                const prices = group.map(fs => Number(fs.flashPrice));
+                const minPrice = Math.min(...prices);
+
+                // lock theo productId để tránh gửi trùng lặp cho sản phẩm
+                const notificationKey = `flash_sale:start_notified:product:${productId}:${representative.startsAt.getTime()}`;
+                const alreadyNotified = await this.redisService.get(notificationKey);
+                if (alreadyNotified) continue;
+
+                // set lock tồn tại trong 2 phút
+                await this.redisService.set(notificationKey, 'true', 'EX', 120);
+
+                const productName = representative.productVariant.product.name;
+                const formattedPrice = new Intl.NumberFormat('vi-VN', {
+                    style: 'currency',
+                    currency: 'VND',
+                    maximumFractionDigits: 0,
+                }).format(minPrice);
+
+                const countText = group.length > 1 ? ` (${group.length} phiên bản)` : '';
+                this.logger.log(`Broadcasting Flash Sale start notification for product: ${productName}${countText} (Product ID: ${productId})`);
+
+                // gửi thông báo cho toàn bộ thiết bị
+                await this.notificationService.sendToAll({
+                    notification: {
+                        title: '⚡ CHÍNH THỨC MỞ BÁN FLASH SALE! ⚡',
+                        body: `Sản phẩm "${productName}"${countText} đã chính thức mở bán Flash Sale với mức giá chỉ từ ${formattedPrice}! Săn ngay kẻo lỡ!`,
+                    },
+                    data: {
+                        type: 'flash_sale',
+                        productVariantId: representative.productVariantId,
+                    },
+                    type: NotificationType.PROMOTION,
+                });
+            }
+        } catch (error) {
+            this.logger.error(`Failed to handle flash sale start notifications: ${error instanceof Error ? error.message : error}`);
         }
     }
 }

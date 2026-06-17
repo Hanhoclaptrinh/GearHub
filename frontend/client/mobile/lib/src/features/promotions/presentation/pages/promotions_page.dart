@@ -64,7 +64,13 @@ class _PromotionsPageState extends State<PromotionsPage>
       if (!mounted) return;
       final current = _countdownNotifier.value;
       if (current.inSeconds > 0) {
-        _countdownNotifier.value = current - const Duration(seconds: 1);
+        final nextValue = current - const Duration(seconds: 1);
+        _countdownNotifier.value = nextValue;
+
+        // tự động reload cập nhật trạng thái fs - ux
+        if (nextValue.inSeconds == 0) {
+          context.read<PromotionsCubit>().loadData();
+        }
       }
     });
   }
