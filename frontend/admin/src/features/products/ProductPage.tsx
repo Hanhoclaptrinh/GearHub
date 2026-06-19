@@ -1025,11 +1025,11 @@ export const ProductPage: React.FC = () => {
             <CardHeader className="px-6 pt-6 pb-3 border-none">
               <CardTitle className="text-[20px] text-[#25396f] flex items-center gap-3">
                 <span className="w-10 h-10 rounded-[10px] bg-primary/10 text-primary inline-flex items-center justify-center">
-                  <UploadCloud className="w-5 h-5" />
+                   <UploadCloud className="w-5 h-5" />
                 </span>
                 Hình ảnh sản phẩm
               </CardTitle>
-              <p className="text-sm font-semibold text-[#7c8db5]">Ảnh 2D là bắt buộc, có thể thêm GLB/USDZ cho trải nghiệm 3D.</p>
+              <p className="text-sm font-semibold text-[#7c8db5]">Ảnh 2D là bắt buộc để hiển thị đại diện sản phẩm.</p>
             </CardHeader>
             <CardContent className="px-6 pb-6 pt-2">
               <ImageUpload

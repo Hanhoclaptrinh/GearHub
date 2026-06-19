@@ -26,15 +26,11 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     onDrop,
     accept: {
       'image/*': ['.png', '.jpg', '.jpeg', '.webp'],
-      'model/gltf-binary': ['.glb'],
-      'model/vnd.usdz+zip': ['.usdz']
     },
   });
 
-  const is3DModel = (url: string) => {
-    const lowerUrl = url.toLowerCase();
-    // Support both Cloudinary URLs and internal Blob URLs (heuristically)
-    return lowerUrl.endsWith('.glb') || lowerUrl.endsWith('.usdz') || lowerUrl.includes('glb') || lowerUrl.includes('usdz');
+  const is3DModel = (_url: string) => {
+    return false;
   };
 
   return (
@@ -50,8 +46,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         <div className="w-12 h-12 bg-[#f2f7ff] rounded-[10px] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
           <UploadCloud className="w-6 h-6 text-primary" />
         </div>
-        <p className="text-[#25396f] font-extrabold text-base text-center">Tải ảnh hoặc 3D Model</p>
-        <p className="text-[#7c8db5] font-bold text-[10px] uppercase tracking-widest mt-1">PNG, JPG, GLB, USDZ</p>
+        <p className="text-[#25396f] font-extrabold text-base text-center">Tải ảnh sản phẩm</p>
+        <p className="text-[#7c8db5] font-bold text-[10px] uppercase tracking-widest mt-1">PNG, JPG, JPEG, WEBP</p>
       </div>
 
       {previews.length > 0 && (
