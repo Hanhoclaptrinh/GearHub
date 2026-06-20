@@ -1,17 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mobile/src/core/di/injection.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
-import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
-import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
-import 'package:mobile/src/features/wishlist/domain/repositories/wishlist_repository.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 import 'package:mobile/src/shared/models/product_model.dart';
-import 'package:mobile/src/shared/widgets/auth_required_modal.dart';
 import 'package:mobile/src/shared/widgets/color_bubble_selector.dart';
+import 'package:mobile/src/shared/mixins/wishlist_mixin.dart';
 
 const _starColor = Color(0xFFFFCC00);
 
@@ -30,9 +24,7 @@ class ProductCard extends StatefulWidget {
 }
 
 class _ProductCardState extends State<ProductCard>
-    with SingleTickerProviderStateMixin {
-  bool _isWishlisted = false;
-  final _repository = getIt<WishlistRepository>();
+    with SingleTickerProviderStateMixin, WishlistMixin<ProductCard> {
   late final AnimationController _heartAnim;
 
   @override
@@ -45,7 +37,7 @@ class _ProductCardState extends State<ProductCard>
       upperBound: 1.0,
       value: 1.0,
     );
-    _checkInitialWishlist();
+    checkInitialWishlist(widget.product.id);
   }
 
   @override
@@ -54,36 +46,11 @@ class _ProductCardState extends State<ProductCard>
     super.dispose();
   }
 
-  Future<void> _checkInitialWishlist() async {
-    final authState = context.read<AuthCubit>().state;
-    if (authState is AuthAuthenticated) {
-      final isFav = await _repository.checkIsFavorite(widget.product.id);
-      if (mounted) setState(() => _isWishlisted = isFav);
-    }
-  }
-
   Future<void> _toggleWishlist() async {
-    final authState = context.read<AuthCubit>().state;
-    if (authState is! AuthAuthenticated) {
-      AuthRequiredModal.show(context);
-      return;
-    }
-    HapticFeedback.lightImpact();
-    // animation
-    await _heartAnim.reverse();
-    _heartAnim.forward();
-
-    setState(() => _isWishlisted = !_isWishlisted);
-    try {
-      await _repository.toggleWishlist(widget.product.id);
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isWishlisted = !_isWishlisted);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Lỗi khi cập nhật danh sách yêu thích')),
-        );
-      }
-    }
+    await toggleWishlist(widget.product.id, onAnimation: () async {
+      await _heartAnim.reverse();
+      _heartAnim.forward();
+    });
   }
 
   @override
@@ -227,21 +194,21 @@ class _ProductCardState extends State<ProductCard>
                           width: 34,
                           height: 34,
                           decoration: BoxDecoration(
-                            color: _isWishlisted
+                            color: isWishlisted
                                 ? const Color(0x22EF4444)
                                 : cs.surfaceContainerHighest,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: _isWishlisted
+                              color: isWishlisted
                                   ? const Color(0x55EF4444)
                                   : cs.outlineVariant,
                             ),
                           ),
                           child: Icon(
-                            _isWishlisted
+                            isWishlisted
                                 ? Icons.favorite_rounded
                                 : LucideIcons.heart,
-                            color: _isWishlisted
+                            color: isWishlisted
                                 ? const Color(0xFFEF4444)
                                 : cs.onSurfaceVariant,
                             size: 16,

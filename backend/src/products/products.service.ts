@@ -11,6 +11,7 @@ import { RedisService } from 'src/redis/redis.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InventoriesService } from 'src/inventories/inventories.service';
 import { EmbeddingService } from 'src/ai/embedding.service';
+import { ConfigService } from '@nestjs/config';
 
 type CompareCategoryNode = {
     id: string;
@@ -47,6 +48,7 @@ export class ProductsService {
         private cloudinaryService: CloudinaryService,
         private inventoriesService: InventoriesService,
         private embeddingService: EmbeddingService,
+        private configService: ConfigService,
     ) { }
 
     // ADMIN
@@ -946,13 +948,20 @@ export class ProductsService {
         });
     }
 
+    private toVector(value: Prisma.JsonValue): number[] {
+        if (!Array.isArray(value)) return [];
+        return value
+            .map((item) => (typeof item === 'number' ? item : Number(item)))
+            .filter((item) => Number.isFinite(item));
+    }
+
     // CLIENT
     /**
      * lấy danh sách sản phẩm có phân trang và áp dụng đầy đủ các điều kiện lọc (admin + client)
      *
      * điều kiện:
      * - phân trang
-     * - tìm kiếm theo tên sản phẩm, brand, category
+     * - tìm kiếm lai (vector embedding / keyword fallback)
      * - lọc theo category, brand, khoảng giá
      * - lọc theo trạng thái hiển thị và trạng thái hoạt động của biến thể
      * - lọc theo tồn kho
@@ -1069,7 +1078,63 @@ export class ProductsService {
             }
         }
 
+        // tích hợp tìm kiếm lai
+        let semanticProductIds: string[] | null = null;
+        const scoresMap = new Map<string, number>();
+
         if (search) {
+            try {
+                // vector hóa từ khóa tìm kiếm của người dùng
+                const queryEmbedding = await this.embeddingService.embedText(search);
+
+                // lấy danh sách vector và id của tất cả sản phẩm đang kinh doanh
+                const embeddings = await this.prisma.productEmbedding.findMany({
+                    where: {
+                        product: {
+                            isActive: true,
+                            variants: { some: { isActive: true } },
+                        },
+                    },
+                    select: {
+                        productId: true,
+                        embedding: true,
+                    },
+                });
+
+                // tính điểm tương đồng cosine trên RAM
+                const scoredRows = embeddings.map((row) => {
+                    const vec = this.toVector(row.embedding);
+                    const score = this.cosineSimilarity(queryEmbedding, vec);
+                    return { productId: row.productId, score };
+                });
+
+                // lọc kết quả theo ngưỡng tương đồng
+                const threshold = Number(
+                    this.configService.get<string>('AI_RAG_SIMILARITY_THRESHOLD') ?? '0.50',
+                );
+                let filtered = scoredRows.filter((item) => item.score >= threshold);
+
+                // hạ ngưỡng khi không có sản phẩm đạt yêu cầu
+                if (filtered.length === 0) {
+                    filtered = scoredRows.filter((item) => item.score >= 0.45);
+                }
+
+                if (filtered.length > 0) {
+                    filtered.sort((a, b) => b.score - a.score);
+                    semanticProductIds = filtered.map((item) => item.productId);
+                    filtered.forEach((item) => scoresMap.set(item.productId, item.score));
+                    this.logger.log(`Semantic Search tìm thấy ${semanticProductIds.length} sản phẩm phù hợp.`);
+                }
+            } catch (error) {
+                this.logger.error(`Lỗi tìm kiếm AI, tự động chuyển đổi sang tìm kiếm từ khóa truyền thống: ${error.message}`);
+            }
+        }
+
+        if (semanticProductIds !== null) {
+            // sử dụng các sản phẩm tìm kiếm được từ AI
+            whereCondition.id = { in: semanticProductIds };
+        } else if (search) {
+            // fallback tìm kiếm bằng keyword
             const words = search.trim().split(/\s+/).filter(w => w.length > 0);
 
             if (words.length > 0) {
@@ -1123,6 +1188,8 @@ export class ProductsService {
             orderByObj = { createdAt: 'desc' };
         }
 
+        const paginateOnRam = semanticProductIds !== null;
+
         let [items, total] = await Promise.all([
             this.prisma.product.findMany({
                 where: whereCondition,
@@ -1164,8 +1231,7 @@ export class ProductsService {
                     assets: true
                 },
                 orderBy: orderByObj,
-                skip,
-                take: limitNumber,
+                ...(!paginateOnRam ? { skip, take: limitNumber } : {}),
             }),
 
             this.prisma.product.count({
@@ -1173,24 +1239,34 @@ export class ProductsService {
             }),
         ]);
 
-        if (sortBy === 'price_asc') {
+        // sắp xếp kết quả
+        if (paginateOnRam && !sortBy) {
+            // sort theo điểm cosine giảm dần
+            items = items.sort((a, b) => {
+                const scoreA = scoresMap.get(a.id) ?? 0;
+                const scoreB = scoresMap.get(b.id) ?? 0;
+                return scoreB - scoreA;
+            });
+        } else if (sortBy === 'price_asc') {
             items = items.sort((a, b) => {
                 const priceA = Number(a.variants?.[0]?.price ?? 0);
                 const priceB = Number(b.variants?.[0]?.price ?? 0);
                 return priceA - priceB;
             });
-        }
-
-        if (sortBy === 'price_desc') {
+        } else if (sortBy === 'price_desc') {
             items = items.sort((a, b) => {
                 const priceA = Number(a.variants?.[0]?.price ?? 0);
                 const priceB = Number(b.variants?.[0]?.price ?? 0);
                 return priceB - priceA;
             });
         }
+        // cắt mảng để phân trang
+        const resultItems = paginateOnRam
+            ? items.slice(skip, skip + limitNumber)
+            : items;
 
         return {
-            data: items,
+            data: resultItems,
             meta: {
                 total,
                 page: pageNumber,

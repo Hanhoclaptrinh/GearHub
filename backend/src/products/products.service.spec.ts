@@ -5,6 +5,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { InventoriesService } from 'src/inventories/inventories.service';
 import { EmbeddingService } from 'src/ai/embedding.service';
+import { ConfigService } from '@nestjs/config';
 
 describe('ProductsService', () => {
   let service: ProductsService;
@@ -21,6 +22,7 @@ describe('ProductsService', () => {
           provide: EmbeddingService,
           useValue: { syncProductEmbeddingBestEffort: jest.fn() },
         },
+        { provide: ConfigService, useValue: { get: jest.fn() } },
       ],
     }).compile();
 

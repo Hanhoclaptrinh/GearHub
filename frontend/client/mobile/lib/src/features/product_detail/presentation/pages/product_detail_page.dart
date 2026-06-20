@@ -163,9 +163,11 @@ class _ProductDetailViewState extends State<ProductDetailView> {
   ProductVariantModel? _getCurrentVariant(ProductModel product) {
     for (final v in product.variants) {
       if (v.isActive &&
-          _selectedAttributes.entries.every(
-            (e) => v.attributes[e.key]?.toString() == e.value,
-          )) {
+          _selectedAttributes.entries.every((e) {
+            final variantValue = v.attributes[e.key]?.toString().toLowerCase().trim();
+            final selectedValue = e.value.toLowerCase().trim();
+            return variantValue == selectedValue;
+          })) {
         return v;
       }
     }
@@ -344,7 +346,10 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                               context,
                               MaterialPageRoute(
                                 builder: (_) =>
-                                    ProductARViewPage(product: product),
+                                    ProductARViewPage(
+                                      product: product,
+                                      initialVariant: variant,
+                                    ),
                               ),
                             );
                           },

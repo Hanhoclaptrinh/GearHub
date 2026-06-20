@@ -31,6 +31,8 @@ class CartPage extends StatefulWidget {
 class _CartPageState extends State<CartPage> {
   final ScrollController _scrollController = ScrollController();
   double _scrollOffset = 0.0;
+  late final PageController _recommendationsPageController;
+  final ValueNotifier<double> _recommendationsScrollOffset = ValueNotifier(0.0);
 
   ///xóa item khỏi giỏ hàng
   void _removeItem(String itemId) {
@@ -59,6 +61,13 @@ class _CartPageState extends State<CartPage> {
   @override
   void initState() {
     super.initState();
+    _recommendationsPageController = PageController(viewportFraction: 0.88);
+    _recommendationsPageController.addListener(() {
+      if (mounted) {
+        _recommendationsScrollOffset.value =
+            _recommendationsPageController.page ?? 0.0;
+      }
+    });
     _scrollController.addListener(() {
       if (mounted) {
         setState(() {
@@ -77,6 +86,8 @@ class _CartPageState extends State<CartPage> {
 
   @override
   void dispose() {
+    _recommendationsPageController.dispose();
+    _recommendationsScrollOffset.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -639,22 +650,58 @@ class _CartPageState extends State<CartPage> {
                 ),
               ),
             )
-          else
+          else ...[
             SizedBox(
-              height: 620,
-              child: PageView.builder(
-                controller: PageController(viewportFraction: 0.94),
-                clipBehavior: Clip.none,
-                itemCount: recommendations.length,
-                itemBuilder: (context, index) {
-                  final product = recommendations[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: LargeProductCard(product: product),
+              height: 500,
+              child: ValueListenableBuilder<double>(
+                valueListenable: _recommendationsScrollOffset,
+                builder: (context, offset, _) {
+                  return PageView.builder(
+                    controller: _recommendationsPageController,
+                    clipBehavior: Clip.none,
+                    itemCount: recommendations.length,
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
+                    itemBuilder: (context, index) {
+                      final product = recommendations[index];
+                      final diff = (index - offset).abs().clamp(0.0, 1.0);
+                      final scale = 1.0 - diff * 0.04;
+                      final fadeV = 1.0 - diff * 0.35;
+                      final translateY = diff * 10.0;
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Transform.translate(
+                          offset: Offset(0, translateY),
+                          child: Transform.scale(
+                            scale: scale,
+                            alignment: Alignment.topCenter,
+                            child: Opacity(
+                              opacity: fadeV.clamp(0.0, 1.0),
+                              child: LargeProductCard(product: product),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
             ),
+            const SizedBox(height: 20),
+            ValueListenableBuilder<double>(
+              valueListenable: _recommendationsScrollOffset,
+              builder: (context, offset, _) {
+                final current = offset.round();
+                return _RecommendationPageDots(
+                  count: recommendations.length,
+                  currentPage: current,
+                  scrollOffset: offset,
+                );
+              },
+            ),
+          ],
         ],
       ),
     );
@@ -679,6 +726,46 @@ class _CartPageState extends State<CartPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
       ),
       child: const Text('Tiếp tục mua sắm'),
+    );
+  }
+}
+
+class _RecommendationPageDots extends StatelessWidget {
+  final int count;
+  final int currentPage;
+  final double scrollOffset;
+
+  const _RecommendationPageDots({
+    required this.count,
+    required this.currentPage,
+    required this.scrollOffset,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(count, (i) {
+          final distance = (i - scrollOffset).abs().clamp(0.0, 1.0);
+          final width = 20.0 - distance * 12.0;
+          final opacity = 1.0 - distance * 0.6;
+
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            width: width,
+            height: 2,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(1),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: opacity * 0.7),
+            ),
+          );
+        }),
+      ),
     );
   }
 }

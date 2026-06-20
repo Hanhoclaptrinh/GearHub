@@ -304,19 +304,18 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                         ),
                       ),
                     ),
-
-                    widget.is3DMode && widget.product.has3DModel
+                    (widget.is3DMode && widget.product.has3DModelForVariant(widget.currentVariant))
                         ? _build3DViewer()
                         : _buildImageGallery(galleryUrls, isOutOfStock),
 
-                    if (widget.product.has3DModel || widget.product.hasAR)
+                    if (widget.product.has3DModelForVariant(widget.currentVariant) || widget.product.hasARForVariant(widget.currentVariant))
                       Positioned(
                         top: 12,
                         right: 24,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (widget.product.has3DModel)
+                            if (widget.product.has3DModelForVariant(widget.currentVariant))
                               GestureDetector(
                                 onTap: () {
                                   HapticFeedback.mediumImpact();
@@ -375,8 +374,8 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
                                   ),
                                 ),
                               ),
-                            if (widget.product.hasAR) ...[
-                              if (widget.product.has3DModel)
+                            if (widget.product.hasARForVariant(widget.currentVariant)) ...[
+                              if (widget.product.has3DModelForVariant(widget.currentVariant))
                                 const SizedBox(width: 6),
                               GestureDetector(
                                 onTap: () {
@@ -607,7 +606,7 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
   Widget _build3DViewer() {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final glbAsset = widget.product.glbAsset;
+    final glbAsset = widget.product.glbAssetForVariant(widget.currentVariant);
     if (glbAsset == null) return const SizedBox.shrink();
 
     return Container(
@@ -620,6 +619,7 @@ class _ProductHeroSectionState extends State<ProductHeroSection> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(32),
         child: ModelViewer(
+          key: ValueKey(glbAsset.url),
           src: glbAsset.url,
           alt: widget.product.name,
           autoRotate: false,

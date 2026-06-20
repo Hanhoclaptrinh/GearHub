@@ -9,6 +9,8 @@ import 'package:mobile/src/features/home/domain/entities/hero_product_entity.dar
 import 'package:mobile/src/features/product_detail/data/datasources/product_detail_remote_datasource.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_detail_page.dart';
 import 'package:mobile/src/features/product_detail/presentation/pages/product_ar_view_page.dart';
+import 'package:mobile/src/shared/models/product_variant_model.dart';
+import 'package:mobile/src/shared/models/product_asset_model.dart';
 import '../state/home_cubit.dart';
 import '../state/home_state.dart';
 
@@ -414,8 +416,28 @@ class _HeroSectionState extends State<HeroSection> {
         .getProductDetail(product.id)
         .then((d) {
           if (context.mounted) {
+            // tìm asset khớp với arUrl của hero product
+            final matchingAsset = d.assets
+                .cast<ProductAssetModel?>()
+                .firstWhere((a) => a?.url == product.arUrl, orElse: () => null);
+
+            ProductVariantModel? matchingVariant;
+            if (matchingAsset != null && matchingAsset.variantId != null) {
+              matchingVariant = d.variants
+                  .cast<ProductVariantModel?>()
+                  .firstWhere(
+                    (v) => v?.id == matchingAsset.variantId,
+                    orElse: () => null,
+                  );
+            }
+
             Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => ProductARViewPage(product: d)),
+              MaterialPageRoute(
+                builder: (_) => ProductARViewPage(
+                  product: d,
+                  initialVariant: matchingVariant,
+                ),
+              ),
             );
           }
         })

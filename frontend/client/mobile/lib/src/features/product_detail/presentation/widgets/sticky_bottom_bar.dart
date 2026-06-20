@@ -11,9 +11,9 @@ import 'package:mobile/src/features/cart/presentation/state/cart_state.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_cubit.dart';
 import 'package:mobile/src/features/auth/presentation/state/auth_state.dart';
 import 'package:mobile/src/shared/widgets/auth_required_modal.dart';
-import 'package:mobile/src/shared/widgets/stock_limit_dialog.dart';
 import 'package:mobile/src/core/utils/formatter_utils.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mobile/src/shared/mixins/cart_mixin.dart';
 
 class StickyBottomBar extends StatefulWidget {
   final ProductModel product;
@@ -33,8 +33,7 @@ class StickyBottomBar extends StatefulWidget {
   State<StickyBottomBar> createState() => _StickyBottomBarState();
 }
 
-class _StickyBottomBarState extends State<StickyBottomBar> {
-  bool _isAdding = false;
+class _StickyBottomBarState extends State<StickyBottomBar> with CartMixin<StickyBottomBar> {
 
   @override
   Widget build(BuildContext context) {
@@ -48,12 +47,12 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
 
     return BlocListener<CartCubit, CartState>(
       listener: (context, state) {
-        if (state is CartAddSuccess && _isAdding) {
-          setState(() => _isAdding = false);
+        if (state is CartAddSuccess && isAddingToCart) {
+          setState(() => isAddingToCart = false);
           _showSuccessFeedback();
         }
-        if (state is CartError && _isAdding) {
-          setState(() => _isAdding = false);
+        if (state is CartError && isAddingToCart) {
+          setState(() => isAddingToCart = false);
         }
       },
       child: AnimatedSlide(
@@ -84,13 +83,17 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
                 child: Row(
                   children: [
                     _buildIconButton(
-                      icon: _isAdding
+                      icon: isAddingToCart
                           ? LucideIcons.loader
                           : LucideIcons.shoppingBag,
                       onTap: variant != null
-                          ? () => _handleAddToCart(variant)
+                          ? () => handleAddToCart(
+                                variant: variant,
+                                product: widget.product,
+                                quantity: widget.quantity,
+                              )
                           : () {},
-                      isLoading: _isAdding,
+                      isLoading: isAddingToCart,
                     ),
                     const SizedBox(width: 8),
 
@@ -210,48 +213,7 @@ class _StickyBottomBarState extends State<StickyBottomBar> {
     );
   }
 
-  void _handleAddToCart(ProductVariantModel variant) {
-    HapticFeedback.mediumImpact();
-    final authState = context.read<AuthCubit>().state;
-    if (authState is! AuthAuthenticated) {
-      AuthRequiredModal.show(context);
-      return;
-    }
-
-    //lấy trạng thái giỏ hàng
-    final cartState = context.read<CartCubit>().state;
-    int existingQty = 0; //giá trị khởi tạo
-    //lấy ra sp đầu tiên có chung id với sản phẩm thêm vào
-    if (cartState.cart != null) {
-      final existing = cartState.cart!.items
-          .where((i) => i.productVariant.id == variant.id)
-          .firstOrNull;
-      existingQty = existing?.quantity ?? 0;
-    }
-
-    //cảnh báo nếu vượt limit stock
-    final remainingFlash = (variant.flashStockLimit ?? 0) - (variant.flashSoldCount ?? 0);
-    final maxAvailable = variant.hasActiveFlashSale ? remainingFlash : variant.stock;
-
-    if (existingQty + widget.quantity > maxAvailable) {
-      StockLimitDialog.show(
-        context,
-        stockCount: maxAvailable,
-        currentQty: existingQty,
-        message: variant.hasActiveFlashSale 
-            ? "Vượt giới hạn Flash Sale còn lại." 
-            : "Vượt giới hạn kho.",
-      );
-      return;
-    }
-
-    setState(() => _isAdding = true);
-    context.read<CartCubit>().addToCart(
-      variant,
-      widget.product,
-      widget.quantity,
-    );
-  }
+  // _handleAddToCart removed and delegated to CartMixin
 
   void _handleBuyNow(ProductVariantModel variant) {
     HapticFeedback.heavyImpact();

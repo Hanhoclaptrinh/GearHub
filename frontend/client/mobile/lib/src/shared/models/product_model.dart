@@ -111,6 +111,38 @@ class ProductModel {
 
   bool get hasAR => glbAsset != null || usdzAsset != null;
 
+  ProductAssetModel? glbAssetForVariant(ProductVariantModel? variant) {
+    if (variant != null) {
+      final variantGlb = assets
+          .where((a) => a.type == AssetType.glb && a.variantId == variant.id)
+          .firstOrNull;
+      if (variantGlb != null) return variantGlb;
+    }
+    return assets
+        .where((a) => a.type == AssetType.glb && a.variantId == null)
+        .firstOrNull;
+  }
+
+  ProductAssetModel? usdzAssetForVariant(ProductVariantModel? variant) {
+    if (variant != null) {
+      final variantUsdz = assets
+          .where((a) => a.type == AssetType.usdz && a.variantId == variant.id)
+          .firstOrNull;
+      if (variantUsdz != null) return variantUsdz;
+    }
+    return assets
+        .where((a) => a.type == AssetType.usdz && a.variantId == null)
+        .firstOrNull;
+  }
+
+  bool has3DModelForVariant(ProductVariantModel? variant) {
+    return glbAssetForVariant(variant) != null;
+  }
+
+  bool hasARForVariant(ProductVariantModel? variant) {
+    return glbAssetForVariant(variant) != null || usdzAssetForVariant(variant) != null;
+  }
+
   List<String> get galleryUrls {
     if (imageAssets.isEmpty) {
       return image.isNotEmpty ? [image] : [];
