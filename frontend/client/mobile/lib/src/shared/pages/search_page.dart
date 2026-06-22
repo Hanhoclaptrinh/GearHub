@@ -15,7 +15,6 @@ import 'package:mobile/src/features/home/presentation/widgets/search_suggestion_
 import 'package:mobile/src/features/home/presentation/widgets/search_product_grid.dart';
 import 'package:mobile/src/shared/widgets/product_filter_drawer.dart';
 import 'package:mobile/src/shared/widgets/voice_search_modal.dart';
-import 'package:mobile/src/shared/widgets/image_search_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -165,10 +164,11 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void _onSearchChanged(String val) {
-    if (_isFullSearchMode) {
+    if (_isFullSearchMode || _selectedImage != null) {
       setState(() {
         _isFullSearchMode = false;
         _isImageSearchMode = false;
+        _selectedImage = null;
       });
     }
 
@@ -498,18 +498,70 @@ class _SearchPageState extends State<SearchPage> {
                         onChanged: _onSearchChanged,
                         onSubmitted: (_) => _executeFullSearch(),
                         decoration: InputDecoration(
-                          prefixIcon: Icon(
-                            LucideIcons.search,
-                            size: 18,
-                            color: cs.onSurfaceVariant,
+                          prefixIcon: _selectedImage != null
+                              ? Padding(
+                                  padding: const EdgeInsets.only(left: 10, right: 6),
+                                  child: Container(
+                                    width: 32,
+                                    height: 32,
+                                    clipBehavior: Clip.antiAlias,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        Image.file(
+                                          _selectedImage!,
+                                          width: 32,
+                                          height: 32,
+                                          fit: BoxFit.cover,
+                                        ),
+                                        if (_isAnalyzingImage)
+                                          Container(
+                                            width: 32,
+                                            height: 32,
+                                            color: Colors.black.withValues(alpha: 0.5),
+                                            child: const Center(
+                                              child: SizedBox(
+                                                width: 14,
+                                                height: 14,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              : Icon(
+                                  LucideIcons.search,
+                                  size: 18,
+                                  color: cs.onSurfaceVariant,
+                                ),
+                          prefixIconConstraints: BoxConstraints(
+                            minWidth: _selectedImage != null ? 48 : 40,
+                            minHeight: 32,
+                            maxWidth: 54,
+                            maxHeight: 36,
                           ),
                           suffixIcon: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (_controller.text.isNotEmpty)
+                              if (_controller.text.isNotEmpty || _selectedImage != null)
                                 GestureDetector(
                                   onTap: () {
                                     _controller.clear();
+                                    setState(() {
+                                      _selectedImage = null;
+                                      _isImageSearchMode = false;
+                                      _isFullSearchMode = false;
+                                      _searchResults = [];
+                                      _suggestions = [];
+                                    });
                                     _onSearchChanged('');
                                   },
                                   child: Icon(
@@ -540,7 +592,11 @@ class _SearchPageState extends State<SearchPage> {
                               ],
                             ],
                           ),
-                          hintText: 'Tìm kiếm sản phẩm...',
+                          hintText: _isAnalyzingImage
+                              ? 'Đang phân tích hình ảnh...'
+                              : _selectedImage != null
+                                  ? 'Thêm từ khóa cho hình ảnh...'
+                                  : 'Tìm kiếm sản phẩm...',
                           hintStyle: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -561,10 +617,26 @@ class _SearchPageState extends State<SearchPage> {
         ),
         body: Stack(
           children: [
-            _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.brandIndigo,
+            (_isLoading || _isAnalyzingImage)
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const CircularProgressIndicator(
+                          color: AppColors.brandIndigo,
+                        ),
+                        if (_isAnalyzingImage) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            'Đang tìm kiếm sản phẩm tương đương...',
+                            style: TextStyle(
+                              color: cs.onSurfaceVariant,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   )
                 : _isFullSearchMode
@@ -583,8 +655,6 @@ class _SearchPageState extends State<SearchPage> {
                         _scaffoldKey.currentState?.openEndDrawer(),
                   )
                 : _buildSearchSuggestions(),
-            if (_isAnalyzingImage && _selectedImage != null)
-              ImageSearchOverlay(imageFile: _selectedImage!),
           ],
         ),
       ),

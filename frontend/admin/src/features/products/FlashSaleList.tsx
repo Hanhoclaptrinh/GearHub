@@ -14,6 +14,7 @@ import {
 } from 'react-iconly';
 import { toast } from 'sonner';
 import { flashSaleService } from '../../services/flash-sale.service';
+import { authService } from '../../services/auth.service';
 import { CreateFlashSaleModal } from '../../components/products/CreateFlashSaleModal';
 import { BulkEditTimeModal } from '../../components/products/BulkEditTimeModal';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
@@ -24,6 +25,9 @@ import { cn } from '../../utils/cn';
 import type { FlashSaleProduct } from '../../types';
 
 export const FlashSaleList: React.FC = () => {
+  const user = authService.getCurrentUser();
+  const isAdmin = user?.role === 'ADMIN';
+
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -259,30 +263,32 @@ export const FlashSaleList: React.FC = () => {
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsBulkTimeOpen(true)}
-              disabled={selectedIds.length === 0}
-              className="rounded-[6px] text-xs font-bold gap-2 border-slate-200"
-            >
-              <Calendar className="w-4 h-4" />
-              Sửa giờ hàng loạt ({selectedIds.length})
-            </Button>
-            <Button
-              type="button"
-              onClick={() => setIsCreateOpen(true)}
-              className="h-10 rounded-[6px] bg-primary px-4 text-sm font-extrabold text-white shadow-[0_5px_12px_rgba(67,94,190,0.18)] hover:bg-primary/90"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Tạo Flash Sale mới
-            </Button>
-          </div>
+          {isAdmin && (
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsBulkTimeOpen(true)}
+                disabled={selectedIds.length === 0}
+                className="rounded-[6px] text-xs font-bold gap-2 border-slate-200"
+              >
+                <Calendar className="w-4 h-4" />
+                Sửa giờ hàng loạt ({selectedIds.length})
+              </Button>
+              <Button
+                type="button"
+                onClick={() => setIsCreateOpen(true)}
+                className="h-10 rounded-[6px] bg-primary px-4 text-sm font-extrabold text-white shadow-[0_5px_12px_rgba(67,94,190,0.18)] hover:bg-primary/90"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Tạo Flash Sale mới
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Selected bar */}
-        {selectedIds.length > 0 && (
+        {isAdmin && selectedIds.length > 0 && (
           <div className="px-5 py-3 border-b border-[#f2f7ff] bg-primary/5 flex items-center justify-between">
             <span className="text-[12px] font-extrabold text-primary">
               Đã chọn {selectedIds.length} sản phẩm
@@ -304,16 +310,18 @@ export const FlashSaleList: React.FC = () => {
           <table className="w-full text-left border-collapse min-w-[1100px]">
             <thead className="bg-[#f8faff] border-b border-[#f2f7ff]">
               <tr>
-                <th className="px-5 py-4 w-12">
-                  <input
-                    type="checkbox"
-                    checked={
-                      filteredData.length > 0 && selectedIds.length === filteredData.length
-                    }
-                    onChange={toggleSelectAll}
-                    className="h-4 w-4 rounded border-[#dce7f1] text-primary focus:ring-primary"
-                  />
-                </th>
+                {isAdmin && (
+                  <th className="px-5 py-4 w-12">
+                    <input
+                      type="checkbox"
+                      checked={
+                        filteredData.length > 0 && selectedIds.length === filteredData.length
+                      }
+                      onChange={toggleSelectAll}
+                      className="h-4 w-4 rounded border-[#dce7f1] text-primary focus:ring-primary"
+                    />
+                  </th>
+                )}
                 <th className="px-5 py-4 text-[11px] font-extrabold text-[#7c8db5] uppercase">
                   Sản phẩm
                 </th>
@@ -329,15 +337,17 @@ export const FlashSaleList: React.FC = () => {
                 <th className="px-5 py-4 text-[11px] font-extrabold text-[#7c8db5] uppercase text-center">
                   Trạng thái
                 </th>
-                <th className="px-5 py-4 text-[11px] font-extrabold text-[#7c8db5] uppercase text-right">
-                  Thao tác
-                </th>
+                {isAdmin && (
+                  <th className="px-5 py-4 text-[11px] font-extrabold text-[#7c8db5] uppercase text-right">
+                    Thao tác
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-[#f2f7ff] font-body">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-16 text-center">
+                  <td colSpan={isAdmin ? 7 : 5} className="px-6 py-16 text-center">
                     <div className="inline-flex flex-col items-center gap-3">
                       <div className="w-8 h-8 rounded-full border-3 border-primary/20 border-t-primary animate-spin" />
                       <p className="text-xs font-bold text-slate-400">Đang tải dữ liệu...</p>
@@ -349,14 +359,16 @@ export const FlashSaleList: React.FC = () => {
                   const status = getFlashSaleStatus(item);
                   return (
                     <tr key={item.id} className="hover:bg-[#fbfcff] transition-colors group">
-                      <td className="px-5 py-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.includes(item.id)}
-                          onChange={() => toggleSelect(item.id)}
-                          className="h-4 w-4 rounded border-[#dce7f1] text-primary focus:ring-primary"
-                        />
-                      </td>
+                      {isAdmin && (
+                        <td className="px-5 py-4">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(item.id)}
+                            onChange={() => toggleSelect(item.id)}
+                            className="h-4 w-4 rounded border-[#dce7f1] text-primary focus:ring-primary"
+                          />
+                        </td>
+                      )}
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <img
@@ -403,30 +415,38 @@ export const FlashSaleList: React.FC = () => {
                         </p>
                       </td>
                       <td className="px-5 py-4 text-center">{getStatusBadge(status)}</td>
-                      <td className="px-5 py-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => setDeletingId(item.id)}
-                          className="w-9 h-9 rounded-lg inline-flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
+                      {isAdmin && (
+                        <td className="px-5 py-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() => setDeletingId(item.id)}
+                            className="w-9 h-9 rounded-lg inline-flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-6 py-20 text-center">
+                  <td colSpan={isAdmin ? 7 : 5} className="px-6 py-20 text-center">
                     <div className="mx-auto w-12 h-12 rounded-[12px] bg-[#f2f7ff] flex items-center justify-center mb-4 text-primary">
                       <IconlyTicket set="bold" size={24} />
                     </div>
                     <h6 className="text-[16px] font-extrabold text-[#25396f] mb-1">
                       Không có sản phẩm Flash Sale nào
                     </h6>
-                    <p className="text-xs font-semibold text-[#7c8db5]">
-                      Nhấp vào "Tạo Flash Sale mới" để thêm biến thể vào chương trình.
-                    </p>
+                    {isAdmin ? (
+                      <p className="text-xs font-semibold text-[#7c8db5]">
+                        Nhấp vào "Tạo Flash Sale mới" để thêm biến thể vào chương trình.
+                      </p>
+                    ) : (
+                      <p className="text-xs font-semibold text-[#7c8db5]">
+                        Vui lòng quay lại sau hoặc liên hệ Admin để tạo Flash Sale.
+                      </p>
+                    )}
                   </td>
                 </tr>
               )}

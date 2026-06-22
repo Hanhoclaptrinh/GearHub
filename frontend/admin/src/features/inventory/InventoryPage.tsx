@@ -24,6 +24,7 @@ import { inventoryService, type InventoryItem, type InventoryVariant } from '../
 import { productService } from '../../services/product.service';
 import { categoryService } from '../../services/category.service';
 import { brandService } from '../../services/brand.service';
+import { authService } from '../../services/auth.service';
 import { AdjustStockModal } from './AdjustStockModal';
 import { TransactionHistoryModal } from './TransactionHistoryModal';
 import { Badge } from '../../components/ui/Badge';
@@ -50,6 +51,9 @@ const stockStatusConfig = {
 };
 
 export const InventoryPage: React.FC = () => {
+  const user = authService.getCurrentUser();
+  const isAdmin = user?.role === 'ADMIN';
+
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -583,15 +587,17 @@ export const InventoryPage: React.FC = () => {
                                           </td>
                                           <td className="px-4 py-3 text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                              <button
-                                                type="button"
-                                                onClick={() => setAdjustVariant({ ...variant, productName: product.productName })}
-                                                className="h-8 rounded-[8px] px-3 inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
-                                                title="Điều chỉnh tồn kho"
-                                              >
-                                                <ArrowUpDown className="w-3.5 h-3.5" />
-                                                Điều chỉnh
-                                              </button>
+                                              {isAdmin && (
+                                                <button
+                                                  type="button"
+                                                  onClick={() => setAdjustVariant({ ...variant, productName: product.productName })}
+                                                  className="h-8 rounded-[8px] px-3 inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
+                                                  title="Điều chỉnh tồn kho"
+                                                >
+                                                  <ArrowUpDown className="w-3.5 h-3.5" />
+                                                  Điều chỉnh
+                                                </button>
+                                              )}
                                               <button
                                                 type="button"
                                                 onClick={() => { setHistoryVariantId(variant.variantId); setHistoryVariantName(`${product.productName} - ${variant.sku}`); }}

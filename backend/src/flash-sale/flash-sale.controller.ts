@@ -20,21 +20,21 @@ export class FlashSaleController {
 
     @Post('admin/flash-sale')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN, Role.STAFF)
+    @Roles(Role.ADMIN)
     async create(@Body() dto: CreateFlashSaleProductDto) {
         return this.flashSaleService.createFlashSaleProduct(dto);
     }
 
     @Post('admin/flash-sale/bulk')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN, Role.STAFF)
+    @Roles(Role.ADMIN)
     async createBulk(@Body() dto: CreateFlashSaleBulkDto) {
         return this.flashSaleService.createFlashSaleBulk(dto);
     }
 
     @Patch('admin/flash-sale/bulk-time')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN, Role.STAFF)
+    @Roles(Role.ADMIN)
     async updateTimeBulk(@Body() dto: UpdateFlashSaleTimeBulkDto) {
         return this.flashSaleService.updateFlashSaleTimeBulk(dto);
     }
@@ -54,7 +54,7 @@ export class FlashSaleController {
 
     @Delete('admin/flash-sale/:id')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN, Role.STAFF)
+    @Roles(Role.ADMIN)
     async remove(@Param('id') id: string) {
         return this.flashSaleService.remove(id);
     }

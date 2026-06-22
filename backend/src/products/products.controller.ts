@@ -219,14 +219,14 @@ export class ProductsController {
 
     @Patch('variants/:variantId/destock')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN, Role.STAFF)
+    @Roles(Role.ADMIN)
     async decreaseStock(@Param('variantId') variantId: string, @Body('quantity') quantity: number) {
         return this.productsService.decreaseStock(variantId, quantity);
     }
 
     @Patch('variants/:variantId/instock')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN, Role.STAFF)
+    @Roles(Role.ADMIN)
     async increaseStock(@Param('variantId') variantId: string, @Body('quantity') quantity: number) {
         return this.productsService.increaseStock(variantId, quantity);
     }

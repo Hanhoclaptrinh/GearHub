@@ -445,6 +445,114 @@ export class ProductImageEmbeddingService {
     return dimensions;
   }
 
+  async syncProductImageEmbeddingBestEffort(productId: string) {
+    if (
+      !this.isAiEnabled() ||
+      !this.configService.get<string>('GEMINI_API_KEY')
+    ) {
+      return;
+    }
+
+    try {
+      await this.syncProductImageEmbedding(productId);
+    } catch (error) {
+      this.logger.warn(
+        `Product image embedding sync skipped for ${productId}: ${this.errorMessage(error)}`,
+      );
+    }
+  }
+
+  async syncProductImageEmbedding(productId: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      select: {
+        id: true,
+        isActive: true,
+        thumbnailUrl: true,
+        assets: {
+          where: { type: AssetType.IMAGE },
+          select: { id: true, url: true },
+        },
+        variants: {
+          where: { isActive: true },
+          select: { id: true, imageUrl: true },
+        },
+      },
+    });
+
+    // xóa vector embedding nếu sp đó ngưng kd hoặc bị xóa
+    if (!product || !product.isActive) {
+      await this.prisma.productImageEmbedding.deleteMany({
+        where: { productId },
+      });
+      return;
+    }
+
+    // lấy urls hình ảnh của sản phẩm hiện tại
+    const candidates = this.toImageCandidates([product]);
+    const currentUrls = new Set(candidates.map(c => this.normalizeImageUrl(c.imageUrl)).filter(Boolean) as string[]);
+
+    await this.prisma.productImageEmbedding.deleteMany({
+      where: {
+        productId,
+        imageUrl: { notIn: Array.from(currentUrls) },
+      },
+    });
+
+    for (const candidate of candidates) {
+      const normalizedUrl = this.normalizeImageUrl(candidate.imageUrl);
+      if (!normalizedUrl) continue;
+
+      try {
+        const image = await this.readImageFromUrl(normalizedUrl);
+        const existing = await this.prisma.productImageEmbedding.findUnique({
+          where: { imageHash: image.imageHash },
+          select: { id: true, imageUrl: true },
+        });
+
+        // bỏ qua nếu đã hash, tránh lặp lại lãng phí tài nguyên
+        if (existing) {
+          await this.prisma.productImageEmbedding.update({
+            where: { id: existing.id },
+            data: {
+              productId: candidate.productId,
+              variantId: candidate.variantId ?? null,
+              assetId: candidate.assetId ?? null,
+              imageUrl: normalizedUrl,
+              sourceType: candidate.sourceType,
+            },
+          });
+          continue;
+        }
+
+        await this.deleteStaleImageEmbedding(candidate, image.imageHash);
+        // tạo mới
+        const embedding = await this.embedInlineImage(image.mimeType, image.base64);
+
+        await this.prisma.productImageEmbedding.create({
+          data: {
+            productId: candidate.productId,
+            variantId: candidate.variantId ?? null,
+            assetId: candidate.assetId ?? null,
+            imageUrl: normalizedUrl,
+            imageHash: image.imageHash,
+            embedding,
+            sourceType: candidate.sourceType,
+          },
+        });
+      } catch (error) {
+        this.logger.warn(
+          `Failed to sync image embedding for product=${productId} url=${normalizedUrl}: ${this.errorMessage(error)}`,
+        );
+      }
+    }
+  }
+
+  private isAiEnabled() {
+    const value = this.configService.get<string>('AI_CHAT_ENABLED');
+    return ['1', 'true', 'yes', 'on'].includes((value ?? '').toLowerCase());
+  }
+
   private errorMessage(error: unknown) {
     return error instanceof Error ? error.message : String(error);
   }

@@ -42,6 +42,7 @@ export class InventoriesController {
     }
 
     @Post(':variantId/adjust')
+    @Roles(Role.ADMIN)
     async adjustStock(
         @Param('variantId') variantId: string,
         @Body() dto: AdjustStockDto,

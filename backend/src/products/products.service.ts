@@ -11,6 +11,7 @@ import { RedisService } from 'src/redis/redis.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InventoriesService } from 'src/inventories/inventories.service';
 import { EmbeddingService } from 'src/ai/embedding.service';
+import { ProductImageEmbeddingService } from 'src/ai/product-image-embedding.service';
 import { ConfigService } from '@nestjs/config';
 
 type CompareCategoryNode = {
@@ -49,6 +50,7 @@ export class ProductsService {
         private inventoriesService: InventoriesService,
         private embeddingService: EmbeddingService,
         private configService: ConfigService,
+        private productImageEmbeddingService: ProductImageEmbeddingService,
     ) { }
 
     // ADMIN
@@ -2655,6 +2657,7 @@ export class ProductsService {
     private queueProductEmbeddingSync(productId?: string | null) {
         if (!productId) return;
         void this.embeddingService.syncProductEmbeddingBestEffort(productId);
+        void this.productImageEmbeddingService.syncProductImageEmbeddingBestEffort(productId);
     }
 
     // tạo ma trận biến thể từ các trục thuộc tính theo tích descartes (ma trậ: m * n)
