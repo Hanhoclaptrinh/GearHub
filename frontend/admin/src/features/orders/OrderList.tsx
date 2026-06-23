@@ -30,10 +30,11 @@ import {
 } from 'react-iconly';
 import { toast } from 'sonner';
 import { orderService } from '../../services/order.service';
+import { authService } from '../../services/auth.service';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../utils/cn';
-import { OrderStatus } from '../../types';
+import { OrderStatus, Role } from '../../types';
 import type { Order } from '../../types';
 
 const statusLabel: Record<OrderStatus, string> = {
@@ -341,6 +342,9 @@ export const OrderList: React.FC = () => {
 
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
+
+  const user = authService.getCurrentUser();
+  const isAdmin = user?.role === Role.ADMIN;
 
   const orderIdFromUrl = searchParams.get('orderId');
   const userIdFromUrl = searchParams.get('userId');
@@ -1481,14 +1485,16 @@ export const OrderList: React.FC = () => {
                 <div className="flex flex-col gap-3 w-full">
                   {orderDetail.paymentStatus === 'PAID' && orderDetail.paymentMethod === 'PAYMENT_GATEWAY' ? (
                     <div className="flex gap-3 w-full">
-                      <Button
-                        variant="danger"
-                        className="flex-1 h-11 rounded-[8px] font-extrabold bg-[#25396f] hover:bg-[#1f2f5d] text-white"
-                        onClick={() => setShowRefundConfirmDialog(true)}
-                        disabled={refundOrderMutation.isPending}
-                      >
-                        {refundOrderMutation.isPending ? 'Đang hoàn tiền...' : 'Duyệt hủy & hoàn tiền'}
-                      </Button>
+                      {isAdmin && (
+                        <Button
+                          variant="danger"
+                          className="flex-1 h-11 rounded-[8px] font-extrabold bg-[#25396f] hover:bg-[#1f2f5d] text-white"
+                          onClick={() => setShowRefundConfirmDialog(true)}
+                          disabled={refundOrderMutation.isPending}
+                        >
+                          {refundOrderMutation.isPending ? 'Đang hoàn tiền...' : 'Duyệt hủy & hoàn tiền'}
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         className="flex-1 h-11 rounded-[8px] font-extrabold border-[#dce7f1] text-[#607080] hover:border-primary hover:text-primary"
@@ -1522,7 +1528,7 @@ export const OrderList: React.FC = () => {
                 </div>
               ) : (
                 <div className="flex flex-col gap-3 w-full">
-                  {orderDetail && orderDetail.paymentStatus === 'PAID' && orderDetail.paymentMethod === 'PAYMENT_GATEWAY' && (
+                  {orderDetail && orderDetail.paymentStatus === 'PAID' && orderDetail.paymentMethod === 'PAYMENT_GATEWAY' && isAdmin && (
                     <Button
                       variant="danger"
                       className="w-full h-11 rounded-[8px] font-extrabold bg-[#25396f] hover:bg-[#1f2f5d] text-white"
