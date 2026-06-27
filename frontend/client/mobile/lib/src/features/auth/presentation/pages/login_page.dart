@@ -99,7 +99,7 @@ class LoginPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        "Nâng tầm cuộc chơi",
+                        "Trải nghiệm mua sắm thiết bị gaming hàng đầu",
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,

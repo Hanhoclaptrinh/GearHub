@@ -8,27 +8,22 @@ export class RolesGuard implements CanActivate {
     constructor(private reflector: Reflector) { }
 
     canActivate(context: ExecutionContext): boolean {
-        // lay cac roles Decorator @Roles()
+        // trích xuất danh sách các role được yêu cầu từ Decorator @Roles()
         const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
             context.getHandler(),
             context.getClass(),
         ]);
-
-        // cho phep truy cap neu khong yeu cau role
+        // cho phép truy cập nếu API không yêu cầu phân quyền cụ thể
         if (!requiredRoles) {
             return true;
         }
-
-        // get thong tin user tu req
+        // lấy thông tin người dùng đã được xác thực từ HTTP Request
         const { user } = context.switchToHttp().getRequest();
-
-        // check quyen user
+        // kiểm tra role của người dùng có trùng khớp với role được yêu cầu không
         const hasRole = requiredRoles.some((role) => user.role === role);
-
         if (!hasRole) {
             throw new ForbiddenException('Bạn không có quyền truy cập tính năng này');
         }
-
         return true;
     }
 }

@@ -195,7 +195,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                               //header
                               Text(
-                                'Tạo tài khoản mới :)',
+                                'Tạo tài khoản mới',
                                 style: TextStyle(
                                   fontSize: 36,
                                   fontWeight: FontWeight.w900,
@@ -209,7 +209,7 @@ class _RegisterPageState extends State<RegisterPage> {
                               const SizedBox(height: 12),
                               //subtitle
                               Text(
-                                'Nâng tầm cuộc chơi',
+                                'Vui lòng điền thông tin để tạo tài khoản mới',
                                 style: TextStyle(
                                   fontSize: 15,
                                   color: Theme.of(

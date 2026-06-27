@@ -182,7 +182,8 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                 ),
               ),
 
-              _buildHeaderAndTabs(context, topPadding),
+              _buildHeader(context),
+              _buildTabs(context, topPadding),
             ],
           ),
         );
@@ -190,75 +191,72 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
     );
   }
 
-  Widget _buildHeaderAndTabs(BuildContext context, double topPadding) {
+  Widget _buildHeader(BuildContext context) {
+    return GlassmorphicHeader(
+      scrollOffset: _scrollOffset,
+      title: 'Thông báo',
+      onBack: () => Navigator.of(context).pop(),
+      actions: [
+        //mark all read
+        BlocBuilder<NotificationCubit, NotificationState>(
+          builder: (context, state) {
+            final hasUnread =
+                state is NotificationLoaded && state.unreadCount > 0;
+            return HeaderIconButton(
+              icon: Icons.done_all_rounded,
+              color: hasUnread
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+              onTap: () {
+                if (!hasUnread) return;
+                HapticFeedback.lightImpact();
+                _confirmMarkAllRead(context);
+              },
+            );
+          },
+        ),
+        //clear all
+        BlocBuilder<NotificationCubit, NotificationState>(
+          builder: (context, state) {
+            final hasNotifications =
+                state is NotificationLoaded &&
+                state.notifications.isNotEmpty;
+            return HeaderIconButton(
+              icon: LucideIcons.trash2,
+              color: hasNotifications
+                  ? Theme.of(context).colorScheme.error
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+              onTap: () {
+                if (!hasNotifications) return;
+                HapticFeedback.lightImpact();
+                _confirmClearAll(context);
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTabs(BuildContext context, double topPadding) {
     return Positioned(
-      top: 0,
+      top: topPadding + 60,
       left: 0,
       right: 0,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          GlassmorphicHeader(
-            scrollOffset: _scrollOffset,
-            title: 'Thông báo',
-            onBack: () => Navigator.of(context).pop(),
-            actions: [
-              //mark all read
-              BlocBuilder<NotificationCubit, NotificationState>(
-                builder: (context, state) {
-                  final hasUnread =
-                      state is NotificationLoaded && state.unreadCount > 0;
-                  return HeaderIconButton(
-                    icon: Icons.done_all_rounded,
-                    color: hasUnread
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
-                    onTap: () {
-                      if (!hasUnread) return;
-                      HapticFeedback.lightImpact();
-                      _confirmMarkAllRead(context);
-                    },
-                  );
-                },
-              ),
-              //clear all
-              BlocBuilder<NotificationCubit, NotificationState>(
-                builder: (context, state) {
-                  final hasNotifications =
-                      state is NotificationLoaded &&
-                      state.notifications.isNotEmpty;
-                  return HeaderIconButton(
-                    icon: LucideIcons.trash2,
-                    color: hasNotifications
-                        ? Theme.of(context).colorScheme.error
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
-                    onTap: () {
-                      if (!hasNotifications) return;
-                      HapticFeedback.lightImpact();
-                      _confirmClearAll(context);
-                    },
-                  );
-                },
-              ),
-            ],
+      child: Container(
+        height: 60,
+        width: double.infinity,
+        color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.8),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: _tabs
+                .map((tab) => _buildTabChip(context, tab))
+                .toList(),
           ),
-
-          Container(
-            height: 60,
-            width: double.infinity,
-            padding: EdgeInsets.only(top: topPadding + 60),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: _tabs
-                    .map((tab) => _buildTabChip(context, tab))
-                    .toList(),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

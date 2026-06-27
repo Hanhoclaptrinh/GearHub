@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "gearhub mobile",
+      "request": "launch",
+      "type": "dart",
+      "program": "frontend/client/mobile/lib/main.dart",
+      "cwd": "frontend/client/mobile",
+      "toolArgs": [
+        "--dart-define",
+        "API_BASE_URL=http://127.0.0.1:3000"
+      ]
+    }
+  ]
+}

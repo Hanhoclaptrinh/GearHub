@@ -140,18 +140,20 @@ export class ProductRetrievalService {
   // tính điểm tương đồng cosine
   // dựa trên định lý cosine tính góc giữa 2 vector
   cosineSimilarity(a: number[], b: number[]) {
+    // kiểm tra tính hợp lệ và độ dài đồng nhất của 2 vector
     if (a.length === 0 || b.length === 0 || a.length !== b.length) return 0;
-
-    let dot = 0;
-    let aMagnitude = 0;
-    let bMagnitude = 0;
+    let dot = 0; // tích vô hướng 2 vector
+    let aMagnitude = 0; // độ lớn vector A
+    let bMagnitude = 0; // độ lớn vector B
+    // tính toán tích lũy theo từng chiều dữ liệu
     for (let i = 0; i < a.length; i += 1) {
       dot += a[i] * b[i];
       aMagnitude += a[i] * a[i];
       bMagnitude += b[i] * b[i];
     }
-
+    // tránh lỗi nếu 1 trong 2 vector rỗng
     if (aMagnitude === 0 || bMagnitude === 0) return 0;
+    // điểm cosine theo định lý góc giữa 2 vector
     return dot / (Math.sqrt(aMagnitude) * Math.sqrt(bMagnitude));
   }
 

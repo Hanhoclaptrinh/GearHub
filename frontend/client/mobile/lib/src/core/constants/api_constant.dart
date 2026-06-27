@@ -1,13 +1,10 @@
-import 'dart:io';
-
 class ApiConstant {
   ApiConstant._();
 
-  //base url
-  static String get baseUrl {
-    if (Platform.isAndroid) {
-      return 'http://192.168.1.3:3000';
-    }
-    return 'http://localhost:3000';
-  }
+  //lấy url từ cấu hình build
+  //fallback về giá trị mặc định
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:3000',
+  );
 }

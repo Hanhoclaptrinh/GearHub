@@ -278,7 +278,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
           });
         }
         final double shipping = _toDouble(order['shippingFee'] ?? 0.0);
-        final double discount = _toDouble(order['discount']);
+        final double discount = _toDouble(order['voucherDiscount'] ?? order['discount']);
         double totalAmount = _toDouble(order['totalAmount'] ?? order['total']);
         if (totalAmount == 0.0) {
           totalAmount = subtotal + shipping - discount;

@@ -119,6 +119,38 @@ export class ProductsService {
             }
         }
 
+        /**
+         * upload media files của variant lên cloudinary
+         * thực hiện ngoài db transaction để tránh block connection
+         */
+        const uploadedVariantAssetsMap: Record<number, { url: string; type: AssetType }[]> = {};
+        const uploadedVariantFilesCache: Record<string, string> = {};
+
+        for (const idxStr of Object.keys(variantFilesMap)) {
+            const idx = parseInt(idxStr, 10);
+            uploadedVariantAssetsMap[idx] = [];
+            for (const vf of variantFilesMap[idx]) {
+                // tạo cache key từ tên và dung lượng file để tránh upload trùng
+                const cacheKey = `${vf.originalname}_${vf.size}`;
+                let secure_url: string;
+                if (uploadedVariantFilesCache[cacheKey]) {
+                    secure_url = uploadedVariantFilesCache[cacheKey];
+                } else {
+                    const upload = await this.cloudinaryService.uploadFile(vf);
+                    secure_url = upload.secure_url;
+                    uploadedVariantFilesCache[cacheKey] = secure_url;
+                }
+
+                // xác định loại asset dựa trên đuôi file để hỗ trợ ar/3d
+                const fName = vf.originalname.toLowerCase();
+                let type: AssetType = AssetType.IMAGE;
+                if (fName.endsWith('.glb')) type = AssetType.GLB;
+                else if (fName.endsWith('.usdz')) type = AssetType.USDZ;
+
+                uploadedVariantAssetsMap[idx].push({ url: secure_url, type });
+            }
+        }
+
         // toàn bộ thao tác ghi product, variant, asset và inventory phải
         // là một khối atomic để tránh sinh dữ liệu rác
         try {
@@ -151,47 +183,30 @@ export class ProductsService {
                 // handle variants
                 if (data.variants) {
                     const variantList = JSON.parse(data.variants);
-                    // tái sử dụng kết quả upload khi cùng một file nhị phân
-                    // được gắn cho nhiều biến thể trong cùng một request
-                    // dùng cache tránh upload nhiều file vào cùng 1 biến thể
-                    const uploadedVariantFilesCache: Record<string, string> = {};
 
                     for (let idx = 0; idx < variantList.length; idx++) {
                         const v = variantList[idx];
+                        // tự động tạo mã sku từ slug và thuộc tính nếu chưa có sku
                         const sku = v.sku || this.generateSKU(slug, v.attributes);
 
                         let variantImageUrl = v.imageUrl || null;
                         const variantAssetUrls: { url: string; type: AssetType }[] = [];
 
-                        if (variantFilesMap[idx] && variantFilesMap[idx].length > 0) {
-                            for (let i = 0; i < variantFilesMap[idx].length; i++) {
-                                const vf = variantFilesMap[idx][i];
-                                const cacheKey = `${vf.originalname}_${vf.size}`;
-
-                                let secure_url: string;
-                                if (uploadedVariantFilesCache[cacheKey]) {
-                                    secure_url = uploadedVariantFilesCache[cacheKey];
-                                } else {
-                                    const upload = await this.cloudinaryService.uploadFile(vf);
-                                    secure_url = upload.secure_url;
-                                    uploadedVariantFilesCache[cacheKey] = secure_url;
+                        // đồng bộ danh sách asset đã upload lên cloudinary với variant tương ứng
+                        if (uploadedVariantAssetsMap[idx] && uploadedVariantAssetsMap[idx].length > 0) {
+                            for (let i = 0; i < uploadedVariantAssetsMap[idx].length; i++) {
+                                const va = uploadedVariantAssetsMap[idx][i];
+                                // gán ảnh đầu tiên tìm thấy làm ảnh đại diện cho variant nếu chưa thiết lập
+                                if (i === 0 && va.type === AssetType.IMAGE && !variantImageUrl) {
+                                    variantImageUrl = va.url;
                                 }
-
-                                const fName = vf.originalname.toLowerCase();
-
-                                let type: AssetType = AssetType.IMAGE;
-                                if (fName.endsWith('.glb')) type = AssetType.GLB;
-                                else if (fName.endsWith('.usdz')) type = AssetType.USDZ;
-
-                                if (i === 0 && type === AssetType.IMAGE && !variantImageUrl) {
-                                    variantImageUrl = secure_url;
-                                }
-                                variantAssetUrls.push({ url: secure_url, type });
+                                variantAssetUrls.push(va);
                             }
                         }
 
                         const initialStock = parseInt(v.stock || '0');
 
+                        // tạo bản ghi variant mới trong db
                         const createdVariant = await tx.productVariant.create({
                             data: {
                                 productId: product.id,
@@ -205,7 +220,7 @@ export class ProductsService {
                             }
                         });
 
-                        // tạo inventory transaction cho stock khởi tạo
+                        // tạo lịch sử nhập kho ban đầu cho variant nếu tồn kho lớn hơn 0
                         if (initialStock > 0) {
                             await this.inventoriesService.adjustStock({
                                 variantId: createdVariant.id,
@@ -217,6 +232,7 @@ export class ProductsService {
                             });
                         }
 
+                        // lưu trữ toàn bộ thông tin asset đi kèm của variant vào cơ sở dữ liệu
                         if (variantAssetUrls.length > 0) {
                             await Promise.all(
                                 variantAssetUrls.map(va =>
@@ -361,6 +377,63 @@ export class ProductsService {
             }
         }
 
+        // lọc danh sách file chung của sản phẩm (không thuộc về variant cụ thể nào)
+        const generalFiles = (files || []).filter(f => f.fieldname === 'files' || !f.fieldname);
+        // lưu trữ danh sách file tương ứng với từng variant theo index
+        const variantFilesMap: Record<number, Express.Multer.File[]> = {};
+
+        // phân loại và gom nhóm file của variant dựa trên tên fieldname truyền lên
+        (files || []).forEach(f => {
+            if (f.fieldname && f.fieldname.startsWith('variant_files_')) {
+                const idx = parseInt(f.fieldname.replace('variant_files_', ''), 10);
+                if (!isNaN(idx)) {
+                    if (!variantFilesMap[idx]) variantFilesMap[idx] = [];
+                    variantFilesMap[idx].push(f);
+                }
+            }
+        });
+
+        // upload các file chung lên cloudinary ngoài db transaction để tối ưu hiệu năng
+        const uploadedGeneralAssets: { url: string; type: AssetType }[] = [];
+        if (generalFiles && generalFiles.length > 0) {
+            for (const file of generalFiles) {
+                const upload = await this.cloudinaryService.uploadFile(file);
+                const fileName = file.originalname.toLowerCase();
+                let type: AssetType = AssetType.IMAGE;
+                if (fileName.endsWith('.glb')) type = AssetType.GLB;
+                else if (fileName.endsWith('.usdz')) type = AssetType.USDZ;
+
+                uploadedGeneralAssets.push({ url: upload.secure_url, type });
+            }
+        }
+
+        // upload các file của từng variant lên cloudinary kèm cơ chế cache trùng lặp
+        const uploadedVariantAssetsMap: Record<number, { url: string; type: AssetType }[]> = {};
+        const uploadedVariantFilesCache: Record<string, string> = {};
+
+        for (const idxStr of Object.keys(variantFilesMap)) {
+            const idx = parseInt(idxStr, 10);
+            uploadedVariantAssetsMap[idx] = [];
+            for (const vf of variantFilesMap[idx]) {
+                const cacheKey = `${vf.originalname}_${vf.size}`;
+                let secure_url: string;
+                if (uploadedVariantFilesCache[cacheKey]) {
+                    secure_url = uploadedVariantFilesCache[cacheKey];
+                } else {
+                    const upload = await this.cloudinaryService.uploadFile(vf);
+                    secure_url = upload.secure_url;
+                    uploadedVariantFilesCache[cacheKey] = secure_url;
+                }
+
+                const fName = vf.originalname.toLowerCase();
+                let type: AssetType = AssetType.IMAGE;
+                if (fName.endsWith('.glb')) type = AssetType.GLB;
+                else if (fName.endsWith('.usdz')) type = AssetType.USDZ;
+
+                uploadedVariantAssetsMap[idx].push({ url: secure_url, type });
+            }
+        }
+
         const result = await this.prisma.$transaction(async (tx) => {
             // chuẩn bị dữ liệu patch cho sản phẩm cha trước, sau đó mới đồng bộ
             // lại các biến thể phụ thuộc theo trạng thái mới của sản phẩm
@@ -410,29 +483,15 @@ export class ProductsService {
                 data: updateData
             });
 
-            const generalFiles = (files || []).filter(f => f.fieldname === 'files' || !f.fieldname);
-            const variantFilesMap: Record<number, Express.Multer.File[]> = {};
-
-            (files || []).forEach(f => {
-                if (f.fieldname && f.fieldname.startsWith('variant_files_')) {
-                    const idx = parseInt(f.fieldname.replace('variant_files_', ''), 10);
-                    if (!isNaN(idx)) {
-                        if (!variantFilesMap[idx]) variantFilesMap[idx] = [];
-                        variantFilesMap[idx].push(f);
-                    }
-                }
-            });
-
             // có thể xử lý cả 2 flow:
             // - cập nhật biến thể đã có
             // - tạo biến thể mới nếu dữ liệu gửi lên chưa tồn tại trong db
+            // nếu có danh sách variant truyền lên thì xử lý cập nhật hoặc tạo mới
             if (data.variants) {
                 const variants = JSON.parse(data.variants);
                 const existingVariants = await tx.productVariant.findMany({
                     where: { productId: id }
                 });
-
-                const uploadedVariantFilesCache: Record<string, string> = {};
 
                 for (let idx = 0; idx < variants.length; idx++) {
                     const vData = variants[idx];
@@ -443,37 +502,23 @@ export class ProductsService {
                     let variantImageUrl = vData.imageUrl || null;
                     const variantAssetUrls: { url: string; type: AssetType }[] = [];
 
-                    if (variantFilesMap[idx] && variantFilesMap[idx].length > 0) {
-                        for (let i = 0; i < variantFilesMap[idx].length; i++) {
-                            const vf = variantFilesMap[idx][i];
-                            const cacheKey = `${vf.originalname}_${vf.size}`;
-
-                            let secure_url: string;
-                            if (uploadedVariantFilesCache[cacheKey]) {
-                                secure_url = uploadedVariantFilesCache[cacheKey];
-                            } else {
-                                const upload = await this.cloudinaryService.uploadFile(vf);
-                                secure_url = upload.secure_url;
-                                uploadedVariantFilesCache[cacheKey] = secure_url;
+                    // xử lý gán ảnh đại diện và gom nhóm danh sách asset đã upload cho variant
+                    if (uploadedVariantAssetsMap[idx] && uploadedVariantAssetsMap[idx].length > 0) {
+                        for (let i = 0; i < uploadedVariantAssetsMap[idx].length; i++) {
+                            const va = uploadedVariantAssetsMap[idx][i];
+                            if (i === 0 && va.type === AssetType.IMAGE && !variantImageUrl) {
+                                variantImageUrl = va.url;
                             }
-
-                            const fName = vf.originalname.toLowerCase();
-
-                            let type: AssetType = AssetType.IMAGE;
-                            if (fName.endsWith('.glb')) type = AssetType.GLB;
-                            else if (fName.endsWith('.usdz')) type = AssetType.USDZ;
-
-                            if (i === 0 && type === AssetType.IMAGE && !variantImageUrl) {
-                                variantImageUrl = secure_url;
-                            }
-                            variantAssetUrls.push({ url: secure_url, type });
+                            variantAssetUrls.push(va);
                         }
                     }
 
+                    // tìm kiếm xem variant đã tồn tại trong db dựa trên id hoặc sku chưa
                     const existing = existingVariants.find(ev => (vData.id && ev.id === vData.id) || ev.sku === sku);
                     let finalVariantId = existing ? existing.id : null;
 
                     if (existing) {
+                        // cập nhật thông tin cho variant đã tồn tại
                         await tx.productVariant.update({
                             where: { id: existing.id },
                             data: {
@@ -481,11 +526,12 @@ export class ProductsService {
                                 name: `${updatedProduct.name} - ${sku}`,
                                 price: price,
                                 attributes: vData.attributes || {},
-                                imageUrl: variantFilesMap[idx]?.length ? variantImageUrl : (vData.imageUrl || null),
+                                imageUrl: uploadedVariantAssetsMap[idx]?.length ? variantImageUrl : (vData.imageUrl || null),
                                 barcode: vData.barcode ?? existing.barcode,
                             }
                         });
                     } else {
+                        // tạo variant mới nếu chưa tồn tại
                         const createdVariant = await tx.productVariant.create({
                             data: {
                                 productId: updatedProduct.id,
@@ -500,7 +546,7 @@ export class ProductsService {
                         });
                         finalVariantId = createdVariant.id;
 
-                        // tạo inventory transaction cho variant mới
+                        // tạo giao dịch nhập kho ban đầu cho variant mới tạo
                         if (stock > 0) {
                             await this.inventoriesService.adjustStock({
                                 variantId: createdVariant.id,
@@ -514,6 +560,7 @@ export class ProductsService {
                     }
 
                     if (existing) {
+                        // xóa bỏ các asset cũ của variant không nằm trong danh sách giữ lại
                         const keptAssetIds = (vData.assets || [])
                             .map((a: any) => a.id)
                             .filter(Boolean);
@@ -526,6 +573,7 @@ export class ProductsService {
                         });
                     }
 
+                    // lưu thêm các asset mới đã upload của variant vào db
                     if (finalVariantId && variantAssetUrls.length > 0) {
                         await Promise.all(
                             variantAssetUrls.map(va =>
@@ -568,19 +616,13 @@ export class ProductsService {
             }
 
             // xử lý new assets
-            if (generalFiles && generalFiles.length > 0) {
-                for (const file of generalFiles) {
-                    const upload = await this.cloudinaryService.uploadFile(file);
-                    const fileName = file.originalname.toLowerCase();
-                    let type: AssetType = AssetType.IMAGE;
-                    if (fileName.endsWith('.glb')) type = AssetType.GLB;
-                    else if (fileName.endsWith('.usdz')) type = AssetType.USDZ;
-
+            if (uploadedGeneralAssets.length > 0) {
+                for (const asset of uploadedGeneralAssets) {
                     await tx.productAsset.create({
                         data: {
                             productId: id,
-                            url: upload.secure_url,
-                            type: type,
+                            url: asset.url,
+                            type: asset.type,
                             isPrimary: false
                         }
                     });
@@ -641,7 +683,6 @@ export class ProductsService {
 
     /**
      * thêm asset mới cho sản phẩm ở cấp product
-     *
      * dùng ảnh đầu tiên upload làm thumbnail mặc định nếu không có thumbnail
      */
     async addAssets(id: string, files: Express.Multer.File[]) {
