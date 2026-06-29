@@ -19,16 +19,19 @@ class ConciergeScreen extends StatefulWidget {
 class _ConciergeScreenState extends State<ConciergeScreen>
     with WidgetsBindingObserver {
   final _scrollController = ScrollController();
+  bool _showScrollToBottom = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
   }
@@ -37,6 +40,18 @@ class _ConciergeScreenState extends State<ConciergeScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final isActive = state == AppLifecycleState.resumed;
     context.read<ConciergeCubit>().setScreenActive(isActive);
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.offset;
+    final show = (maxScroll - currentScroll) > 150;
+    if (show != _showScrollToBottom) {
+      setState(() {
+        _showScrollToBottom = show;
+      });
+    }
   }
 
   void _scrollToBottom() {
@@ -53,6 +68,8 @@ class _ConciergeScreenState extends State<ConciergeScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: BlocConsumer<ConciergeCubit, ConciergeState>(
@@ -100,6 +117,42 @@ class _ConciergeScreenState extends State<ConciergeScreen>
                     ],
                   ),
                 ),
+                Positioned(
+                  bottom: MediaQuery.of(context).padding.bottom + 82,
+                  right: 20,
+                  child: AnimatedScale(
+                    scale: _showScrollToBottom ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutBack,
+                    child: GestureDetector(
+                      onTap: _scrollToBottom,
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor.withValues(alpha: 0.9),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: cs.outlineVariant,
+                            width: 0.8,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.arrow_downward_rounded,
+                          size: 18,
+                          color: cs.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           );
@@ -121,7 +174,11 @@ class _ConciergeScreenState extends State<ConciergeScreen>
     }
 
     if (state.messages.isEmpty) {
-      return const ConciergeEmptyState();
+      return ConciergeEmptyState(
+        onSuggestionTap: (text) {
+          context.read<ConciergeCubit>().send(text);
+        },
+      );
     }
 
     return ListView.builder(
@@ -188,7 +245,6 @@ class _ConciergeHeader extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
           padding: const EdgeInsets.fromLTRB(10, 8, 16, 14),
-
           child: Row(
             children: [
               IconButton(
@@ -265,22 +321,11 @@ class _TypingIndicator extends StatelessWidget {
     final name = typingUserId == 'ai' ? 'GearHub AI' : 'GearHub';
 
     return Padding(
-      padding: const EdgeInsets.only(left: 4, top: 8),
+      padding: const EdgeInsets.only(left: 4, top: 12),
       child: Row(
         children: [
-          for (var i = 0; i < 3; i++)
-            Container(
-              width: 6,
-              height: 6,
-              margin: const EdgeInsets.only(right: 5),
-              decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.34),
-                shape: BoxShape.circle,
-              ),
-            ),
-          const SizedBox(width: 6),
+          const _AnimatedDots(),
+          const SizedBox(width: 8),
           Text(
             '$name đang phản hồi',
             style: TextStyle(
@@ -291,6 +336,68 @@ class _TypingIndicator extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AnimatedDots extends StatefulWidget {
+  const _AnimatedDots();
+
+  @override
+  State<_AnimatedDots> createState() => _AnimatedDotsState();
+}
+
+class _AnimatedDotsState extends State<_AnimatedDots>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(3, (index) {
+        return AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            final double delay = index * 0.2;
+            final double progress = (_controller.value - delay) % 1.0;
+            final double bounce = (progress < 0.5) ? -4 * progress * (0.5 - progress) * 8 : 0.0;
+            final double opacity = 0.4 + (progress < 0.5 ? 0.6 : 0.0) * (1.0 - (progress * 2).clamp(0.0, 1.0));
+
+            return Transform.translate(
+              offset: Offset(0, bounce),
+              child: Opacity(
+                opacity: opacity.clamp(0.2, 1.0),
+                child: Container(
+                  width: 6,
+                  height: 6,
+                  margin: const EdgeInsets.only(right: 5),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      }),
     );
   }
 }

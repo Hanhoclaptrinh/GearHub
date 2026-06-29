@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/src/core/storage/secure_storage_service.dart';
 import 'package:mobile/src/features/chat/data/models/chat_message_model.dart';
@@ -6,6 +7,7 @@ import 'package:mobile/src/features/chat/data/models/chat_room_model.dart';
 import 'package:mobile/src/features/chat/domain/entities/chat_message_entity.dart';
 import 'package:mobile/src/features/chat/domain/repositories/chat_repository.dart';
 import 'package:mobile/src/features/chat/presentation/services/chat_socket_service.dart';
+import 'package:mobile/src/features/chat/data/models/product_recommendation_model.dart';
 import 'concierge_state.dart';
 
 class ConciergeCubit extends Cubit<ConciergeState> {
@@ -354,13 +356,72 @@ class ConciergeCubit extends Cubit<ConciergeState> {
     final nextMessages = [...state.messages];
     final existingIndex = nextMessages.indexWhere((msg) => msg.id == messageId);
 
+    // Extract streaming content
+    String contentText = fullText;
+    List<ProductRecommendationModel>? recommendations;
+
+    if (fullText.trim().startsWith('{')) {
+      try {
+        final parsed = jsonDecode(fullText);
+        if (parsed is Map<String, dynamic>) {
+          contentText = parsed['message']?.toString() ?? fullText;
+          final recs = parsed['recommendations'];
+          if (recs is List && recs.isNotEmpty) {
+            recommendations = recs
+                .map((e) {
+                  if (e is Map) {
+                    return ProductRecommendationModel.fromJson(
+                      Map<String, dynamic>.from(e),
+                    );
+                  }
+                  return null;
+                })
+                .whereType<ProductRecommendationModel>()
+                .toList();
+          }
+        }
+      } catch (_) {
+        // If not a full JSON, extract partial message value
+        final regExp = RegExp(
+          r'"message"\s*:\s*"((?:[^"\\]|\\.)*)"',
+          dotAll: true,
+        );
+        final match = regExp.firstMatch(fullText);
+        if (match != null) {
+          final extracted = match.group(1);
+          if (extracted != null) {
+            contentText = extracted
+                .replaceAll(r'\n', '\n')
+                .replaceAll(r'\"', '"')
+                .replaceAll(r'\\', '\\');
+          }
+        } else {
+          // Try unclosed quotes
+          final unclosedRegExp = RegExp(
+            r'"message"\s*:\s*"((?:[^"\\]|\\.)*)$',
+            dotAll: true,
+          );
+          final unclosedMatch = unclosedRegExp.firstMatch(fullText);
+          if (unclosedMatch != null) {
+            final extracted = unclosedMatch.group(1);
+            if (extracted != null) {
+              contentText = extracted
+                  .replaceAll(r'\n', '\n')
+                  .replaceAll(r'\"', '"')
+                  .replaceAll(r'\\', '\\');
+            }
+          }
+        }
+      }
+    }
+
     if (existingIndex >= 0) {
       final existingMsg = nextMessages[existingIndex];
       nextMessages[existingIndex] = ChatMessageEntity(
         id: existingMsg.id,
         roomId: existingMsg.roomId,
         senderId: existingMsg.senderId,
-        content: fullText,
+        content: contentText,
         type: existingMsg.type,
         status: isEnd ? 'SENT' : 'SENDING',
         readAt: existingMsg.readAt,
@@ -369,13 +430,14 @@ class ConciergeCubit extends Cubit<ConciergeState> {
         clientMessageId: existingMsg.clientMessageId,
         isOptimistic: false,
         isFailed: false,
+        recommendations: recommendations ?? existingMsg.recommendations,
       );
     } else {
       final newMsg = ChatMessageEntity(
         id: messageId,
         roomId: room.id,
         senderId: null,
-        content: fullText,
+        content: contentText,
         type: 'TEXT',
         status: 'SENDING',
         readAt: null,
@@ -384,6 +446,7 @@ class ConciergeCubit extends Cubit<ConciergeState> {
         clientMessageId: messageId,
         isOptimistic: false,
         isFailed: false,
+        recommendations: recommendations,
       );
       nextMessages.add(newMsg);
     }

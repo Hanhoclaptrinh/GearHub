@@ -15,6 +15,7 @@ import 'package:mobile/src/features/profile/presentation/widgets/ultilities_grid
 import 'package:mobile/src/features/profile/presentation/state/orders_cubit.dart';
 import 'package:mobile/src/features/promotions/presentation/state/my_vouchers_cubit.dart';
 import 'package:mobile/src/features/address/presentation/pages/addresses_page.dart';
+import 'package:mobile/src/features/profile/presentation/pages/payment_methods_page.dart';
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -142,7 +143,14 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                       ),
                                       ProfileMenuItem(
                                         title: 'Phương thức thanh toán',
-                                        onTap: () {},
+                                        onTap: () {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const PaymentMethodsPage(),
+                                            ),
+                                          );
+                                        },
                                       ),
                                     ],
                                     ProfileMenuItem(

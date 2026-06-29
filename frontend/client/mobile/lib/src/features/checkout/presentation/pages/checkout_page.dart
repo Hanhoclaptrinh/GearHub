@@ -18,6 +18,8 @@ import 'package:mobile/src/features/checkout/presentation/widgets/payment_select
 import 'package:mobile/src/features/checkout/presentation/widgets/price_breakdown_section.dart';
 import 'package:mobile/src/features/checkout/presentation/widgets/promotion_section.dart';
 import 'vnpay_payment_page.dart';
+import 'package:mobile/src/features/profile/presentation/pages/payment_methods_page.dart';
+import 'dart:convert';
 import 'package:mobile/src/features/profile/presentation/pages/order_history_page.dart';
 import 'package:mobile/src/features/address/presentation/pages/addresses_page.dart';
 import 'package:mobile/src/features/address/data/models/address_model.dart';
@@ -48,10 +50,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
   String _selectedPaymentMethod = "COD";
   final bool _saveAsDefault = true;
 
+  List<PaymentCard> _savedCards = [];
+  PaymentCard? _selectedVnpayCard;
+  bool _useSavedCardForVnpay = false;
+
   @override
   void initState() {
     super.initState();
     _loadDefaultShippingInfo();
+    _loadSavedCards();
   }
 
   ///tải thông tin vận chuyển mặc định
@@ -95,6 +102,202 @@ class _CheckoutPageState extends State<CheckoutPage> {
         });
       }
     } catch (_) {}
+  }
+
+  Future<void> _loadSavedCards() async {
+    try {
+      final prefs = getIt<SharedPreferences>();
+      final jsonStr = prefs.getString('saved_payment_cards');
+      if (jsonStr != null) {
+        final List<dynamic> decoded = jsonDecode(jsonStr);
+        final cards = decoded
+            .map((item) => PaymentCard.fromJson(item as Map<String, dynamic>))
+            .toList();
+        setState(() {
+          _savedCards = cards;
+          if (cards.isNotEmpty) {
+            _selectedVnpayCard = cards.first;
+            _useSavedCardForVnpay = true;
+          }
+        });
+      }
+    } catch (_) {}
+  }
+
+  void _showChangeCardDialog() {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: theme.cardColor,
+        title: Text(
+          'Chọn thẻ thanh toán',
+          style: TextStyle(fontWeight: FontWeight.w800, color: cs.onSurface, fontSize: 15),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: _savedCards.length,
+            itemBuilder: (context, index) {
+              final card = _savedCards[index];
+              return ListTile(
+                title: Text(
+                  "${card.bankName.toUpperCase()} (ATM)",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: cs.onSurface),
+                ),
+                subtitle: Text(
+                  "•••• •••• •••• ${card.cardNumber.substring(card.cardNumber.length - 4)}",
+                  style: TextStyle(fontFamily: 'monospace', fontSize: 12, color: cs.onSurfaceVariant),
+                ),
+                trailing: card.id == _selectedVnpayCard?.id
+                    ? Icon(Icons.check_circle_rounded, color: cs.primary)
+                    : null,
+                onTap: () {
+                  setState(() {
+                    _selectedVnpayCard = card;
+                  });
+                  Navigator.pop(dialogCtx);
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVnpayCardSelector(bool isDark) {
+    final cs = Theme.of(context).colorScheme;
+    if (_savedCards.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        Text(
+          "Cấu hình thanh toán VNPay",
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            color: cs.onSurface,
+          ),
+        ),
+        const SizedBox(height: 10),
+        
+        // Option 1: Saved card
+        InkWell(
+          onTap: () {
+            setState(() {
+              _useSavedCardForVnpay = true;
+            });
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF161619) : const Color(0xFFF9F9FB),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _useSavedCardForVnpay ? cs.primary : cs.outlineVariant,
+                width: _useSavedCardForVnpay ? 1.2 : 0.8,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _useSavedCardForVnpay ? Icons.radio_button_checked : Icons.radio_button_off,
+                  size: 18,
+                  color: _useSavedCardForVnpay ? cs.primary : cs.onSurfaceVariant,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Sử dụng thẻ đã lưu",
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: cs.onSurface,
+                        ),
+                      ),
+                      if (_selectedVnpayCard != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          "${_selectedVnpayCard!.bankName.toUpperCase()} •••• ${_selectedVnpayCard!.cardNumber.substring(_selectedVnpayCard!.cardNumber.length - 4)}",
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: cs.onSurfaceVariant,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (_useSavedCardForVnpay && _savedCards.length > 1)
+                  TextButton(
+                    onPressed: _showChangeCardDialog,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      "Thay đổi",
+                      style: TextStyle(fontSize: 11, color: cs.secondary, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 10),
+        
+        // Option 2: Manual input
+        InkWell(
+          onTap: () {
+            setState(() {
+              _useSavedCardForVnpay = false;
+            });
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF161619) : const Color(0xFFF9F9FB),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: !_useSavedCardForVnpay ? cs.primary : cs.outlineVariant,
+                width: !_useSavedCardForVnpay ? 1.2 : 0.8,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  !_useSavedCardForVnpay ? Icons.radio_button_checked : Icons.radio_button_off,
+                  size: 18,
+                  color: !_useSavedCardForVnpay ? cs.primary : cs.onSurfaceVariant,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  "Nhập thông tin thẻ thủ công khi thanh toán",
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: cs.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   ///lưu thông tin vận chuyển vào local
@@ -172,6 +375,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       builder: (_) => VnpayPaymentPage(
                         paymentUrl: state.paymentUrl!,
                         orderId: state.orderId,
+                        selectedCard: _useSavedCardForVnpay ? _selectedVnpayCard : null,
                       ),
                     ),
                   );
@@ -265,6 +469,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                         );
                                       },
                                     ),
+                                    if (_selectedPaymentMethod == "PAYMENT_GATEWAY")
+                                      _buildVnpayCardSelector(isDark),
                                     _buildSectionDivider(isDark),
                                     PromotionSection(
                                       subtotal: _subtotalWithVat,

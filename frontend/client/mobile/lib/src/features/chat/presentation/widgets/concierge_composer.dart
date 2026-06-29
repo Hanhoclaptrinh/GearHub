@@ -104,6 +104,11 @@ class _ConciergeComposerState extends State<ConciergeComposer> {
                         fontWeight: FontWeight.w600,
                       ),
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      focusedErrorBorder: InputBorder.none,
                     ),
                     onChanged: (value) =>
                         widget.onTyping(value.trim().isNotEmpty),
