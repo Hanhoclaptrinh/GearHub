@@ -27,7 +27,7 @@ class OnboardingData {
     OnboardingItem(
       title: 'Kết Nối Đam Mê',
       description: 'Tham gia cộng đồng yêu công nghệ, tìm kiếm và chia sẻ những bộ gear độc đáo.',
-      imageUrl: 'assets/images/onboarding1.png',
+      imageUrl: 'assets/images/onboarding3.png',
     ),
   ];
 }
