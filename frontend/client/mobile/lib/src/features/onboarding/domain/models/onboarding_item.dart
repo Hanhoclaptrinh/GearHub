@@ -13,20 +13,20 @@ class OnboardingItem {
 class OnboardingData {
   static const List<OnboardingItem> items = [
     OnboardingItem(
-      title: 'Premium Gadgets',
+      title: 'Thiết Bị Cao Cấp',
       description:
-          'Explore our curated collection of high-end tech and electronics.',
+          'Khám phá bộ sưu tập thiết bị công nghệ và gaming gear hàng đầu từ các thương hiệu lớn.',
       imageUrl: 'assets/images/onboarding1.png',
     ),
     OnboardingItem(
-      title: 'Smart Trading',
+      title: 'Giao Dịch Thông Minh',
       description:
-          'Buy and sell with AI-powered valuation and AR verification.',
+          'Mua bán an tâm hơn nhờ công nghệ định giá AI và ướm thử 3D AR thực tế ảo.',
       imageUrl: 'assets/images/onboarding2.png',
     ),
     OnboardingItem(
-      title: 'Global Community',
-      description: 'Connect with tech enthusiasts and find the gear you love.',
+      title: 'Kết Nối Đam Mê',
+      description: 'Tham gia cộng đồng yêu công nghệ, tìm kiếm và chia sẻ những bộ gear độc đáo.',
       imageUrl: 'assets/images/onboarding1.png',
     ),
   ];

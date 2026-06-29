@@ -26,7 +26,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     );
 
     //scale
-    _scaleAnimation = Tween<double>(begin: 0.0, end: 0.65).animate(
+    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.7).animate(
       CurvedAnimation(parent: _zoomController, curve: Curves.easeOutBack),
     );
 
@@ -80,7 +80,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     double screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: const Color(0xFFF8FAFC),
       body: Center(
         child: AnimatedBuilder(
           animation: Listenable.merge([_zoomController, _pulseController]),
@@ -89,7 +89,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
               scale: _scaleAnimation.value * _pulseAnimation.value,
               child: Image.asset(
                 'assets/logo/logo.png',
-                width: screenWidth * 0.8,
+                width: screenWidth * 3.8,
                 fit: BoxFit.contain,
               ),
             );

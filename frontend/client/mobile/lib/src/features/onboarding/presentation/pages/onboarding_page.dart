@@ -6,6 +6,7 @@ import 'package:mobile/src/features/home/presentation/pages/main_screen.dart';
 import 'package:mobile/src/features/onboarding/domain/models/onboarding_item.dart';
 import 'package:mobile/src/features/onboarding/presentation/widgets/slide_to_action_button.dart';
 import 'package:mobile/src/features/preferences/presentation/pages/preference_welcome_page.dart';
+import 'package:mobile/src/core/theme/app_theme.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -84,11 +85,11 @@ class _OnboardingPageState extends State<OnboardingPage>
     final size = MediaQuery.of(context).size;
     final padding = MediaQuery.of(context).padding;
     final bool isLastPage = _currentIndex == OnboardingData.items.length - 1;
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Stack(
+    return Theme(
+      data: AppTheme.lightTheme,
+      child: Scaffold(
+        backgroundColor: AppTheme.lightTheme.scaffoldBackgroundColor,
+        body: Stack(
         children: [
           //main
           PageView.builder(
@@ -286,6 +287,7 @@ class _OnboardingPageState extends State<OnboardingPage>
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
