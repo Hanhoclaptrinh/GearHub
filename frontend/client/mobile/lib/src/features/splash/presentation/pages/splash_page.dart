@@ -76,7 +76,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     double screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(

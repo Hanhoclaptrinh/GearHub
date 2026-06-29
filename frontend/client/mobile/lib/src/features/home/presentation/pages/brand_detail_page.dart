@@ -818,7 +818,6 @@ class _MasterpieceCard extends StatefulWidget {
   final Color bg, surface, border, textPrimary, textSecondary, adaptiveAccent;
 
   const _MasterpieceCard({
-    super.key,
     required this.product,
     required this.isDark,
     required this.bg,
